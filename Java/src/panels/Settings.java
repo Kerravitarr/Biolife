@@ -129,7 +129,7 @@ public class Settings extends JPanel {
 		panel_6.add(lblNewLabel_6, BorderLayout.NORTH);
 		
 		JScrollBar scrollBar_5 = new JScrollBar();
-		scrollBar_5.setMaximum(20);
+		scrollBar_5.setMaximum(40);
 		scrollBar_5.setBlockIncrement(5);
 		scrollBar_5.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar_5.setValue(10);
