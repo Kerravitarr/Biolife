@@ -6,6 +6,7 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Vector;
 
 import javax.swing.JPanel;
 
@@ -14,8 +15,8 @@ import Utils.Utils;
 import main.Cell.LV_STATUS;
 import main.Cell.OBJECT;
 import panels.BotInfo;
+import panels.JSONmake;
 
-@SuppressWarnings("serial")
 public class World extends JPanel {
 
 	/**Количиство ячеек карты*/
@@ -31,7 +32,7 @@ public class World extends JPanel {
 	/**Концентрация минералов*/
 	public static double CONCENTRATION_MINERAL = 1;
 	//Сколько тиков подряд обновлять экран
-	public static int FPS_TIC = 10;
+	public static int FPS_TIC = 1;
 	//Как быстро разлагается продукты
 	public static int TIK_TO_EXIT = 1;
 	/**Симуляция запущена?*/
@@ -196,7 +197,6 @@ public class World extends JPanel {
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 					}
@@ -282,6 +282,7 @@ public class World extends JPanel {
 		//paintLine(g);
 	}
 
+	@SuppressWarnings("unused")
 	private void paintLine(Graphics g) {
 		for (int y = 0; y < MAP_CELLS.height; y++) {
 			Point from = new Point(0, y);
@@ -340,5 +341,39 @@ public class World extends JPanel {
 		colors[(int) (1 + World.DIRTY_WATER+1)] =  ( Utils.getHSBColor(300.0/360,0.5,1.0,0.5));
 		colors[(int) (1 + World.DIRTY_WATER+2)] = new Color(139, 69, 19, 255);
 		
+	}
+
+	public JSONmake serelization() {
+		JSONmake make = new JSONmake();
+
+		JSONmake configWorld = new JSONmake();
+		configWorld.add("SUN_POWER", SUN_POWER);
+		configWorld.add("MAP_CELLS", new int[] {MAP_CELLS.width,MAP_CELLS.height});
+		configWorld.add("DIRTY_WATER", DIRTY_WATER);
+		configWorld.add("AGGRESSIVE_ENVIRONMENT", AGGRESSIVE_ENVIRONMENT);
+		configWorld.add("LEVEL_MINERAL", LEVEL_MINERAL);
+		configWorld.add("CONCENTRATION_MINERAL", CONCENTRATION_MINERAL);
+		configWorld.add("FPS_TIC", FPS_TIC);
+		configWorld.add("TIK_TO_EXIT", TIK_TO_EXIT);
+		configWorld.add("step", step);
+		make.add("configWorld", configWorld);
+		
+		make.add("EvoTree", tree.toJSON());
+		System.out.println("EvoTree готово");
+		Vector<Cell> cells = new Vector<>();
+		for (Cell[] cell : worldMap) {
+			for (Cell cell2 : cell) {
+				if(cell2 != null) {
+					cells.add(cell2);
+				}
+			}
+		}
+		JSONmake[] nodes = new JSONmake[cells.size()];
+		for (int i = 0; i < nodes.length; i++) {
+			nodes[i] = cells.get(i).toJSON();
+		}
+		make.add("Cells", nodes);
+		System.out.println("Клетки готовы");
+		return make;
 	}
 }

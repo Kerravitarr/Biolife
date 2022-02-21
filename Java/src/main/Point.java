@@ -1,5 +1,7 @@
 package main;
 
+import panels.JSONmake;
+
 public class Point{
 	/**Направление*/
 	public enum DIRECTION {
@@ -62,5 +64,11 @@ public class Point{
 	public void setY(int y) {
 		//this.y=Math.max(0, Math.min(y, MAP_CELLS.height -1));
 		this.y=y;
+	}
+	public JSONmake toJSON() {
+		JSONmake make = new JSONmake();
+		make.add("x", x);
+		make.add("y", y);
+		return make;
 	}
 }
