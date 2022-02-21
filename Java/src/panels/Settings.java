@@ -13,6 +13,12 @@ import main.World;
 
 import javax.swing.JButton;
 import java.awt.event.AdjustmentListener;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
@@ -37,7 +43,11 @@ public class Settings extends JPanel {
 		
 		JPanel panel_3 = new JPanel();
 		
-		JButton btnNewButton = new JButton("Пауза");
+		JButton btnNewButton = new JButton();
+		if(World.isActiv)
+			btnNewButton.setText("Пауза");
+		else
+			btnNewButton.setText("Пуск");
 		btnNewButton.addActionListener(e->{
 			if(btnNewButton.getText().equals("Пауза")) {
 				btnNewButton.setText("Пуск");
@@ -55,6 +65,24 @@ public class Settings extends JPanel {
 		JPanel panel_6 = new JPanel();
 		
 		JButton btnNewButton_1 = new JButton("Сохранить мир");
+		btnNewButton_1.addActionListener(e->{
+			World.isActiv = false;
+			try {Thread.sleep(1000);} catch (InterruptedException e1) {e1.printStackTrace();}
+			Date date = new Date();
+			SimpleDateFormat formater = new SimpleDateFormat("yyyy_MM_dd HHч mmм ssс");
+			String name = "World_" + formater.format(date) + ".json";
+			try(FileWriter writer = new FileWriter(name, true)){
+				String[] strings = World.world.serelization().toFormatJSONString().split("\n");
+				for (int i = 0; i < strings.length; i++) {
+					writer.write(strings[i]);
+					writer.flush();
+					System.out.println(100.0 * i / strings.length);
+				}
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			World.isActiv = true;
+		});
 		
 		JButton btnNewButton_2 = new JButton("Загрузить мир");
 		
@@ -115,8 +143,8 @@ public class Settings extends JPanel {
 		
 		JScrollBar scrollBar_6 = new JScrollBar();
 		scrollBar_6.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar_6.setValue(10);
 		scrollBar_6.setMaximum(10);
+		scrollBar_6.setValue(scrollBar_6.getMaximum() - World.TIK_TO_EXIT + 1);
 		scrollBar_6.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_6.addAdjustmentListener(e->{
 			World.TIK_TO_EXIT = scrollBar_6.getMaximum() - e.getValue() + 1;
@@ -132,7 +160,7 @@ public class Settings extends JPanel {
 		scrollBar_5.setMaximum(40);
 		scrollBar_5.setBlockIncrement(5);
 		scrollBar_5.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar_5.setValue(10);
+		scrollBar_5.setValue((int) Math.round(World.CONCENTRATION_MINERAL*10));
 		scrollBar_5.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_5.addAdjustmentListener(e->{
 			World.CONCENTRATION_MINERAL = e.getValue()/10.0;
@@ -147,7 +175,7 @@ public class Settings extends JPanel {
 		
 		JScrollBar scrollBar_4 = new JScrollBar();
 		scrollBar_4.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar_4.setValue(50);
+		scrollBar_4.setValue((int)  Math.round((1-World.LEVEL_MINERAL)*100));
 		scrollBar_4.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_4.addAdjustmentListener(e->{
 			World.LEVEL_MINERAL = 1-e.getValue()/100.0;
@@ -163,7 +191,7 @@ public class Settings extends JPanel {
 		JScrollBar scrollBar_3 = new JScrollBar();
 		scrollBar_3.setMinimum(1);
 		scrollBar_3.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar_3.setValue(10);
+		scrollBar_3.setValue(World.FPS_TIC);
 		scrollBar_3.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_3.addAdjustmentListener(e->{
 			World.FPS_TIC = e.getValue();
@@ -177,7 +205,7 @@ public class Settings extends JPanel {
 		
 		JScrollBar scrollBar_2 = new JScrollBar();
 		scrollBar_2.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar_2.setValue(25);
+		scrollBar_2.setValue((int) Math.round(World.AGGRESSIVE_ENVIRONMENT*100));
 		scrollBar_2.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_2.addAdjustmentListener(e->{
 			World.AGGRESSIVE_ENVIRONMENT = e.getValue()/100.0;
@@ -191,8 +219,9 @@ public class Settings extends JPanel {
 		
 		JScrollBar scrollBar_1 = new JScrollBar();
 		scrollBar_1.setVisibleAmount (0); // Значение экстента равно 0
+		scrollBar_1.setMinimum(1);
 		scrollBar_1.setMaximum(50);
-		scrollBar_1.setValue(17);
+		scrollBar_1.setValue((int) Math.round(World.DIRTY_WATER));
 		scrollBar_1.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_1.addAdjustmentListener(e->{
 			World.DIRTY_WATER = e.getValue();
@@ -208,7 +237,7 @@ public class Settings extends JPanel {
 		JScrollBar scrollBar = new JScrollBar();
 		scrollBar.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar.setMaximum(50);
-		scrollBar.setValue(10);
+		scrollBar.setValue((int) Math.round(World.SUN_POWER));
 		scrollBar.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar.addAdjustmentListener(e->{
 			World.SUN_POWER = e.getValue();
