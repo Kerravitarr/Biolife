@@ -93,7 +93,10 @@ public class World extends JPanel {
 	public int countLife = 0;
 	/**Все цвета, которые мы должны отобразить на поле*/
 	Color [] colors;
+	/**Сюда отправляем бота, для его изучения*/
 	BotInfo info = null;
+	/**Эволюция ботов нашего мира*/
+	EvolutionTree tree = new EvolutionTree();
 	/**
 	 * Create the panel.
 	 */
@@ -147,6 +150,7 @@ public class World extends JPanel {
 		}	*/
 		Cell adam = new Cell();
 		adam.pos = new Point(MAP_CELLS.width/2,0);
+		adam.evolutionNode = tree.root;
 		add(adam);
 		
 		recalculate();
