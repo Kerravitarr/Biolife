@@ -6,6 +6,7 @@ import java.awt.Graphics;
 import Utils.Utils;
 import main.EvolutionTree.Node;
 import main.Point.DIRECTION;
+import panels.JSONmake;
 import panels.Legend;
 public class Cell {
 	/**Размер мозга*/
@@ -98,8 +99,10 @@ public class Cell {
 				moveA(DIRECTION.DOWN_R);
 			if((years--) % World.TIK_TO_EXIT == 0)				//Помогает орагнике дольше оставаться "свежатенкой"
 				health = (this.getHealth() + 1);
-			if(this.getHealth() >= 0)
+			if(this.getHealth() >= 0) {
+				evolutionNode.remove();
 				World.world.clean(pos);
+			}
 			return;
 		}
 		setAge(getAge() + 1);
@@ -437,7 +440,7 @@ public class Cell {
         newbot.photosynthesisEffect = this.photosynthesisEffect;
         newbot.stepCount = stepCount;
         newbot.setGeneration(Generation);
-        newbot.evolutionNode = evolutionNode;
+        newbot.evolutionNode = evolutionNode.clone();
 
         if (Math.random() < World.AGGRESSIVE_ENVIRONMENT) {
             newbot.mutation();
@@ -623,6 +626,7 @@ public class Cell {
 				Cell cell = World.world.get(point);
 				setHealth(health - cell.getHealth());    //здоровье увеличилось на сколько осталось
 	            goRed((int) -cell.getHealth());           // бот покраснел
+	            cell.evolutionNode.remove();
 	            World.world.clean(point);
 			} return true;
 			case ENEMY:
@@ -639,6 +643,7 @@ public class Cell {
 		        	setMineral( min0 - min1); // количество минералов у бота уменьшается на количество минералов у жертвы
 		            // типа, стесал свои зубы о панцирь жертвы
 		            World.world.clean(point);          // удаляем жертву из списков
+		            cell.evolutionNode.remove();
 		            long cl = hl / 2;           // количество энергии у бота прибавляется на (половину от энергии жертвы)
 		            this.setHealth(health + cl);
 		            goRed((int) cl);                    // бот краснеет
@@ -652,6 +657,7 @@ public class Cell {
 		            //------ то здоровьем проламываем минералы ---------------------------
 		            if (health >= 2 * min1) {
 		            	World.world.clean(point);          // удаляем жертву из списков
+			            cell.evolutionNode.remove();
 		            	long cl = (hl / 2) - 2 * min1; // вычисляем, сколько энергии смог получить бот
 		            	this.setHealth(health + cl);
 		                goRed((int) cl);                   // бот краснеет
@@ -931,7 +937,7 @@ public class Cell {
 		this.health=health;
 		if(health < 0) health = 0;
 		if((Legend.Graph.getMode() == Legend.Graph.MODE.HP) && (health % 20 == 0))
-			color_DO = new Color((int) Math.min(255, (255.0*health/maxHP)),0,0);
+			repaint();
 	}
 
 	/**
@@ -947,7 +953,7 @@ public class Cell {
 	public void setAge(int years) {
 		this.years = years;
 		if((Legend.Graph.getMode() == Legend.Graph.MODE.YEAR) && (years % 100 == 0))
-			color_DO = Color.getHSBColor((float)Math.max(0, (1.0*health/Legend.Graph.getMaxAge())), 1, 1);
+			repaint();
 	}
 
 	/**
@@ -963,7 +969,7 @@ public class Cell {
 	public void setGeneration(int generation) {
 		Generation = generation;
 		if(Legend.Graph.getMode() == Legend.Graph.MODE.GENER)
-			color_DO = Color.getHSBColor((float)Math.max(0, (1.0*Generation/Legend.Graph.getMaxGen())), 1, 1);
+			repaint();
 	}
 
 	/**
@@ -981,14 +987,14 @@ public class Cell {
 		this.mineral = mineral;
 		if(mineral < 0) mineral = 0;
 		if((Legend.Graph.getMode() == Legend.Graph.MODE.MINERALS) && (mineral % 20 == 0))
-			color_DO = new Color(0,0,(int) Math.min(255, (255.0*mineral/maxMP)));
+			repaint();
 	}
 	
 	public void repaint() {
 		switch (Legend.Graph.getMode()) {
 			case MINERALS -> color_DO = new Color(0,0,(int) Math.min(255, (255.0*mineral/maxMP)));
-			case GENER -> color_DO = Color.getHSBColor((float)Math.max(0, (1.0*Generation/Legend.Graph.getMaxGen())), 1, 1);
-			case YEAR -> color_DO = Color.getHSBColor((float)Math.max(0, (1.0*health/Legend.Graph.getMaxAge())), 1, 1);
+			case GENER -> color_DO = Color.getHSBColor((float)Math.max(0, (0.5*Generation/Legend.Graph.getMaxGen())), 1, 1);
+			case YEAR -> color_DO = Color.getHSBColor((float)Math.max(0, (1.0*years/Legend.Graph.getMaxAge())), 1, 1);
 			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,health)/maxHP)),0,0);
 			case PHEN -> color_DO = phenotype;
 			case DOING -> color_DO = phenotype;
@@ -1008,5 +1014,31 @@ public class Cell {
         while (num >= mind.length)
         	num = num - mind.length;
 		return mind[num];
+	}
+
+
+	public JSONmake toJSON() {
+		JSONmake make = new JSONmake();
+		make.add("pos", pos.toJSON());
+		make.add("processorTik",processorTik);
+		//make.add("mind",mind);
+		make.add("alive",alive.ordinal());
+		make.add("health",health);
+		make.add("mineral",mineral);
+		make.add("direction",DIRECTION.toNum(direction));
+		make.add("stepCount",stepCount);
+
+	    //=================ПАРАМЕТРЫ БОТА============
+		make.add("years",years);
+		//make.add("Generation",Generation);
+		make.add("GenerationTree",evolutionNode.branch);
+		
+
+	    //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
+		//make.add("phenotype",Integer.toHexString(phenotype.getRGB()));
+		//make.add("photosynthesisEffect",photosynthesisEffect);
+		
+		//Убранные уже есть в эволюционном дереве!
+		return make;
 	}
 }
