@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 
 import Utils.Utils;
+import main.EvolutionTree.Node;
 import main.Point.DIRECTION;
 import panels.Legend;
 public class Cell {
@@ -69,6 +70,7 @@ public class Cell {
     //Показывает на сколько организм тяготеет к фотосинтезу
     public double photosynthesisEffect = defFotosin;
     //TODO Сила укуса - мы больше тратим энергии на укус, но наш укус становится сильнее
+    Node evolutionNode = null;
     
     Cell(){
     	pos = new Point(Utils.random(0, World.MAP_CELLS.width-1),Utils.random(0, World.MAP_CELLS.height-1));
@@ -380,7 +382,7 @@ public class Cell {
             if (this.pos.y >= (World.MAP_CELLS.height * World.LEVEL_MINERAL)) {
             	double realLv = this.pos.y - (World.MAP_CELLS.height * World.LEVEL_MINERAL);
             	double dist = World.MAP_CELLS.height * (1 - World.LEVEL_MINERAL);
-                this.setMineral((long) (this.getMineral() + World.CONCENTRATION_MINERAL * (realLv/dist) * (4 - this.photosynthesisEffect))); //Эффективный фотосинтез мешает нам переваривать пищу
+                this.setMineral((long) (this.getMineral() + World.CONCENTRATION_MINERAL * (realLv/dist) * (5 - this.photosynthesisEffect))); //Эффективный фотосинтез мешает нам переваривать пищу
             }
         }
 	}
@@ -435,6 +437,7 @@ public class Cell {
         newbot.photosynthesisEffect = this.photosynthesisEffect;
         newbot.stepCount = stepCount;
         newbot.setGeneration(Generation);
+        newbot.evolutionNode = evolutionNode;
 
         if (Math.random() < World.AGGRESSIVE_ENVIRONMENT) {
             newbot.mutation();
@@ -445,7 +448,7 @@ public class Cell {
 	private void mutation() {
 		setGeneration(getGeneration() + 1);
 		/**Дельта, гуляет от -1 до 1*/
-		double del = (1 - Math.random() * 2) * 0.01 + 1;
+		double del = (0.5 - Math.random())*2;
 		//TODO К сожалению первые два слишком сильно убегают вперёд
         switch (Utils.random(2, 6)) { 
             case 0: //Мутирует количество энергии для деления
@@ -455,27 +458,32 @@ public class Cell {
                 this.maxMP *= del;
                 break;
             case 2: //Мутирует эффективность фотосинтеза
-                this.photosynthesisEffect = Math.max(0, Math.min(this.photosynthesisEffect * (del), 4));
+                this.photosynthesisEffect = Math.max(0, Math.min(this.photosynthesisEffect * (1+del*0.1), 4));
+                evolutionNode = evolutionNode.newNode(stepCount, photosynthesisEffect);
                 break;
             case 3: //Мутирует геном
                 int ma = Utils.random(0, mind.length-1); //Индекс гена
                 int mc = Utils.random(0, COUNT_COMAND-1); //Его значение
+                evolutionNode = evolutionNode.newNode(stepCount, ma,mc);
                 this.mind[ma] = mc;
                 break;
             case 4: //Мутирует красный цвет
         		int red = phenotype.getRed();
-        		red = (int) Math.max(0, Math.min(red * del * 10, 255));
+        		red = (int) Math.max(0, Math.min(red + del * 10, 255));
         		phenotype = new Color(red,phenotype.getGreen(), phenotype.getBlue(), phenotype.getAlpha());
+                evolutionNode = evolutionNode.newNode(stepCount, phenotype);
                 break;
             case 5: //Мутирует зелёный цвет
         		int green = phenotype.getGreen();
-        		green = (int) Math.max(0, Math.min(green * del * 10, 255));
+        		green = (int) Math.max(0, Math.min(green + del * 10, 255));
         		phenotype = new Color(phenotype.getRed(),green, phenotype.getBlue(), phenotype.getAlpha());
+                evolutionNode = evolutionNode.newNode(stepCount, phenotype);
                 break;
             case 6: //Мутирует синий цвет
         		int blue = phenotype.getGreen();
-        		blue = (int) Math.max(0, Math.min(blue * del * 10, 255));
+        		blue = (int) Math.max(0, Math.min(blue + del * 10, 255));
         		phenotype = new Color(phenotype.getRed(),phenotype.getGreen(), blue, phenotype.getAlpha());
+                evolutionNode = evolutionNode.newNode(stepCount, phenotype);
                 break;
         }
 	}
@@ -495,7 +503,7 @@ public class Cell {
     // ...  и количества минералов, накопленных ботом              ...............
 	private void photosynthesis() {
         //Показывает эффективность нашего фотосинтеза
-        double t = this.getMineral() / this.maxMP * this.photosynthesisEffect;
+        double t = this.getMineral() / this.maxMP * (1+this.photosynthesisEffect);
         // формула вычисления энергии ============================= SEZON!!!!!!!!!!
         double hlt = World.SUN_POWER - (World.DIRTY_WATER * this.pos.y / World.MAP_CELLS.height) + t;
         if (hlt > 0) {
