@@ -3,8 +3,10 @@ package main;
 import java.awt.Color;
 import java.util.Vector;
 
+import jdk.jfr.Unsigned;
 import panels.JSONmake;
 
+@Deprecated
 public class EvolutionTree {
 
 	static public class Node{
@@ -25,7 +27,7 @@ public class EvolutionTree {
 		//Потомки нашего узла
 		Vector<Node> child = new Vector<>();
 		/**Счётчик ветвей*/
-		int branshCount = 0;
+		Integer branshCount = 0;
 		/**Число живых потомков*/
 		int countAliveCell = 1;
 		/**Наш родитель, общий предок, если хотите*/
@@ -49,7 +51,7 @@ public class EvolutionTree {
 		}
 		private Node forAllNode(long time) {
 			Node node = new Node();
-			synchronized (child) {
+			synchronized (branshCount) {
 				node.generation = branshCount + 1;
 				branshCount++;
 			}

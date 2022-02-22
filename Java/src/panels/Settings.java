@@ -1,27 +1,21 @@
 package panels;
 
-import javax.swing.JPanel;
 import java.awt.BorderLayout;
-import javax.swing.JLabel;
-import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.JScrollBar;
-import javax.swing.SwingConstants;
-import javax.swing.LayoutStyle.ComponentPlacement;
-
-import main.World;
-
-import javax.swing.JButton;
-import java.awt.event.AdjustmentListener;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
-import java.awt.event.AdjustmentEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
+
+import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollBar;
+import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.SwingConstants;
+
+import main.World;
 
 public class Settings extends JPanel {
 
@@ -72,12 +66,8 @@ public class Settings extends JPanel {
 			SimpleDateFormat formater = new SimpleDateFormat("yyyy_MM_dd HHч mmм ssс");
 			String name = "World_" + formater.format(date) + ".json";
 			try(FileWriter writer = new FileWriter(name, true)){
-				String[] strings = World.world.serelization().toFormatJSONString().split("\n");
-				for (int i = 0; i < strings.length; i++) {
-					writer.write(strings[i]);
-					writer.flush();
-					System.out.println(100.0 * i / strings.length);
-				}
+				World.world.serelization().writeToFormatJSONString(writer);
+				writer.flush();
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
@@ -235,6 +225,7 @@ public class Settings extends JPanel {
 		panel_1.add(lblNewLabel_1, BorderLayout.NORTH);
 		
 		JScrollBar scrollBar = new JScrollBar();
+		scrollBar.setMinimum(1);
 		scrollBar.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar.setMaximum(50);
 		scrollBar.setValue((int) Math.round(World.SUN_POWER));

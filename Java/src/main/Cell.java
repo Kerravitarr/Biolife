@@ -71,7 +71,7 @@ public class Cell {
     //Показывает на сколько организм тяготеет к фотосинтезу
     public double photosynthesisEffect = defFotosin;
     //TODO Сила укуса - мы больше тратим энергии на укус, но наш укус становится сильнее
-    Node evolutionNode = null;
+    //Node evolutionNode = null;
     
     Cell(){
     	pos = new Point(Utils.random(0, World.MAP_CELLS.width-1),Utils.random(0, World.MAP_CELLS.height-1));
@@ -100,7 +100,7 @@ public class Cell {
 			if((years--) % World.TIK_TO_EXIT == 0)				//Помогает орагнике дольше оставаться "свежатенкой"
 				health = (this.getHealth() + 1);
 			if(this.getHealth() >= 0) {
-				evolutionNode.remove();
+				//evolutionNode.remove();
 				World.world.clean(pos);
 			}
 			return;
@@ -440,7 +440,7 @@ public class Cell {
         newbot.photosynthesisEffect = this.photosynthesisEffect;
         newbot.stepCount = stepCount;
         newbot.setGeneration(Generation);
-        newbot.evolutionNode = evolutionNode.clone();
+       //newbot.evolutionNode = evolutionNode.clone();
 
         if (Math.random() < World.AGGRESSIVE_ENVIRONMENT) {
             newbot.mutation();
@@ -462,31 +462,31 @@ public class Cell {
                 break;
             case 2: //Мутирует эффективность фотосинтеза
                 this.photosynthesisEffect = Math.max(0, Math.min(this.photosynthesisEffect * (1+del*0.1), 4));
-                evolutionNode = evolutionNode.newNode(stepCount, photosynthesisEffect);
+                //evolutionNode = evolutionNode.newNode(stepCount, photosynthesisEffect);
                 break;
             case 3: //Мутирует геном
                 int ma = Utils.random(0, mind.length-1); //Индекс гена
                 int mc = Utils.random(0, COUNT_COMAND-1); //Его значение
-                evolutionNode = evolutionNode.newNode(stepCount, ma,mc);
+                //evolutionNode = evolutionNode.newNode(stepCount, ma,mc);
                 this.mind[ma] = mc;
                 break;
             case 4: //Мутирует красный цвет
         		int red = phenotype.getRed();
         		red = (int) Math.max(0, Math.min(red + del * 10, 255));
         		phenotype = new Color(red,phenotype.getGreen(), phenotype.getBlue(), phenotype.getAlpha());
-                evolutionNode = evolutionNode.newNode(stepCount, phenotype);
+                //evolutionNode = evolutionNode.newNode(stepCount, phenotype);
                 break;
             case 5: //Мутирует зелёный цвет
         		int green = phenotype.getGreen();
         		green = (int) Math.max(0, Math.min(green + del * 10, 255));
         		phenotype = new Color(phenotype.getRed(),green, phenotype.getBlue(), phenotype.getAlpha());
-                evolutionNode = evolutionNode.newNode(stepCount, phenotype);
+                //evolutionNode = evolutionNode.newNode(stepCount, phenotype);
                 break;
             case 6: //Мутирует синий цвет
         		int blue = phenotype.getGreen();
         		blue = (int) Math.max(0, Math.min(blue + del * 10, 255));
         		phenotype = new Color(phenotype.getRed(),phenotype.getGreen(), blue, phenotype.getAlpha());
-                evolutionNode = evolutionNode.newNode(stepCount, phenotype);
+                //evolutionNode = evolutionNode.newNode(stepCount, phenotype);
                 break;
         }
 	}
@@ -597,7 +597,7 @@ public class Cell {
 	    OBJECT obj = World.world.test(point);
 	    if (obj != OBJECT.BOT)
 	        return obj;
-	    else if (isRelative(this, World.world.get(point)))
+	    else if (AllBotsCommand.isRelative(this, World.world.get(point)))
 	        return OBJECT.FRIEND;
 	    else
 	        return OBJECT.ENEMY;
@@ -626,7 +626,7 @@ public class Cell {
 				Cell cell = World.world.get(point);
 				setHealth(health - cell.getHealth());    //здоровье увеличилось на сколько осталось
 	            goRed((int) -cell.getHealth());           // бот покраснел
-	            cell.evolutionNode.remove();
+	            //cell.evolutionNode.remove();
 	            World.world.clean(point);
 			} return true;
 			case ENEMY:
@@ -643,7 +643,7 @@ public class Cell {
 		        	setMineral( min0 - min1); // количество минералов у бота уменьшается на количество минералов у жертвы
 		            // типа, стесал свои зубы о панцирь жертвы
 		            World.world.clean(point);          // удаляем жертву из списков
-		            cell.evolutionNode.remove();
+		            //cell.evolutionNode.remove();
 		            long cl = hl / 2;           // количество энергии у бота прибавляется на (половину от энергии жертвы)
 		            this.setHealth(health + cl);
 		            goRed((int) cl);                    // бот краснеет
@@ -657,7 +657,7 @@ public class Cell {
 		            //------ то здоровьем проламываем минералы ---------------------------
 		            if (health >= 2 * min1) {
 		            	World.world.clean(point);          // удаляем жертву из списков
-			            cell.evolutionNode.remove();
+			            //cell.evolutionNode.remove();
 		            	long cl = (hl / 2) - 2 * min1; // вычисляем, сколько энергии смог получить бот
 		            	this.setHealth(health + cl);
 		                goRed((int) cl);                   // бот краснеет
@@ -810,29 +810,6 @@ public class Cell {
 			}
 			default: return false;
 		}
-	}
-	/**
-	 * Родственные-ли боты?
-	 * Вообще пока смотрит только по ДНК, но возможно в будущем нужно смотреть будет не на 
-	 *      генотип, а на фенотип!
-	 * @param cell
-	 * @param cell2
-	 * @return
-	 */
-	private boolean isRelative(Cell bot0, Cell bot1) {
-	    if (bot0.alive != LV_STATUS.LV_ALIVE || bot1.alive != LV_STATUS.LV_ALIVE) {
-	        return false;
-	    }
-	    int dif = 0;    // счетчик несовпадений в геноме
-	    for (int i = 0; i < mind.length; i++) {
-	        if (bot0.mind[i] != bot1.mind[i]) {
-	            dif = dif + 1;
-	            if (dif == 2) {
-	                return false;
-	            } // если несовпадений в генеме больше 1
-	        }     // то боты не родственики
-	    }
-	    return true;
 	}
 
 
@@ -1021,7 +998,7 @@ public class Cell {
 		JSONmake make = new JSONmake();
 		make.add("pos", pos.toJSON());
 		make.add("processorTik",processorTik);
-		//make.add("mind",mind);
+		make.add("mind",mind);
 		make.add("alive",alive.ordinal());
 		make.add("health",health);
 		make.add("mineral",mineral);
@@ -1030,13 +1007,13 @@ public class Cell {
 
 	    //=================ПАРАМЕТРЫ БОТА============
 		make.add("years",years);
-		//make.add("Generation",Generation);
-		make.add("GenerationTree",evolutionNode.branch);
+		make.add("Generation",Generation);
+		//make.add("GenerationTree",evolutionNode.branch);
 		
 
 	    //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
-		//make.add("phenotype",Integer.toHexString(phenotype.getRGB()));
-		//make.add("photosynthesisEffect",photosynthesisEffect);
+		make.add("phenotype",Integer.toHexString(phenotype.getRGB()));
+		make.add("photosynthesisEffect",photosynthesisEffect);
 		
 		//Убранные уже есть в эволюционном дереве!
 		return make;

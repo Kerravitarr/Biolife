@@ -97,7 +97,7 @@ public class World extends JPanel {
 	/**Сюда отправляем бота, для его изучения*/
 	BotInfo info = null;
 	/**Эволюция ботов нашего мира*/
-	EvolutionTree tree = new EvolutionTree();
+	//EvolutionTree tree = new EvolutionTree();
 	/**
 	 * Create the panel.
 	 */
@@ -106,7 +106,7 @@ public class World extends JPanel {
 		world = this;
 		info = botInfo;
 		
-		int countProc = Runtime.getRuntime().availableProcessors()*0+1;
+		int countProc = Runtime.getRuntime().availableProcessors()*2/3;
 		
 		while(MAP_CELLS.width - 2*countProc < countProc)
 			countProc /= 2;
@@ -151,7 +151,7 @@ public class World extends JPanel {
 		}	*/
 		Cell adam = new Cell();
 		adam.pos = new Point(MAP_CELLS.width/2,0);
-		adam.evolutionNode = tree.root;
+		//adam.evolutionNode = tree.root;
 		add(adam);
 		
 		recalculate();
@@ -358,7 +358,7 @@ public class World extends JPanel {
 		configWorld.add("step", step);
 		make.add("configWorld", configWorld);
 		
-		make.add("EvoTree", tree.toJSON());
+		//make.add("EvoTree", tree.toJSON());
 		System.out.println("EvoTree готово");
 		Vector<Cell> cells = new Vector<>();
 		for (Cell[] cell : worldMap) {
