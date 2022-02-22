@@ -1,18 +1,93 @@
 package panels;
 
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class JSONmake {
 	private class JSONParametr{
+		String key = null;
+		String value_s = null;
+		String[] value_ms = null;
+		JSONmake value_j = null;
+		JSONmake[] value_js = null;
+		
 		public JSONParametr(String key, String value) {
 			this.key = key;
-			this.value = value;
+			this.value_s = value;
 		}
-		String key;
-		String value;
+
+		public JSONParametr(String key, String[] value) {
+			this.key = key;
+			this.value_ms = value;
+		}
+
+		public JSONParametr(String key, JSONmake value) {
+			this.key = key;
+			this.value_j = value;
+		}
+		
+		public JSONParametr(String key, JSONmake[] value) {
+			this.key = key;
+			this.value_js = value;
+		}
+		
 		public String toString() {
-			return "\"" + key + "\":" + value;
+			if(value_s != null) {
+				return "\"" + key + "\":" + value_s;
+			}else if(value_ms != null) {
+				String vals = "";
+				for(String i : value_ms) {
+					if(!vals.isEmpty())
+						vals+=",";
+					vals += i;
+				}
+				return "\"" + key + "\":[" + vals + "]";
+			}else if(value_j != null) {
+				return "\"" + key + "\":" + value_j.toJSONString() + "";
+			}else if(value_js != null) {
+				String vals = "";
+				for(String i : value_ms) {
+					if(!vals.isEmpty())
+						vals+=",";
+					vals += i;
+				}
+				return "\"" + key + "\":[" + vals + "]";
+			} else {
+				throw new RuntimeException("Не верный параметр");
+			}
+		}
+		public void write(FileWriter writer,String tabs) throws IOException {
+			if(value_s != null) {
+				writer.write(tabs + "\"" + key + "\":" + value_s);
+			}else if(value_ms != null) {
+				String vals = "";
+				for(String i : value_ms) {
+					if(!vals.isEmpty())
+						vals+=",";
+					vals += i;
+				}
+				writer.write(tabs + "\"" + key + "\":[" + vals + "]");
+			}else if(value_j != null) {
+				writer.write(tabs + "\"" + key + "\":{\n");
+				value_j.writeToFormatJSONString(writer, tabs + '\t');
+				writer.write("\n" + tabs + "}");
+			}else if(value_js != null) {
+				boolean isFirst = true;
+				writer.write(tabs + "\"" + key + "\":[\n");
+				for(JSONmake i : value_js) {
+					if(isFirst)
+						isFirst = false;
+					else
+						writer.write("\n" + tabs + "\t},\n");
+					writer.write(tabs + "\t{\n");
+					i.writeToFormatJSONString(writer, tabs + "\t\t");
+				}
+				writer.write("\n" + tabs + "\t}\n" + tabs + "]");
+			} else {
+				throw new RuntimeException("Не верный параметр");
+			}
 		}
 	}
 	
@@ -35,39 +110,37 @@ public class JSONmake {
 		parametrs.add(new JSONParametr(key,value+""));
 	}
 	public void add(String key, String[] value) {
-		String str = "[";
-		for(int i = 0 ; i < value.length ; i ++) {
-			if(i > 0) str +=",";
-			str += "\"" + value[i].replaceAll("\"", "\\\\\"") + "\"";
-		}
-		str += "]";
-		parametrs.add(new JSONParametr(key,str));
+		JSONParametr param = new JSONParametr(key,value);
+		for(int i = 0 ; i < value.length ; i ++)
+			param.value_ms[i] = "\"" + value[i].replaceAll("\"", "\\\\\"") + "\"";
+		parametrs.add(param);
 	}
 	public void add(String key, JSONmake value) {
-		parametrs.add(new JSONParametr(key,value.toJSONString()));
+		parametrs.add(new JSONParametr(key,value));
 	}
 	public void add(String key, boolean value) {
 		parametrs.add(new JSONParametr(key,value ? "true" : "false"));
 	}
 	public void add(String key, int[] value) {
-		String str = "[";
-		for(int i = 0 ; i < value.length ; i ++) {
-			if(i > 0) str +=",";
-			str += value[i];
-		}
-		str += "]";
+		String[] str = new String[value.length];
+		for(int i = 0 ; i < value.length ; i ++)
+			str[i] = value[i]+"";
 		parametrs.add(new JSONParametr(key,str));
 	}
 	public void add(String key, JSONmake[] value) {
-		String str = "[";
-		for(int i = 0 ; i < value.length ; i ++) {
-			if(i > 0) str +=",";
-			str += value[i].toJSONString();
-		}
-		str += "]";
-		parametrs.add(new JSONParametr(key,str));
+		parametrs.add(new JSONParametr(key,value));
 	}
-	
+
+
+	public void replace(String key, String value) {
+		for(JSONParametr i : parametrs) {
+			if(i.key.equals(key)) {
+				i.value_s = "\"" + value.replaceAll("\"", "\\\\\"") + "\"";
+				break;
+			}
+		}
+	}
+
 	public String toJSONString() {
 		String jsonStr = "{";
 		for(int i = 0 ; i < parametrs.size() ; i++) {
@@ -77,61 +150,19 @@ public class JSONmake {
 		jsonStr += "}";
 		return jsonStr;
 	}
-
-
-	public void replace(String key, String value) {
-		for(JSONParametr i : parametrs) {
-			if(i.key.equals(key)) {
-				i.value = "\"" + value.replaceAll("\"", "\\\\\"") + "\"";
-				break;
-			}
+	
+	public void writeToFormatJSONString(FileWriter writer) throws IOException {
+		writer.write("{\n");
+		for(int i = 0 ; i < parametrs.size() ; i++) {
+			if(i != 0) writer.write(",\n");
+			parametrs.get(i).write(writer,"\t");
+		}
+		writer.write("\n}");
+	}
+	public void writeToFormatJSONString(FileWriter writer,String tabs) throws IOException {
+		for(int i = 0 ; i < parametrs.size() ; i++) {
+			if(i != 0) writer.write(",\n");
+			parametrs.get(i).write(writer,tabs);
 		}
 	}
-
-	public String toFormatJSONString() {
-		String ret = "";
-		
-		int countTab = 0;
-		boolean StartBlosk = false;
-		for(byte i : toJSONString().getBytes()) {
-			if(i == '{' || i == '[' ) {
-				if(StartBlosk)
-					ret += '\n' + getTab(countTab);
-				ret += ((char)i);
-				countTab++;
-				StartBlosk = true;
-			} else if(i == '}'|| i == ']') {
-				countTab--;
-				if(StartBlosk)
-					ret += ((char)i);
-				else
-					ret += '\n' + getTab(countTab) + ((char)i);
-				StartBlosk = false;
-			}else if(i == ',') {
-				if(StartBlosk)
-					ret += '\n' + getTab(countTab);
-				ret += ((char)i);
-				ret += '\n' + getTab(countTab);
-				StartBlosk = false;
-			} else {
-				if(StartBlosk)
-					ret += '\n' + getTab(countTab);
-				ret += ((char)i);
-				StartBlosk = false;
-			}
-		}
-		
-		return ret;
-	}
-
-	private String getTab(int countTab) {
-		String tabs = "";
-		for (int i = 0; i < countTab; i++) {
-			tabs += '\t';
-		}
-		return tabs;
-	}
-
-
-
 }
