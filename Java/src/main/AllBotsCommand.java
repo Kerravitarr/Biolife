@@ -1,5 +1,6 @@
 package main;
 
+import main.Cell.LV_STATUS;
 import main.Cell.OBJECT;
 import main.Point;
 import main.Point.DIRECTION;
@@ -45,5 +46,46 @@ public class AllBotsCommand {
 		Point point = new Point(bot.pos);
 		DIRECTION dir = DIRECTION.toEnum(direction);
 	    return point.next(dir);
+	}
+	
+	/**
+	 * Родственные-ли боты?
+	 * TODO Вообще пока смотрит только по ДНК, но возможно в будущем нужно смотреть будет не на 
+	 *      генотип, а на фенотип!
+	 * @param cell
+	 * @param cell2
+	 * @return
+	 */
+	/*private boolean isRelative(Cell bot0, Cell bot1) {
+	    if (bot0.alive != LV_STATUS.LV_ALIVE || bot1.alive != LV_STATUS.LV_ALIVE) {
+	        return false;
+	    }
+	    int dif = 0;    // счетчик несовпадений в геноме
+	    for (int i = 0; i < mind.length; i++) {
+	        if (bot0.mind[i] != bot1.mind[i]) {
+	            dif = dif + 1;
+	            if (dif == 2) {
+	                return false;
+	            } // если несовпадений в генеме больше 1
+	        }     // то боты не родственики
+	    }
+	    return true;
+	}*/
+	/**
+	 * Родственные-ли боты?
+	 * Определеяет родственников по фенотипу, по тому как они выглядят
+	 * @param cell
+	 * @param cell2
+	 * @return
+	 */
+	static boolean isRelative(Cell bot0, Cell bot1) {
+	    if (bot0.alive != LV_STATUS.LV_ALIVE || bot1.alive != LV_STATUS.LV_ALIVE) {
+	        return false;
+	    }
+	    int dif = 0;    // счетчик несовпадений в фенотипе
+	    dif += Math.abs(bot0.phenotype.getRed() - bot1.phenotype.getRed());
+	    dif += Math.abs(bot0.phenotype.getGreen() - bot1.phenotype.getGreen());
+	    dif += Math.abs(bot0.phenotype.getBlue() - bot1.phenotype.getBlue());
+	    return dif < 10;
 	}
 }
