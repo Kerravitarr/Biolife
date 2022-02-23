@@ -3,7 +3,14 @@ package panels;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
+import java.util.List;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 public class JSONmake {
 	private class JSONParametr{
@@ -48,10 +55,10 @@ public class JSONmake {
 				return "\"" + key + "\":" + value_j.toJSONString() + "";
 			}else if(value_js != null) {
 				String vals = "";
-				for(String i : value_ms) {
+				for(JSONmake i : value_js) {
 					if(!vals.isEmpty())
 						vals+=",";
-					vals += i;
+					vals += i.toJSONString();
 				}
 				return "\"" + key + "\":[" + vals + "]";
 			} else {
@@ -76,27 +83,61 @@ public class JSONmake {
 			}else if(value_js != null) {
 				boolean isFirst = true;
 				writer.write(tabs + "\"" + key + "\":[\n");
-				for(JSONmake i : value_js) {
-					if(isFirst)
-						isFirst = false;
-					else
-						writer.write("\n" + tabs + "\t},\n");
-					writer.write(tabs + "\t{\n");
-					i.writeToFormatJSONString(writer, tabs + "\t\t");
+				if(value_js.length == 0) {
+					writer.write(tabs + "\t{}\n" + tabs + "]");
+				} else {
+					for(JSONmake i : value_js) {
+						if(isFirst)
+							isFirst = false;
+						else
+							writer.write("\n" + tabs + "\t},\n");
+						writer.write(tabs + "\t{\n");
+						i.writeToFormatJSONString(writer, tabs + "\t\t");
+					}
+					writer.write("\n" + tabs + "\t}\n" + tabs + "]");
 				}
-				writer.write("\n" + tabs + "\t}\n" + tabs + "]");
 			} else {
 				throw new RuntimeException("Не верный параметр");
 			}
 		}
 	}
+
+	
 	
 	ArrayList<JSONParametr> parametrs;
+	/**Обратное чтение JSONа*/
+	JSONObject parseObj = null;
 	
 	public JSONmake(){
 		parametrs = new ArrayList<>();
 	}
+	public JSONmake(String parseStr) {
+		JSONParser parser = new JSONParser();
+		try {
+			parseObj = (JSONObject) parser.parse(parseStr);
+		} catch (ParseException e) {
+			throw new RuntimeException(
+					"Произошла ошибка при парсинге файла. Строка:" + parseStr
+							+ " Ошибка: " + e.toString() + "(" + parseStr.substring(e.getPosition() - 5,e.getPosition()) + "→"  + parseStr.substring(e.getPosition(),e.getPosition()+1)+ "←"+ parseStr.substring(e.getPosition()+1,e.getPosition()+5)+")");
+		}
+	}
+
+	public JSONmake(Reader in) {
+		JSONParser parser = new JSONParser();
+		try {
+			parseObj = (JSONObject) parser.parse(in);
+		} catch (ParseException e) {
+			throw new RuntimeException(
+					"Произошла ошибка при парсинге файла.  Ошибка: " + e.toString());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 	
+	
+	public JSONmake(JSONObject json) {
+		parseObj = json;
+	}
 	public void add(String key, String value) {
 		parametrs.add(new JSONParametr(key,"\"" + value.replaceAll("\"", "\\\\\"") + "\""));
 	}
@@ -139,6 +180,60 @@ public class JSONmake {
 				break;
 			}
 		}
+	}
+	
+	public String getS(String key) {
+		return getT(key);
+	}
+	public int getI(String key) {
+		return (int) getL(key);
+	}
+	public long getL(String key) {
+		return getT(key);
+	}
+	public double getD(String key) {
+		return getT(key);
+	}
+	public JSONmake getJ(String key) {
+		if(parseObj == null)
+			return null;
+		else
+			return new JSONmake((JSONObject) parseObj.get(key));
+	}
+
+	public List<Long> getAL(String key) {
+		return getAT(key);
+	}
+	
+	public List<JSONmake> getAJ(String key) {
+		if (parseObj == null)
+			return null;
+		else {
+			List<JSONmake> ret = new ArrayList<>();
+			for (Object i : (JSONArray) parseObj.get(key))
+				ret.add(new JSONmake((JSONObject)i));
+			return ret;
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public <T> List<T> getAT(String key) {
+		if (parseObj == null)
+			return null;
+		else {
+			List<T> ret = new ArrayList<>();
+			for (Object i : (JSONArray) parseObj.get(key))
+				ret.add((T) i);
+			return ret;
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T> T getT(String key) {
+		if(parseObj == null)
+			return null;
+		else
+			return ((T) parseObj.get(key));
 	}
 
 	public String toJSONString() {
