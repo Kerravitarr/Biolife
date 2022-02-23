@@ -1,6 +1,9 @@
 package panels;
 
 import java.awt.BorderLayout;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -9,6 +12,7 @@ import java.util.Date;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
@@ -38,6 +42,7 @@ public class Settings extends JPanel {
 		JPanel panel_3 = new JPanel();
 		
 		JButton btnNewButton = new JButton();
+		btnNewButton.setText("Пуск");
 		if(World.isActiv)
 			btnNewButton.setText("Пауза");
 		else
@@ -60,6 +65,7 @@ public class Settings extends JPanel {
 		
 		JButton btnNewButton_1 = new JButton("Сохранить мир");
 		btnNewButton_1.addActionListener(e->{
+			boolean oldStateWorld = World.isActiv;				
 			World.isActiv = false;
 			try {Thread.sleep(1000);} catch (InterruptedException e1) {e1.printStackTrace();}
 			Date date = new Date();
@@ -71,33 +77,53 @@ public class Settings extends JPanel {
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
-			World.isActiv = true;
+			World.isActiv = oldStateWorld;
 		});
 		
 		JButton btnNewButton_2 = new JButton("Загрузить мир");
+		btnNewButton_2.addActionListener(e->{			
+			World.isActiv = false;
+			String pathToRoot = System.getProperty("user.dir");
+			JFileChooser fileopen = new JFileChooser(pathToRoot);
+			fileopen.setSelectedFile(new File(pathToRoot));
+			int ret = fileopen.showDialog(null, "Открыть файл из которого будут прочитаны данные");
+			if (ret == JFileChooser.APPROVE_OPTION) {
+				try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
+					World.world.update(new JSONmake(reader));
+					btnNewButton.setText("Пуск");
+				} catch (FileNotFoundException e1) {
+					e1.printStackTrace();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
 		
 		JButton btnNewButton_3 = new JButton("Шаг");
 		btnNewButton_3.addActionListener(e-> World.world.step());
 		
 		JPanel panel_4_1 = new JPanel();
 		panel_4_1.setLayout(new BorderLayout(0, 0));
+		
+		JPanel panel_7 = new JPanel();
 		GroupLayout gl_panel = new GroupLayout(panel);
 		gl_panel.setHorizontalGroup(
 			gl_panel.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addComponent(panel_6, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_5, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_1, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_2, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_3, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_4, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(btnNewButton_1, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(btnNewButton_2, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(btnNewButton, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(btnNewButton_3, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_4_1, GroupLayout.PREFERRED_SIZE, 177, GroupLayout.PREFERRED_SIZE))
+					.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
+						.addComponent(panel_7, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_6, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_5, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_1, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_2, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_3, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_4, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(btnNewButton_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(btnNewButton_2, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(btnNewButton, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(btnNewButton_3, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_4_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
@@ -116,7 +142,9 @@ public class Settings extends JPanel {
 					.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 34, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_4_1, GroupLayout.PREFERRED_SIZE, 34, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED, 68, Short.MAX_VALUE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(panel_7, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED, 47, Short.MAX_VALUE)
 					.addComponent(btnNewButton_3)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(btnNewButton)
@@ -126,6 +154,23 @@ public class Settings extends JPanel {
 					.addComponent(btnNewButton_1)
 					.addContainerGap())
 		);
+		panel_7.setLayout(new BorderLayout(0, 0));
+		
+		JLabel lblNewLabel_8 = new JLabel("Частота кадров");
+		lblNewLabel_8.setHorizontalAlignment(SwingConstants.CENTER);
+		panel_7.add(lblNewLabel_8, BorderLayout.NORTH);
+		
+		JScrollBar scrollBar_7 = new JScrollBar();
+		scrollBar_7.setBlockIncrement(200);
+		scrollBar_7.setMaximum(1000);
+		scrollBar_7.setUnitIncrement(100);
+		scrollBar_7.setMinimum(1);
+		scrollBar_7.setValue(scrollBar_7.getMaximum() - World.msTimeout);
+		scrollBar_7.setOrientation(JScrollBar.HORIZONTAL);
+		scrollBar_7.addAdjustmentListener(e->{
+			World.msTimeout = scrollBar_7.getMaximum() - e.getValue();
+		});
+		panel_7.add(scrollBar_7, BorderLayout.SOUTH);
 		
 		JLabel lblNewLabel_7 = new JLabel("Скорость разложения");
 		lblNewLabel_7.setHorizontalAlignment(SwingConstants.CENTER);

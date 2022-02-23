@@ -6,8 +6,10 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.List;
 import java.util.Vector;
 
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import Utils.FPScounter;
@@ -26,7 +28,7 @@ public class World extends JPanel {
 	/**Уровень загрязнения воды*/
 	public static double DIRTY_WATER = 17;
 	/**Степень мутагенности воды*/
-	public static double AGGRESSIVE_ENVIRONMENT = 0.25;
+	public static double AGGRESSIVE_ENVIRONMENT = 0.25*0+1;
 	/**Как глубоко лежат минералы*/
 	public static double LEVEL_MINERAL = 0.50;
 	/**Концентрация минералов*/
@@ -37,6 +39,8 @@ public class World extends JPanel {
 	public static int TIK_TO_EXIT = 1;
 	/**Симуляция запущена?*/
 	public static boolean isActiv = true;
+	/**Сколько милисекунд делать перед ходами*/
+	public static int msTimeout = 0;
 	
 	/**Глобальный мир!*/
 	public static World world = null;
@@ -68,7 +72,7 @@ public class World extends JPanel {
 	}
 	
 	/**Шаги мира*/
-	public int step = 0;
+	public long step = 0;
 	/**Всего точек по процессорам - сколько процессоров, в каждом ряду есть у*/
 	WorldTask [] cells;
 	Thread [] threads;
@@ -97,7 +101,7 @@ public class World extends JPanel {
 	/**Сюда отправляем бота, для его изучения*/
 	BotInfo info = null;
 	/**Эволюция ботов нашего мира*/
-	//EvolutionTree tree = new EvolutionTree();
+	EvolutionTree tree = new EvolutionTree();
 	/**
 	 * Create the panel.
 	 */
@@ -152,6 +156,7 @@ public class World extends JPanel {
 		Cell adam = new Cell();
 		adam.pos = new Point(MAP_CELLS.width/2,0);
 		//adam.evolutionNode = tree.root;
+		tree.root.countAliveCell = 1;
 		add(adam);
 		
 		recalculate();
@@ -163,7 +168,7 @@ public class World extends JPanel {
 			public void componentResized(ComponentEvent e) {
 				double hDel = 1.0 * getHeight() * (1 - (UP_border + DOWN_border)) / (MAP_CELLS.height);
 				double wDel = 1.0 * getWidth() / (MAP_CELLS.width);
-				scale = (int) Math.min(hDel, wDel);
+				scale = Math.min(hDel, wDel);
 				border.width = (int) Math.round((getWidth() -MAP_CELLS.width*scale)/2);
 				border.height = (int) Math.round((getHeight() - MAP_CELLS.height*scale)/2);
 			}
@@ -183,7 +188,7 @@ public class World extends JPanel {
 		    		realX = (int) Math.round(realX/scale-0.5);
 		    		realY = (int) Math.round(realY/scale-0.5);
 		    		Point point = new Point(realX,realY);
-		    		botInfo.setCell(get(point));
+		    		info.setCell(get(point));
 		    	}
 		    }
 		});
@@ -200,14 +205,14 @@ public class World extends JPanel {
 							e.printStackTrace();
 						}
 					}
+					
+					if(msTimeout != 0) {
+						Utils.pause_ms(msTimeout);
+					}
 				}
 			}
 		});
 		
-	}
-	
-	void add(Cell cell) {
-		worldMap[cell.pos.x][cell.pos.y] = cell;
 	}
 	
 	public void step() {
@@ -255,6 +260,12 @@ public class World extends JPanel {
 					}
 				}
 			}
+			if(info.getCell() != null) {
+				g.setColor(Color.BLACK);
+				//g.drawLine(border.width, border.height, getWidth()-border.width, getHeight()-border.height);
+				g.drawLine(info.getCell().pos.getRx(), border.height, info.getCell().pos.getRx(), getHeight()-border.height);
+				g.drawLine(border.width, info.getCell().pos.getRy(), getWidth()-border.width, info.getCell().pos.getRy());
+			}
 		}
 
 		fps.interapt();
@@ -296,9 +307,6 @@ public class World extends JPanel {
 		}
 	}
 
-	public Cell get(Point point) {
-		return worldMap[point.x][point.y];
-	}
 
 	/**
 	 * Тасует вектор в случайном порядке
@@ -325,6 +333,13 @@ public class World extends JPanel {
 			return OBJECT.BOT;
 	}
 
+	public Cell get(Point point) {
+		return worldMap[point.x][point.y];
+	}
+	
+	void add(Cell cell) {
+		worldMap[cell.pos.x][cell.pos.y] = cell;
+	}
 	public void clean(Point point) {
 		worldMap[point.x][point.y] = null;
 	}
@@ -348,7 +363,7 @@ public class World extends JPanel {
 
 		JSONmake configWorld = new JSONmake();
 		configWorld.add("SUN_POWER", SUN_POWER);
-		configWorld.add("MAP_CELLS", new int[] {MAP_CELLS.width,MAP_CELLS.height});
+		configWorld.add("MAP_CELLS", new int[] {World.MAP_CELLS.width,World.MAP_CELLS.height});
 		configWorld.add("DIRTY_WATER", DIRTY_WATER);
 		configWorld.add("AGGRESSIVE_ENVIRONMENT", AGGRESSIVE_ENVIRONMENT);
 		configWorld.add("LEVEL_MINERAL", LEVEL_MINERAL);
@@ -375,5 +390,31 @@ public class World extends JPanel {
 		make.add("Cells", nodes);
 		System.out.println("Клетки готовы");
 		return make;
+	}
+
+	public void update(JSONmake jsoNmake) {
+		JSONmake configWorld = jsoNmake.getJ("configWorld");
+		List<Long> map = configWorld.getAL("MAP_CELLS");
+		if(map.get(0) != MAP_CELLS.width || map.get(1) != MAP_CELLS.height) {
+			JOptionPane.showMessageDialog(this,
+					"<html><h2>Ошибка</h2><i>Загружаемый мир создан на карте другого размера!!!</i><br>Треуется карта " + map.get(0) + "х" + map.get(1),
+					"BioLife", JOptionPane.ERROR_MESSAGE);
+			throw new RuntimeException("Не верные размеры мира");
+		}
+		DIRTY_WATER = configWorld.getD("DIRTY_WATER");
+		AGGRESSIVE_ENVIRONMENT = configWorld.getD("AGGRESSIVE_ENVIRONMENT");
+		LEVEL_MINERAL = configWorld.getD("LEVEL_MINERAL");
+		CONCENTRATION_MINERAL = configWorld.getD("CONCENTRATION_MINERAL");
+		FPS_TIC = configWorld.getI("FPS_TIC");
+		TIK_TO_EXIT = configWorld.getI("TIK_TO_EXIT");
+		step = configWorld.getL("step");
+		
+		
+		List<JSONmake> cells = jsoNmake.getAJ("Cells");		
+		worldMap = new Cell[MAP_CELLS.width][MAP_CELLS.height];
+		for (JSONmake cell : cells) {
+			Cell realCell = new Cell(cell);
+			add(realCell);
+		}
 	}
 }

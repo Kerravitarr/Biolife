@@ -40,6 +40,10 @@ public class Point{
 		x = point.x;
 		y = point.y;
 	}
+	public Point(JSONmake j) {
+		x = j.getI("x");
+		y = j.getI("y");
+	}
 	public int getRx() {
 		return (int) Math.round(World.border.width+x*World.scale + World.scale/2);
 	}

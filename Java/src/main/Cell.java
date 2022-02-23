@@ -2,6 +2,7 @@ package main;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.List;
 
 import Utils.Utils;
 import main.EvolutionTree.Node;
@@ -55,7 +56,7 @@ public class Cell {
     /**Направление движения*/
     public Point.DIRECTION direction = Point.DIRECTION.UP;
     //Счётчик, показывает ходил бот в этот ход или нет
-    int stepCount = -1;
+    long stepCount = -1;
     
     //=================ПАРАМЕТРЫ БОТА============
     /**Цвет бота зависит от того, что он делает*/
@@ -77,7 +78,26 @@ public class Cell {
     	pos = new Point(Utils.random(0, World.MAP_CELLS.width-1),Utils.random(0, World.MAP_CELLS.height-1));
     }
 
-    public static final int block1 = COUNT_COMAND * 1 / 6;
+    public Cell(JSONmake cell) {
+    	pos = new Point(cell.getJ("pos"));
+    	processorTik = cell.getI("processorTik");
+    	alive = LV_STATUS.values()[cell.getI("alive")];
+    	health = cell.getL("health");
+    	mineral = cell.getL("mineral");
+    	direction = DIRECTION.toEnum(cell.getI("direction"));
+    	stepCount = cell.getL("stepCount");
+    	years = cell.getI("years");
+    	Generation = cell.getI("Generation");
+    	phenotype = new Color((Long.decode("0x"+cell.getS("phenotype"))).intValue(),true);
+    	photosynthesisEffect = cell.getD("photosynthesisEffect");
+    	
+    	List<Long> mindL = cell.getAL("mind");
+    	for (int i = 0; i < mind.length; i++) {
+			mind[i] = mindL.get(i).intValue();
+		}
+	}
+
+	public static final int block1 = COUNT_COMAND * 1 / 6;
     public static final int block2 = COUNT_COMAND * 2 / 6;
     public static final int block5 = (block1+block2)/2;
     public static final int block3 = COUNT_COMAND * 3 / 6;
@@ -88,7 +108,7 @@ public class Cell {
      * Один шаг из жизни бота
      * @param step
      */
-	public void step(int step) {
+	public void step(long step) {
 		stepCount = step;
 		if(alive == LV_STATUS.LV_ORGANIC_HOLD) {
 			alive = LV_STATUS.LV_ORGANIC_SINK;
@@ -99,10 +119,8 @@ public class Cell {
 				moveA(DIRECTION.DOWN_R);
 			if((years--) % World.TIK_TO_EXIT == 0)				//Помогает орагнике дольше оставаться "свежатенкой"
 				health = (this.getHealth() + 1);
-			if(this.getHealth() >= 0) {
-				//evolutionNode.remove();
-				World.world.clean(pos);
-			}
+			if(this.getHealth() >= 0)
+				remove();
 			return;
 		}
 		setAge(getAge() + 1);
@@ -150,8 +168,6 @@ public class Cell {
 					}
 					nextCommand(3);
 				}break loop;
-				//TODO Присосаться к соседу
-				//case block5+2:break;
 					
 					
 					//=============================================================================ФУНКЦИИ ДВИЖЕНИЯ=============================================================================
@@ -354,6 +370,9 @@ public class Cell {
 
 				//=============================================================================ФУНКЦИИ МНОГОКЛЕТОЧНЫХ=============================================================================
 				//case block6:
+
+				//TODO Присосаться к соседу
+				//case block5+2:break;
 				
 				default :
 					this.nextCommand(command);
@@ -440,16 +459,22 @@ public class Cell {
         newbot.photosynthesisEffect = this.photosynthesisEffect;
         newbot.stepCount = stepCount;
         newbot.setGeneration(Generation);
-       //newbot.evolutionNode = evolutionNode.clone();
+        //newbot.evolutionNode = evolutionNode.clone();
 
         if (Math.random() < World.AGGRESSIVE_ENVIRONMENT) {
             newbot.mutation();
         }
         World.world.add(newbot);
 	}
+    
+    private void remove() {
+		World.world.clean(pos);
+		//evolutionNode.remove();
+    }
 
 	private void mutation() {
 		setGeneration(getGeneration() + 1);
+       // evolutionNode = evolutionNode.newNode(stepCount);
 		/**Дельта, гуляет от -1 до 1*/
 		double del = (0.5 - Math.random())*2;
 		//TODO К сожалению первые два слишком сильно убегают вперёд
@@ -462,31 +487,26 @@ public class Cell {
                 break;
             case 2: //Мутирует эффективность фотосинтеза
                 this.photosynthesisEffect = Math.max(0, Math.min(this.photosynthesisEffect * (1+del*0.1), 4));
-                //evolutionNode = evolutionNode.newNode(stepCount, photosynthesisEffect);
                 break;
             case 3: //Мутирует геном
                 int ma = Utils.random(0, mind.length-1); //Индекс гена
                 int mc = Utils.random(0, COUNT_COMAND-1); //Его значение
-                //evolutionNode = evolutionNode.newNode(stepCount, ma,mc);
                 this.mind[ma] = mc;
                 break;
             case 4: //Мутирует красный цвет
         		int red = phenotype.getRed();
         		red = (int) Math.max(0, Math.min(red + del * 10, 255));
         		phenotype = new Color(red,phenotype.getGreen(), phenotype.getBlue(), phenotype.getAlpha());
-                //evolutionNode = evolutionNode.newNode(stepCount, phenotype);
                 break;
             case 5: //Мутирует зелёный цвет
         		int green = phenotype.getGreen();
         		green = (int) Math.max(0, Math.min(green + del * 10, 255));
         		phenotype = new Color(phenotype.getRed(),green, phenotype.getBlue(), phenotype.getAlpha());
-                //evolutionNode = evolutionNode.newNode(stepCount, phenotype);
                 break;
             case 6: //Мутирует синий цвет
         		int blue = phenotype.getGreen();
         		blue = (int) Math.max(0, Math.min(blue + del * 10, 255));
         		phenotype = new Color(phenotype.getRed(),phenotype.getGreen(), blue, phenotype.getAlpha());
-                //evolutionNode = evolutionNode.newNode(stepCount, phenotype);
                 break;
         }
 	}
@@ -626,8 +646,7 @@ public class Cell {
 				Cell cell = World.world.get(point);
 				setHealth(health - cell.getHealth());    //здоровье увеличилось на сколько осталось
 	            goRed((int) -cell.getHealth());           // бот покраснел
-	            //cell.evolutionNode.remove();
-	            World.world.clean(point);
+	            cell.remove();
 			} return true;
 			case ENEMY:
 			case FRIEND:{
@@ -642,8 +661,7 @@ public class Cell {
 		        if (min0 >= min1) {
 		        	setMineral( min0 - min1); // количество минералов у бота уменьшается на количество минералов у жертвы
 		            // типа, стесал свои зубы о панцирь жертвы
-		            World.world.clean(point);          // удаляем жертву из списков
-		            //cell.evolutionNode.remove();
+		            cell.remove(); // удаляем жертву из списков
 		            long cl = hl / 2;           // количество энергии у бота прибавляется на (половину от энергии жертвы)
 		            this.setHealth(health + cl);
 		            goRed((int) cl);                    // бот краснеет
@@ -656,8 +674,7 @@ public class Cell {
 		            //------ если здоровья в 2 раза больше, чем минералов у жертвы  ------
 		            //------ то здоровьем проламываем минералы ---------------------------
 		            if (health >= 2 * min1) {
-		            	World.world.clean(point);          // удаляем жертву из списков
-			            //cell.evolutionNode.remove();
+			            cell.remove(); // удаляем жертву из списков
 		            	long cl = (hl / 2) - 2 * min1; // вычисляем, сколько энергии смог получить бот
 		            	this.setHealth(health + cl);
 		                goRed((int) cl);                   // бот краснеет
@@ -969,7 +986,7 @@ public class Cell {
 	
 	public void repaint() {
 		switch (Legend.Graph.getMode()) {
-			case MINERALS -> color_DO = new Color(0,0,(int) Math.min(255, (255.0*mineral/maxMP)));
+			case MINERALS -> color_DO = new Color(0,0,(int) Math.max(0,Math.min(255, (255.0*mineral/maxMP))));
 			case GENER -> color_DO = Color.getHSBColor((float)Math.max(0, (0.5*Generation/Legend.Graph.getMaxGen())), 1, 1);
 			case YEAR -> color_DO = Color.getHSBColor((float)Math.max(0, (1.0*years/Legend.Graph.getMaxAge())), 1, 1);
 			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,health)/maxHP)),0,0);
@@ -1008,7 +1025,7 @@ public class Cell {
 	    //=================ПАРАМЕТРЫ БОТА============
 		make.add("years",years);
 		make.add("Generation",Generation);
-		//make.add("GenerationTree",evolutionNode.branch);
+		//make.add("GenerationTree",evolutionNode.getBranch());
 		
 
 	    //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
