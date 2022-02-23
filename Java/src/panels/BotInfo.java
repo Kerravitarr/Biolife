@@ -23,10 +23,10 @@ public class BotInfo extends JPanel {
 	enum CELL_COMMAND{
 		PHOT(0),MIN_TO_EN(Cell.block1),CLONE(Cell.block1+1),
 		DNA_PROG(Cell.block5,2),DNA_CRASH(Cell.block5+1,2),
-		NEXT_DIR_A(Cell.block2,1),NEXT_DIR_R(Cell.block2+1,1),STEP_A(Cell.block2+2,1,Cell.OBJECT.size()-1),STEP_R(Cell.block2+3,1,Cell.OBJECT.size()-1),
-		SEE_A(Cell.block3,1),SEE_R(Cell.block3+1,1),H_LV(Cell.block3+2,1,2),HP_LV(Cell.block3+3,1,2),MP_LV(Cell.block3+4,1,2),WHO_NEAR(Cell.block3+5,0,2),MAKE_PH(Cell.block3+6,0,2),MAKE_MIN(Cell.block3+7,0,2),HP_NEAR(Cell.block3+8,1,2+Cell.OBJECT.size()),MP_NEAR(Cell.block3+9,1,2+Cell.OBJECT.size()),
+		N_DIR_A(Cell.block2,1),N_DIR_R(Cell.block2+1,1),STEP_A(Cell.block2+2,1,Cell.OBJECT.size()-1),STEP_R(Cell.block2+3,1,Cell.OBJECT.size()-1),
+		SEE_A(Cell.block3,1),SEE_R(Cell.block3+1,1),H_LV(Cell.block3+2,1,2),HP_LV(Cell.block3+3,1,2),MP_LV(Cell.block3+4,1,2),WHO_NEAR(Cell.block3+5,0,2),CAN_PH(Cell.block3+6,0,2),CAN_MIN(Cell.block3+7,0,2),HP_NEAR(Cell.block3+8,1,2+Cell.OBJECT.size()),MP_NEAR(Cell.block3+9,1,2+Cell.OBJECT.size()),
 		EAT_A(Cell.block4,1,1+Cell.OBJECT.size()-3),EAT_R(Cell.block4+1,1,1+Cell.OBJECT.size()-3),BITE_A(Cell.block4+2,1,1+Cell.OBJECT.size()-2),BITE_R(Cell.block4+3,1,1+Cell.OBJECT.size()-2),
-			CARE_A(Cell.block4+4,1,1+Cell.OBJECT.size()-2),CARE_R(Cell.block4+5,1,1+Cell.OBJECT.size()-2),GIVE_A(Cell.block4+6,1,1+Cell.OBJECT.size()-2),GIVE_R(Cell.block4+7,1,1+Cell.OBJECT.size()-2),
+		CARE_A(Cell.block4+4,1,1+Cell.OBJECT.size()-2),CARE_R(Cell.block4+5,1,1+Cell.OBJECT.size()-2),GIVE_A(Cell.block4+6,1,1+Cell.OBJECT.size()-2),GIVE_R(Cell.block4+7,1,1+Cell.OBJECT.size()-2),
 		;
 		private static final CELL_COMMAND[] myEnumValues = CELL_COMMAND.values();
 		
@@ -61,29 +61,33 @@ public class BotInfo extends JPanel {
 	class WorkTask implements Runnable{
 		public void run() {
 			while(true) {
-				if(isVisible() && cell != null) {
-					generation.setText(cell.getGeneration()+"");
-					age.setText(cell.getAge()+"");
-					state.setText(cell.alive.name());
-					hp.setText(cell.getHealth()+"");
-					mp.setText(cell.getMineral()+"");
-					direction.setText(cell.direction.name());
-					photos.setText(cell.photosynthesisEffect+"");
-					phenotype.setBackground(cell.phenotype);
+				if(isVisible() && getCell() != null) {
+					generation.setText(getCell().getGeneration()+"");
+					age.setText(getCell().getAge()+"");
+					state.setText(getCell().alive.name());
+					hp.setText(getCell().getHealth()+"");
+					mp.setText(getCell().getMineral()+"");
+					direction.setText(getCell().direction.name());
+					photos.setText(getCell().photosynthesisEffect+"");
+					phenotype.setBackground(getCell().phenotype);
+					phenotype.setText(Integer.toHexString(getCell().phenotype.getRGB()));
 					
 					DefaultListModel<String> model = (DefaultListModel<String>) list.getModel();
 					model.removeAllElements();
-					int processorTik = cell.getProcessorTik();
+					int processorTik = getCell().getProcessorTik();
 					for(int i = 0 ; i < Cell.MINDE_SIZE ; i ++) {
-						int cmd = cell.getCmdA(processorTik+i);
-						String row = (processorTik+i) + " = " +  cmd;//Так как 0 - параметр следующей за тиком команды
+						int cmd = getCell().getCmdA(processorTik+i);
+						int newNumber = (processorTik+i);
+						 while (newNumber >= Cell.MINDE_SIZE)
+							 newNumber = newNumber - Cell.MINDE_SIZE;
+						String row = newNumber + " = " +  cmd;//Так как 0 - параметр следующей за тиком команды
 						for(CELL_COMMAND cmdS : CELL_COMMAND.myEnumValues) {
 							if(cmdS.cmdNum == cmd) {
 								row += " - " + cmdS.name() + " (" + cmdS.cmdParamsCount;
 								if(cmdS.cmdParamsCount > 0) {
 									row += " -" ;
 									for (int j = 0; j < cmdS.cmdParamsCount; j++) {
-										row += " " + cell.getCmdA(processorTik + i +1+ j);
+										row += " " + getCell().getCmdA(processorTik + i +1+ j);
 									}
 								}
 								row += ")";
@@ -92,7 +96,7 @@ public class BotInfo extends JPanel {
 								}else if(cmdS.cmdCountAns > 0) {
 									row += " PC +=";
 									for (int j = 0; j < cmdS.cmdCountAns; j++) {
-										row += " " + cell.getCmdA(processorTik + i +1+cmdS.cmdParamsCount+ j);
+										row += " " + getCell().getCmdA(processorTik + i +1+cmdS.cmdParamsCount+ j);
 									}
 								}
 								break;
@@ -108,6 +112,17 @@ public class BotInfo extends JPanel {
 					}
 				} else {
 					cell = null;
+					generation.setText("");
+					age.setText("");
+					state.setText("");
+					hp.setText("");
+					mp.setText("");
+					direction.setText("");
+					photos.setText("");
+					phenotype.setText("");
+					
+					DefaultListModel<String> model = (DefaultListModel<String>) list.getModel();
+					model.removeAllElements();
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {
@@ -223,6 +238,7 @@ public class BotInfo extends JPanel {
 		panel_11.add(lblNewLabel_1);
 		
 		phenotype = new JTextField();
+		phenotype.setHorizontalAlignment(SwingConstants.CENTER);
 		phenotype.setEditable(false);
 		phenotype.setEnabled(false);
 		panel_11.add(phenotype);
@@ -323,5 +339,13 @@ public class BotInfo extends JPanel {
 	
 	public void setCell(Cell cell) {
 		this.cell=cell;
+	}
+
+
+	/**
+	 * @return the cell
+	 */
+	public Cell getCell() {
+		return cell;
 	}
 }
