@@ -1,6 +1,7 @@
 package Utils;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.concurrent.locks.LockSupport;
 
 public class Utils {
 
@@ -57,5 +58,27 @@ public class Utils {
 		int alpha = ( ((int)(255 * a))<<8*3);
 		int RGB = Color.HSBtoRGB((float)h, (float)s, (float)b)&(~(0xFF<<(8*3)));
 		return new Color(RGB|alpha, true);
+	}
+	
+	/**
+	 * Пауза
+	 * @param sec
+	 */
+	public static void pause(long sec) {
+		pause_ms(sec * 1_000);
+	}
+	/**
+	 * Пауза
+	 * @param msec
+	 */
+	public static void pause_ms(long msec) {
+		pause_ns(msec * 1_000_000);
+	}
+	/**
+	 * Пауза
+	 * @param msec
+	 */
+	public static void pause_ns(long nsec) {
+		LockSupport.parkNanos(nsec);
 	}
 }
