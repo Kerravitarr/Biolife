@@ -7,6 +7,7 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.DecimalFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -24,13 +25,15 @@ import panels.BotInfo;
 import panels.Legend;
 import panels.Settings;
 import javax.swing.JButton;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
 
 @SuppressWarnings("serial")
 public class BioLife extends JFrame {
 
 	private JPanel contentPane;
-	private World world;
 	BotInfo botInfo = null;
+	private World world;
 
 	/**
 	 * Launch the application.
@@ -43,11 +46,11 @@ public class BioLife extends JFrame {
 					frame.setVisible(true);
 					
 					new Timer().schedule(new TimerTask() { // Определяем задачу
-					    @Override
+					    DecimalFormat df = new DecimalFormat( "###,###" );
 					    public void run() {
 					    	frame.setTitle("ФПС" + frame.world.fps.FPS()+" кадров/секунду. "
-					    			+ "Шёл " + frame.world.step + " цикл эволюции (" + frame.world.sps.FPS() + " шаг/сек) "
-					    					+ "Живых: " + frame.world.countLife + ", плоти: " + frame.world.countOrganic);
+					    			+ "Шёл " + df.format(frame.world.step) + " цикл эволюции (" + frame.world.sps.FPS() + " шаг/сек) "
+					    					+ "Живых: " + df.format(frame.world.countLife) + ", плоти: " + df.format(frame.world.countOrganic));
 					    } 
 					}, 0L, 5000);
 				} catch (Exception e) {
@@ -146,9 +149,13 @@ public class BioLife extends JFrame {
 
 		botInfo = new BotInfo();
 		panel_2.add(botInfo, BorderLayout.CENTER);
-		botInfo.setVisible(false);
+		
+		JScrollPane scrollPane = new JScrollPane();
+		contentPane.add(scrollPane, BorderLayout.CENTER);
+		
 		world = new World(botInfo);
-		contentPane.add(world, BorderLayout.CENTER);
+		scrollPane.setViewportView(world);
+		botInfo.setVisible(false);
 		
 		JMenuItem restart = new JMenuItem("Рестарт");
 		restart.addActionListener(e->{
