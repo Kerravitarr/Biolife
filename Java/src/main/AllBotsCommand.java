@@ -88,4 +88,9 @@ public class AllBotsCommand {
 	    dif += Math.abs(bot0.phenotype.getBlue() - bot1.phenotype.getBlue());
 	    return dif < 10;
 	}
+	public static MegaCell merge(MegaCell megaCell, MegaCell megaCell2) {
+		if(megaCell == megaCell2)
+			return megaCell;
+		return new MegaCell(megaCell,megaCell2);
+	}
 }

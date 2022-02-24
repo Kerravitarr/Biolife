@@ -2,12 +2,13 @@ package main;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.ArrayList;
 import java.util.List;
 
+import Utils.JSONmake;
 import Utils.Utils;
 import main.EvolutionTree.Node;
 import main.Point.DIRECTION;
-import panels.JSONmake;
 import panels.Legend;
 public class Cell {
 	/**Размер мозга*/
@@ -72,12 +73,26 @@ public class Cell {
     //Показывает на сколько организм тяготеет к фотосинтезу
     public double photosynthesisEffect = defFotosin;
     //TODO Сила укуса - мы больше тратим энергии на укус, но наш укус становится сильнее
-    //Node evolutionNode = null;
+    Node evolutionNode = null;
     
+    //===============Параметры братства, многоклеточность=======
+    private List<Cell> friends = new ArrayList<>(DIRECTION.size()); // 8 - DIRECTION.size()
+    private MegaCell megaCell = null;
+    
+    /**
+     * Создание клетки без рода и племени
+     */
     Cell(){
     	pos = new Point(Utils.random(0, World.MAP_CELLS.width-1),Utils.random(0, World.MAP_CELLS.height-1));
+    	for (int i = 0; i < mind.length; i++) {
+    		mind[i] = block1; // У клетки по базе только одна функция - фотосинтез
+		}
     }
 
+    /**
+     * Загрузка клетки
+     * @param cell - JSON объект, который содержит всю информацюи о клетке
+     */
     public Cell(JSONmake cell) {
     	pos = new Point(cell.getJ("pos"));
     	processorTik = cell.getI("processorTik");
@@ -95,6 +110,36 @@ public class Cell {
     	for (int i = 0; i < mind.length; i++) {
 			mind[i] = mindL.get(i).intValue();
 		}
+	}
+
+    /**
+     * Копирование клетки
+     * @param cell - её родитель
+     */
+	public Cell(Cell cell, Point newPos) {
+		pos = newPos;
+	    setHealth(cell.getHealth() / 2);   // забирается половина здоровья у предка
+	    cell.setHealth(cell.getHealth() / 2);
+	    setMineral(cell.getMineral() / 2); // забирается половина минералов у предка
+	    cell.setMineral(cell.getMineral() / 2);
+	
+	    phenotype = cell.phenotype;   // цвет такой же, как у предка
+	    direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));   // направление, куда повернут новорожденный, генерируется случайно
+	
+	    for (int i = 0; i < this.mind.length; i++)  // копируем геном в нового бота
+	    	mind[i] = cell.mind[i];
+	
+	    hpForDiv = cell.hpForDiv;
+	    maxMP = cell.maxMP;
+	    photosynthesisEffect = cell.photosynthesisEffect;
+	    stepCount = cell.stepCount;
+	    setGeneration(cell.Generation);
+	    evolutionNode = cell.evolutionNode.clone();
+	
+	    //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
+	    if (Math.random() < World.AGGRESSIVE_ENVIRONMENT) {
+	        mutation();
+	    }
 	}
 
 	public static final int block1 = COUNT_COMAND * 1 / 6;
@@ -127,25 +172,24 @@ public class Cell {
 		loop : for (int cyc = 0; (cyc < 15); cyc++) {
 			int command = this.mind[this.getProcessorTik()]; // текущая команда
 			switch (command) {
-				case 0 : // Фотосинтез
+				// БАЗОВЫЕ ФУНКЦИИ
+				case block1 : // Фотосинтез
 					this.photosynthesis();
 					this.nextCommand(1);
 					break loop;
-
-					// БАЗОВЫЕ ФУНКЦИИ
 					//.................. преобразовать минералы в энерию ...................
-				case block1:
+				case block1+1:
 					this.mineral2Energy();
 					this.nextCommand(1);
 					break loop;
 
 				//Клонирование
-				case block1+1:
+				case block1+2:
 					botDouble();
 					nextCommand(1);
 				break loop;
 				//TODO Клонирование но удержание потомка
-				//case block1+2:
+				//case block1+3:
 				//	break;
 					
 					//=============================================================================ФУНКЦИИ ПРОГРАММИРОЫВАНИЯ=============================================================================
@@ -369,10 +413,18 @@ public class Cell {
 				
 
 				//=============================================================================ФУНКЦИИ МНОГОКЛЕТОЧНЫХ=============================================================================
-				//case block6:
-
+				//Присосаться относительно
+				case block6:
+					clingR(DIRECTION.toEnum(param(0)));
+					nextCommand(2);
+				break loop;
+				//Присосаться абсолютно
+				case block6 +1:
+					clingA(DIRECTION.toEnum(param(0)));
+					nextCommand(2);
+				break loop;
 				//TODO Присосаться к соседу
-				//case block5+2:break;
+
 				
 				default :
 					this.nextCommand(command);
@@ -388,10 +440,27 @@ public class Cell {
         //.......  пришло время подохнуть или породить потомка              ........
         
         if (this.alive == LV_STATUS.LV_ALIVE) {
-            //let cells = this.isMulti();
-            //Обработка многоклеточности..
-            if (this.getHealth() > this.hpForDiv) {
-                //Диление
+        	if(megaCell != null) { // Колония безвозмездно делится всем, что имеет
+        		long allHp = getHealth();
+        		long allMin = getMineral();
+        		int friend = 0;
+        		for (Cell cell : friends) {
+					if(cell == null) continue;
+					allHp+=cell.getHealth();
+					allMin+=cell.getMineral();
+					friend++;
+				}
+        		allHp /= friend;
+        		allMin /= friend;
+        		setHealth(allHp);
+        		setMineral(allMin);
+        		for (Cell cell : friends) {
+					if(cell == null) continue;
+					cell.setHealth(allHp);
+					cell.setMineral(allMin);
+				}
+        	}
+            if (this.getHealth() > this.hpForDiv) { //Неконтролируемое диление
                 this.botDouble();
             }
             setHealth(this.getHealth() - 3); //Пожили - устали
@@ -408,7 +477,6 @@ public class Cell {
             }
         }
 	}
-	
 
 	/**
 	 * Получает паарметр функции
@@ -416,13 +484,74 @@ public class Cell {
 	 * @return
 	 */
 	public int param(int i) {
-		int num = this.getProcessorTik() + i + 1; //Потому что нулевой параметр идёт сразу за командой
-		while (num >= mind.length) {
-			num = num - mind.length;
-        }
+		int num = getCmdA(this.getProcessorTik() + i + 1); //Потому что нулевой параметр идёт сразу за командой
+		return mind[num];
+	}
+	/**
+	 * Возвращает команду по переданому адресу
+	 * @param num
+	 * @return
+	 */
+	public int getCmdA(int num) {
+        while (num >= mind.length)
+        	num = num - mind.length;
 		return mind[num];
 	}
 
+	//Передвигает счётчик команд на переданное число
+	private void nextCommand(int absoluteAdr) {
+		int paramadr = absoluteAdr + this.getProcessorTik();
+        while (paramadr >= mind.length) {
+            paramadr = paramadr - mind.length;
+        }
+        this.processorTik = paramadr;
+	}
+	//Передвигает счётчик команд на переданное число
+	private void nextCommandFromAdr(int absoluteAdr) {
+        nextCommand(getCmdA(absoluteAdr + this.getProcessorTik()));
+	}
+    
+	/**
+	 * Убирает бота с карты и проводит все необходимые процедуры при этом
+	 */
+    private void remove() {
+    	if(alive == LV_STATUS.LV_ALIVE)
+        	bot2Organic(); //Если мы живые, то сначала умираем
+		World.world.clean(pos);
+		evolutionNode.remove();
+    }
+	
+	/**
+	 * Фотосинтез.
+	 * Если бот близко к солнышку, то можно получить жизни.
+	 * При этом, есть специальный флаг - photosynthesisEffect число, меняющееся от 0 до 4, показывает сколько дополнительно очков сможет получить ораганизм за фотосинтез
+	 */
+	private void photosynthesis() {
+        //Показывает эффективность нашего фотосинтеза
+        double t = this.getMineral() / this.maxMP * (1+this.photosynthesisEffect);
+        // формула вычисления энергии
+        double hlt = World.SUN_POWER - (World.DIRTY_WATER * this.pos.y / World.MAP_CELLS.height) + t;
+        if (hlt > 0) {
+        	setHealth(Math.round(this.getHealth() + hlt));   // прибавляем полученную энергия к энергии бота
+            this.goGreen((int) Math.round(hlt));                      // бот от этого зеленеет
+        }
+	}
+    /**
+     * Преобразует мениралы в энергию
+     * Тоже зависит от специального числа - photosynthesisEffect, но теперь чем оно ближе к 0, тем больше придёт минералов
+     */
+    public void mineral2Energy() {
+    	double maxMin = 20 * (1 + (4-this.photosynthesisEffect));
+        if (getMineral() > maxMin) {   // максимальное количество минералов, которые можно преобразовать в энергию = 100
+            setMineral(Math.round(getMineral() - maxMin));
+            setHealth(Math.round(getHealth() + (4-this.photosynthesisEffect) * maxMin)); // Максимум 1 минрал преобразуется в 4 хп
+            goBlue((int) maxMin);  // бот от этого синеет
+        } else {  // если минералов меньше, то все минералы переходят в энергию
+            goBlue((int) getMineral());
+            setHealth(Math.round(getHealth() + (4-this.photosynthesisEffect) * getMineral()));
+            setMineral(0);
+        }
+    }
 	/**
 	 * Отпочковать потомка
 	 */
@@ -439,46 +568,52 @@ public class Cell {
             return;
         }
 
-        Cell newbot = new Cell();
-        newbot.pos = n;
-
-        newbot.setHealth(this.getHealth() / 2);   // забирается половина здоровья у предка
-        setHealth(this.getHealth() / 2);
-        newbot.setMineral(this.getMineral() / 2); // забирается половина минералов у предка
-        this.setMineral(this.getMineral() / 2);
-
-        newbot.phenotype = this.phenotype;   // цвет такой же, как у предка
-        newbot.direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));   // направление, куда повернут новорожденный, генерируется случайно
-
-        for (int i = 0; i < this.mind.length; i++) {  // копируем геном в нового бота
-            newbot.mind[i] = this.mind[i];
-        }
-
-        newbot.hpForDiv = this.hpForDiv;
-        newbot.maxMP = this.maxMP;
-        newbot.photosynthesisEffect = this.photosynthesisEffect;
-        newbot.stepCount = stepCount;
-        newbot.setGeneration(Generation);
-        //newbot.evolutionNode = evolutionNode.clone();
-
-        if (Math.random() < World.AGGRESSIVE_ENVIRONMENT) {
-            newbot.mutation();
-        }
+        Cell newbot = new Cell(this,n);
         World.world.add(newbot);
 	}
-    
-    private void remove() {
-		World.world.clean(pos);
-		//evolutionNode.remove();
-    }
 
+	/**
+	 * Перемещает бота в относительном направлении
+	 * @param direction
+	 * @return
+	 */
+	private boolean moveR(DIRECTION direction) {
+	    return moveA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
+	}
+	/**
+	 * Перемещает бота в абсолютном направлении
+	 * @param direction
+	 * @return
+	 */
+	private boolean moveA(DIRECTION direction) {
+		if(megaCell == null) {
+			if(seeA(direction) == OBJECT.CLEAN){
+				Point point = AllBotsCommand.fromVektorA(this,DIRECTION.toNum(direction));
+				World.world.clean(pos);
+		        pos = point;
+		        World.world.add(this);
+		        if(health > 0) //Органика падает вниз, этой-же функцией, поэтому мы проверяем живы-ли мы
+		        	setHealth(health - 1); // бот теряет на этом 1 энергию
+		        return true;
+		    } 
+		    return false;
+		} else {
+			//Многоклеточный двигается единым строем
+			megaCell.moveA(direction);
+			return true;
+		}
+	}
+
+	/**
+	 * Создаёт одну из мутаций
+	 */
 	private void mutation() {
 		setGeneration(getGeneration() + 1);
-       // evolutionNode = evolutionNode.newNode(stepCount);
+		evolutionNode = evolutionNode.newNode(stepCount);
 		/**Дельта, гуляет от -1 до 1*/
 		double del = (0.5 - Math.random())*2;
 		//TODO К сожалению первые два слишком сильно убегают вперёд
-        switch (Utils.random(2, 6)) { 
+        switch (Utils.random(2, 6)) { // К сожалению 0 и 1 вырезаны. Существа перерастают и эволюция заканчивается
             case 0: //Мутирует количество энергии для деления
                 this.hpForDiv *= del;
                 break;
@@ -511,6 +646,9 @@ public class Cell {
         }
 	}
 
+	/**
+	 * Превращает бота в органику
+	 */
 	private void bot2Organic() {
         this.alive = LV_STATUS.LV_ORGANIC_HOLD;       // Мы теперь орагника
         color_DO = new Color(139,69,19,100);
@@ -519,82 +657,15 @@ public class Cell {
         else
         	setHealth(getHealth()); //Для разукрашивания
         setAge(0); //У нас больше нет возраста, зато мы его можем использовать в дело :)
-	}
-
-	// ...  фотосинтез, этой командой забит геном первого бота     ...............
-    // ...  бот получает энергию солнца в зависимости от глубины   ...............
-    // ...  и количества минералов, накопленных ботом              ...............
-	private void photosynthesis() {
-        //Показывает эффективность нашего фотосинтеза
-        double t = this.getMineral() / this.maxMP * (1+this.photosynthesisEffect);
-        // формула вычисления энергии ============================= SEZON!!!!!!!!!!
-        double hlt = World.SUN_POWER - (World.DIRTY_WATER * this.pos.y / World.MAP_CELLS.height) + t;
-        if (hlt > 0) {
-        	setHealth(Math.round(this.getHealth() + hlt));   // прибавляем полученную энергия к энергии бота
-            this.goGreen((int) Math.round(hlt));                      // бот от этого зеленеет
+        if(megaCell != null) {
+        	megaCell.remove(this);
+        	for (Cell cell : friends) {
+				if(cell != null)
+					cell.friends.remove(this); //Больше мы не часть наших друзей
+			}
         }
 	}
-    // ...  преобразование минералов в энергию  ...............
-    public void mineral2Energy() {
-    	double maxMin = 10 * (1 + (4-this.photosynthesisEffect));
-        if (getMineral() > maxMin) {   // максимальное количество минералов, которые можно преобразовать в энергию = 100
-            setMineral(Math.round(getMineral() - maxMin));
-            setHealth(Math.round(getHealth() + 2 * (4-this.photosynthesisEffect) * maxMin));
-            goBlue((int) maxMin);  // бот от этого синеет
-        } else {  // если минералов меньше 100, то все минералы переходят в энергию
-            goBlue((int) getMineral());
-            setHealth(Math.round(getHealth() + 2 * (4-this.photosynthesisEffect) * getMineral()));
-            setMineral(0);
-        }
-    }
 
-
-	//Передвигает счётчик команд на переданное число
-	private void nextCommand(int absoluteAdr) {
-		int paramadr = absoluteAdr + this.getProcessorTik();
-        while (paramadr >= mind.length) {
-            paramadr = paramadr - mind.length;
-        }
-        this.processorTik = paramadr;
-	}
-	//Передвигает счётчик команд на переданное число
-	private void nextCommandFromAdr(int absoluteAdr) {
-		//Вычисляем где лежит адрес
-		int paramadr = absoluteAdr + this.getProcessorTik();
-        while (paramadr >= mind.length) {
-            paramadr = paramadr - mind.length;
-        }
-        //Получили этот адерс
-        int bias = mind[paramadr];
-        //А теперь смещаемся куда надо
-        nextCommand(bias);
-	}
-
-	/**
-	 * Перемещает бота в абсолютном направлении
-	 * @param direction
-	 * @return
-	 */
-	private boolean moveA(DIRECTION direction) {
-		if(seeA(direction) == OBJECT.CLEAN){
-			Point point = AllBotsCommand.fromVektorA(this,DIRECTION.toNum(direction));
-			World.world.clean(pos);
-	        pos = point;
-	        World.world.add(this);
-	        if(health > 0)
-	        	setHealth(health - 1); // бот теряет на этом 1 энергию
-	        return true;
-	    } 
-	    return false;
-	}
-	/**
-	 * Перемещает бота в относительном направлении
-	 * @param direction
-	 * @return
-	 */
-	private boolean moveR(DIRECTION direction) {
-	    return moveA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
-	}
 
 
 	/**
@@ -654,7 +725,7 @@ public class Cell {
 			    Point point = AllBotsCommand.fromVektorA(this,DIRECTION.toNum(direction));
 				Cell cell = World.world.get(point);
 				
-		        long min0 = mineral;  // определим количество минералов у бота
+		        long min0 = mineral;  // определим количество минералов у нас
 		        long min1 = cell.mineral;  // определим количество минералов у потенциального обеда
 		        long hl = cell.health;  // определим энергию у потенциального обеда
 		        // если у бота минералов больше
@@ -670,12 +741,12 @@ public class Cell {
 		        	//если у жертвы минералов больше ----------------------
 		            setMineral(0);  // то бот израсходовал все свои минералы на преодоление защиты
 		            min1 = min1 - min0;       // у жертвы количество минералов тоже уменьшилось
-		            cell.setMineral(min1 - min0);       // перезаписали минералы жертве 
+		            cell.setMineral(min1);       // перезаписали минералы жертве 
 		            //------ если здоровья в 2 раза больше, чем минералов у жертвы  ------
 		            //------ то здоровьем проламываем минералы ---------------------------
 		            if (health >= 2 * min1) {
 			            cell.remove(); // удаляем жертву из списков
-		            	long cl = (hl / 2) - 2 * min1; // вычисляем, сколько энергии смог получить бот
+		            	long cl = Math.max(0,(hl / 2) - 2 * min1); // вычисляем, сколько энергии смог получить бот
 		            	this.setHealth(health + cl);
 		                goRed((int) cl);                   // бот краснеет
 		                return true;                             // возвращаем 5
@@ -716,7 +787,7 @@ public class Cell {
 				Cell cell = World.world.get(point);
 				setHealth(health - cell.getHealth()/4);    //здоровье увеличилось
 	            goRed((int) -cell.getHealth()/4);           // бот покраснел
-	            cell.setHealth(cell.getHealth()*3/4);
+	            cell.setHealth(cell.getHealth()*3/4); //Одну четверть отдали
 			} return true;
 			case ENEMY:
 			case FRIEND:{
@@ -724,13 +795,13 @@ public class Cell {
 			    Point point = AllBotsCommand.fromVektorA(this,DIRECTION.toNum(direction));
 				Cell cell = World.world.get(point);
 				
-		        long min0 = mineral;  // определим количество минералов у бота
+		        long min0 = mineral;  // определим количество минералов у нас
 		        long min1 = cell.mineral / 2;  // определим количество минералов у цели,
 		        							//но так как мы только кусаем - то и прорываться нам не через весь панцирь
 		        long hl = cell.health;  // определим энергию у потенциального кусиха
-		        // если у бота минералов больше
-		        if (min0 >= min1 && (health < hl*2)) { //Если у нас жизней сильно меньше, чем у жертвы
-		        	setMineral( min0 - min1); // количество минералов у бота уменьшается на количество минералов у жертвы
+		        //Если у цели минералов не слишком много, а у нас жизней сильно меньше - можем его кусить
+		        if (min0 >= (min1/2) && (health/2 < hl)) {
+		        	setMineral(min0 - min1/2); // количество минералов у бота уменьшается на количество минералов у жертвы
 		            // типа, стесал свои зубы о панцирь жертвы
 		            long cl = hl / 4;           // количество энергии у бота прибавляется лишь чуть чуть, мы же кусили
 		            this.setHealth(health + cl);
@@ -826,6 +897,35 @@ public class Cell {
 		        return true;
 			}
 			default: return false;
+		}
+	}
+	
+
+	private void clingR(DIRECTION direction) {
+		clingA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
+	}
+	private void clingA(DIRECTION direction) {
+		OBJECT see = seeA(direction);
+		if(see != OBJECT.ENEMY && see != OBJECT.FRIEND) // Если там не клетка, то выходим
+			return;
+	    Point point = AllBotsCommand.fromVektorA(this,DIRECTION.toNum(direction));
+		Cell cell = World.world.get(point);
+		if(friends.get(DIRECTION.toNum(this.direction)) != null) // Если у нас это направление занято, то мы стараемся прикрепиться к своей-же клетке
+			return;
+		friends.add(DIRECTION.toNum(this.direction),cell);
+		// Для нового друга у нас направление зеркальное
+		cell.friends.add(DIRECTION.toNum(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.size()/2)),cell); 
+		//А теперь отмечаемся в соединении мегаклетки
+		if(cell.megaCell != null && megaCell != null)
+			cell.megaCell = megaCell = AllBotsCommand.merge(cell.megaCell,megaCell);
+		else if(cell.megaCell != null)
+			cell.megaCell.add(this);
+		else if(megaCell != null)
+			megaCell.add(cell);
+		else {
+			cell.megaCell = megaCell = new MegaCell();
+			megaCell.add(cell);
+			megaCell.add(this);
 		}
 	}
 
@@ -1004,12 +1104,6 @@ public class Cell {
 	}
 
 
-	public int getCmdA(int num) {
-        while (num >= mind.length)
-        	num = num - mind.length;
-		return mind[num];
-	}
-
 
 	public JSONmake toJSON() {
 		JSONmake make = new JSONmake();
@@ -1025,7 +1119,7 @@ public class Cell {
 	    //=================ПАРАМЕТРЫ БОТА============
 		make.add("years",years);
 		make.add("Generation",Generation);
-		//make.add("GenerationTree",evolutionNode.getBranch());
+		make.add("GenerationTree",evolutionNode.getBranch());
 		
 
 	    //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
@@ -1034,5 +1128,12 @@ public class Cell {
 		
 		//Убранные уже есть в эволюционном дереве!
 		return make;
+	}
+
+	/**
+	 * @return Ветвь эволюции
+	 */
+	public String getBranch() {
+		return evolutionNode.getBranch();
 	}
 }

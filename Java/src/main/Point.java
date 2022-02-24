@@ -1,6 +1,6 @@
 package main;
 
-import panels.JSONmake;
+import Utils.JSONmake;
 
 public class Point{
 	/**Направление*/
