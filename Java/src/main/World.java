@@ -6,6 +6,7 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
@@ -13,11 +14,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 import Utils.FPScounter;
+import Utils.JSONmake;
 import Utils.Utils;
 import main.Cell.LV_STATUS;
 import main.Cell.OBJECT;
 import panels.BotInfo;
-import panels.JSONmake;
+import panels.Settings;
 
 public class World extends JPanel {
 
@@ -28,7 +30,7 @@ public class World extends JPanel {
 	/**Уровень загрязнения воды*/
 	public static double DIRTY_WATER = 17;
 	/**Степень мутагенности воды*/
-	public static double AGGRESSIVE_ENVIRONMENT = 0.25*0+1;
+	public static double AGGRESSIVE_ENVIRONMENT = 0.25;
 	/**Как глубоко лежат минералы*/
 	public static double LEVEL_MINERAL = 0.50;
 	/**Концентрация минералов*/
@@ -100,15 +102,20 @@ public class World extends JPanel {
 	Color [] colors;
 	/**Сюда отправляем бота, для его изучения*/
 	BotInfo info = null;
+	/**Настройки мира*/
+	Settings settings = null;
 	/**Эволюция ботов нашего мира*/
 	EvolutionTree tree = new EvolutionTree();
+	/**Все мегаклетки, чтобы они могли походить после всех*/
+	List<MegaCell> megaCells = new ArrayList<>();
 	/**
 	 * Create the panel.
 	 */
-	public World(BotInfo botInfo) {
+	public World(BotInfo botInfo,Settings settings) {
 		super();
 		world = this;
 		info = botInfo;
+		this.settings=settings;
 		
 		int countProc = Runtime.getRuntime().availableProcessors()*2/3;
 		
@@ -150,13 +157,10 @@ public class World extends JPanel {
 		betweenCells = new WorldTask(cellsMain);
 		
 		//Начальные клетки
-		/*for (int i = 0; i < MAP_CELLS.width * MAP_CELLS.height * 0.01 * 0 + 1; i++) {
-			add(new Cell());
-		}	*/
 		Cell adam = new Cell();
 		adam.pos = new Point(MAP_CELLS.width/2,0);
-		//adam.evolutionNode = tree.root;
-		tree.root.countAliveCell = 1;
+		EvolutionTree.root.countAliveCell = 1;
+		adam.evolutionNode = EvolutionTree.root;
 		add(adam);
 		
 		recalculate();
@@ -231,6 +235,9 @@ public class World extends JPanel {
 					i.join();
 				Thread thread = new AutostartThread(betweenCells.start(null));
 				thread.join();
+			}
+			for (MegaCell megaCell : megaCells) {
+				megaCell.step();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -373,7 +380,7 @@ public class World extends JPanel {
 		configWorld.add("step", step);
 		make.add("configWorld", configWorld);
 		
-		//make.add("EvoTree", tree.toJSON());
+		make.add("EvoTree", tree.toJSON());
 		System.out.println("EvoTree готово");
 		Vector<Cell> cells = new Vector<>();
 		for (Cell[] cell : worldMap) {
@@ -416,5 +423,6 @@ public class World extends JPanel {
 			Cell realCell = new Cell(cell);
 			add(realCell);
 		}
+		settings.updateScrols();
 	}
 }
