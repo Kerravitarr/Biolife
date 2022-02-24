@@ -17,16 +17,17 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
+import Utils.Utils;
 import main.Cell;
 
 public class BotInfo extends JPanel {
 	enum CELL_COMMAND{
-		PHOT(0),MIN_TO_EN(Cell.block1),CLONE(Cell.block1+1),
+		PHOT(Cell.block1),MIN_TO_EN(Cell.block1+1),CLONE(Cell.block1+2),
 		DNA_PROG(Cell.block5,2),DNA_CRASH(Cell.block5+1,2),
-		N_DIR_A(Cell.block2,1),N_DIR_R(Cell.block2+1,1),STEP_A(Cell.block2+2,1,Cell.OBJECT.size()-1),STEP_R(Cell.block2+3,1,Cell.OBJECT.size()-1),
-		SEE_A(Cell.block3,1),SEE_R(Cell.block3+1,1),H_LV(Cell.block3+2,1,2),HP_LV(Cell.block3+3,1,2),MP_LV(Cell.block3+4,1,2),WHO_NEAR(Cell.block3+5,0,2),CAN_PH(Cell.block3+6,0,2),CAN_MIN(Cell.block3+7,0,2),HP_NEAR(Cell.block3+8,1,2+Cell.OBJECT.size()),MP_NEAR(Cell.block3+9,1,2+Cell.OBJECT.size()),
-		EAT_A(Cell.block4,1,1+Cell.OBJECT.size()-3),EAT_R(Cell.block4+1,1,1+Cell.OBJECT.size()-3),BITE_A(Cell.block4+2,1,1+Cell.OBJECT.size()-2),BITE_R(Cell.block4+3,1,1+Cell.OBJECT.size()-2),
-		CARE_A(Cell.block4+4,1,1+Cell.OBJECT.size()-2),CARE_R(Cell.block4+5,1,1+Cell.OBJECT.size()-2),GIVE_A(Cell.block4+6,1,1+Cell.OBJECT.size()-2),GIVE_R(Cell.block4+7,1,1+Cell.OBJECT.size()-2),
+		N_DIR_A(Cell.block2,1),N_DIR_R(Cell.block2+1,1),STEP_A(Cell.block2+2,1,Cell.OBJECT.size()-2),STEP_R(Cell.block2+3,1,Cell.OBJECT.size()-2),
+		SEE_A(Cell.block3,1),SEE_R(Cell.block3+1,1),H_LV(Cell.block3+2,1,2),HP_LV(Cell.block3+3,1,2),MP_LV(Cell.block3+4,1,2),WHO_NEAR(Cell.block3+5,0,2),CAN_PH(Cell.block3+6,0,2),CAN_MIN(Cell.block3+7,0,2),HP_NEAR(Cell.block3+8,1,2+Cell.OBJECT.size()-3),MP_NEAR(Cell.block3+9,1,2+Cell.OBJECT.size()-3),
+		EAT_A(Cell.block4,1,1+Cell.OBJECT.size()-4),EAT_R(Cell.block4+1,1,1+Cell.OBJECT.size()-4),BITE_A(Cell.block4+2,1,1+Cell.OBJECT.size()-3),BITE_R(Cell.block4+3,1,1+Cell.OBJECT.size()-3),
+		CARE_A(Cell.block4+4,1,1+Cell.OBJECT.size()-32),CARE_R(Cell.block4+5,1,1+Cell.OBJECT.size()-3),GIVE_A(Cell.block4+6,1,1+Cell.OBJECT.size()-3),GIVE_R(Cell.block4+7,1,1+Cell.OBJECT.size()-3),
 		;
 		private static final CELL_COMMAND[] myEnumValues = CELL_COMMAND.values();
 		
@@ -56,6 +57,8 @@ public class BotInfo extends JPanel {
 	private JTextField phenotype;
 	private Cell cell = null;
 	private JList<String> list;
+	/**Филогинетическое дерево*/
+	private JTextField filogen;
 	static class Model extends DefaultListModel<String> {}
 	
 	class WorkTask implements Runnable{
@@ -71,6 +74,7 @@ public class BotInfo extends JPanel {
 					photos.setText(getCell().photosynthesisEffect+"");
 					phenotype.setBackground(getCell().phenotype);
 					phenotype.setText(Integer.toHexString(getCell().phenotype.getRGB()));
+					filogen.setText(getCell().getBranch());
 					
 					DefaultListModel<String> model = (DefaultListModel<String>) list.getModel();
 					model.removeAllElements();
@@ -104,12 +108,7 @@ public class BotInfo extends JPanel {
 						}
 						model.add(i,row);
 					}
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					Utils.pause_ms(100);
 				} else {
 					cell = null;
 					generation.setText("");
@@ -120,15 +119,10 @@ public class BotInfo extends JPanel {
 					direction.setText("");
 					photos.setText("");
 					phenotype.setText("");
+					filogen.setText("");
 					
-					DefaultListModel<String> model = (DefaultListModel<String>) list.getModel();
-					model.removeAllElements();
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+					((DefaultListModel<String>) list.getModel()).removeAllElements();
+					Utils.pause(1);
 				}
 			}
 		}
@@ -153,17 +147,17 @@ public class BotInfo extends JPanel {
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 174, GroupLayout.PREFERRED_SIZE)
-						.addComponent(panel_2, GroupLayout.PREFERRED_SIZE, 174, GroupLayout.PREFERRED_SIZE))
+						.addComponent(panel_2, GroupLayout.PREFERRED_SIZE, 174, GroupLayout.PREFERRED_SIZE)
+						.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 174, GroupLayout.PREFERRED_SIZE))
 					.addContainerGap(17, Short.MAX_VALUE))
 		);
 		gl_panel.setVerticalGroup(
 			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
-					.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 240, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 266, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_2, GroupLayout.DEFAULT_SIZE, 435, Short.MAX_VALUE)
+					.addComponent(panel_2, GroupLayout.DEFAULT_SIZE, 401, Short.MAX_VALUE)
 					.addContainerGap())
 		);
 		
@@ -194,12 +188,15 @@ public class BotInfo extends JPanel {
 		JPanel panel_10 = new JPanel();
 		
 		JPanel panel_11 = new JPanel();
+		
+		JPanel panel_1 = new JPanel();
 		GroupLayout gl_panel_4 = new GroupLayout(panel_4);
 		gl_panel_4.setHorizontalGroup(
 			gl_panel_4.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel_4.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panel_4.createParallelGroup(Alignment.TRAILING)
+						.addComponent(panel_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
 						.addComponent(panel_11, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
 						.addComponent(panel_10, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
 						.addComponent(panel_9, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
@@ -230,8 +227,20 @@ public class BotInfo extends JPanel {
 					.addComponent(panel_10, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_11, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(36, Short.MAX_VALUE))
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(panel_1, GroupLayout.PREFERRED_SIZE, 21, GroupLayout.PREFERRED_SIZE)
+					.addContainerGap(29, Short.MAX_VALUE))
 		);
+		panel_1.setLayout(new BoxLayout(panel_1, BoxLayout.X_AXIS));
+		
+		JLabel lblNewLabel = new JLabel("Филоген:");
+		panel_1.add(lblNewLabel);
+		
+		filogen = new JTextField();
+		filogen.setBackground(Color.WHITE);
+		filogen.setEnabled(false);
+		panel_1.add(filogen);
+		filogen.setColumns(10);
 		panel_11.setLayout(new BoxLayout(panel_11, BoxLayout.X_AXIS));
 		
 		JLabel lblNewLabel_1 = new JLabel("Фенотип: ");
