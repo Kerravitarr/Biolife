@@ -3,8 +3,8 @@ package main;
 import java.awt.Color;
 import java.util.Vector;
 
+import Utils.JSONmake;
 import jdk.jfr.Unsigned;
-import panels.JSONmake;
 
 //@Deprecated
 public class EvolutionTree {
@@ -81,8 +81,10 @@ public class EvolutionTree {
 		public JSONmake toJSON() {
 			JSONmake make = new JSONmake();
 			make.add("time", time);
-			make.add("branch", getBranch());
+			make.add("generation", generation);
+			make.add("branshCount", branshCount);
 			make.add("countAliveCell", countAliveCell);
+			make.add("branch", getBranch());
 			
 			JSONmake[] nodes = new JSONmake[child.size()];
 			for (int i = 0; i < nodes.length; i++) {
