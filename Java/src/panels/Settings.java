@@ -17,11 +17,22 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.LayoutStyle.ComponentPlacement;
+
+import Utils.JSONmake;
+
 import javax.swing.SwingConstants;
 
 import main.World;
 
 public class Settings extends JPanel {
+	private JScrollBar scrollBar_7;
+	private JScrollBar scrollBar_6;
+	private JScrollBar scrollBar_3;
+	private JScrollBar scrollBar_5;
+	private JScrollBar scrollBar_4;
+	private JScrollBar scrollBar_2;
+	private JScrollBar scrollBar_1;
+	private JScrollBar scrollBar;
 
 	/**
 	 * Create the panel.
@@ -160,12 +171,11 @@ public class Settings extends JPanel {
 		lblNewLabel_8.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_7.add(lblNewLabel_8, BorderLayout.NORTH);
 		
-		JScrollBar scrollBar_7 = new JScrollBar();
+		scrollBar_7 = new JScrollBar();
 		scrollBar_7.setBlockIncrement(200);
 		scrollBar_7.setMaximum(1000);
 		scrollBar_7.setUnitIncrement(100);
 		scrollBar_7.setMinimum(1);
-		scrollBar_7.setValue(scrollBar_7.getMaximum() - World.msTimeout);
 		scrollBar_7.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_7.addAdjustmentListener(e->{
 			World.msTimeout = scrollBar_7.getMaximum() - e.getValue();
@@ -176,10 +186,9 @@ public class Settings extends JPanel {
 		lblNewLabel_7.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_4_1.add(lblNewLabel_7, BorderLayout.NORTH);
 		
-		JScrollBar scrollBar_6 = new JScrollBar();
+		scrollBar_6 = new JScrollBar();
 		scrollBar_6.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar_6.setMaximum(10);
-		scrollBar_6.setValue(scrollBar_6.getMaximum() - World.TIK_TO_EXIT + 1);
 		scrollBar_6.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_6.addAdjustmentListener(e->{
 			World.TIK_TO_EXIT = scrollBar_6.getMaximum() - e.getValue() + 1;
@@ -191,11 +200,10 @@ public class Settings extends JPanel {
 		lblNewLabel_6.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_6.add(lblNewLabel_6, BorderLayout.NORTH);
 		
-		JScrollBar scrollBar_5 = new JScrollBar();
+		scrollBar_5 = new JScrollBar();
 		scrollBar_5.setMaximum(40);
 		scrollBar_5.setBlockIncrement(5);
 		scrollBar_5.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar_5.setValue((int) Math.round(World.CONCENTRATION_MINERAL*10));
 		scrollBar_5.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_5.addAdjustmentListener(e->{
 			World.CONCENTRATION_MINERAL = e.getValue()/10.0;
@@ -208,9 +216,8 @@ public class Settings extends JPanel {
 		lblNewLabel_5.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_5.add(lblNewLabel_5, BorderLayout.NORTH);
 		
-		JScrollBar scrollBar_4 = new JScrollBar();
+		scrollBar_4 = new JScrollBar();
 		scrollBar_4.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar_4.setValue((int)  Math.round((1-World.LEVEL_MINERAL)*100));
 		scrollBar_4.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_4.addAdjustmentListener(e->{
 			World.LEVEL_MINERAL = 1-e.getValue()/100.0;
@@ -223,10 +230,9 @@ public class Settings extends JPanel {
 		lblNewLabel_4.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_4.add(lblNewLabel_4, BorderLayout.NORTH);
 		
-		JScrollBar scrollBar_3 = new JScrollBar();
+		scrollBar_3 = new JScrollBar();
 		scrollBar_3.setMinimum(1);
 		scrollBar_3.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar_3.setValue(World.FPS_TIC);
 		scrollBar_3.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_3.addAdjustmentListener(e->{
 			World.FPS_TIC = e.getValue();
@@ -238,9 +244,8 @@ public class Settings extends JPanel {
 		lblNewLabel_3.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_3.add(lblNewLabel_3, BorderLayout.NORTH);
 		
-		JScrollBar scrollBar_2 = new JScrollBar();
+		scrollBar_2 = new JScrollBar();
 		scrollBar_2.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar_2.setValue((int) Math.round(World.AGGRESSIVE_ENVIRONMENT*100));
 		scrollBar_2.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_2.addAdjustmentListener(e->{
 			World.AGGRESSIVE_ENVIRONMENT = e.getValue()/100.0;
@@ -252,11 +257,10 @@ public class Settings extends JPanel {
 		lblNewLabel_2.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_2.add(lblNewLabel_2, BorderLayout.NORTH);
 		
-		JScrollBar scrollBar_1 = new JScrollBar();
+		scrollBar_1 = new JScrollBar();
 		scrollBar_1.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar_1.setMinimum(1);
 		scrollBar_1.setMaximum(50);
-		scrollBar_1.setValue((int) Math.round(World.DIRTY_WATER));
 		scrollBar_1.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_1.addAdjustmentListener(e->{
 			World.DIRTY_WATER = e.getValue();
@@ -269,11 +273,10 @@ public class Settings extends JPanel {
 		lblNewLabel_1.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_1.add(lblNewLabel_1, BorderLayout.NORTH);
 		
-		JScrollBar scrollBar = new JScrollBar();
+		scrollBar = new JScrollBar();
 		scrollBar.setMinimum(1);
 		scrollBar.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar.setMaximum(50);
-		scrollBar.setValue((int) Math.round(World.SUN_POWER));
 		scrollBar.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar.addAdjustmentListener(e->{
 			World.SUN_POWER = e.getValue();
@@ -281,6 +284,18 @@ public class Settings extends JPanel {
 		});
 		panel_1.add(scrollBar, BorderLayout.SOUTH);
 		panel.setLayout(gl_panel);
+		updateScrols();
+	}
+	
+	public void updateScrols() {
 
+		scrollBar_7.setValue(scrollBar_7.getMaximum() - World.msTimeout);
+		scrollBar_6.setValue(scrollBar_6.getMaximum() - World.TIK_TO_EXIT + 1);
+		scrollBar_5.setValue((int) Math.round(World.CONCENTRATION_MINERAL*10));
+		scrollBar_4.setValue((int)  Math.round((1-World.LEVEL_MINERAL)*100));
+		scrollBar_3.setValue(World.FPS_TIC);
+		scrollBar_2.setValue((int) Math.round(World.AGGRESSIVE_ENVIRONMENT*100));
+		scrollBar_1.setValue((int) Math.round(World.DIRTY_WATER));
+		scrollBar.setValue((int) Math.round(World.SUN_POWER));
 	}
 }

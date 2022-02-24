@@ -17,6 +17,7 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
@@ -24,15 +25,12 @@ import main.World;
 import panels.BotInfo;
 import panels.Legend;
 import panels.Settings;
-import javax.swing.JButton;
-import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
 
-@SuppressWarnings("serial")
 public class BioLife extends JFrame {
 
 	private JPanel contentPane;
 	BotInfo botInfo = null;
+	Settings settings = null;
 	private World world;
 
 	/**
@@ -85,15 +83,10 @@ public class BioLife extends JFrame {
 		JLabel lblNewLabel_1 = new JLabel("<html>Н<br>А<br>С<br>Т<br>Р<br>О<br>Й<br>К<br>И<br>&lt;</html>");
 		lblNewLabel_1.setFont(new Font("Tahoma", Font.PLAIN, 8));
 		lblNewLabel_1.addMouseListener(new MouseAdapter() {
-			Settings legend = null;
 			boolean isActive = false;
 			public void mouseClicked(MouseEvent e) {
-				if(legend == null) {
-					legend = new Settings();
-					panel_1.add(legend, BorderLayout.CENTER);
-				}
 				isActive = !isActive;
-				legend.setVisible(isActive);
+				settings.setVisible(isActive);
 				if(isActive) 
 					lblNewLabel_1.setText("<html>Н<br>А<br>С<br>Т<br>Р<br>О<br>Й<br>К<br>И<br>&GT;</html>");
 				else
@@ -149,18 +142,22 @@ public class BioLife extends JFrame {
 
 		botInfo = new BotInfo();
 		panel_2.add(botInfo, BorderLayout.CENTER);
+
+		settings = new Settings();
+		panel_1.add(settings, BorderLayout.CENTER);
 		
 		JScrollPane scrollPane = new JScrollPane();
 		contentPane.add(scrollPane, BorderLayout.CENTER);
 		
-		world = new World(botInfo);
+		world = new World(botInfo,settings);
 		scrollPane.setViewportView(world);
 		botInfo.setVisible(false);
+		settings.setVisible(false);
 		
 		JMenuItem restart = new JMenuItem("Рестарт");
 		restart.addActionListener(e->{
 			contentPane.remove(world);
-			world = new World(botInfo);
+			world = new World(botInfo,settings);
 			contentPane.add(world, BorderLayout.CENTER);
 			world.repaint();
 		});
