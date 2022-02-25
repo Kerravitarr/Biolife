@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 import Utils.JSONmake;
 import Utils.Utils;
@@ -84,9 +85,10 @@ public class Cell {
      */
     Cell(){
     	pos = new Point(Utils.random(0, World.MAP_CELLS.width-1),Utils.random(0, World.MAP_CELLS.height-1));
-    	for (int i = 0; i < mind.length; i++) {
+    	for (int i = 0; i < mind.length; i++)
     		mind[i] = block1; // У клетки по базе только одна функция - фотосинтез
-		}
+    	for (int i = 0; i < DIRECTION.size(); i++)
+    		friends.add(null);
     }
 
     /**
@@ -107,9 +109,11 @@ public class Cell {
     	photosynthesisEffect = cell.getD("photosynthesisEffect");
     	
     	List<Long> mindL = cell.getAL("mind");
-    	for (int i = 0; i < mind.length; i++) {
+    	for (int i = 0; i < mind.length; i++) 
 			mind[i] = mindL.get(i).intValue();
-		}
+		
+    	for (int i = 0; i < DIRECTION.size(); i++)
+    		friends.add(null);
 	}
 
     /**
@@ -137,9 +141,11 @@ public class Cell {
 	    evolutionNode = cell.evolutionNode.clone();
 	
 	    //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
-	    if (Math.random() < World.AGGRESSIVE_ENVIRONMENT) {
+	    if (Math.random() < World.AGGRESSIVE_ENVIRONMENT) 
 	        mutation();
-	    }
+	    
+    	for (int i = 0; i < DIRECTION.size(); i++)
+    		friends.add(null);
 	}
 
 	public static final int block1 = COUNT_COMAND * 1 / 6;
@@ -188,9 +194,6 @@ public class Cell {
 					botDouble();
 					nextCommand(1);
 				break loop;
-				//TODO Клонирование но удержание потомка
-				//case block1+3:
-				//	break;
 					
 					//=============================================================================ФУНКЦИИ ПРОГРАММИРОЫВАНИЯ=============================================================================
 				//Заменить ДНК из параметра 1 в месте параметр 2 Заменить
@@ -423,7 +426,16 @@ public class Cell {
 					clingA(DIRECTION.toEnum(param(0)));
 					nextCommand(2);
 				break loop;
-				//TODO Присосаться к соседу
+				//Родить присосавшегося потомка относительно
+				case block6+2:
+					cloneR(DIRECTION.toEnum(param(0)));
+					nextCommand(2);
+				break loop;
+				//Родить присосавшегося потомка абсолютно
+				case block6+3:
+					cloneA(DIRECTION.toEnum(param(0)));
+					nextCommand(2);
+				break loop;
 
 				
 				default :
@@ -443,7 +455,7 @@ public class Cell {
         	if(megaCell != null) { // Колония безвозмездно делится всем, что имеет
         		long allHp = getHealth();
         		long allMin = getMineral();
-        		int friend = 0;
+        		int friend = 1;
         		for (Cell cell : friends) {
 					if(cell == null) continue;
 					allHp+=cell.getHealth();
@@ -653,7 +665,7 @@ public class Cell {
         this.alive = LV_STATUS.LV_ORGANIC_HOLD;       // Мы теперь орагника
         color_DO = new Color(139,69,19,100);
         if(getHealth() == 0)
-        	setHealth((long) (-hpForDiv/10 + getMineral()/10)); //Превращается в органику всё, что только может
+        	setHealth((long) (-hpForDiv/10 - getMineral()/10)); //Превращается в органику всё, что только может
         else
         	setHealth(getHealth()); //Для разукрашивания
         setAge(0); //У нас больше нет возраста, зато мы его можем использовать в дело :)
@@ -663,6 +675,7 @@ public class Cell {
 				if(cell != null)
 					cell.friends.remove(this); //Больше мы не часть наших друзей
 			}
+        	megaCell = null;
         }
 	}
 
@@ -904,6 +917,10 @@ public class Cell {
 	private void clingR(DIRECTION direction) {
 		clingA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
 	}
+	/**
+	 * Присосаться к другой клетке
+	 * @param direction
+	 */
 	private void clingA(DIRECTION direction) {
 		OBJECT see = seeA(direction);
 		if(see != OBJECT.ENEMY && see != OBJECT.FRIEND) // Если там не клетка, то выходим
@@ -914,7 +931,7 @@ public class Cell {
 			return;
 		friends.add(DIRECTION.toNum(this.direction),cell);
 		// Для нового друга у нас направление зеркальное
-		cell.friends.add(DIRECTION.toNum(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.size()/2)),cell); 
+		cell.friends.add(DIRECTION.toNum(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.size()/2)),this); 
 		//А теперь отмечаемся в соединении мегаклетки
 		if(cell.megaCell != null && megaCell != null)
 			cell.megaCell = megaCell = AllBotsCommand.merge(cell.megaCell,megaCell);
@@ -928,7 +945,24 @@ public class Cell {
 			megaCell.add(this);
 		}
 	}
+	
+	private void cloneR(DIRECTION direction) {
+		cloneA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
+	}
+	private void cloneA(DIRECTION direction) {
+    	setHealth(this.getHealth() - HP_FOR_DOUBLE);      // бот затрачивает 150 единиц энергии на создание копии
+        if (this.getHealth() <= 0) {
+        	setHealth(getHealth() + (long) (-hpForDiv/2 + getMineral())); //Превращается в органику всё, что только может
+            return;
+        }   // если у него было меньше 150, то пора помирать
 
+        if(seeA(direction) == OBJECT.CLEAN) {
+		    Point point = AllBotsCommand.fromVektorA(this,DIRECTION.toNum(direction));
+            Cell newbot = new Cell(this,point);
+            World.world.add(newbot);//Сделали потомка
+            clingA(direction); // Присосались друг к дуругу
+        }
+	}
 
 	/**
 	 * Зеленение бота
