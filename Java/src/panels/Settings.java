@@ -284,7 +284,6 @@ public class Settings extends JPanel {
 		});
 		panel_1.add(scrollBar, BorderLayout.SOUTH);
 		panel.setLayout(gl_panel);
-		updateScrols();
 	}
 	
 	public void updateScrols() {

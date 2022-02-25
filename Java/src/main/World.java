@@ -24,7 +24,7 @@ import panels.Settings;
 public class World extends JPanel {
 
 	/**Количиство ячеек карты*/
-	public static final Dimension MAP_CELLS = new Dimension(400,200);
+	public static final Dimension MAP_CELLS = new Dimension(200,100);
 	/**Освещённость карты*/
 	public static double SUN_POWER = 10;
 	/**Уровень загрязнения воды*/
@@ -165,6 +165,7 @@ public class World extends JPanel {
 		
 		recalculate();
 
+		this.settings.updateScrols();
 		
 		setBackground(new Color(255, 255, 255, 255));
 
