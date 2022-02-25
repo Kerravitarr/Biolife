@@ -145,7 +145,7 @@ public class BioLife extends JFrame {
 
 		settings = new Settings();
 		panel_1.add(settings, BorderLayout.CENTER);
-		
+		//ScaleScrollPane
 		JScrollPane scrollPane = new JScrollPane();
 		contentPane.add(scrollPane, BorderLayout.CENTER);
 		
