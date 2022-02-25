@@ -28,6 +28,7 @@ public class BotInfo extends JPanel {
 		SEE_A(Cell.block3,1),SEE_R(Cell.block3+1,1),H_LV(Cell.block3+2,1,2),HP_LV(Cell.block3+3,1,2),MP_LV(Cell.block3+4,1,2),WHO_NEAR(Cell.block3+5,0,2),CAN_PH(Cell.block3+6,0,2),CAN_MIN(Cell.block3+7,0,2),HP_NEAR(Cell.block3+8,1,2+Cell.OBJECT.size()-3),MP_NEAR(Cell.block3+9,1,2+Cell.OBJECT.size()-3),
 		EAT_A(Cell.block4,1,1+Cell.OBJECT.size()-4),EAT_R(Cell.block4+1,1,1+Cell.OBJECT.size()-4),BITE_A(Cell.block4+2,1,1+Cell.OBJECT.size()-3),BITE_R(Cell.block4+3,1,1+Cell.OBJECT.size()-3),
 		CARE_A(Cell.block4+4,1,1+Cell.OBJECT.size()-32),CARE_R(Cell.block4+5,1,1+Cell.OBJECT.size()-3),GIVE_A(Cell.block4+6,1,1+Cell.OBJECT.size()-3),GIVE_R(Cell.block4+7,1,1+Cell.OBJECT.size()-3),
+		CLING_R(Cell.block6,1),CLING_A(Cell.block6+1,1),CLONE_R(Cell.block6+2,1),CLONE_A(Cell.block6+3,1),
 		;
 		private static final CELL_COMMAND[] myEnumValues = CELL_COMMAND.values();
 		
