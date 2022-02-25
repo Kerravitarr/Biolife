@@ -68,7 +68,11 @@ public class EvolutionTree {
 				}
 				perrent.remove(this); 
 			} else {
-				root = this;
+				synchronized (root) {
+					root = child.get(0); 
+					perrent = null;
+					generation = 0;
+				}
 			}
 		}
 		
