@@ -1,6 +1,7 @@
 package panels;
 
 import java.awt.BorderLayout;
+import java.awt.event.ComponentEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -12,16 +13,15 @@ import java.util.Date;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.LayoutStyle.ComponentPlacement;
-
-import Utils.JSONmake;
-
 import javax.swing.SwingConstants;
 
+import Utils.JSONmake;
 import main.World;
 
 public class Settings extends JPanel {
@@ -33,7 +33,10 @@ public class Settings extends JPanel {
 	private JScrollBar scrollBar_2;
 	private JScrollBar scrollBar_1;
 	private JScrollBar scrollBar;
-
+	public JScrollBar scale;
+	JComponent listener = null;
+	private JButton play;
+	
 	/**
 	 * Create the panel.
 	 */
@@ -52,20 +55,14 @@ public class Settings extends JPanel {
 		
 		JPanel panel_3 = new JPanel();
 		
-		JButton btnNewButton = new JButton();
-		btnNewButton.setText("Пуск");
-		if(World.isActiv)
-			btnNewButton.setText("Пауза");
-		else
-			btnNewButton.setText("Пуск");
-		btnNewButton.addActionListener(e->{
-			if(btnNewButton.getText().equals("Пауза")) {
-				btnNewButton.setText("Пуск");
+		play = new JButton();
+		play.addActionListener(e->{
+			if(play.getText().equals("Пауза")) {
 				World.isActiv = false;
 			} else {
-				btnNewButton.setText("Пауза");
 				World.isActiv = true;
 			}
+			updateScrols();
 		});
 		
 		JPanel panel_4 = new JPanel();
@@ -101,7 +98,6 @@ public class Settings extends JPanel {
 			if (ret == JFileChooser.APPROVE_OPTION) {
 				try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
 					World.world.update(new JSONmake(reader));
-					btnNewButton.setText("Пуск");
 				} catch (FileNotFoundException e1) {
 					e1.printStackTrace();
 				} catch (IOException e1) {
@@ -117,12 +113,15 @@ public class Settings extends JPanel {
 		panel_4_1.setLayout(new BorderLayout(0, 0));
 		
 		JPanel panel_7 = new JPanel();
+		
+		JPanel panel_8 = new JPanel();
 		GroupLayout gl_panel = new GroupLayout(panel);
 		gl_panel.setHorizontalGroup(
 			gl_panel.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
+						.addComponent(panel_8, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(panel_7, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(panel_6, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(panel_5, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
@@ -132,7 +131,7 @@ public class Settings extends JPanel {
 						.addComponent(panel_4, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(btnNewButton_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(btnNewButton_2, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(btnNewButton, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(play, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(btnNewButton_3, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(panel_4_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE))
 					.addContainerGap())
@@ -155,16 +154,35 @@ public class Settings extends JPanel {
 					.addComponent(panel_4_1, GroupLayout.PREFERRED_SIZE, 34, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_7, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED, 47, Short.MAX_VALUE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(panel_8, GroupLayout.PREFERRED_SIZE, 28, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED, 217, Short.MAX_VALUE)
 					.addComponent(btnNewButton_3)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(btnNewButton)
+					.addComponent(play)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(btnNewButton_2)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(btnNewButton_1)
 					.addContainerGap())
 		);
+		panel_8.setLayout(new BorderLayout(0, 0));
+		
+		JLabel lblNewLabel_9 = new JLabel("Масштаб");
+		lblNewLabel_9.setHorizontalAlignment(SwingConstants.CENTER);
+		panel_8.add(lblNewLabel_9, BorderLayout.NORTH);
+		
+		scale = new JScrollBar();
+		scale.addAdjustmentListener(e->{
+			if(listener != null) {
+				listener.dispatchEvent(new ComponentEvent(listener, ComponentEvent.COMPONENT_RESIZED));
+				World.world.dispatchEvent(new ComponentEvent(World.world, ComponentEvent.COMPONENT_RESIZED));
+			}
+		});
+		scale.setValue(10);
+		scale.setMinimum(10);
+		scale.setOrientation(JScrollBar.HORIZONTAL);
+		panel_8.add(scale, BorderLayout.SOUTH);
 		panel_7.setLayout(new BorderLayout(0, 0));
 		
 		JLabel lblNewLabel_8 = new JLabel("Частота кадров");
@@ -287,7 +305,10 @@ public class Settings extends JPanel {
 	}
 	
 	public void updateScrols() {
-
+		if(World.isActiv)
+			play.setText("Пауза");
+		else
+			play.setText("Пуск");
 		scrollBar_7.setValue(scrollBar_7.getMaximum() - World.msTimeout);
 		scrollBar_6.setValue(scrollBar_6.getMaximum() - World.TIK_TO_EXIT + 1);
 		scrollBar_5.setValue((int) Math.round(World.CONCENTRATION_MINERAL*10));
@@ -296,5 +317,9 @@ public class Settings extends JPanel {
 		scrollBar_2.setValue((int) Math.round(World.AGGRESSIVE_ENVIRONMENT*100));
 		scrollBar_1.setValue((int) Math.round(World.DIRTY_WATER));
 		scrollBar.setValue((int) Math.round(World.SUN_POWER));
+	}
+
+	public void setListener(JComponent scrollPane) {
+		listener = scrollPane;
 	}
 }
