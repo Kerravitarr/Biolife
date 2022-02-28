@@ -128,11 +128,11 @@ public class JSONmake {
 				value_j.writeToFormatJSONString(writer, tabs + '\t');
 				writer.write("\n" + tabs + "}");
 			}else if(value_js != null) {
-				boolean isFirst = true;
-				writer.write(tabs + "\"" + key + "\":[\n");
 				if(value_js.length == 0) {
-					writer.write(tabs + "\t{}\n" + tabs + "]");
+					writer.write(tabs + "\"" + key + "\":[]");
 				} else {
+					writer.write(tabs + "\"" + key + "\":[\n");
+					boolean isFirst = true;
 					for(JSONmake i : value_js) {
 						if(isFirst)
 							isFirst = false;
@@ -420,5 +420,12 @@ public class JSONmake {
 			if(i != 0) writer.write(",\n");
 			parametrs.get(i).write(writer,tabs);
 		}
+	}
+	
+	public String toString() {
+		if(parseObj == null)
+			return toJSONString();
+		else
+			return parseObj.toString();
 	}
 }

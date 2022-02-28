@@ -1,8 +1,11 @@
 package start;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -32,6 +35,7 @@ public class BioLife extends JFrame {
 	BotInfo botInfo = null;
 	Settings settings = null;
 	private World world;
+	private JScrollPane scrollPane;
 
 	/**
 	 * Launch the application.
@@ -50,7 +54,7 @@ public class BioLife extends JFrame {
 					    			+ "Шёл " + df.format(frame.world.step) + " цикл эволюции (" + frame.world.sps.FPS() + " шаг/сек) "
 					    					+ "Живых: " + df.format(frame.world.countLife) + ", плоти: " + df.format(frame.world.countOrganic));
 					    } 
-					}, 0L, 5000);
+					}, 0L, 1000);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -145,11 +149,17 @@ public class BioLife extends JFrame {
 
 		settings = new Settings();
 		panel_1.add(settings, BorderLayout.CENTER);
-		//ScaleScrollPane
-		JScrollPane scrollPane = new JScrollPane();
-		contentPane.add(scrollPane, BorderLayout.CENTER);
 		
 		world = new World(botInfo,settings);
+		
+		scrollPane = new JScrollPane();
+		scrollPane.addComponentListener(new ComponentAdapter() {
+			public void componentResized(ComponentEvent e) {
+				world.setPreferredSize(new Dimension(scrollPane.getWidth() * settings.scale.getValue() / 10  - 10,scrollPane.getHeight() * settings.scale.getValue() / 10  - 10));
+			}
+		});
+		settings.setListener(scrollPane);
+		contentPane.add(scrollPane, BorderLayout.CENTER);
 		scrollPane.setViewportView(world);
 		botInfo.setVisible(false);
 		settings.setVisible(false);
@@ -165,11 +175,18 @@ public class BioLife extends JFrame {
 		
 		this.addKeyListener(new KeyAdapter() {
 			public void keyPressed(KeyEvent e) {
-				if(e.getKeyCode() == KeyEvent.VK_SPACE)
-					world.step();
+				System.out.println(e);
+				switch (e.getKeyCode()) {
+					case KeyEvent.VK_SPACE ->{
+						World.isActiv = !World.isActiv;
+						settings.updateScrols();
+					}
+					case KeyEvent.VK_S ->{
+						world.step();
+					}
+				}
 			}
 		});
 		
 	}
-
 }

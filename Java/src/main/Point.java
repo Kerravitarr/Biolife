@@ -18,7 +18,7 @@ public class Point{
 		static int toNum(DIRECTION direction) {
 			return direction.ordinal();
 		}
-		static int size() {
+		public static int size() {
 			return myEnumValues.length;
 		}
 		

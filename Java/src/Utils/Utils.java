@@ -26,6 +26,17 @@ public class Utils {
 		g.fillOval(x-r/2, y-r/2, r, r);
 	}
 
+	/**
+	 * Рисует квадрат
+	 * @param g
+	 * @param x - центр в х
+	 * @param y - центр в у
+	 * @param r - диаметр вписанной окружности (длинa стороны)
+	 */
+	public static void fillSquare(Graphics g, int x, int y, int r) {
+		g.fillRect(x-r/2, y-r/2,r, r);
+	}
+
 	   /**
      * Converts the components of a color, as specified by the HSB
      * model, to an equivalent set of values for the default RGB model.
