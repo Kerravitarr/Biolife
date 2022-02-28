@@ -1,6 +1,7 @@
 package main;
 
 import java.awt.Color;
+import java.util.List;
 import java.util.Vector;
 
 import Utils.JSONmake;
@@ -17,12 +18,26 @@ public class EvolutionTree {
 		//Потомки нашего узла
 		Vector<Node> child = new Vector<>();
 		/**Счётчик ветвей*/
-		Integer branshCount = 0;
+		int branshCount = 0;
 		/**Число живых потомков*/
-		Integer countAliveCell = 0;
+		int countAliveCell = 0;
 		/**Наш родитель, общий предок, если хотите*/
 		Node perrent = null;
 		
+		public Node(){};
+		
+		public Node(JSONmake node) {
+			time = node.getL("time");
+			generation = node.getL("generation");
+			branshCount = node.getI("branshCount");
+			countAliveCell = node.getI("countAliveCell");
+			
+			for(JSONmake i : node.getAJ("Nodes")) {
+				Node nodeR = new Node(i);
+				nodeR.perrent = this;
+				child.add(nodeR);
+			}
+		}
 		public Node newNode(long time) {
 			remove(); //Мы больше не служим нашему родителю!
 			Node node = new Node();
@@ -70,8 +85,8 @@ public class EvolutionTree {
 			} else {
 				synchronized (root) {
 					root = child.get(0); 
-					perrent = null;
-					generation = 0;
+					root.perrent = null;
+					root.generation = 0;
 				}
 			}
 		}
@@ -99,15 +114,28 @@ public class EvolutionTree {
 		}
 		public String getBranch() {
 			if(perrent != null)
-				return perrent.getBranch() + "->" + generation;
+				return perrent.getBranch() + ">" + generation;
 			else
 				return "0";
+		}
+
+		public Node getChild(long genCh) {
+			for (Node node : child) {
+				if(node.generation == genCh)
+					return node;
+			}
+			return null;
 		}
 	}
 	
 	/**Корень эволюционного дерева, адам*/
 	static Node root = new Node();
 	
+	public EvolutionTree() {};
+	public EvolutionTree(JSONmake json) {
+		root = new Node(json.getJ("Node"));
+	}
+
 	public String toString() {
 		return root.toString();
 	}
@@ -116,5 +144,14 @@ public class EvolutionTree {
 		JSONmake make = new JSONmake();
 		make.add("Node", root.toJSON());
 		return make;
+	}
+	public Node getNode(String s) {
+		String[] numbers = s.split(">");
+		Node ret = root;
+		
+		for (int i = 1; i < numbers.length; i++)
+			ret = ret.getChild(Long.parseLong(numbers[i]));
+		
+		return ret;
 	}
 }
