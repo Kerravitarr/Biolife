@@ -18,13 +18,14 @@ import Utils.JSONmake;
 import Utils.Utils;
 import main.Cell.LV_STATUS;
 import main.Cell.OBJECT;
+import main.Point.DIRECTION;
 import panels.BotInfo;
 import panels.Settings;
 
 public class World extends JPanel {
 
 	/**Количиство ячеек карты*/
-	public static final Dimension MAP_CELLS = new Dimension(200,100);
+	public static final Dimension MAP_CELLS = new Dimension(500,200);
 	/**Освещённость карты*/
 	public static double SUN_POWER = 10;
 	/**Уровень загрязнения воды*/
@@ -37,8 +38,8 @@ public class World extends JPanel {
 	public static double CONCENTRATION_MINERAL = 1;
 	//Сколько тиков подряд обновлять экран
 	public static int FPS_TIC = 1;
-	//Как быстро разлагается продукты
-	public static int TIK_TO_EXIT = 1;
+	//Как долго разлагается органика
+	public static int TIK_TO_EXIT = 2;
 	/**Симуляция запущена?*/
 	public static boolean isActiv = true;
 	/**Сколько милисекунд делать перед ходами*/
@@ -83,9 +84,9 @@ public class World extends JPanel {
 	/**Масштаб*/
 	static double scale = 1;
 	/**Высота "неба"*/
-	double UP_border = 0.05;
+	double UP_border = 0.01;
 	/**Высота "земли"*/
-	double DOWN_border = 0.05;
+	double DOWN_border = 0.01;
 	/**Дополнительный край из-за не совершенства арены*/
 	static Dimension border = new Dimension();
 	/**Сам мир*/
@@ -171,11 +172,7 @@ public class World extends JPanel {
 
 		addComponentListener(new ComponentAdapter() {
 			public void componentResized(ComponentEvent e) {
-				double hDel = 1.0 * getHeight() * (1 - (UP_border + DOWN_border)) / (MAP_CELLS.height);
-				double wDel = 1.0 * getWidth() / (MAP_CELLS.width);
-				scale = Math.min(hDel, wDel);
-				border.width = (int) Math.round((getWidth() -MAP_CELLS.width*scale)/2);
-				border.height = (int) Math.round((getHeight() - MAP_CELLS.height*scale)/2);
+				newSize(getWidth(),getHeight());
 			}
 		});
 		
@@ -219,6 +216,14 @@ public class World extends JPanel {
 		});
 		
 	}
+
+	private void newSize(int w, int h) {
+		double hDel = 1.0 * h * (1 - (UP_border + DOWN_border)) / (MAP_CELLS.height);
+		double wDel = 1.0 * w / (MAP_CELLS.width);
+		scale = Math.min(hDel, wDel);
+		border.width = (int) Math.round((w -MAP_CELLS.width*scale)/2);
+		border.height = (int) Math.round((h - MAP_CELLS.height*scale)/2);
+	}
 	
 	public void step() {
 		try {
@@ -256,21 +261,22 @@ public class World extends JPanel {
 			
 			paintField(g);
 			
-			countLife = countOrganic = 0;
+			int localCl = 0,localCO = 0;
 			for (Cell[] cell : worldMap) {
 				for (Cell cell2 : cell) {
 					if(cell2 != null) {
 						cell2.paint(g);
 						if(cell2.alive == LV_STATUS.LV_ALIVE)
-							countLife++;
+							localCl++;
 						else
-							countOrganic++;
+							localCO++;
 					}
 				}
 			}
+			countLife = localCl;
+			countOrganic = localCO;
 			if(info.getCell() != null) {
-				g.setColor(Color.BLACK);
-				//g.drawLine(border.width, border.height, getWidth()-border.width, getHeight()-border.height);
+				g.setColor(Color.GRAY);
 				g.drawLine(info.getCell().pos.getRx(), border.height, info.getCell().pos.getRx(), getHeight()-border.height);
 				g.drawLine(border.width, info.getCell().pos.getRy(), getWidth()-border.width, info.getCell().pos.getRy());
 			}
@@ -417,12 +423,21 @@ public class World extends JPanel {
 		TIK_TO_EXIT = configWorld.getI("TIK_TO_EXIT");
 		step = configWorld.getL("step");
 		
+		tree = new EvolutionTree(jsoNmake.getJ("EvoTree"));
 		
 		List<JSONmake> cells = jsoNmake.getAJ("Cells");		
 		worldMap = new Cell[MAP_CELLS.width][MAP_CELLS.height];
+		for (JSONmake cell : cells) 
+	    	add(new Cell(cell,tree));
+		//Когда все сохранены, обновялем список друзей
 		for (JSONmake cell : cells) {
-			Cell realCell = new Cell(cell);
-			add(realCell);
+	    	Point pos = new Point(cell.getJ("pos"));
+	    	List<JSONmake> mindL = cell.getAJ("friends");
+	    	Cell realCell = get(pos);
+	    	for (JSONmake pointFriend : mindL) {
+	    		pos = new Point(pointFriend);
+	    		realCell.setFriend(get(pos));
+			}
 		}
 		settings.updateScrols();
 	}
