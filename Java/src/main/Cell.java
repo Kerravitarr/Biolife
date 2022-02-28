@@ -3,8 +3,10 @@ package main;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Vector;
+import java.util.Map;
+import java.util.Set;
 
 import Utils.JSONmake;
 import Utils.Utils;
@@ -15,7 +17,7 @@ public class Cell {
 	/**Размер мозга*/
 	public static final int MINDE_SIZE = 128;
 	/**Сколько вообще может быть команд*/
-	private static final int COUNT_COMAND = 8*8; // 8 - DIRECTION.size()
+	private static final int COUNT_COMAND = 9*8; // 8 - DIRECTION.size()
 	/**Начальный уровень здоровья клеток*/
 	static final int StartHP = 5;
 	/**Начальный уровень минералов клеток*/
@@ -29,7 +31,7 @@ public class Cell {
 	/**Столько энергии тратит бот на размножение*/
 	private static final long HP_FOR_DOUBLE = 150;
 	/**Статус*/
-	public enum LV_STATUS {LV_ALIVE,LV_ORGANIC_HOLD,LV_ORGANIC_SINK};
+	public enum LV_STATUS {LV_ALIVE,LV_ORGANIC_HOLD,LV_ORGANIC_SINK,GHOST};
 	/**Статус*/
 	public enum OBJECT {WALL(1),CLEAN(0),ORGANIC(2),FRIEND(3),ENEMY(4), BOT(5);
 		private static final OBJECT[] myEnumValues = OBJECT.values();
@@ -77,8 +79,8 @@ public class Cell {
     Node evolutionNode = null;
     
     //===============Параметры братства, многоклеточность=======
-    private List<Cell> friends = new ArrayList<>(DIRECTION.size()); // 8 - DIRECTION.size()
-    private MegaCell megaCell = null;
+    private Map<Point,Cell> friends = new HashMap<>();
+   // private MegaCell megaCell = null;
     
     /**
      * Создание клетки без рода и племени
@@ -87,15 +89,14 @@ public class Cell {
     	pos = new Point(Utils.random(0, World.MAP_CELLS.width-1),Utils.random(0, World.MAP_CELLS.height-1));
     	for (int i = 0; i < mind.length; i++)
     		mind[i] = block1; // У клетки по базе только одна функция - фотосинтез
-    	for (int i = 0; i < DIRECTION.size(); i++)
-    		friends.add(null);
     }
 
     /**
      * Загрузка клетки
      * @param cell - JSON объект, который содержит всю информацюи о клетке
+     * @param tree - Дерево эволюции 
      */
-    public Cell(JSONmake cell) {
+    public Cell(JSONmake cell, EvolutionTree tree) {
     	pos = new Point(cell.getJ("pos"));
     	processorTik = cell.getI("processorTik");
     	alive = LV_STATUS.values()[cell.getI("alive")];
@@ -108,12 +109,12 @@ public class Cell {
     	phenotype = new Color((Long.decode("0x"+cell.getS("phenotype"))).intValue(),true);
     	photosynthesisEffect = cell.getD("photosynthesisEffect");
     	
+    	evolutionNode = tree.getNode(cell.getS("GenerationTree"));
+    	
     	List<Long> mindL = cell.getAL("mind");
     	for (int i = 0; i < mind.length; i++) 
 			mind[i] = mindL.get(i).intValue();
 		
-    	for (int i = 0; i < DIRECTION.size(); i++)
-    		friends.add(null);
 	}
 
     /**
@@ -143,9 +144,6 @@ public class Cell {
 	    //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
 	    if (Math.random() < World.AGGRESSIVE_ENVIRONMENT) 
 	        mutation();
-	    
-    	for (int i = 0; i < DIRECTION.size(); i++)
-    		friends.add(null);
 	}
 
 	public static final int block1 = COUNT_COMAND * 1 / 6;
@@ -298,7 +296,7 @@ public class Cell {
 					//..............Мы можем заняться фотосинтезом?........................
 				case block3+6:{
 			        //Показывает эффективность нашего фотосинтеза
-			        double t = this.getMineral() / this.maxMP * this.photosynthesisEffect;
+			        double t = this.getMineral() / this.maxMP * (1+this.photosynthesisEffect);
 			        // формула вычисления энергии ============================= SEZON!!!!!!!!!!
 			        double hlt = World.SUN_POWER - (World.DIRTY_WATER * this.pos.y / World.MAP_CELLS.height) + t;
 			        if (hlt > 0) 
@@ -351,8 +349,14 @@ public class Cell {
 						this.nextCommandFromAdr(4+see.nextCMD);
 					}
 				}break;
-				//TODO Я многоклеточный?
-				//case block3+8:break;
+				//Я многоклеточный?
+				case block3+10:
+					if(friends.size() == 0)
+						this.nextCommandFromAdr(1);
+					else
+						this.nextCommandFromAdr(2);
+				break;
+				
 				
 					//=============================================================================ФУНКЦИИ ВЗАИМОДЕЙТСВИЯ=============================================================================
 	            	//..............   съесть в относительном напралении       ...............
@@ -452,22 +456,19 @@ public class Cell {
         //.......  пришло время подохнуть или породить потомка              ........
         
         if (this.alive == LV_STATUS.LV_ALIVE) {
-        	if(megaCell != null) { // Колония безвозмездно делится всем, что имеет
+        	if(friends.size() != 0) { // Колония безвозмездно делится всем, что имеет
         		long allHp = getHealth();
         		long allMin = getMineral();
-        		int friend = 1;
-        		for (Cell cell : friends) {
-					if(cell == null) continue;
+        		int friend = friends.size() + 1;
+        		for (Cell cell : friends.values()) {
 					allHp+=cell.getHealth();
 					allMin+=cell.getMineral();
-					friend++;
 				}
         		allHp /= friend;
         		allMin /= friend;
         		setHealth(allHp);
         		setMineral(allMin);
-        		for (Cell cell : friends) {
-					if(cell == null) continue;
+        		for (Cell cell : friends.values()) {
 					cell.setHealth(allHp);
 					cell.setMineral(allMin);
 				}
@@ -496,8 +497,7 @@ public class Cell {
 	 * @return
 	 */
 	public int param(int i) {
-		int num = getCmdA(this.getProcessorTik() + i + 1); //Потому что нулевой параметр идёт сразу за командой
-		return mind[num];
+		return getCmdA(this.getProcessorTik() + i + 1); //Потому что нулевой параметр идёт сразу за командой
 	}
 	/**
 	 * Возвращает команду по переданому адресу
@@ -531,6 +531,10 @@ public class Cell {
         	bot2Organic(); //Если мы живые, то сначала умираем
 		World.world.clean(pos);
 		evolutionNode.remove();
+    	for (Cell cell : friends.values() ) 
+			cell.friends.remove(this.pos);
+    	friends.clear();
+		alive = LV_STATUS.GHOST;
     }
 	
 	/**
@@ -598,7 +602,7 @@ public class Cell {
 	 * @return
 	 */
 	private boolean moveA(DIRECTION direction) {
-		if(megaCell == null) {
+		if(friends.size() == 0) {
 			if(seeA(direction) == OBJECT.CLEAN){
 				Point point = AllBotsCommand.fromVektorA(this,DIRECTION.toNum(direction));
 				World.world.clean(pos);
@@ -610,8 +614,32 @@ public class Cell {
 		    } 
 		    return false;
 		} else {
-			//Многоклеточный двигается единым строем
-			megaCell.moveA(direction);
+			//Многоклеточный. Тут логика куда интереснее!
+			if(seeA(direction) == OBJECT.CLEAN){
+				//Туда двинуться можно, уже хорошо.
+				Point point = AllBotsCommand.fromVektorA(this,DIRECTION.toNum(direction));
+
+				/**
+				 * Правило!
+				 * Мы можем двигаться в любую сторону,
+				 * 	если от нас до любого из наших друзей будет ровно 1 клетка
+				 * То есть если delX или delY > 1.
+				 * 	При этом следует учесть, что delX для клеток с х = 0 и х = край экрана - будет ширина экрана - 1
+				 * 	Можно поглядеть код точки. В таком случае они всё равно будут рядом по х.
+				 */
+		    	for (Cell cell : friends.values() ) {
+		    		int delx = Math.abs(point.x - cell.pos.x);
+		    		int dely = Math.abs(point.y - cell.pos.y);
+		    		if(dely > 1 || (delx > 1 && delx != World.MAP_CELLS.width-1))
+		    			return false;
+		    	}
+		    	//Все условия проверены, можно выдвигаться!
+				World.world.clean(pos);
+		        pos = point;
+		        World.world.add(this);
+				
+			}
+			//megaCell.moveA(direction);
 			return true;
 		}
 	}
@@ -669,14 +697,13 @@ public class Cell {
         else
         	setHealth(getHealth()); //Для разукрашивания
         setAge(0); //У нас больше нет возраста, зато мы его можем использовать в дело :)
-        if(megaCell != null) {
-        	megaCell.remove(this);
-        	for (Cell cell : friends) {
-				if(cell != null)
-					cell.friends.remove(this); //Больше мы не часть наших друзей
-			}
-        	megaCell = null;
-        }
+        //if(megaCell != null) {
+        //	megaCell.remove(this);
+        	for (Cell cell : friends.values() ) 
+				cell.friends.remove(this.pos);
+        	friends.clear();
+        //	megaCell = null;
+       // }
 	}
 
 
@@ -926,24 +953,7 @@ public class Cell {
 		if(see != OBJECT.ENEMY && see != OBJECT.FRIEND) // Если там не клетка, то выходим
 			return;
 	    Point point = AllBotsCommand.fromVektorA(this,DIRECTION.toNum(direction));
-		Cell cell = World.world.get(point);
-		if(friends.get(DIRECTION.toNum(this.direction)) != null) // Если у нас это направление занято, то мы стараемся прикрепиться к своей-же клетке
-			return;
-		friends.add(DIRECTION.toNum(this.direction),cell);
-		// Для нового друга у нас направление зеркальное
-		cell.friends.add(DIRECTION.toNum(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.size()/2)),this); 
-		//А теперь отмечаемся в соединении мегаклетки
-		if(cell.megaCell != null && megaCell != null)
-			cell.megaCell = megaCell = AllBotsCommand.merge(cell.megaCell,megaCell);
-		else if(cell.megaCell != null)
-			cell.megaCell.add(this);
-		else if(megaCell != null)
-			megaCell.add(cell);
-		else {
-			cell.megaCell = megaCell = new MegaCell();
-			megaCell.add(cell);
-			megaCell.add(this);
-		}
+	    setFriend(World.world.get(point));
 	}
 	
 	private void cloneR(DIRECTION direction) {
@@ -1051,7 +1061,31 @@ public class Cell {
 			g.setColor(phenotype);
 		else
 			g.setColor(color_DO);
-		Utils.fillCircle(g,pos.getRx(),pos.getRy(),pos.getRr());
+		int r = pos.getRr();
+		int rx = pos.getRx();
+		int ry = pos.getRy();
+		if(friends.size() == 0)
+			Utils.fillCircle(g,rx,ry,r);
+		else
+			Utils.fillSquare(g,rx,ry,r);
+		if(alive != LV_STATUS.LV_ALIVE)
+			return;
+		if(r > 5 && friends.size() > 0) {
+			g.setColor(Color.BLACK);
+			for(Cell i : friends.values()) {
+				int rxc = i.pos.getRx();
+				if(pos.x == 0 && i.pos.x == World.MAP_CELLS.width -1)
+					rxc = rx - r;
+				else if(i.pos.x == 0 && pos.x == World.MAP_CELLS.width -1)
+						rxc = rx + r;
+				int ryc = i.pos.getRy();
+				g.drawLine(rx,ry, rxc,ryc);
+			}
+		}
+		if(r > 10) {
+			g.setColor(Color.PINK);
+			g.drawLine(rx,ry, rx+ direction.addX*r/2,ry + direction.addY*r/2);
+		}
 	}
 
 	/**
@@ -1160,6 +1194,13 @@ public class Cell {
 		make.add("phenotype",Integer.toHexString(phenotype.getRGB()));
 		make.add("photosynthesisEffect",photosynthesisEffect);
 		
+		//===============МНОГОКЛЕТОЧНОСТЬ===================
+		JSONmake[] fr = new JSONmake[friends.size()];
+		Object[] points = friends.keySet().toArray();
+		for (int i = 0; i < fr.length; i++)
+			fr[i] = ((Point)points[i]).toJSON();
+		make.add("friends",fr);
+		
 		//Убранные уже есть в эволюционном дереве!
 		return make;
 	}
@@ -1169,5 +1210,12 @@ public class Cell {
 	 */
 	public String getBranch() {
 		return evolutionNode.getBranch();
+	}
+
+	public void setFriend(Cell friend) {
+		if(friends.get(friend.pos) != null)
+			return;
+		friends.put(friend.pos, friend);
+		friend.friends.put(pos, this);
 	}
 }
