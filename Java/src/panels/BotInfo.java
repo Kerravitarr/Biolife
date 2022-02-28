@@ -19,13 +19,14 @@ import javax.swing.border.TitledBorder;
 
 import Utils.Utils;
 import main.Cell;
+import main.Cell.LV_STATUS;
 
 public class BotInfo extends JPanel {
 	enum CELL_COMMAND{
 		PHOT(Cell.block1),MIN_TO_EN(Cell.block1+1),CLONE(Cell.block1+2),
 		DNA_PROG(Cell.block5,2),DNA_CRASH(Cell.block5+1,2),
 		N_DIR_A(Cell.block2,1),N_DIR_R(Cell.block2+1,1),STEP_A(Cell.block2+2,1,Cell.OBJECT.size()-2),STEP_R(Cell.block2+3,1,Cell.OBJECT.size()-2),
-		SEE_A(Cell.block3,1),SEE_R(Cell.block3+1,1),H_LV(Cell.block3+2,1,2),HP_LV(Cell.block3+3,1,2),MP_LV(Cell.block3+4,1,2),WHO_NEAR(Cell.block3+5,0,2),CAN_PH(Cell.block3+6,0,2),CAN_MIN(Cell.block3+7,0,2),HP_NEAR(Cell.block3+8,1,2+Cell.OBJECT.size()-3),MP_NEAR(Cell.block3+9,1,2+Cell.OBJECT.size()-3),
+		SEE_A(Cell.block3,1,Cell.OBJECT.size()-1),SEE_R(Cell.block3+1,1,Cell.OBJECT.size()-1),H_LV(Cell.block3+2,1,2),HP_LV(Cell.block3+3,1,2),MP_LV(Cell.block3+4,1,2),WHO_NEAR(Cell.block3+5,0,2),CAN_PH(Cell.block3+6,0,2),CAN_MIN(Cell.block3+7,0,2),HP_NEAR(Cell.block3+8,1,2+Cell.OBJECT.size()-3),MP_NEAR(Cell.block3+9,1,2+Cell.OBJECT.size()-3),I_MANY(Cell.block3+10,0,2),
 		EAT_A(Cell.block4,1,1+Cell.OBJECT.size()-4),EAT_R(Cell.block4+1,1,1+Cell.OBJECT.size()-4),BITE_A(Cell.block4+2,1,1+Cell.OBJECT.size()-3),BITE_R(Cell.block4+3,1,1+Cell.OBJECT.size()-3),
 		CARE_A(Cell.block4+4,1,1+Cell.OBJECT.size()-32),CARE_R(Cell.block4+5,1,1+Cell.OBJECT.size()-3),GIVE_A(Cell.block4+6,1,1+Cell.OBJECT.size()-3),GIVE_R(Cell.block4+7,1,1+Cell.OBJECT.size()-3),
 		CLING_R(Cell.block6,1),CLING_A(Cell.block6+1,1),CLONE_R(Cell.block6+2,1),CLONE_A(Cell.block6+3,1),
@@ -65,17 +66,12 @@ public class BotInfo extends JPanel {
 	class WorkTask implements Runnable{
 		public void run() {
 			while(true) {
-				if(isVisible() && getCell() != null) {
-					generation.setText(getCell().getGeneration()+"");
+				if(isVisible() && getCell() != null && getCell().alive != LV_STATUS.GHOST) {
 					age.setText(getCell().getAge()+"");
 					state.setText(getCell().alive.name());
 					hp.setText(getCell().getHealth()+"");
 					mp.setText(getCell().getMineral()+"");
 					direction.setText(getCell().direction.name());
-					photos.setText(getCell().photosynthesisEffect+"");
-					phenotype.setBackground(getCell().phenotype);
-					phenotype.setText(Integer.toHexString(getCell().phenotype.getRGB()));
-					filogen.setText(getCell().getBranch());
 					
 					DefaultListModel<String> model = (DefaultListModel<String>) list.getModel();
 					model.removeAllElements();
@@ -238,8 +234,8 @@ public class BotInfo extends JPanel {
 		panel_1.add(lblNewLabel);
 		
 		filogen = new JTextField();
-		filogen.setBackground(Color.WHITE);
 		filogen.setEnabled(false);
+		filogen.setBackground(Color.WHITE);
 		panel_1.add(filogen);
 		filogen.setColumns(10);
 		panel_11.setLayout(new BoxLayout(panel_11, BoxLayout.X_AXIS));
@@ -349,6 +345,18 @@ public class BotInfo extends JPanel {
 	
 	public void setCell(Cell cell) {
 		this.cell=cell;
+		if(cell == null)
+			return;
+		generation.setText(getCell().getGeneration()+"");
+		age.setText(getCell().getAge()+"");
+		state.setText(getCell().alive.name());
+		hp.setText(getCell().getHealth()+"");
+		mp.setText(getCell().getMineral()+"");
+		direction.setText(getCell().direction.name());
+		photos.setText((getCell().photosynthesisEffect+"").substring(0, 3));
+		phenotype.setBackground(getCell().phenotype);
+		phenotype.setText(Integer.toHexString(getCell().phenotype.getRGB()));
+		filogen.setText(getCell().getBranch());
 	}
 
 
