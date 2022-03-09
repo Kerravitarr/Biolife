@@ -17,19 +17,19 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
+import MapObjects.AliveCell;
+import MapObjects.CellObject;
 import Utils.Utils;
-import main.Cell;
-import main.Cell.LV_STATUS;
 
 public class BotInfo extends JPanel {
 	enum CELL_COMMAND{
-		PHOT(Cell.block1),MIN_TO_EN(Cell.block1+1),CLONE(Cell.block1+2),
-		DNA_PROG(Cell.block5,2),DNA_CRASH(Cell.block5+1,2),
-		N_DIR_A(Cell.block2,1),N_DIR_R(Cell.block2+1,1),STEP_A(Cell.block2+2,1,Cell.OBJECT.size()-2),STEP_R(Cell.block2+3,1,Cell.OBJECT.size()-2),
-		SEE_A(Cell.block3,1,Cell.OBJECT.size()-1),SEE_R(Cell.block3+1,1,Cell.OBJECT.size()-1),H_LV(Cell.block3+2,1,2),HP_LV(Cell.block3+3,1,2),MP_LV(Cell.block3+4,1,2),WHO_NEAR(Cell.block3+5,0,2),CAN_PH(Cell.block3+6,0,2),CAN_MIN(Cell.block3+7,0,2),HP_NEAR(Cell.block3+8,1,2+Cell.OBJECT.size()-3),MP_NEAR(Cell.block3+9,1,2+Cell.OBJECT.size()-3),I_MANY(Cell.block3+10,0,2),
-		EAT_A(Cell.block4,1,1+Cell.OBJECT.size()-4),EAT_R(Cell.block4+1,1,1+Cell.OBJECT.size()-4),BITE_A(Cell.block4+2,1,1+Cell.OBJECT.size()-3),BITE_R(Cell.block4+3,1,1+Cell.OBJECT.size()-3),
-		CARE_A(Cell.block4+4,1,1+Cell.OBJECT.size()-32),CARE_R(Cell.block4+5,1,1+Cell.OBJECT.size()-3),GIVE_A(Cell.block4+6,1,1+Cell.OBJECT.size()-3),GIVE_R(Cell.block4+7,1,1+Cell.OBJECT.size()-3),
-		CLING_R(Cell.block6,1),CLING_A(Cell.block6+1,1),CLONE_R(Cell.block6+2,1),CLONE_A(Cell.block6+3,1),
+		PHOT(AliveCell.block1),MIN_TO_EN(AliveCell.block1+1),CLONE(AliveCell.block1+2),
+		DNA_PROG(AliveCell.block5,2),DNA_CRASH(AliveCell.block5+1,2),DNA_COPY(AliveCell.block5+2,2),
+		N_DIR_A(AliveCell.block2,1),N_DIR_R(AliveCell.block2+1,1),STEP_A(AliveCell.block2+2,1,AliveCell.OBJECT.size()-2),STEP_R(AliveCell.block2+3,1,AliveCell.OBJECT.size()-2),DIR_UP(AliveCell.block2+4),
+		SEE_A(AliveCell.block3,1,AliveCell.OBJECT.size()-1),SEE_R(AliveCell.block3+1,1,AliveCell.OBJECT.size()-1),H_LV(AliveCell.block3+2,1,2),HP_LV(AliveCell.block3+3,1,2),MP_LV(AliveCell.block3+4,1,2),WHO_NEAR(AliveCell.block3+5,0,2),CAN_PH(AliveCell.block3+6,0,2),CAN_MIN(AliveCell.block3+7,0,2),HP_NEAR(AliveCell.block3+8,1,2+AliveCell.OBJECT.size()-3),MP_NEAR(AliveCell.block3+9,1,2+AliveCell.OBJECT.size()-3),I_MANY(AliveCell.block3+10,0,2),
+		EAT_A(AliveCell.block4,1,1+AliveCell.OBJECT.size()-4),EAT_R(AliveCell.block4+1,1,1+AliveCell.OBJECT.size()-4),BITE_A(AliveCell.block4+2,1,1+AliveCell.OBJECT.size()-3),BITE_R(AliveCell.block4+3,1,1+AliveCell.OBJECT.size()-3),
+		CARE_A(AliveCell.block4+4,1,1+AliveCell.OBJECT.size()-32),CARE_R(AliveCell.block4+5,1,1+AliveCell.OBJECT.size()-3),GIVE_A(AliveCell.block4+6,1,1+AliveCell.OBJECT.size()-3),GIVE_R(AliveCell.block4+7,1,1+AliveCell.OBJECT.size()-3),
+		CLING_R(AliveCell.block6,1),CLING_A(AliveCell.block6+1,1),CLONE_R(AliveCell.block6+2,1),CLONE_A(AliveCell.block6+3,1),
 		;
 		private static final CELL_COMMAND[] myEnumValues = CELL_COMMAND.values();
 		
@@ -57,68 +57,61 @@ public class BotInfo extends JPanel {
 	private JTextField age;
 	private JTextField generation;
 	private JTextField phenotype;
-	private Cell cell = null;
+	private CellObject cell = null;
 	private JList<String> list;
 	/**Филогинетическое дерево*/
 	private JTextField filogen;
-	static class Model extends DefaultListModel<String> {}
+	private JTextField pos;
 	
 	class WorkTask implements Runnable{
 		public void run() {
 			while(true) {
-				if(isVisible() && getCell() != null && getCell().alive != LV_STATUS.GHOST) {
-					age.setText(getCell().getAge()+"");
-					state.setText(getCell().alive.name());
-					hp.setText(getCell().getHealth()+"");
-					mp.setText(getCell().getMineral()+"");
-					direction.setText(getCell().direction.name());
-					
-					DefaultListModel<String> model = (DefaultListModel<String>) list.getModel();
-					model.removeAllElements();
-					int processorTik = getCell().getProcessorTik();
-					for(int i = 0 ; i < Cell.MINDE_SIZE ; i ++) {
-						int cmd = getCell().getCmdA(processorTik+i);
-						int newNumber = (processorTik+i);
-						 while (newNumber >= Cell.MINDE_SIZE)
-							 newNumber = newNumber - Cell.MINDE_SIZE;
-						String row = newNumber + " = " +  cmd;//Так как 0 - параметр следующей за тиком команды
-						for(CELL_COMMAND cmdS : CELL_COMMAND.myEnumValues) {
-							if(cmdS.cmdNum == cmd) {
-								row += " - " + cmdS.name() + " (" + cmdS.cmdParamsCount;
-								if(cmdS.cmdParamsCount > 0) {
-									row += " -" ;
-									for (int j = 0; j < cmdS.cmdParamsCount; j++) {
-										row += " " + getCell().getCmdA(processorTik + i +1+ j);
+				if(isVisible() && getCell() != null && !getCell().aliveStatus(AliveCell.LV_STATUS.GHOST)) {
+					setDinamicHaracteristiks();
+					if((getCell() instanceof AliveCell)) {
+						AliveCell lcell = (AliveCell)getCell();
+						DefaultListModel<String> model = new DefaultListModel<String> ();
+						model.removeAllElements();
+						int processorTik = lcell.getProcessorTik();
+						for(int i = 0 ; i < AliveCell.MINDE_SIZE ; i ++) {
+							int cmd = lcell.getCmdA(processorTik+i);
+							int newNumber = (processorTik+i);
+							 while (newNumber >= AliveCell.MINDE_SIZE)
+								 newNumber = newNumber - AliveCell.MINDE_SIZE;
+							String row = newNumber + " = " +  cmd;//Так как 0 - параметр следующей за тиком команды
+							for(CELL_COMMAND cmdS : CELL_COMMAND.myEnumValues) {
+								if(cmdS.cmdNum == cmd) {
+									row += " - " + cmdS.name() + " (" + cmdS.cmdParamsCount;
+									if(cmdS.cmdParamsCount > 0) {
+										row += " -" ;
+										for (int j = 0; j < cmdS.cmdParamsCount; j++) {
+											row += " " + lcell.getCmdA(processorTik + i +1+ j);
+										}
 									}
-								}
-								row += ")";
-								if(cmdS.cmdCountAns == 1) {
-									row += " PC += 1";
-								}else if(cmdS.cmdCountAns > 0) {
-									row += " PC +=";
-									for (int j = 0; j < cmdS.cmdCountAns; j++) {
-										row += " " + getCell().getCmdA(processorTik + i +1+cmdS.cmdParamsCount+ j);
+									row += ")";
+									if(cmdS.cmdCountAns == 1) {
+										row += " PC += 1";
+									}else if(cmdS.cmdCountAns > 0) {
+										row += " PC +=";
+										for (int j = 0; j < cmdS.cmdCountAns; j++) {
+											row += " " + lcell.getCmdA(processorTik + i +1+cmdS.cmdParamsCount+ j);
+										}
 									}
+									break;
 								}
-								break;
 							}
+							model.add(i,row);
 						}
-						model.add(i,row);
+						list.setModel(model);
 					}
 					Utils.pause_ms(100);
 				} else {
-					cell = null;
-					generation.setText("");
-					age.setText("");
-					state.setText("");
-					hp.setText("");
-					mp.setText("");
-					direction.setText("");
-					photos.setText("");
-					phenotype.setText("");
-					filogen.setText("");
-					
-					((DefaultListModel<String>) list.getModel()).removeAllElements();
+					if(cell != null) {
+						cell = null;
+						clearText();
+
+						list.setModel(new DefaultListModel<String> ());
+					}
 					Utils.pause(1);
 				}
 			}
@@ -144,15 +137,15 @@ public class BotInfo extends JPanel {
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addComponent(panel_2, GroupLayout.PREFERRED_SIZE, 174, GroupLayout.PREFERRED_SIZE)
-						.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 174, GroupLayout.PREFERRED_SIZE))
+						.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 174, GroupLayout.PREFERRED_SIZE)
+						.addComponent(panel_2, GroupLayout.PREFERRED_SIZE, 174, GroupLayout.PREFERRED_SIZE))
 					.addContainerGap(17, Short.MAX_VALUE))
 		);
 		gl_panel.setVerticalGroup(
 			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
-					.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 266, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 299, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_2, GroupLayout.DEFAULT_SIZE, 401, Short.MAX_VALUE)
 					.addContainerGap())
@@ -187,12 +180,15 @@ public class BotInfo extends JPanel {
 		JPanel panel_11 = new JPanel();
 		
 		JPanel panel_1 = new JPanel();
+		
+		JPanel panel_12 = new JPanel();
 		GroupLayout gl_panel_4 = new GroupLayout(panel_4);
 		gl_panel_4.setHorizontalGroup(
 			gl_panel_4.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel_4.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panel_4.createParallelGroup(Alignment.TRAILING)
+						.addComponent(panel_12, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
 						.addComponent(panel_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
 						.addComponent(panel_11, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
 						.addComponent(panel_10, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
@@ -226,8 +222,21 @@ public class BotInfo extends JPanel {
 					.addComponent(panel_11, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_1, GroupLayout.PREFERRED_SIZE, 21, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(29, Short.MAX_VALUE))
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(panel_12, GroupLayout.PREFERRED_SIZE, 19, GroupLayout.PREFERRED_SIZE)
+					.addContainerGap(24, Short.MAX_VALUE))
 		);
+		panel_12.setLayout(new BoxLayout(panel_12, BoxLayout.X_AXIS));
+		
+		JLabel lblNewLabel_10 = new JLabel("Позиция:");
+		panel_12.add(lblNewLabel_10);
+		
+		pos = new JTextField();
+		pos.setBackground(Color.WHITE);
+		pos.setEnabled(false);
+		pos.setEditable(false);
+		panel_12.add(pos);
+		pos.setColumns(10);
 		panel_1.setLayout(new BoxLayout(panel_1, BoxLayout.X_AXIS));
 		
 		JLabel lblNewLabel = new JLabel("Филоген:");
@@ -335,7 +344,7 @@ public class BotInfo extends JPanel {
 		list.setVisibleRowCount(3);
 		list.setEnabled(false);
 		scrollPane.setViewportView(list);
-		list.setModel(new Model());
+		list.setModel(new DefaultListModel<String> ());
 		list.setSelectedIndex(0);
 		panel.setLayout(gl_panel);
 		
@@ -343,27 +352,52 @@ public class BotInfo extends JPanel {
 	}
 	
 	
-	public void setCell(Cell cell) {
-		this.cell=cell;
-		if(cell == null)
+	public void setCell(CellObject cellObject) {
+		this.cell=cellObject;
+		if(cellObject == null) {
+			clearText();
 			return;
-		generation.setText(getCell().getGeneration()+"");
-		age.setText(getCell().getAge()+"");
+		}
+		setDinamicHaracteristiks();
+		if (getCell() instanceof AliveCell) {
+			AliveCell new_name = (AliveCell) getCell();
+			generation.setText(new_name.getGeneration()+"");
+			photos.setText((new_name.photosynthesisEffect+"").substring(0, 3));
+			phenotype.setBackground(new_name.phenotype);
+			phenotype.setText(Integer.toHexString(new_name.phenotype.getRGB()));
+			filogen.setText(new_name.getBranch());
+		}
+	}
+
+	private void setDinamicHaracteristiks() {
+		pos.setText(cell.getPos().toString());
 		state.setText(getCell().alive.name());
 		hp.setText(getCell().getHealth()+"");
-		mp.setText(getCell().getMineral()+"");
-		direction.setText(getCell().direction.name());
-		photos.setText((getCell().photosynthesisEffect+"").substring(0, 3));
-		phenotype.setBackground(getCell().phenotype);
-		phenotype.setText(Integer.toHexString(getCell().phenotype.getRGB()));
-		filogen.setText(getCell().getBranch());
+		age.setText(getCell().getAge()+"");
+		if (getCell() instanceof AliveCell) {
+			AliveCell new_name = (AliveCell) getCell();
+			mp.setText(new_name.getMineral()+"");
+			direction.setText(new_name.direction.name());
+		}
+	}
+	private void clearText() {
+		generation.setText("");
+		age.setText("");
+		state.setText("");
+		hp.setText("");
+		mp.setText("");
+		direction.setText("");
+		photos.setText("");
+		phenotype.setText("");
+		filogen.setText("");
+		pos.setText("");
 	}
 
 
 	/**
 	 * @return the cell
 	 */
-	public Cell getCell() {
+	public CellObject getCell() {
 		return cell;
 	}
 }
