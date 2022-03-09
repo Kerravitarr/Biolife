@@ -14,7 +14,8 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.border.BevelBorder;
 
-import main.Cell;
+import MapObjects.AliveCell;
+import MapObjects.CellObject;
 import main.Point;
 import main.World;
 
@@ -65,26 +66,18 @@ public class Legend extends JPanel {
 							values[3] = new Value(4.0/4,1.0/4,"Мёртвый",new Color(139,69,19,100));
 						}
 						case HP ->{
-							long maxHP = 0;
-							for (int x = 0; x < World.MAP_CELLS.width; x++) {
-								for (int y = 0; y < World.MAP_CELLS.height; y++) {
-									Cell cell = World.world.get(new Point(x,y));
-									if(cell != null)
-										maxHP = Math.max(maxHP, cell.getHealth());
-								}
-							}
 							values = new Value[10];
 							for (int i = 0; i < values.length; i++) {
-								values[i] = new Value(1.0 * (i+1) / values.length,1.0/values.length,(i*maxHP/values.length)+"",new Color((int) (255.0*i/values.length),0,0));
+								values[i] = new Value(1.0 * (i+1) / values.length,1.0/values.length,(i*AliveCell.maxHP/values.length)+"",new Color((int) (255.0*i/values.length),0,0));
 							}
 						}
 						case YEAR ->{
 							maxAge = 0;
 							for (int x = 0; x < World.MAP_CELLS.width; x++) {
 								for (int y = 0; y < World.MAP_CELLS.height; y++) {
-									Cell cell = World.world.get(new Point(x,y));
-									if(cell != null)
-										maxAge = Math.max(maxAge, cell.getAge());
+									CellObject cell = World.world.get(new Point(x,y));
+									if(cell != null && cell instanceof AliveCell)
+										maxAge = Math.max(maxAge, ((AliveCell) cell).getAge());
 								}
 							}
 							values = new Value[10];
@@ -97,9 +90,9 @@ public class Legend extends JPanel {
 							maxGenDef = 0;
 							for (int x = 0; x < World.MAP_CELLS.width; x++) {
 								for (int y = 0; y < World.MAP_CELLS.height; y++) {
-									Cell cell = World.world.get(new Point(x,y));
-									if(cell != null)
-										maxGenDef = Math.max(maxGenDef, cell.getGeneration());
+									CellObject cell = World.world.get(new Point(x,y));
+									if(cell != null && cell instanceof AliveCell)
+										maxGenDef = Math.max(maxGenDef, ((AliveCell) cell).getGeneration());
 								}
 							}
 							values = new Value[10];
@@ -111,9 +104,9 @@ public class Legend extends JPanel {
 							long maxMP = 0;
 							for (int x = 0; x < World.MAP_CELLS.width; x++) {
 								for (int y = 0; y < World.MAP_CELLS.height; y++) {
-									Cell cell = World.world.get(new Point(x,y));
-									if(cell != null)
-										maxMP = Math.max(maxMP, cell.getMineral());
+									CellObject cell = World.world.get(new Point(x,y));
+									if(cell != null && cell instanceof AliveCell)
+										maxMP = Math.max(maxMP, ((AliveCell) cell).getMineral());
 								}
 							}
 							values = new Value[10];
@@ -126,7 +119,7 @@ public class Legend extends JPanel {
 			    		isNedUpdate = false;
 				    	for (int x = 0; x < World.MAP_CELLS.width; x++) {
 							for (int y = 0; y < World.MAP_CELLS.height; y++) {
-								Cell cell = World.world.get(new Point(x,y));
+								CellObject cell = World.world.get(new Point(x,y));
 								if(cell != null)
 									cell.repaint();
 							}
