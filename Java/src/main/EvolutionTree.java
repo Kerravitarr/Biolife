@@ -1,11 +1,18 @@
 package main;
 
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
+import javax.swing.JPanel;
+
 import Utils.JSONmake;
-import jdk.jfr.Unsigned;
+import Utils.Utils;
 
 //@Deprecated
 public class EvolutionTree {
@@ -24,31 +31,42 @@ public class EvolutionTree {
 		/**Наш родитель, общий предок, если хотите*/
 		Node perrent = null;
 		
-		public Node(){};
+		//====================СПЕЦ ПЕРЕМЕННЫЕ. Нужны для дерева эволюции
+		//Показывает, нужно ли обновлять цвета у ботов
+		boolean isSelected = false;
+		
+		public Node(){
+		};
 		
 		public Node(JSONmake node) {
+			this();
 			time = node.getL("time");
 			generation = node.getL("generation");
 			branshCount = node.getI("branshCount");
-			countAliveCell = node.getI("countAliveCell");
+			countAliveCell = 0;
 			
 			for(JSONmake i : node.getAJ("Nodes")) {
 				Node nodeR = new Node(i);
 				nodeR.perrent = this;
-				child.add(nodeR);
+				getChild().add(nodeR);
 			}
 		}
+		/**
+		 * Создаёт новый узел в дереве эволюции в определённый момент времени
+		 * @param time - текущее время, когда произошла мутация
+		 * @return новый узел
+		 */
 		public Node newNode(long time) {
-			remove(); //Мы больше не служим нашему родителю!
 			Node node = new Node();
-			synchronized (this) {
-				node.generation = branshCount + 1;
-				branshCount++;
+			synchronized (root) {
+				node.generation = ++branshCount;
 				node.countAliveCell = 1;
-				child.add(node);
+				getChild().add(node);
 				node.perrent = this;
 				node.time = time;
+				node.isSelected = isSelected();
 			}
+			remove(); //Мы больше не служим нашему родителю!
 			return node;
 		}
 		/**Создаёт новую ветку, куда будем эволюционировать*/
@@ -59,32 +77,34 @@ public class EvolutionTree {
 		/**Увы, очередной наш потомок того. Если потомков больше нет, то ветвь тупиковая - удаляем!*/
 		public void remove() {
 			countAliveCell--;
-			if(countAliveCell == 0 && child.size() == 0)// У нас нет детей, всё, удаляем у родителя
+			if(countAliveCell <= 0 && getChild().size() == 0)// У нас нет детей, всё, удаляем у родителя
 				perrent.remove(this); 
-			else if(countAliveCell == 0 && child.size() == 1) 
+			else if(countAliveCell <= 0 && getChild().size() == 1) 
 				merge();
 			
 		}
 		/**Наш ребёнок сказал нам, что умер. Если это был последний наш ребёнок, то всё - сворачиваем лавочку*/
 		private void remove(Node node) {
-			child.remove(node);
-			if(countAliveCell == 0 && child.size() == 0)
+			getChild().remove(node);
+			if(countAliveCell <= 0 && getChild().size() == 0)
 				perrent.remove(this);
-			else if(countAliveCell == 0 && child.size() == 1)
+			else if(countAliveCell <= 0 && getChild().size() == 1)
 				merge();
 		}
-		
+		/**
+		 * Сливает нас с нашим предком сверху
+		 */
 		private void merge() {
 			if(perrent != null) {
 				synchronized (root) {
-					perrent.child.add(child.get(0)); 
-					child.get(0).perrent = perrent;
-					child.get(0).generation = generation;
+					perrent.getChild().add(getChild().get(0)); 
+					getChild().get(0).perrent = perrent;
+					getChild().get(0).generation = getGeneration();
 				}
 				perrent.remove(this); 
 			} else {
 				synchronized (root) {
-					root = child.get(0); 
+					root = getChild().get(0); 
 					root.perrent = null;
 					root.generation = 0;
 				}
@@ -92,44 +112,94 @@ public class EvolutionTree {
 		}
 		
 		public String toString() {
-			String ret = "Поколение " + generation + " мутация произошла в " + time + " от рожденства Адама. ";
-			ret += "Мутация порадила " + child.size() + " потомков";
+			String ret = "Поколение " + getGeneration() + " мутация произошла в " + time + " от рожденства Адама. ";
+			ret += "Мутация порадила " + getChild().size() + " потомков";
 			return ret;
 		}
 		
 		public JSONmake toJSON() {
 			JSONmake make = new JSONmake();
 			make.add("time", time);
-			make.add("generation", generation);
+			make.add("generation", getGeneration());
 			make.add("branshCount", branshCount);
 			make.add("countAliveCell", countAliveCell);
 			make.add("branch", getBranch());
 			
-			JSONmake[] nodes = new JSONmake[child.size()];
+			JSONmake[] nodes = new JSONmake[getChild().size()];
 			for (int i = 0; i < nodes.length; i++) {
-				nodes[i] = child.get(i).toJSON();
+				nodes[i] = getChild().get(i).toJSON();
 			}
 			make.add("Nodes", nodes);
 			return make;
 		}
 		public String getBranch() {
 			if(perrent != null)
-				return perrent.getBranch() + ">" + generation;
+				return perrent.getBranch() + ">" + getGeneration();
 			else
 				return "0";
 		}
 
 		public Node getChild(long genCh) {
 			for (Node node : child) {
-				if(node.generation == genCh)
+				if(node.getGeneration() == genCh)
 					return node;
 			}
 			return null;
 		}
+
+		/**
+		 * @return the generation
+		 */
+		public long getGeneration() {
+			return generation;
+		}
+
+		/**
+		 * @return the child
+		 */
+		public Vector<Node> getChild() {
+			return child;
+		}
+
+		/**
+		 * Возвращает все окончания ветви (у которых нет детей) для данного узла вниз
+		 * @return
+		 */
+		public List<Node> getEndNode() {
+			List<Node> ret = new ArrayList<>();
+			if(child.size() == 0) {
+				ret.add(this);
+			} else {
+				for (Node node : child) {
+					ret.addAll(node.getEndNode());
+				}
+			}
+			return ret;
+		}
+
+		public int getAlpha() {
+			return isSelected() ? 124 : 255;
+		}
+
+		/**
+		 * @param isSelected the isSelected to set
+		 */
+		public void setSelected(boolean isSelected) {
+			this.isSelected = isSelected;
+			for (Node node : child)
+				node.setSelected(this.isSelected());
+		}
+
+		/**
+		 * @return the isSelected
+		 */
+		public boolean isSelected() {
+			return isSelected;
+		}
 	}
 	
 	/**Корень эволюционного дерева, адам*/
-	static Node root = new Node();
+	public static Node root = new Node();
 	
 	public EvolutionTree() {};
 	public EvolutionTree(JSONmake json) {
@@ -145,6 +215,11 @@ public class EvolutionTree {
 		make.add("Node", root.toJSON());
 		return make;
 	}
+	/**
+	 * Функция, используемая при загрузке. Заодно помогает понять у какой ветви сколько потомков
+	 * @param s полная строка эволюционного дерева, то есть 0>1>2...
+	 * @return Конкретный узел дерева
+	 */
 	public Node getNode(String s) {
 		String[] numbers = s.split(">");
 		Node ret = root;
@@ -152,6 +227,16 @@ public class EvolutionTree {
 		for (int i = 1; i < numbers.length; i++)
 			ret = ret.getChild(Long.parseLong(numbers[i]));
 		
+		ret.countAliveCell++; //Подсчитали ещё одного живчика
 		return ret;
+	}
+	/**
+	 * Обновляет дерево эволюции - проверяет все узлы на их правильность и перерисовывает дерево
+	 */
+	public void updatre() {
+		for(Node node : root.getEndNode()) {
+			if(node.countAliveCell == 0)
+				node.remove();
+		}
 	}
 }
