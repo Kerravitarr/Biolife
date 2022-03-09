@@ -1,6 +1,9 @@
 package Utils;
 import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
+import java.util.Arrays;
 import java.util.concurrent.locks.LockSupport;
 
 public class Utils {
@@ -27,6 +30,17 @@ public class Utils {
 	}
 
 	/**
+	 * Рисует круг
+	 * @param g
+	 * @param x
+	 * @param y
+	 * @param r
+	 */
+	public static void drawCircle(Graphics g, int x, int y, int r) {
+		g.drawOval(x-r/2, y-r/2, r, r);
+	}
+
+	/**
 	 * Рисует квадрат
 	 * @param g
 	 * @param x - центр в х
@@ -35,6 +49,24 @@ public class Utils {
 	 */
 	public static void fillSquare(Graphics g, int x, int y, int r) {
 		g.fillRect(x-r/2, y-r/2,r, r);
+	}
+	
+	public static void centeredText(Graphics g, int x, int y, float size, String text) {
+		// Create a new font with the desired size
+		Font newFont = g.getFont().deriveFont(size);
+		g.setFont(newFont);
+		// Find the size of string s in font f in the current Graphics context g.
+		FontMetrics fm = g.getFontMetrics();
+		java.awt.geom.Rectangle2D rect = fm.getStringBounds(text, g);
+
+		int textHeight = (int) (rect.getHeight());
+		int textWidth = (int) (rect.getWidth());
+
+		// Find the top left and right corner
+		int cornerX = x - (textWidth / 2);
+		int cornerY = y - (textHeight / 2) + fm.getAscent();
+
+		g.drawString(text, cornerX, cornerY); // Draw the string.
 	}
 
 	   /**
@@ -91,5 +123,18 @@ public class Utils {
 	 */
 	public static void pause_ns(long nsec) {
 		LockSupport.parkNanos(nsec);
+	}
+
+	/**
+	 * Объединяет два массива
+	 * @param <T>
+	 * @param first
+	 * @param second
+	 * @return
+	 */
+	public static <T> T[] concat(T[] first, T[] second) {
+		T[] result = Arrays.copyOf(first, first.length + second.length);
+		System.arraycopy(second, 0, result, first.length, second.length);
+		return result;
 	}
 }
