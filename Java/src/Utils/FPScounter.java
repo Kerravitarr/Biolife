@@ -10,11 +10,7 @@ public class FPScounter {
 			public void run() {
 				while(true) {
 					updateDPS();
-					try {
-						Thread.sleep(1000);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
+					Utils.pause(1);
 				}
 			}
 		}.start();
