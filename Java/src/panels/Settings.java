@@ -16,10 +16,12 @@ import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import Utils.JSONmake;
 import main.World;
@@ -75,7 +77,7 @@ public class Settings extends JPanel {
 		btnNewButton_1.addActionListener(e->{
 			boolean oldStateWorld = World.isActiv;				
 			World.isActiv = false;
-			try {Thread.sleep(1000);} catch (InterruptedException e1) {e1.printStackTrace();}
+			Utils.Utils.pause(2);
 			Date date = new Date();
 			SimpleDateFormat formater = new SimpleDateFormat("yyyy_MM_dd HHч mmм ssс");
 			String name = "World_" + formater.format(date) + ".json";
@@ -86,6 +88,8 @@ public class Settings extends JPanel {
 				e1.printStackTrace();
 			}
 			World.isActiv = oldStateWorld;
+
+			JOptionPane.showMessageDialog(this,	"Сохранение заверешно",	"BioLife", JOptionPane.INFORMATION_MESSAGE);
 		});
 		
 		JButton btnNewButton_2 = new JButton("Загрузить мир");
@@ -93,8 +97,8 @@ public class Settings extends JPanel {
 			World.isActiv = false;
 			String pathToRoot = System.getProperty("user.dir");
 			JFileChooser fileopen = new JFileChooser(pathToRoot);
-			fileopen.setSelectedFile(new File(pathToRoot));
-			int ret = fileopen.showDialog(null, "Открыть файл из которого будут прочитаны данные");
+			fileopen.setFileFilter(new FileNameExtensionFilter("JSON", "json"));
+			int ret = fileopen.showDialog(null, "Выбрать файл");
 			if (ret == JFileChooser.APPROVE_OPTION) {
 				try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
 					World.world.update(new JSONmake(reader));
@@ -190,9 +194,9 @@ public class Settings extends JPanel {
 		panel_7.add(lblNewLabel_8, BorderLayout.NORTH);
 		
 		scrollBar_7 = new JScrollBar();
-		scrollBar_7.setBlockIncrement(200);
+		scrollBar_7.setVisibleAmount (0); // Значение экстента равно 0
+		scrollBar_7.setBlockIncrement(20);
 		scrollBar_7.setMaximum(1000);
-		scrollBar_7.setUnitIncrement(100);
 		scrollBar_7.setMinimum(1);
 		scrollBar_7.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_7.addAdjustmentListener(e->{
@@ -249,11 +253,12 @@ public class Settings extends JPanel {
 		panel_4.add(lblNewLabel_4, BorderLayout.NORTH);
 		
 		scrollBar_3 = new JScrollBar();
+		scrollBar_3.setEnabled(false);
 		scrollBar_3.setMinimum(1);
 		scrollBar_3.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar_3.setOrientation(JScrollBar.HORIZONTAL);
 		scrollBar_3.addAdjustmentListener(e->{
-			World.FPS_TIC = e.getValue();
+			//World.FPS_TIC = e.getValue();
 		});
 		panel_4.add(scrollBar_3, BorderLayout.SOUTH);
 		panel_3.setLayout(new BorderLayout(0, 0));
@@ -313,7 +318,6 @@ public class Settings extends JPanel {
 		scrollBar_6.setValue(scrollBar_6.getMaximum() - World.TIK_TO_EXIT + 1);
 		scrollBar_5.setValue((int) Math.round(World.CONCENTRATION_MINERAL*10));
 		scrollBar_4.setValue((int)  Math.round((1-World.LEVEL_MINERAL)*100));
-		scrollBar_3.setValue(World.FPS_TIC);
 		scrollBar_2.setValue((int) Math.round(World.AGGRESSIVE_ENVIRONMENT*100));
 		scrollBar_1.setValue((int) Math.round(World.DIRTY_WATER));
 		scrollBar.setValue((int) Math.round(World.SUN_POWER));
