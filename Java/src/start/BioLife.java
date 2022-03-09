@@ -14,6 +14,7 @@ import java.text.DecimalFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -24,8 +25,10 @@ import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
+import MapObjects.CellObject;
 import main.World;
 import panels.BotInfo;
+import panels.EvolTree;
 import panels.Legend;
 import panels.Settings;
 
@@ -36,6 +39,7 @@ public class BioLife extends JFrame {
 	Settings settings = null;
 	private World world;
 	private JScrollPane scrollPane;
+	private EvolTree dialog = new EvolTree();
 
 	/**
 	 * Launch the application.
@@ -53,6 +57,9 @@ public class BioLife extends JFrame {
 					    	frame.setTitle("ФПС" + frame.world.fps.FPS()+" кадров/секунду. "
 					    			+ "Шёл " + df.format(frame.world.step) + " цикл эволюции (" + frame.world.sps.FPS() + " шаг/сек) "
 					    					+ "Живых: " + df.format(frame.world.countLife) + ", плоти: " + df.format(frame.world.countOrganic));
+					    	if(frame.dialog.isVisible())
+					    		frame.dialog.repaint();
+					    	frame.world.repaint();
 					    } 
 					}, 0L, 1000);
 				} catch (Exception e) {
@@ -93,8 +100,11 @@ public class BioLife extends JFrame {
 				settings.setVisible(isActive);
 				if(isActive) 
 					lblNewLabel_1.setText("<html>Н<br>А<br>С<br>Т<br>Р<br>О<br>Й<br>К<br>И<br>&GT;</html>");
-				else
+				else {
 					lblNewLabel_1.setText("<html>Н<br>А<br>С<br>Т<br>Р<br>О<br>Й<br>К<br>И<br>&lt;</html>");
+					BioLife.this.toFront();
+					BioLife.this.requestFocus();
+				}
 			}
 		});
 		panel_1.add(lblNewLabel_1, BorderLayout.WEST);
@@ -117,8 +127,11 @@ public class BioLife extends JFrame {
 				legend.setVisible(isActive);
 				if(isActive) 
 					lblNewLabel.setText("Легенда \\/");
-				else
+				else {
 					lblNewLabel.setText("Легенда /\\");
+					BioLife.this.toFront();
+					BioLife.this.requestFocus();
+				}
 			}
 		});
 		lblNewLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -138,8 +151,11 @@ public class BioLife extends JFrame {
 				botInfo.setVisible(isActive);
 				if(isActive) 
 					lblNewLabel_2.setText("<html>И<br>Н<br>Ф<br>О<br>Р<br>М<br>А<br>Ц<br>И<br>Я<br><br>О<br><br>Б<br>О<br>Т<br>Е<br>&lt;</html>");
-				else
+				else {
 					lblNewLabel_2.setText("<html>И<br>Н<br>Ф<br>О<br>Р<br>М<br>А<br>Ц<br>И<br>Я<br><br>О<br><br>Б<br>О<br>Т<br>Е<br>&GT;</html>");
+					BioLife.this.toFront();
+					BioLife.this.requestFocus();
+				}
 			}
 		});
 		panel_2.add(lblNewLabel_2, BorderLayout.EAST);
@@ -171,18 +187,37 @@ public class BioLife extends JFrame {
 			contentPane.add(world, BorderLayout.CENTER);
 			world.repaint();
 		});
-		Menu.add(restart);
-		
+		//Menu.add(restart);
+
+		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		JMenuItem mntmNewMenuItem = new JMenuItem("Дерево эволюции");
+		mntmNewMenuItem.addActionListener(e->{
+			dialog.setVisible(true);
+		});
+		Menu.add(mntmNewMenuItem);
 		this.addKeyListener(new KeyAdapter() {
 			public void keyPressed(KeyEvent e) {
-				System.out.println(e);
+				//System.out.println(e);
 				switch (e.getKeyCode()) {
 					case KeyEvent.VK_SPACE ->{
 						World.isActiv = !World.isActiv;
 						settings.updateScrols();
 					}
 					case KeyEvent.VK_S ->{
-						world.step();
+						new Thread() {
+				            public void run() {
+								world.step();
+				            }
+				        }.start();
+					}
+					case KeyEvent.VK_W ->{
+						new Thread() {
+				            public void run() {
+				        		CellObject cell = botInfo.getCell();
+				            	if(cell != null)
+				            		cell.step(Math.round(Math.random() * 1000));
+				            }
+				        }.start();
 					}
 				}
 			}
