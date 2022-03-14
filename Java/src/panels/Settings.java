@@ -24,12 +24,12 @@ import javax.swing.SwingConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import Utils.JSONmake;
+import main.Configurations;
 import main.World;
 
-public class Settings extends JPanel {
+public class Settings extends JPanel{
 	private JScrollBar scrollBar_7;
 	private JScrollBar scrollBar_6;
-	private JScrollBar scrollBar_3;
 	private JScrollBar scrollBar_5;
 	private JScrollBar scrollBar_4;
 	private JScrollBar scrollBar_2;
@@ -38,11 +38,17 @@ public class Settings extends JPanel {
 	public JScrollBar scale;
 	JComponent listener = null;
 	private JButton play;
+	private JScrollBar sun_speed;
+	private JScrollBar sun_size;
+	private JButton load_button;
+	private JButton saveButton;
+	private JButton step_button;
 	
 	/**
 	 * Create the panel.
 	 */
 	public Settings() {
+		Configurations.settings = this;
 		setLayout(new BorderLayout(0, 0));
 		
 		JLabel lblNewLabel = new JLabel("Настройки");
@@ -58,60 +64,17 @@ public class Settings extends JPanel {
 		JPanel panel_3 = new JPanel();
 		
 		play = new JButton();
-		play.addActionListener(e->{
-			if(play.getText().equals("Пауза")) {
-				World.isActiv = false;
-			} else {
-				World.isActiv = true;
-			}
-			updateScrols();
-		});
-		
-		JPanel panel_4 = new JPanel();
 		
 		JPanel panel_5 = new JPanel();
 		
 		JPanel panel_6 = new JPanel();
 		
-		JButton btnNewButton_1 = new JButton("Сохранить мир");
-		btnNewButton_1.addActionListener(e->{
-			boolean oldStateWorld = World.isActiv;				
-			World.isActiv = false;
-			Utils.Utils.pause(2);
-			Date date = new Date();
-			SimpleDateFormat formater = new SimpleDateFormat("yyyy_MM_dd HHч mmм ssс");
-			String name = "World_" + formater.format(date) + ".json";
-			try(FileWriter writer = new FileWriter(name, true)){
-				World.world.serelization().writeToFormatJSONString(writer);
-				writer.flush();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-			World.isActiv = oldStateWorld;
-
-			JOptionPane.showMessageDialog(this,	"Сохранение заверешно",	"BioLife", JOptionPane.INFORMATION_MESSAGE);
-		});
+		saveButton = new JButton("Сохранить мир");
 		
-		JButton btnNewButton_2 = new JButton("Загрузить мир");
-		btnNewButton_2.addActionListener(e->{			
-			World.isActiv = false;
-			String pathToRoot = System.getProperty("user.dir");
-			JFileChooser fileopen = new JFileChooser(pathToRoot);
-			fileopen.setFileFilter(new FileNameExtensionFilter("JSON", "json"));
-			int ret = fileopen.showDialog(null, "Выбрать файл");
-			if (ret == JFileChooser.APPROVE_OPTION) {
-				try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
-					World.world.update(new JSONmake(reader));
-				} catch (FileNotFoundException e1) {
-					e1.printStackTrace();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-			}
-		});
+		load_button = new JButton("Загрузить мир");
 		
-		JButton btnNewButton_3 = new JButton("Шаг");
-		btnNewButton_3.addActionListener(e-> World.world.step());
+		step_button = new JButton("Шаг");
+		step_button.addActionListener(e-> Configurations.world.step());
 		
 		JPanel panel_4_1 = new JPanel();
 		panel_4_1.setLayout(new BorderLayout(0, 0));
@@ -119,25 +82,30 @@ public class Settings extends JPanel {
 		JPanel panel_7 = new JPanel();
 		
 		JPanel panel_8 = new JPanel();
+		
+		JPanel panel_4 = new JPanel();
+		
+		JPanel panel_9 = new JPanel();
 		GroupLayout gl_panel = new GroupLayout(panel);
 		gl_panel.setHorizontalGroup(
 			gl_panel.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
-						.addComponent(panel_8, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_7, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_6, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_5, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_1, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_2, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_3, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
+						.addComponent(panel_9, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(panel_4, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(btnNewButton_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(btnNewButton_2, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(play, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(btnNewButton_3, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_4_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE))
+						.addComponent(panel_1, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_2, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(saveButton, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(load_button, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(play, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(step_button, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_6, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_5, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_3, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_4_1, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_7, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_8, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
@@ -147,29 +115,56 @@ public class Settings extends JPanel {
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_3, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_5, GroupLayout.PREFERRED_SIZE, 35, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panel_9, GroupLayout.PREFERRED_SIZE, 30, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_6, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 34, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panel_5, GroupLayout.PREFERRED_SIZE, 35, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(panel_3, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_4_1, GroupLayout.PREFERRED_SIZE, 34, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_7, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_8, GroupLayout.PREFERRED_SIZE, 28, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED, 217, Short.MAX_VALUE)
-					.addComponent(btnNewButton_3)
+					.addPreferredGap(ComponentPlacement.RELATED, 198, Short.MAX_VALUE)
+					.addComponent(step_button)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(play)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(btnNewButton_2)
+					.addComponent(load_button)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(btnNewButton_1)
+					.addComponent(saveButton)
 					.addContainerGap())
 		);
+		panel_9.setLayout(new BorderLayout(0, 0));
+		
+		JLabel lblNewLabel_10 = new JLabel("Размер солнца");
+		lblNewLabel_10.setHorizontalAlignment(SwingConstants.CENTER);
+		panel_9.add(lblNewLabel_10, BorderLayout.NORTH);
+		
+		sun_size = new JScrollBar();
+		sun_size.setMinimum(1);
+		sun_size.setVisibleAmount (0); // Значение экстента равно 0
+		sun_size.setMaximum(Configurations.SUN_PARTS*2);
+		sun_size.setValue(Configurations.SUN_LENGHT);
+		sun_size.setOrientation(JScrollBar.HORIZONTAL);
+		panel_9.add(sun_size, BorderLayout.SOUTH);
+		panel_4.setLayout(new BorderLayout(0, 0));
+		
+		JLabel lblNewLabel_4 = new JLabel("Скорость солнца");
+		lblNewLabel_4.setHorizontalAlignment(SwingConstants.CENTER);
+		panel_4.add(lblNewLabel_4, BorderLayout.NORTH);
+		
+		sun_speed = new JScrollBar();
+		sun_speed.setVisibleAmount (0);
+		sun_speed.setMinimum(1);
+		sun_speed.setOrientation(JScrollBar.HORIZONTAL);
+		sun_speed.setValue(sun_speed.getMaximum() - Configurations.SUN_SPEED + 1);
+		panel_4.add(sun_speed, BorderLayout.SOUTH);
 		panel_8.setLayout(new BorderLayout(0, 0));
 		
 		JLabel lblNewLabel_9 = new JLabel("Масштаб");
@@ -177,12 +172,6 @@ public class Settings extends JPanel {
 		panel_8.add(lblNewLabel_9, BorderLayout.NORTH);
 		
 		scale = new JScrollBar();
-		scale.addAdjustmentListener(e->{
-			if(listener != null) {
-				listener.dispatchEvent(new ComponentEvent(listener, ComponentEvent.COMPONENT_RESIZED));
-				World.world.dispatchEvent(new ComponentEvent(World.world, ComponentEvent.COMPONENT_RESIZED));
-			}
-		});
 		scale.setValue(10);
 		scale.setMinimum(10);
 		scale.setOrientation(JScrollBar.HORIZONTAL);
@@ -199,9 +188,6 @@ public class Settings extends JPanel {
 		scrollBar_7.setMaximum(1000);
 		scrollBar_7.setMinimum(1);
 		scrollBar_7.setOrientation(JScrollBar.HORIZONTAL);
-		scrollBar_7.addAdjustmentListener(e->{
-			World.msTimeout = scrollBar_7.getMaximum() - e.getValue();
-		});
 		panel_7.add(scrollBar_7, BorderLayout.SOUTH);
 		
 		JLabel lblNewLabel_7 = new JLabel("Скорость разложения");
@@ -212,9 +198,6 @@ public class Settings extends JPanel {
 		scrollBar_6.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar_6.setMaximum(10);
 		scrollBar_6.setOrientation(JScrollBar.HORIZONTAL);
-		scrollBar_6.addAdjustmentListener(e->{
-			World.TIK_TO_EXIT = scrollBar_6.getMaximum() - e.getValue() + 1;
-		});
 		panel_4_1.add(scrollBar_6, BorderLayout.SOUTH);
 		panel_6.setLayout(new BorderLayout(0, 0));
 		
@@ -227,10 +210,6 @@ public class Settings extends JPanel {
 		scrollBar_5.setBlockIncrement(5);
 		scrollBar_5.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar_5.setOrientation(JScrollBar.HORIZONTAL);
-		scrollBar_5.addAdjustmentListener(e->{
-			World.CONCENTRATION_MINERAL = e.getValue()/10.0;
-			World.world.recalculate();
-		});
 		panel_6.add(scrollBar_5, BorderLayout.SOUTH);
 		panel_5.setLayout(new BorderLayout(0, 0));
 		
@@ -241,26 +220,7 @@ public class Settings extends JPanel {
 		scrollBar_4 = new JScrollBar();
 		scrollBar_4.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar_4.setOrientation(JScrollBar.HORIZONTAL);
-		scrollBar_4.addAdjustmentListener(e->{
-			World.LEVEL_MINERAL = 1-e.getValue()/100.0;
-			World.world.recalculate();
-		});
 		panel_5.add(scrollBar_4, BorderLayout.SOUTH);
-		panel_4.setLayout(new BorderLayout(0, 0));
-		
-		JLabel lblNewLabel_4 = new JLabel("Множитель ФПС");
-		lblNewLabel_4.setHorizontalAlignment(SwingConstants.CENTER);
-		panel_4.add(lblNewLabel_4, BorderLayout.NORTH);
-		
-		scrollBar_3 = new JScrollBar();
-		scrollBar_3.setEnabled(false);
-		scrollBar_3.setMinimum(1);
-		scrollBar_3.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar_3.setOrientation(JScrollBar.HORIZONTAL);
-		scrollBar_3.addAdjustmentListener(e->{
-			//World.FPS_TIC = e.getValue();
-		});
-		panel_4.add(scrollBar_3, BorderLayout.SOUTH);
 		panel_3.setLayout(new BorderLayout(0, 0));
 		
 		JLabel lblNewLabel_3 = new JLabel("Мутагенность");
@@ -270,13 +230,10 @@ public class Settings extends JPanel {
 		scrollBar_2 = new JScrollBar();
 		scrollBar_2.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar_2.setOrientation(JScrollBar.HORIZONTAL);
-		scrollBar_2.addAdjustmentListener(e->{
-			World.AGGRESSIVE_ENVIRONMENT = e.getValue()/100.0;
-		});
 		panel_3.add(scrollBar_2, BorderLayout.SOUTH);
 		panel_2.setLayout(new BorderLayout(0, 0));
 		
-		JLabel lblNewLabel_2 = new JLabel("Загрязнённость");
+		JLabel lblNewLabel_2 = new JLabel("Загрязнённость воды");
 		lblNewLabel_2.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_2.add(lblNewLabel_2, BorderLayout.NORTH);
 		
@@ -285,10 +242,6 @@ public class Settings extends JPanel {
 		scrollBar_1.setMinimum(1);
 		scrollBar_1.setMaximum(50);
 		scrollBar_1.setOrientation(JScrollBar.HORIZONTAL);
-		scrollBar_1.addAdjustmentListener(e->{
-			World.DIRTY_WATER = e.getValue();
-			World.world.recalculate();
-		});
 		panel_2.add(scrollBar_1, BorderLayout.SOUTH);
 		panel_1.setLayout(new BorderLayout(0, 0));
 		
@@ -301,12 +254,9 @@ public class Settings extends JPanel {
 		scrollBar.setVisibleAmount (0); // Значение экстента равно 0
 		scrollBar.setMaximum(50);
 		scrollBar.setOrientation(JScrollBar.HORIZONTAL);
-		scrollBar.addAdjustmentListener(e->{
-			World.SUN_POWER = e.getValue();
-			World.world.recalculate();
-		});
 		panel_1.add(scrollBar, BorderLayout.SOUTH);
 		panel.setLayout(gl_panel);
+		setListeners();
 	}
 	
 	public void updateScrols() {
@@ -314,13 +264,106 @@ public class Settings extends JPanel {
 			play.setText("Пауза");
 		else
 			play.setText("Пуск");
+		sun_speed.setValue(sun_speed.getMaximum() - Configurations.SUN_SPEED + 1);
+		sun_size.setMaximum(Configurations.SUN_PARTS*10);
+		
+		if(Configurations.SUN_LENGHT <= Configurations.SUN_PARTS)
+			sun_size.setValue(Configurations.SUN_LENGHT);
+		else
+			sun_size.setValue((int) Math.round(Math.pow(Configurations.SUN_LENGHT-Configurations.SUN_PARTS, 0.5)+Configurations.SUN_PARTS));
 		scrollBar_7.setValue(scrollBar_7.getMaximum() - World.msTimeout);
-		scrollBar_6.setValue(scrollBar_6.getMaximum() - World.TIK_TO_EXIT + 1);
-		scrollBar_5.setValue((int) Math.round(World.CONCENTRATION_MINERAL*10));
-		scrollBar_4.setValue((int)  Math.round((1-World.LEVEL_MINERAL)*100));
-		scrollBar_2.setValue((int) Math.round(World.AGGRESSIVE_ENVIRONMENT*100));
-		scrollBar_1.setValue((int) Math.round(World.DIRTY_WATER));
-		scrollBar.setValue((int) Math.round(World.SUN_POWER));
+		scrollBar_6.setValue(scrollBar_6.getMaximum() - Configurations.TIK_TO_EXIT + 1);
+		scrollBar_5.setValue((int) Math.round(Configurations.CONCENTRATION_MINERAL*10));
+		scrollBar_4.setValue((int)  Math.round((1-Configurations.LEVEL_MINERAL)*100));
+		scrollBar_2.setValue((int) Math.round(Configurations.AGGRESSIVE_ENVIRONMENT*100));
+		scrollBar_1.setValue((int) Math.round(Configurations.DIRTY_WATER));
+		scrollBar.setValue((int) Math.round(Configurations.SUN_POWER));
+	}
+	
+	public void setListeners() {
+
+		sun_size.addAdjustmentListener(e->{
+			if(e.getValue() <= Configurations.SUN_PARTS)
+				Configurations.SUN_LENGHT = e.getValue();
+			else
+				Configurations.SUN_LENGHT = (int) Math.round(Configurations.SUN_PARTS + Math.pow(e.getValue() - Configurations.SUN_PARTS,2));
+			Configurations.sun.repaint();
+		});
+		sun_speed.addAdjustmentListener(e->{
+			Configurations.SUN_SPEED =  (int) Math.pow(sun_speed.getMaximum() - e.getValue() + 1,1.5);
+		});
+		scrollBar.addAdjustmentListener(e->{
+			Configurations.SUN_POWER = e.getValue();
+			Configurations.world.recalculate();
+		});
+		scrollBar_1.addAdjustmentListener(e->{
+			Configurations.DIRTY_WATER = e.getValue();
+			Configurations.world.recalculate();
+		});
+		scrollBar_2.addAdjustmentListener(e->{
+			Configurations.AGGRESSIVE_ENVIRONMENT = e.getValue()/100.0;
+		});
+		scrollBar_4.addAdjustmentListener(e->{
+			Configurations.LEVEL_MINERAL = 1-e.getValue()/100.0;
+			Configurations.world.recalculate();
+		});
+		scrollBar_5.addAdjustmentListener(e->{
+			Configurations.CONCENTRATION_MINERAL = e.getValue()/10.0;
+			Configurations.world.recalculate();
+		});
+		scrollBar_6.addAdjustmentListener(e->{
+			Configurations.TIK_TO_EXIT = scrollBar_6.getMaximum() - e.getValue() + 1;
+		});
+		scrollBar_7.addAdjustmentListener(e->{
+			World.msTimeout = scrollBar_7.getMaximum() - e.getValue();
+		});
+		scale.addAdjustmentListener(e->{
+			if(listener != null) {
+				listener.dispatchEvent(new ComponentEvent(listener, ComponentEvent.COMPONENT_RESIZED));
+				Configurations.world.dispatchEvent(new ComponentEvent(Configurations.world, ComponentEvent.COMPONENT_RESIZED));
+			}
+		});
+		play.addActionListener(e->{
+			if(play.getText().equals("Пауза")) {
+				World.isActiv = false;
+			} else {
+				World.isActiv = true;
+			}
+			updateScrols();
+		});
+		load_button.addActionListener(e->{			
+			World.isActiv = false;
+			String pathToRoot = System.getProperty("user.dir");
+			JFileChooser fileopen = new JFileChooser(pathToRoot);
+			fileopen.setFileFilter(new FileNameExtensionFilter("JSON", "json"));
+			int ret = fileopen.showDialog(null, "Выбрать файл");
+			if (ret == JFileChooser.APPROVE_OPTION) {
+				try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
+					Configurations.world.update(new JSONmake(reader));
+				} catch (FileNotFoundException e1) {
+					e1.printStackTrace();
+				} catch (IOException e1) {
+					e1.printStackTrace();
+				}
+			}
+		});
+		saveButton.addActionListener(e->{
+			boolean oldStateWorld = World.isActiv;				
+			World.isActiv = false;
+			Utils.Utils.pause(2);
+			Date date = new Date();
+			SimpleDateFormat formater = new SimpleDateFormat("yyyy_MM_dd HHч mmм ssс");
+			String name = "World_" + formater.format(date) + ".json";
+			try(FileWriter writer = new FileWriter(name, true)){
+				Configurations.world.serelization().writeToFormatJSONString(writer);
+				writer.flush();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			World.isActiv = oldStateWorld;
+
+			JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	"BioLife", JOptionPane.INFORMATION_MESSAGE);
+		});
 	}
 
 	public void setListener(JComponent scrollPane) {
