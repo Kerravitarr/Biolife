@@ -3,58 +3,63 @@ package panels;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Vector;
 
 import javax.swing.GroupLayout;
+import javax.swing.GroupLayout.Alignment;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.GroupLayout.Alignment;
 import javax.swing.border.EmptyBorder;
 
-import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import Utils.Utils;
+import main.Configurations;
 import main.EvolutionTree;
-import main.Point;
-import main.World;
 import main.EvolutionTree.Node;
+import main.Point;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
-public class EvolTree extends JDialog {
+public class EvolTreeDialog extends JDialog {
 	static int delX = 23;
+	static int minX = delX * 2;
+	static int minY = 40;
 	
-	public static class NodeJpanel extends JPanel{
+	public class NodeJpanel extends JPanel{
 		Node node = null;
 		NodeJpanel(Node node){
 			this.node = node;
 			addMouseListener(new MouseAdapter() {
 			    public void mouseClicked(MouseEvent e) {
-			    	NodeJpanel.this.node.setSelected(!NodeJpanel.this.node.isSelected());
-			    	for (int x = 0; x < World.MAP_CELLS.width; x++) {
-						for (int y = 0; y < World.MAP_CELLS.height; y++) {
-							CellObject cell = World.world.get(new Point(x,y));
-							if(cell != null)
-								cell.repaint();
-						}
-					}
+			    	boolean newSelected = !NodeJpanel.this.node.isSelected();
+			    	EvolutionTree.root.setSelected(true);
+			    	NodeJpanel.this.node.setSelected(newSelected);
+			    	CellUpdate();
+			    	if(!newSelected)
+			    		activNode = NodeJpanel.this;
+			    	else
+			    		activNode = null;
 			    }
 			});
 		}
 
 		public void paintComponent(Graphics g) {
-			//super.paintComponent(g);
+			super.paintComponent(g);
 			if(getHeight() >= 10) {
 				g.setColor(Color.BLACK);
 				Utils.centeredText(g, getWidth()/2, getHeight()/2, 10, NodeJpanel.this.node.getGeneration()+"");
-				if(NodeJpanel.this.node.isSelected())
+				if(!NodeJpanel.this.node.isSelected())
 					Utils.drawCircle(g, getWidth()/2, getHeight()/2, 10);
 			}
 		}
 	}
 	
 	public class DrawPanelEvoTree extends JPanel {
+		boolean isNeedUpdate = false;
 		
 		/**
 		 * Create the panel.
@@ -70,29 +75,49 @@ public class EvolTree extends JDialog {
 					.addGap(0, 300, Short.MAX_VALUE)
 			);
 			setLayout(groupLayout);
+			
 		}
 	
 		
 		public void paintComponent(Graphics g) {
+			if(isNeedUpdate) {
+				isNeedUpdate = false;
+				int maxY = getHeight() - minY;
+
+				removeAll();
+				addNode(EvolutionTree.root,minX,minY,maxY);
+			}
 			super.paintComponent(g);
-			int xPos = delX * 2;
-			int minY = delX / 2;
+			
 			int maxY = getHeight() - minY;
 			
-			paint(g,EvolutionTree.root,xPos,minY,maxY);
+			paint(g,EvolutionTree.root,minX,minY,maxY);
+			
+			if(activNode != null) {
+				g.drawString("Примечательные точки узла:", minX, 10);
+				String DNA_s = "";
+				if(activNode.node.DNA == null) {
+					Configurations.world.isActiv = false;
+					return;
+				}
+				for(int i : activNode.node.DNA) {
+					if(!DNA_s.isEmpty())
+						DNA_s+= ", ";
+					DNA_s += i + "";
+				}
+				g.drawString("ДНК (" + activNode.node.DNA.length + "): " + DNA_s, minX, 20);
+				Color oldC = g.getColor();
+				g.setColor(activNode.node.phenotype);
+				g.drawString("Фенотип", minX, 30);
+				g.setColor(oldC);
+			}
 		}
 		
 	    public void repaint() {
-	    	super.repaint();
-	    	
-			int xPos = delX * 2;
-			int minY = delX / 2;
-			int maxY = getHeight() - minY;
-			
-			removeAll();
-			paint(EvolutionTree.root,xPos,minY,maxY);
+			super.repaint();
+			isNeedUpdate = true;
 	    }
-	    private void paint(Node root, int xPos, int minY, int maxY) {
+	    private void addNode(Node root, int xPos, int minY, int maxY) {
 	    	NodeJpanel rootJ = new NodeJpanel(root);
 	    	add(rootJ);
 	    	rootJ.setBounds(xPos - delX / 2, minY + (maxY-minY)/2 - delX / 2, Math.min((maxY-minY)/2,delX), Math.min((maxY-minY)/2,delX));
@@ -102,7 +127,7 @@ public class EvolTree extends JDialog {
 			double step = (maxY-minY) / childs.size();
 			
 			for(int i = 0 ; i < childs.size() ; i++) {
-				paint(childs.get(i),xPos + delX,(int)Math.round(minY + step * i),(int)Math.round(minY + step * (i + 1)));
+				addNode(childs.get(i),xPos + delX,(int)Math.round(minY + step * i),(int)Math.round(minY + step * (i + 1)));
 			}
 		}
 	
@@ -119,13 +144,26 @@ public class EvolTree extends JDialog {
 		
 	}
 
-	private final JPanel contentPanel = new JPanel();
-	private JPanel draw;
+	private static final JPanel contentPanel = new JPanel();
+	private DrawPanelEvoTree draw;
+	private NodeJpanel activNode = null;;
 
 	/**
 	 * Create the dialog.
 	 */
-	public EvolTree() {
+	public EvolTreeDialog() {
+		addWindowListener(new WindowAdapter() {
+			public void windowDeactivated(WindowEvent e) {
+		    	EvolutionTree.root.setSelected(false);
+		    	CellUpdate();
+	    		activNode = null;
+			}
+		    public void windowActivated(WindowEvent e) {
+		    	EvolutionTree.root.setSelected(true);
+		    	CellUpdate();
+	    		activNode = null;
+		    }
+		});
 		setBounds(100, 100, 450, 300);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -141,5 +179,15 @@ public class EvolTree extends JDialog {
     	super.repaint();
     	draw.repaint();
     }
+
+	private static void CellUpdate() {
+		for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+			for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+				CellObject cell = Configurations.world.get(new Point(x,y));
+				if(cell != null)
+					cell.repaint();
+			}
+		}
+	}
 
 }
