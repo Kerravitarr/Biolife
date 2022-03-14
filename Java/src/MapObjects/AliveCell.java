@@ -2,6 +2,7 @@ package MapObjects;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,6 +10,7 @@ import java.util.Map.Entry;
 
 import Utils.JSONmake;
 import Utils.Utils;
+import main.Configurations;
 import main.EvolutionTree;
 import main.Point;
 import main.World;
@@ -16,26 +18,35 @@ import main.EvolutionTree.Node;
 import main.Point.DIRECTION;
 import panels.Legend;
 public class AliveCell extends CellObject{
-	/**Размер мозга*/
-	public static final int MINDE_SIZE = 256;
+	//КОНСТАНТЫ
+	/**Размер мозга изначальный*/
+	public static final int DEF_MINDE_SIZE = 32;
+	/**Размер мозга максимальный, чтобы небыло взрывного роста и поедания памяти*/
+	public static final int MAX_MINDE_SIZE = 1024;
 	/**Сколько вообще может быть команд*/
-	private static final int COUNT_COMAND = 9*8; // 8 - DIRECTION.size()
+	private static final int COUNT_COMAND = 10*8; // 8 - DIRECTION.size()
 	/**Начальный уровень здоровья клеток*/
-	static final int StartHP = 5;
+	private static final int StartHP = 5;
 	/**Начальный уровень минералов клеток*/
-	static final int StartMP = 5;
+	private static final int StartMP = 5;
 	/**Сколько нужно жизней для размножения, по умолчанию*/
 	public static final int maxHP = 999;
 	/**Сколько можно сохранить минералов*/
-	static final int MAX_MP = 999;
+	public static final int MAX_MP = 999;
 	/**На сколько организм тяготеет к фотосинтезу (0-4)*/
-	static final double defFotosin = 2;
+	private static final double defFotosin = 2;
 	/**Столько энергии тратит бот на размножение*/
 	private static final long HP_FOR_DOUBLE = 150;
+	/**Столько ХП забирается на укрепление связей ДНК*/
+	private static final long HP_TO_DNA_WALL = 1;
+	/**Столько максимум может быть укреплений у ДНК*/
+	private static final long MAX_DNA_WALL = 30;
+	
+	//=================Внутреннее состояние бота
 	/**Внутренний счётчик процессора*/
-    int processorTik = 0;
+	private int processorTik = 0;
     /**Сознание существа, его мозг*/
-    int [] mind = new int[MINDE_SIZE];
+    private int [] mind = new int[DEF_MINDE_SIZE];
     /**Жизни*/
     private long health = StartHP;
     //Минералы
@@ -46,17 +57,18 @@ public class AliveCell extends CellObject{
     double maxMP = MAX_MP;
     /**Направление движения*/
     public Point.DIRECTION direction = Point.DIRECTION.UP;
-    
-    //=================ПАРАМЕТРЫ БОТА============
-    /**Поколение (мутационное)*/
-    private int Generation = 0;
+    //Защитный покров ДНК, он мешает изменить Нашу ДНК
+    private int DNA_wall = 0;
     
     //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
+    /**Поколение (мутационное)*/
+    private int Generation = 0;
     /**Фенотип бота*/
     public Color phenotype = new Color(128,128,128);
     //Показывает на сколько организм тяготеет к фотосинтезу
     public double photosynthesisEffect = defFotosin;
     //TODO Сила укуса - мы больше тратим энергии на укус, но наш укус становится сильнее
+    /**Дерево эволюции*/
     public Node evolutionNode = null;
     
     //===============Параметры братства, многоклеточность=======
@@ -68,7 +80,7 @@ public class AliveCell extends CellObject{
      */
     public AliveCell(){
     	super(-1, LV_STATUS.LV_ALIVE);
-    	setPos(new Point(Utils.random(0, World.MAP_CELLS.width-1),Utils.random(0, World.MAP_CELLS.height-1)));
+    	setPos(new Point(Utils.random(0, Configurations.MAP_CELLS.width-1),Utils.random(0, Configurations.MAP_CELLS.height-1)));
     	for (int i = 0; i < mind.length; i++)
     		mind[i] = block1; // У клетки по базе только одна функция - фотосинтез
     	color_DO = new Color(255,255,255);
@@ -85,6 +97,7 @@ public class AliveCell extends CellObject{
     	health = cell.getL("health");
     	mineral = cell.getL("mineral");
     	direction = DIRECTION.toEnum(cell.getI("direction"));
+    	DNA_wall = cell.getI("DNA_wall");
     	Generation = cell.getI("Generation");
     	phenotype = new Color((Long.decode("0x"+cell.getS("phenotype"))).intValue(),true);
     	photosynthesisEffect = cell.getD("photosynthesisEffect");
@@ -92,6 +105,7 @@ public class AliveCell extends CellObject{
     	evolutionNode = tree.getNode(cell.getS("GenerationTree"));
     	
     	List<Long> mindL = cell.getAL("mind");
+    	mind = new int[mindL.size()];
     	for (int i = 0; i < mind.length; i++) 
 			mind[i] = mindL.get(i).intValue();
     	
@@ -111,11 +125,15 @@ public class AliveCell extends CellObject{
 	    cell.setHealth(cell.getHealth() / 2);
 	    setMineral(cell.getMineral() / 2); // забирается половина минералов у предка
 	    cell.setMineral(cell.getMineral() / 2);
+	    DNA_wall = cell.DNA_wall /2;
+	    cell.DNA_wall = cell.DNA_wall / 2; //Забирается половина защиты ДНК
+	    
 	
 	    phenotype = new Color(cell.phenotype.getRGB(),true);   // цвет такой же, как у предка
 	    direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));   // направление, куда повернут новорожденный, генерируется случайно
 	
-	    for (int i = 0; i < this.mind.length; i++)  // копируем геном в нового бота
+	    mind = new int[cell.mind.length];
+	    for (int i = 0; i < mind.length; i++)  // копируем геном в нового бота
 	    	mind[i] = cell.mind[i];
 	
 	    hpForDiv = cell.hpForDiv;
@@ -126,7 +144,7 @@ public class AliveCell extends CellObject{
 	    repaint();
 	    
 	    //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
-	    if (Math.random() < World.AGGRESSIVE_ENVIRONMENT) 
+	    if (Math.random() < Configurations.AGGRESSIVE_ENVIRONMENT) 
 	        mutation();
 	}
 
@@ -168,77 +186,128 @@ public class AliveCell extends CellObject{
 					//=============================================================================ФУНКЦИИ ПРОГРАММИРОЫВАНИЯ=============================================================================
 				//Заменить ДНК из параметра 1 в месте параметр 2 Заменить - самопрограммирование
 				case block5:{
-					int ma = Math.min(param(0),MINDE_SIZE); //Индекс гена
-	                int mc = Math.min(param(1),COUNT_COMAND);  //Его значение
+					int ma = param(0,mind.length-1); //Индекс гена
+	                int mc = param(1);  //Его значение
 	                this.mind[ma] = mc;
 	        		setGeneration(getGeneration() + 1);
-	        		evolutionNode = evolutionNode.newNode(stepCount);
+	        		evolutionNode = evolutionNode.newNode(this,stepCount);
 					nextCommand(3);
 				}break loop;
-				//у соседа ДНК из параметра 1 в месте параметр 2 Заменить - взлом кода
+				//у соседа ДНК из параметра 1 в месте параметр 2 Заменить - взлом кода, абсолютный
 				case block5+1:{
 					OBJECT see = seeA(direction);
 					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND){
 					    Point point = fromVektorA(direction);
-					    AliveCell bot = (AliveCell) World.world.get(point);
-						int ma = Math.min(param(0),MINDE_SIZE); //Индекс гена
-		                int mc = Math.min(param(1),COUNT_COMAND);  //Его значение
-		                bot.mind[ma] = mc;
-		                bot.setGeneration(bot.getGeneration() + 1);
-		                bot.evolutionNode = bot.evolutionNode.newNode(bot.stepCount);
+					    AliveCell bot = (AliveCell) Configurations.world.get(point);
+					    if(bot.DNA_wall > 0) {
+					    	bot.DNA_wall--;
+					    } else {
+							int ma = param(0,bot.mind.length-1); //Индекс гена
+			                int mc = param(1);  //Его значение
+			                bot.mind[ma] = mc;
+			                bot.setGeneration(bot.getGeneration() + 1);
+			                bot.evolutionNode = bot.evolutionNode.newNode(bot,bot.stepCount);
+					    }
 		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 		        			color_DO = Color.BLACK;
 					}
 					nextCommand(3);
 				}break loop;
-				//у соседа ДНК переписать на своё - встраивание
+				//у соседа ДНК переписать на своё - встраивание. Встраивается кусок кода сразу за командой
 				case block5+2:{
+					OBJECT see = seeA(direction);
+				    int length_DNA = param(0,mind.length-1);
+					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND){
+					    Point point = fromVektorA(direction);
+					    AliveCell bot = (AliveCell) Configurations.world.get(point);
+					    if(bot.DNA_wall > 0) {
+					    	bot.DNA_wall--;
+					    } else {
+					    	//Встраиваемая комбинация начинается сразу за командой и её параметром
+					    	int startPos = getProcessorTik() + 2;
+							for (int i = 0; i < length_DNA; i++) {
+								int adr = bot.getProcessorTik() + i;
+						        while (adr >= bot.mind.length)
+						        	adr = adr - bot.mind.length;
+								 bot.mind[adr] = getCmdA(startPos + i); // +2 - Так как 
+							}
+			                bot.setGeneration(bot.getGeneration() + 1);
+			                bot.evolutionNode = bot.evolutionNode.newNode(bot,bot.stepCount);
+					    }
+		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
+		        			color_DO = Color.BLACK;
+					}
+					nextCommand(2 + length_DNA); //Но этот код не наш, мы его не выполняем!
+				}break loop;
+				//у соседа ДНК из параметра 1 в месте параметр 2 Заменить - взлом кода, относительный, подложить под процессор
+				case block5+3:{
 					OBJECT see = seeA(direction);
 					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND){
 					    Point point = fromVektorA(direction);
-					    AliveCell bot = (AliveCell) World.world.get(point);
-					    int startPos = Math.min(param(0),MINDE_SIZE);
-					    int count = param(1);
-						for (int i = 0; i < count; i++) {
-							int adr = bot.getProcessorTik() + i;
-					        while (adr >= mind.length)
-					        	adr = adr - mind.length;
-							 bot.mind[adr] = getCmdA(startPos + i);
-						}
-		                bot.setGeneration(bot.getGeneration() + 1);
-		                bot.evolutionNode = bot.evolutionNode.newNode(bot.stepCount);
+					    AliveCell bot = (AliveCell) Configurations.world.get(point);
+					    if(bot.DNA_wall > 0) {
+					    	bot.DNA_wall--;
+					    } else {
+							int ma = bot.getProcessorTik(); //Индекс гена
+			                int mc = param(0);  //Его значение
+			                bot.mind[ma] = mc;
+			                bot.setGeneration(bot.getGeneration() + 1);
+			                bot.evolutionNode = bot.evolutionNode.newNode(bot,bot.stepCount);
+					    }
 		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 		        			color_DO = Color.BLACK;
 					}
-					nextCommand(3);
+					nextCommand(2);
 				}break loop;
+				//Укрепить свою ДНК. На 1 единицу стройматериала требуется целых 4 жизни
+				case block5+4:
+					DNA_wall = (int) Math.min(MAX_DNA_WALL,DNA_wall+1);
+					setHealth(getHealth() - HP_TO_DNA_WALL);
+					nextCommand(1);
+				break loop;
+				//Пробить ДНК у соседа
+				case block5+5:{
+					OBJECT see = seeA(direction);
+					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND){
+					    Point point = fromVektorA(direction);
+					    AliveCell bot = (AliveCell) Configurations.world.get(point);
+					    bot.DNA_wall = Math.max(0, bot.DNA_wall - 2);
+					    setHealth(getHealth() - 1); //На это нужно усилие
+					}
+					nextCommand(1);
+				}break loop;
+				//Цикл, переход не вперёд по ДНК, а назад!
+				case block5 + 6:
+					nextCommand(-param(0)); //Но тут всегда абсолютно! Ибо от изменения длины ДНК всё поплывёт
+				break loop;
+				
 					
 					
 					//=============================================================================ФУНКЦИИ ДВИЖЕНИЯ=============================================================================
 					//...............  сменить направление относительно   ....
 				case block2 :
-	                direction = DIRECTION.toEnum(DIRECTION.toNum(direction) + param(0));
+	                direction = DIRECTION.toEnum(DIRECTION.toNum(direction) + param(0,DIRECTION.size()));
 					this.nextCommand(2);
 				break;
 				//...............  сменить направление абсолютно   ....
 				case block2 +1:
-	                direction = DIRECTION.toEnum(param(0));
+	                direction = DIRECTION.toEnum(param(0,DIRECTION.size()));
 					this.nextCommand(2);
 				break;
 				//...............  шаг  в относительном напралении  ................
 				case block2 +2:{
-	                if(moveR(DIRECTION.toEnum(param(0))))
+	                if(moveR(DIRECTION.toEnum(param(0,DIRECTION.size()))))
 						this.nextCommandFromAdr(2);
 	                else {
-						this.nextCommandFromAdr(2+seeR(DIRECTION.toEnum(param(0))).nextCMD);
+						this.nextCommandFromAdr(2+seeR(DIRECTION.toEnum(param(0,DIRECTION.size()))).nextCMD);
 	                }
 				}break loop;
 				//...............  шаг  в абсолютном напралении  ................
 				case block2 +3:{
-	                if(moveA(DIRECTION.toEnum(param(0))))
+	                if(moveA(DIRECTION.toEnum(param(0,DIRECTION.size()))))
 						this.nextCommandFromAdr(2);
 	                else {
-						this.nextCommandFromAdr(2+seeA(DIRECTION.toEnum(param(0))).nextCMD);
+						this.nextCommandFromAdr(2+seeA(DIRECTION.toEnum(param(0,DIRECTION.size()))).nextCMD);
 	                }
 				}break loop;
 				//...............  выровниться вверх   ....
@@ -251,16 +320,16 @@ public class AliveCell extends CellObject{
 					//=============================================================================ФУНКЦИИ ИССЛЕДОВАНИЯ=============================================================================
 					//.............   посмотреть  в относительном напралении ...................................
 				case block3 :
-					this.nextCommandFromAdr(1+seeR(DIRECTION.toEnum(param(0))).nextCMD);
+					this.nextCommandFromAdr(1+seeR(DIRECTION.toEnum(param(0,DIRECTION.size()))).nextCMD);
 	            break;
 	        	//.............   посмотреть  в абсолютном напралении ...................................
 				case block3+1 :
-					this.nextCommandFromAdr(1+seeA(DIRECTION.toEnum(param(0))).nextCMD);
+					this.nextCommandFromAdr(1+seeA(DIRECTION.toEnum(param(0,DIRECTION.size()))).nextCMD);
 	            break;
-	            //...................  какой мой уровень (на какой высоте бот)  .........
+	            //...................  на какой высоте бот  .........
 				case block3+2 :{
 					 // байт в геноме может иметь значение от 0 до COUNT_COMAND, а нужно от 0 до World.MAP_CELLS.height
-	                int param = param(0) * World.MAP_CELLS.height / COUNT_COMAND;
+	                int param = param(0,Configurations.MAP_CELLS.height);
 	                // если уровень бота ниже, чем полученное значение,
 	                // то прибавляем к указатели текущей команды значение 2-го байта, после выполняемой команды
 	                if (getPos().y < param) {
@@ -271,11 +340,9 @@ public class AliveCell extends CellObject{
 				}break;
 					//...................  какое моё здоровье  ...............................
 				case block3+3 :{
-					 // байт в геноме может иметь значение от 0 до COUNT_COMAND, а нужно от 0 до maxHP
-	                int param = (int) (param(0) * hpForDiv / COUNT_COMAND);
 	                // если здоровье бота ниже, чем полученное значение,
 	                // то прибавляем к указатели текущей команды значение 2-го байта, после выполняемой команды
-	                if (health < param) {
+	                if (health < param(0,hpForDiv)) {
 						this.nextCommandFromAdr(2);
 	                } else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после выполняемой команды
 						this.nextCommandFromAdr(3);
@@ -283,8 +350,7 @@ public class AliveCell extends CellObject{
 				}break;
 					//...................сколько  минералов ...............................
 				case block3+4 :{
-		            int param = (int) (param(0) * maxMP / COUNT_COMAND);
-		            if (mineral < param) {
+		            if (mineral < param(0,maxMP)) {
 						this.nextCommandFromAdr(2);
 		            } else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после выполняемой команды
 						this.nextCommandFromAdr(3);
@@ -300,30 +366,28 @@ public class AliveCell extends CellObject{
 					//..............Мы можем заняться фотосинтезом?........................
 				case block3+6:{
 			        //Показывает эффективность нашего фотосинтеза
-			        double t = this.getMineral() / this.maxMP * (1+this.photosynthesisEffect);
-			        if (World.sun.getEnergy(getPos()) + t > 0) 
+			        double t = (1+this.photosynthesisEffect) + this.getMineral() / this.maxMP;
+			        if (Configurations.sun.getEnergy(getPos()) + t > 0) 
 						this.nextCommandFromAdr(1);
 					else
 						this.nextCommandFromAdr(2);
 				}break;
 					//..............Минералы прибавляются?........................
 				case block3+7:
-			        if (this.getPos().y >= (World.MAP_CELLS.height  *World.LEVEL_MINERAL)) 
+			        if (this.getPos().y >= (Configurations.MAP_CELLS.height  *Configurations.LEVEL_MINERAL)) 
 						this.nextCommandFromAdr(1);
 					else
 						this.nextCommandFromAdr(2);
 				break;
 				//..............Сколкько здоровья у того, на кого смотрю........................
 				case block3+8:{
-					 // байт в геноме может иметь значение от 0 до COUNT_COMAND, а нужно от 0 до maxHP
-	                int param = (int) (param(0) * hpForDiv / COUNT_COMAND);
 	                OBJECT see = seeA(direction);
 					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND) {
 						Point point = fromVektorA(direction);
-						AliveCell cell = (AliveCell) World.world.get(point);
+						AliveCell cell = (AliveCell) Configurations.world.get(point);
 						// если уровень бота ниже, чем полученное значение,
 		                // то прибавляем к указатели текущей команды значение 2-го байта, после выполняемой команды
-		                if (cell.health < param) {
+		                if (cell.health < param(0, hpForDiv)) {
 							this.nextCommandFromAdr(2);
 		                } else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после выполняемой команды
 							this.nextCommandFromAdr(3);
@@ -334,15 +398,13 @@ public class AliveCell extends CellObject{
 				}break;
 				//..............Сколкько минералов у того, на кого смотрю........................
 				case block3+9:{
-					 // байт в геноме может иметь значение от 0 до COUNT_COMAND, а нужно от 0 до maxHP
-	                int param = (int) (param(0) * hpForDiv / COUNT_COMAND);
 	                OBJECT see = seeA(direction);
 					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND) {
 						Point point = fromVektorA(direction);
-						AliveCell cell = (AliveCell) World.world.get(point);
+						AliveCell cell = (AliveCell) Configurations.world.get(point);
 						// если уровень бота ниже, чем полученное значение,
 		                // то прибавляем к указатели текущей команды значение 2-го байта, после выполняемой команды
-		                if (cell.mineral < param) {
+						if (cell.mineral < param(0,maxMP)) {
 							this.nextCommandFromAdr(2);
 		                } else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после выполняемой команды
 							this.nextCommandFromAdr(3);
@@ -365,88 +427,102 @@ public class AliveCell extends CellObject{
 	                else
 						this.nextCommandFromAdr(3);
 				break;
+				//Сколько у меня защиты ДНК?
+				case block3+12:
+	                if(DNA_wall > param(0,MAX_DNA_WALL))
+						this.nextCommandFromAdr(2);
+	                else
+						this.nextCommandFromAdr(3);
+				break;
 				
 				
 					//=============================================================================ФУНКЦИИ ВЗАИМОДЕЙТСВИЯ=============================================================================
 	            	//..............   съесть в относительном напралении       ...............
-				case block4 :
-					if(eatR(DIRECTION.toEnum(param(0))))
+				case block4 :{
+					DIRECTION dir = DIRECTION.toEnum(param(0,DIRECTION.size()));
+					if(eatR(dir))
 						this.nextCommandFromAdr(2);
 	                else
-						this.nextCommandFromAdr(3+seeR(DIRECTION.toEnum(param(0))).nextCMD);
-				break loop;
+						this.nextCommandFromAdr(3+seeR(dir).nextCMD);
+				}break loop;
 					//..............   съесть в абсолютном напралении       ...............
-				case block4 +1:
-					if(eatA(DIRECTION.toEnum(param(0))))
+				case block4 +1:{
+					DIRECTION dir = DIRECTION.toEnum(param(0,DIRECTION.size()));
+					if(eatA(dir))
 						this.nextCommandFromAdr(2);
 	                else
-						this.nextCommandFromAdr(3+seeA(DIRECTION.toEnum(param(0))).nextCMD);
-				break loop;
+						this.nextCommandFromAdr(3+seeA(dir).nextCMD);
+				}break loop;
 				//Не убить соседа, а лишь куисить в относительном напралении
-				case block4 + 2:
-					if(biteR(DIRECTION.toEnum(param(0))))
+				case block4 + 2:{
+					DIRECTION dir = DIRECTION.toEnum(param(0,DIRECTION.size()));
+					if(biteR(dir))
 						this.nextCommandFromAdr(2);
 	                else
-						this.nextCommandFromAdr(3+seeR(DIRECTION.toEnum(param(0))).nextCMD);
-				break loop;
+						this.nextCommandFromAdr(3+seeR(dir).nextCMD);
+				}break loop;
 				//Не убить соседа, а лишь куисить в абсолютном напралении
-				case block4 + 3:
-					if(biteA(DIRECTION.toEnum(param(0))))
+				case block4 + 3:{
+					DIRECTION dir = DIRECTION.toEnum(param(0,DIRECTION.size()));
+					if(biteA(dir))
 						this.nextCommandFromAdr(2);
 	                else
-						this.nextCommandFromAdr(3+seeR(DIRECTION.toEnum(param(0))).nextCMD);
-				break loop;
+						this.nextCommandFromAdr(3+seeR(dir).nextCMD);
+				}break loop;
 					
 				//Поделиться, если у соседа меньше в относительном напралении
-				case block4 + 4:
-					if(careR(DIRECTION.toEnum(param(0))))
+				case block4 + 4:{
+					DIRECTION dir = DIRECTION.toEnum(param(0,DIRECTION.size()));
+					if(careR(dir))
 						this.nextCommandFromAdr(2);
 	                else
-						this.nextCommandFromAdr(3+seeR(DIRECTION.toEnum(param(0))).nextCMD);
-				break loop;
+						this.nextCommandFromAdr(3+seeR(dir).nextCMD);
+				}break loop;
 				//Поделиться, если у соседа меньше в абсолютном напралении
-				case block4 + 5:
-					if(careA(DIRECTION.toEnum(param(0))))
+				case block4 + 5:{
+					DIRECTION dir = DIRECTION.toEnum(param(0,DIRECTION.size()));
+					if(careA(dir))
 						this.nextCommandFromAdr(2);
 	                else
-						this.nextCommandFromAdr(3+seeR(DIRECTION.toEnum(param(0))).nextCMD);
-				break loop;
-					
+						this.nextCommandFromAdr(3+seeR(dir).nextCMD);
+				}break loop;
 				//Отдать безвозмездно в относительном напралении
-				case block4 + 6:
-					if(giveR(DIRECTION.toEnum(param(0))))
+				case block4 + 6:{
+					DIRECTION dir = DIRECTION.toEnum(param(0,DIRECTION.size()));
+					if(giveR(dir))
 						this.nextCommandFromAdr(2);
 	                else
-						this.nextCommandFromAdr(3+seeR(DIRECTION.toEnum(param(0))).nextCMD);
-				break loop;
+						this.nextCommandFromAdr(3+seeR(dir).nextCMD);
+				}break loop;
 				//Отдать безвозмездно в абсолютном напралении
-				case block4 + 7:
-					if(giveA(DIRECTION.toEnum(param(0))))
+				case block4 + 7:{
+					DIRECTION dir = DIRECTION.toEnum(param(0,DIRECTION.size()));
+					if(giveA(dir))
 						this.nextCommandFromAdr(2);
 	                else
-						this.nextCommandFromAdr(3+seeR(DIRECTION.toEnum(param(0))).nextCMD);
-				break loop;
+						this.nextCommandFromAdr(3+seeR(dir).nextCMD);
+				}break loop;
 				
 
 				//=============================================================================ФУНКЦИИ МНОГОКЛЕТОЧНЫХ=============================================================================
 				//Присосаться относительно
 				case block6:
-					clingR(DIRECTION.toEnum(param(0)));
+					clingR(DIRECTION.toEnum(param(0,DIRECTION.size())));
 					nextCommand(2);
 				break loop;
 				//Присосаться абсолютно
 				case block6 +1:
-					clingA(DIRECTION.toEnum(param(0)));
+					clingA(DIRECTION.toEnum(param(0,DIRECTION.size())));
 					nextCommand(2);
 				break loop;
 				//Родить присосавшегося потомка относительно
 				case block6+2:
-					cloneR(DIRECTION.toEnum(param(0)));
+					cloneR(DIRECTION.toEnum(param(0,DIRECTION.size())));
 					nextCommand(2);
 				break loop;
 				//Родить присосавшегося потомка абсолютно
 				case block6+3:
-					cloneA(DIRECTION.toEnum(param(0)));
+					cloneA(DIRECTION.toEnum(param(0,DIRECTION.size())));
 					nextCommand(2);
 				break loop;
 				
@@ -473,12 +549,14 @@ public class AliveCell extends CellObject{
     	if(friends.size() != 0) { // Колония безвозмездно делится всем, что имеет
     		long allHp = getHealth();
     		long allMin = getMineral();
+    		int allDNA_wall = DNA_wall;
     		int friend = friends.size() + 1;
     		Point delP = null;
 			synchronized (friends) {
 				for (Entry<Point, AliveCell> cell : friends.entrySet()) {
 					allHp+=cell.getValue().getHealth();
 					allMin+=cell.getValue().getMineral();
+					allDNA_wall+=cell.getValue().DNA_wall;
 					if(!cell.getValue().aliveStatus(LV_STATUS.LV_ALIVE))
 						delP = cell.getKey();
 				}
@@ -487,20 +565,27 @@ public class AliveCell extends CellObject{
 			}
     		allHp /= friend;
     		allMin /= friend;
+    		allDNA_wall /= friend;
     		setHealth(allHp);
     		setMineral(allMin);
+    		DNA_wall = allDNA_wall;
     		for (AliveCell cell : friends.values()) {
 				cell.setHealth(allHp);
 				cell.setMineral(allMin);
+				cell.DNA_wall = allDNA_wall;
 			}
     	}
         // если бот находится на глубине ниже половины
         // то он автоматом накапливает минералы, но не более 999
-        if (this.getPos().y >= (World.MAP_CELLS.height * World.LEVEL_MINERAL)) {
-        	double realLv = this.getPos().y - (World.MAP_CELLS.height * World.LEVEL_MINERAL);
-        	double dist = World.MAP_CELLS.height * (1 - World.LEVEL_MINERAL);
-            this.setMineral((long) (this.getMineral() + World.CONCENTRATION_MINERAL * (realLv/dist) * (5 - this.photosynthesisEffect))); //Эффективный фотосинтез мешает нам переваривать пищу
+        if (this.getPos().y >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL)) {
+        	double realLv = this.getPos().y - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
+        	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
+            this.setMineral(Math.round(this.getMineral() + Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - this.photosynthesisEffect))); //Эффективный фотосинтез мешает нам переваривать пищу
         }
+	}
+
+	private int param(int i, double hpForDiv2) {
+		return (int) Math.round(hpForDiv2 * param(i) / COUNT_COMAND);
 	}
 
 	/**
@@ -524,10 +609,11 @@ public class AliveCell extends CellObject{
 
 	//Передвигает счётчик команд на переданное число
 	private void nextCommand(int absoluteAdr) {
-		int paramadr = absoluteAdr + this.getProcessorTik();
-        while (paramadr >= mind.length) {
-            paramadr = paramadr - mind.length;
-        }
+		int paramadr = this.getProcessorTik() + absoluteAdr;
+        while (paramadr >= mind.length)
+            paramadr -= mind.length;
+        while (paramadr < 0)
+            paramadr += mind.length;
         this.processorTik = paramadr;
 	}
 	//Передвигает счётчик команд на переданное число
@@ -555,9 +641,9 @@ public class AliveCell extends CellObject{
 	 */
 	private void photosynthesis() {
         //Показывает эффективность нашего фотосинтеза
-        double t = this.getMineral() / this.maxMP * (1+this.photosynthesisEffect);
+        double t = (1+this.photosynthesisEffect) + this.getMineral() / this.maxMP;
         // формула вычисления энергии
-        double hlt = World.sun.getEnergy(getPos()) + t;
+        double hlt = Configurations.sun.getEnergy(getPos()) + t;
         if (hlt > 0) {
         	setHealth(Math.round(this.getHealth() + hlt));   // прибавляем полученную энергия к энергии бота
             this.goGreen((int) Math.round(hlt));                      // бот от этого зеленеет
@@ -593,7 +679,7 @@ public class AliveCell extends CellObject{
         	setHealth(-this.getHealth() - getMineral());
             return;
         }
-        World.world.add(new AliveCell(this,n));
+        Configurations.world.add(new AliveCell(this,n));
 	}
 
 	/**
@@ -635,14 +721,14 @@ public class AliveCell extends CellObject{
 		    	for (AliveCell cell : friends.values() ) {
 		    		int delx = Math.abs(point.x - cell.getPos().x);
 		    		int dely = Math.abs(point.y - cell.getPos().y);
-		    		if(dely > 1 || (delx > 1 && delx != World.MAP_CELLS.width-1))
+		    		if(dely > 1 || (delx > 1 && delx != Configurations.MAP_CELLS.width-1))
 		    			return false;
 		    	}
 		        setHealth(getHealth() - 1); // бот теряет на этом 1 энергию
 		    	//Все условия проверены, можно выдвигаться!
-				World.world.clean(getPos());
+		        Configurations.world.clean(getPos());
 		        setPos(point);
-		        World.world.add(this);
+		        Configurations.world.add(this);
 
 				return true;
 			}
@@ -654,11 +740,10 @@ public class AliveCell extends CellObject{
 	 */
 	private void mutation() {
 		setGeneration(getGeneration() + 1);
-		evolutionNode = evolutionNode.newNode(stepCount);
 		/**Дельта, гуляет от -1 до 1*/
 		double del = (0.5 - Math.random())*2;
 		//TODO К сожалению первые два слишком сильно убегают вперёд
-        switch (Utils.random(2, 6)) { // К сожалению 0 и 1 вырезаны. Существа перерастают и эволюция заканчивается
+        switch (Utils.random(2, 8)) { // К сожалению 0 и 1 вырезаны. Существа перерастают делиться и эволюция заканчивается
             case 0: //Мутирует количество энергии для деления
                 this.hpForDiv *= del;
                 break;
@@ -668,11 +753,11 @@ public class AliveCell extends CellObject{
             case 2: //Мутирует эффективность фотосинтеза
                 this.photosynthesisEffect = Math.max(0, Math.min(this.photosynthesisEffect * (1+del*0.1), 4));
                 break;
-            case 3: //Мутирует геном
+            case 3:{ //Мутирует геном
                 int ma = Utils.random(0, mind.length-1); //Индекс гена
-                int mc = Utils.random(0, COUNT_COMAND-1); //Его значение
+                int mc = Utils.random(0, COUNT_COMAND); //Его значение
                 this.mind[ma] = mc;
-                break;
+            	}break;
             case 4: //Мутирует красный цвет
         		int red = phenotype.getRed();
         		red = (int) Math.max(0, Math.min(red + del * 10, 255));
@@ -688,7 +773,29 @@ public class AliveCell extends CellObject{
         		blue = (int) Math.max(0, Math.min(blue + del * 10, 255));
         		phenotype = new Color(phenotype.getRed(),phenotype.getGreen(), blue, phenotype.getAlpha());
                 break;
+            case 7:{ //Геном удлиняется
+            	if(mind.length + 1 <= MAX_MINDE_SIZE) {
+                	int newSize = mind.length + 1;
+                	int mc = Utils.random(0, mind.length - 1); //Ген, который будет дублироваться
+                	int[] mindL = new int[newSize];
+                	System.arraycopy(mind, 0, mindL, 0, mc+1);
+                	mindL[mc+1] = mindL[mc]; //Дублирование гена
+                	System.arraycopy(mind, mc+1, mindL, mc+2, mind.length - 1 - mc);
+            	    mind = mindL;
+            	}
+            } break;
+            case 8:{ //Геном укорачивается на последний ген
+            	int newSize = mind.length - 1;
+            	int mc = Utils.random(0, mind.length - 1); //Ген, который будет удалён
+            	int[] mindL = new int[newSize];
+            	System.arraycopy(mind, 0, mindL, 0, mc);
+            	System.arraycopy(mind, mc+1, mindL, mc, mind.length - 1 - mc);
+        	    mind = mindL;
+                while (processorTik >= mind.length)
+                	processorTik--;
+            } break;
         }
+		evolutionNode = evolutionNode.newNode(this,stepCount);
 	}
 
 	/**
@@ -696,7 +803,7 @@ public class AliveCell extends CellObject{
 	 */
 	private void bot2Organic() {
     	remove(); //Удаляем себя
-        World.world.add(new Organic(this)); //Мы просто заменяем себя
+    	Configurations.world.add(new Organic(this)); //Мы просто заменяем себя
 	}
 
 
@@ -710,29 +817,7 @@ public class AliveCell extends CellObject{
 	private OBJECT seeR(DIRECTION direction) {
 		return seeA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
 	}
-	/**
-	 * Родственные-ли боты?
-	 * TODO Вообще пока смотрит только по ДНК, но возможно в будущем нужно смотреть будет не на 
-	 *      генотип, а на фенотип!
-	 * @param cell
-	 * @param cell2
-	 * @return
-	 */
-	/*private boolean isRelative(Cell bot0, Cell bot1) {
-	    if (bot0.alive != LV_STATUS.LV_ALIVE || bot1.alive != LV_STATUS.LV_ALIVE) {
-	        return false;
-	    }
-	    int dif = 0;    // счетчик несовпадений в геноме
-	    for (int i = 0; i < mind.length; i++) {
-	        if (bot0.mind[i] != bot1.mind[i]) {
-	            dif = dif + 1;
-	            if (dif == 2) {
-	                return false;
-	            } // если несовпадений в генеме больше 1
-	        }     // то боты не родственики
-	    }
-	    return true;
-	}*/
+
 	/**
 	 * Родственные-ли боты?
 	 * Определеяет родственников по фенотипу, по тому как они выглядят
@@ -773,7 +858,7 @@ public class AliveCell extends CellObject{
         switch (seeA(direction)) {
 			case ORGANIC: {
 				Point point = fromVektorA(direction);
-				CellObject cell = World.world.get(point);
+				CellObject cell = Configurations.world.get(point);
 				setHealth(health - cell.getHealth());    //здоровье увеличилось на сколько осталось
 	            goRed((int) -cell.getHealth());           // бот покраснел
 	            cell.remove();
@@ -782,7 +867,7 @@ public class AliveCell extends CellObject{
 			case FRIEND:{
 				//--------- дошли до сюда, значит впереди живой бот -------------------
 				Point point = fromVektorA(direction);
-				AliveCell cell = (AliveCell) World.world.get(point);
+				AliveCell cell = (AliveCell) Configurations.world.get(point);
 				
 		        long min0 = mineral;  // определим количество минералов у нас
 		        long min1 = cell.mineral;  // определим количество минералов у потенциального обеда
@@ -843,7 +928,7 @@ public class AliveCell extends CellObject{
         switch (seeA(direction)) {
 			case ORGANIC: {
 				Point point = fromVektorA(direction);
-				CellObject cell = World.world.get(point);
+				CellObject cell = Configurations.world.get(point);
 				setHealth(health - cell.getHealth()/4);    //здоровье увеличилось
 	            goRed((int) -cell.getHealth()/4);           // бот покраснел
 	            cell.setHealth(cell.getHealth()*3/4); //Одну четверть отдали
@@ -852,7 +937,7 @@ public class AliveCell extends CellObject{
 			case FRIEND:{
 				//--------- дошли до сюда, значит впереди живой бот -------------------
 				Point point = fromVektorA(direction);
-				AliveCell cell = (AliveCell) World.world.get(point);
+				AliveCell cell = (AliveCell) Configurations.world.get(point);
 				
 		        long min0 = mineral;  // определим количество минералов у нас
 		        long min1 = cell.mineral / 2;  // определим количество минералов у цели,
@@ -898,7 +983,7 @@ public class AliveCell extends CellObject{
 			case FRIEND:{
 		        //------- если мы здесь, то в данном направлении живой ----------
 				Point point = fromVektorA(direction);
-				AliveCell cell = (AliveCell) World.world.get(point);
+				AliveCell cell = (AliveCell) Configurations.world.get(point);
 		        long hlt0 = health;         // определим количество энергии и минералов
 		        long hlt1 = cell.health;  // у бота и его соседа
 		        long min0 = mineral;
@@ -941,7 +1026,7 @@ public class AliveCell extends CellObject{
 			case FRIEND:{
 		        //------- если мы здесь, то в данном направлении живой ----------
 				Point point = fromVektorA(direction);
-				AliveCell cell = (AliveCell) World.world.get(point);
+				AliveCell cell = (AliveCell) Configurations.world.get(point);
 				long hlt0 = health;  // бот отдает четверть своей энергии
 				long hlt = hlt0 / 4;
 	            setHealth(health - hlt);
@@ -971,7 +1056,7 @@ public class AliveCell extends CellObject{
 		OBJECT see = seeA(direction);
 		if(see == OBJECT.ENEMY || see == OBJECT.FRIEND) {
 			Point point = fromVektorA(direction);
-		    setFriend((AliveCell) World.world.get(point));
+		    setFriend((AliveCell) Configurations.world.get(point));
 		}
 	}
 	
@@ -987,7 +1072,7 @@ public class AliveCell extends CellObject{
         if(seeA(direction) == OBJECT.CLEAN) {
 			Point point = fromVektorA(direction);
             AliveCell newbot = new AliveCell(this,point);
-            World.world.add(newbot);//Сделали потомка
+            Configurations.world.add(newbot);//Сделали потомка
             clingA(direction); // Присосались друг к дуругу
         }
 	}
@@ -1001,12 +1086,12 @@ public class AliveCell extends CellObject{
 	public Point findEmptyDirection() {
 	    for (int i = 0; i < 5; i++) {
 	        Point point = fromVektorR(DIRECTION.toEnum(i));
-	        OBJECT obj = World.world.test(point);
+	        OBJECT obj = Configurations.world.test(point);
 	        if (obj == OBJECT.CLEAN)
 	            return point;
 	        if (i != 0 && i != 4) {
 	            point = fromVektorR(DIRECTION.toEnum(-i));
-		        obj = World.world.test(point);
+		        obj = Configurations.world.test(point);
 		        if (obj == OBJECT.CLEAN)
 		            return point;
 	        }
@@ -1122,9 +1207,9 @@ public class AliveCell extends CellObject{
 				try {
 				for(AliveCell i : friends.values()) {
 					int rxc = i.getPos().getRx();
-					if(getPos().x == 0 && i.getPos().x == World.MAP_CELLS.width -1)
+					if(getPos().x == 0 && i.getPos().x == Configurations.MAP_CELLS.width -1)
 						rxc = rx - r;
-					else if(i.getPos().x == 0 && getPos().x == World.MAP_CELLS.width -1)
+					else if(i.getPos().x == 0 && getPos().x == Configurations.MAP_CELLS.width -1)
 							rxc = rx + r;
 					int ryc = i.getPos().getRy();
 					g.drawLine(rx,ry, rxc,ryc);
@@ -1217,7 +1302,31 @@ public class AliveCell extends CellObject{
 		return processorTik;
 	}
 
+	/**
+	 * @return Ветвь эволюции
+	 */
+	public String getBranch() {
+		return evolutionNode.getBranch();
+	}
 
+	public void setFriend(AliveCell friend) {
+		synchronized (friends) {
+			if (friend == null || friends.get(friend.getPos()) != null)
+				return;
+			friends.put(friend.getPos(), friend);
+			friend.friends.put(getPos(), this);
+		}
+	}
+
+	public int mindLength() {
+		return mind.length;
+	}
+	public int[] getDNA() {
+		return Arrays.copyOf(mind, mind.length);
+	}
+	public int getDNA_wall() {
+		return DNA_wall;
+	}
 
 	public JSONmake toJSON(JSONmake make) {
 		make.add("processorTik",processorTik);
@@ -1225,6 +1334,7 @@ public class AliveCell extends CellObject{
 		make.add("health",health);
 		make.add("mineral",mineral);
 		make.add("direction",DIRECTION.toNum(direction));
+		make.add("DNA_wall",DNA_wall);
 
 	    //=================ПАРАМЕТРЫ БОТА============
 		make.add("Generation",Generation);
@@ -1242,21 +1352,5 @@ public class AliveCell extends CellObject{
 			fr[i] = ((Point)points[i]).toJSON();
 		make.add("friends",fr);
 		return make;
-	}
-
-	/**
-	 * @return Ветвь эволюции
-	 */
-	public String getBranch() {
-		return evolutionNode.getBranch();
-	}
-
-	public void setFriend(AliveCell friend) {
-		synchronized (friends) {
-			if (friend == null || friends.get(friend.getPos()) != null)
-				return;
-			friends.put(friend.getPos(), friend);
-			friend.friends.put(getPos(), this);
-		}
 	}
 }
