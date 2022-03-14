@@ -20,13 +20,15 @@ import javax.swing.border.TitledBorder;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import Utils.Utils;
+import main.Configurations;
 
 public class BotInfo extends JPanel {
 	enum CELL_COMMAND{
 		PHOT(AliveCell.block1),MIN_TO_EN(AliveCell.block1+1),CLONE(AliveCell.block1+2),
-		DNA_PROG(AliveCell.block5,2),DNA_CRASH(AliveCell.block5+1,2),DNA_COPY(AliveCell.block5+2,2),
+		DNA_PROG(AliveCell.block5,2),DNA_CRASH_A(AliveCell.block5+1,2),DNA_COPY(AliveCell.block5+2,1),DNA_CRASH_O(AliveCell.block5+3,1),DNA_WALL(AliveCell.block5+4),WALL_BIT(AliveCell.block5+5),LOOP(AliveCell.block5+6,1),
 		N_DIR_A(AliveCell.block2,1),N_DIR_R(AliveCell.block2+1,1),STEP_A(AliveCell.block2+2,1,AliveCell.OBJECT.size()-2),STEP_R(AliveCell.block2+3,1,AliveCell.OBJECT.size()-2),DIR_UP(AliveCell.block2+4),
-		SEE_A(AliveCell.block3,1,AliveCell.OBJECT.size()-1),SEE_R(AliveCell.block3+1,1,AliveCell.OBJECT.size()-1),H_LV(AliveCell.block3+2,1,2),HP_LV(AliveCell.block3+3,1,2),MP_LV(AliveCell.block3+4,1,2),WHO_NEAR(AliveCell.block3+5,0,2),CAN_PH(AliveCell.block3+6,0,2),CAN_MIN(AliveCell.block3+7,0,2),HP_NEAR(AliveCell.block3+8,1,2+AliveCell.OBJECT.size()-3),MP_NEAR(AliveCell.block3+9,1,2+AliveCell.OBJECT.size()-3),I_MANY(AliveCell.block3+10,0,2),
+		SEE_A(AliveCell.block3,1,AliveCell.OBJECT.size()-1),SEE_R(AliveCell.block3+1,1,AliveCell.OBJECT.size()-1),H_LV(AliveCell.block3+2,1,2),HP_LV(AliveCell.block3+3,1,2),MP_LV(AliveCell.block3+4,1,2),WHO_NEAR(AliveCell.block3+5,0,2),
+			CAN_PH(AliveCell.block3+6,0,2),CAN_MIN(AliveCell.block3+7,0,2),HP_NEAR(AliveCell.block3+8,1,2+AliveCell.OBJECT.size()-3),MP_NEAR(AliveCell.block3+9,1,2+AliveCell.OBJECT.size()-3),I_MANY(AliveCell.block3+10,0,2),HOW_OLD(AliveCell.block3+11,1,2),HOW_DNA_W(AliveCell.block3+12,1,2),
 		EAT_A(AliveCell.block4,1,1+AliveCell.OBJECT.size()-4),EAT_R(AliveCell.block4+1,1,1+AliveCell.OBJECT.size()-4),BITE_A(AliveCell.block4+2,1,1+AliveCell.OBJECT.size()-3),BITE_R(AliveCell.block4+3,1,1+AliveCell.OBJECT.size()-3),
 		CARE_A(AliveCell.block4+4,1,1+AliveCell.OBJECT.size()-32),CARE_R(AliveCell.block4+5,1,1+AliveCell.OBJECT.size()-3),GIVE_A(AliveCell.block4+6,1,1+AliveCell.OBJECT.size()-3),GIVE_R(AliveCell.block4+7,1,1+AliveCell.OBJECT.size()-3),
 		CLING_R(AliveCell.block6,1),CLING_A(AliveCell.block6+1,1),CLONE_R(AliveCell.block6+2,1),CLONE_A(AliveCell.block6+3,1),
@@ -73,22 +75,22 @@ public class BotInfo extends JPanel {
 						DefaultListModel<String> model = new DefaultListModel<String> ();
 						model.removeAllElements();
 						int processorTik = lcell.getProcessorTik();
-						for(int i = 0 ; i < AliveCell.MINDE_SIZE ; i ++) {
+						for(int i = 0 ; i < lcell.mindLength() ; i ++) {
 							int cmd = lcell.getCmdA(processorTik+i);
 							int newNumber = (processorTik+i);
-							 while (newNumber >= AliveCell.MINDE_SIZE)
-								 newNumber = newNumber - AliveCell.MINDE_SIZE;
+							 while (newNumber >= lcell.mindLength())
+								 newNumber = newNumber - lcell.mindLength();
 							String row = newNumber + " = " +  cmd;//Так как 0 - параметр следующей за тиком команды
 							for(CELL_COMMAND cmdS : CELL_COMMAND.myEnumValues) {
 								if(cmdS.cmdNum == cmd) {
-									row += " - " + cmdS.name() + " (" + cmdS.cmdParamsCount;
+									row += " - " + cmdS.name();
 									if(cmdS.cmdParamsCount > 0) {
-										row += " -" ;
+										row += " (" + cmdS.cmdParamsCount + " -";
 										for (int j = 0; j < cmdS.cmdParamsCount; j++) {
 											row += " " + lcell.getCmdA(processorTik + i +1+ j);
 										}
+										row += ")";
 									}
-									row += ")";
 									if(cmdS.cmdCountAns == 1) {
 										row += " PC += 1";
 									}else if(cmdS.cmdCountAns > 0) {
@@ -122,6 +124,7 @@ public class BotInfo extends JPanel {
 	 * Create the panel.
 	 */
 	public BotInfo() {
+		Configurations.info = this;
 		setLayout(new BorderLayout(0, 0));
 		
 		JPanel panel = new JPanel();
@@ -187,16 +190,16 @@ public class BotInfo extends JPanel {
 			gl_panel_4.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel_4.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(gl_panel_4.createParallelGroup(Alignment.TRAILING)
-						.addComponent(panel_12, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_11, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_10, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_9, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_8, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_7, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_6, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addGroup(Alignment.LEADING, gl_panel_4.createParallelGroup(Alignment.TRAILING, false)
+					.addGroup(gl_panel_4.createParallelGroup(Alignment.LEADING)
+						.addComponent(panel_12, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_1, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_11, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_10, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_9, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_8, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_7, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_6, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addGroup(gl_panel_4.createParallelGroup(Alignment.TRAILING, false)
 							.addComponent(panel_5, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
 							.addComponent(panel_3, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)))
 					.addGap(59))
@@ -324,6 +327,7 @@ public class BotInfo extends JPanel {
 		panel_5.add(lblNewLabel_7);
 		
 		age = new JTextField();
+		age.setToolTipText("Через черту показывается степень защищённости ДНК");
 		age.setHorizontalAlignment(SwingConstants.CENTER);
 		age.setBackground(Color.WHITE);
 		panel_5.add(age);
@@ -353,11 +357,11 @@ public class BotInfo extends JPanel {
 	
 	
 	public void setCell(CellObject cellObject) {
+		clearText();
 		this.cell=cellObject;
-		if(cellObject == null) {
-			clearText();
+		if(cellObject == null)
 			return;
-		}
+
 		setDinamicHaracteristiks();
 		if (getCell() instanceof AliveCell) {
 			AliveCell new_name = (AliveCell) getCell();
@@ -372,12 +376,17 @@ public class BotInfo extends JPanel {
 	private void setDinamicHaracteristiks() {
 		pos.setText(cell.getPos().toString());
 		state.setText(getCell().alive.name());
-		hp.setText(getCell().getHealth()+"");
 		age.setText(getCell().getAge()+"");
 		if (getCell() instanceof AliveCell) {
 			AliveCell new_name = (AliveCell) getCell();
-			mp.setText(new_name.getMineral()+"");
+            mp.setText(new_name.getMineral()+"");
 			direction.setText(new_name.direction.name());
+			hp.setText(getCell().getHealth()+"+" + Math.round(Configurations.sun.getEnergy(new_name.getPos())+(1+new_name.photosynthesisEffect) * new_name.getMineral() / AliveCell.MAX_MP)+"\\" + new_name.getDNA_wall());
+			double realLv = new_name.getPos().y - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
+        	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
+			mp.setText(new_name.getMineral()+"+" + Math.round(Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - new_name.photosynthesisEffect)));
+		} else {
+			hp.setText(getCell().getHealth() + "");
 		}
 	}
 	private void clearText() {
