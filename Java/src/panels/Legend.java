@@ -2,7 +2,6 @@ package panels;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.util.Timer;
@@ -16,10 +15,10 @@ import javax.swing.border.BevelBorder;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
+import main.Configurations;
 import main.Point;
-import main.World;
 
-public class Legend extends JPanel {
+public class Legend extends JPanel{
 	
 	public static class Graph extends JPanel{
 		static final int HEIGHT = 40;
@@ -59,11 +58,13 @@ public class Legend extends JPanel {
 	
 			    	switch (getMode()) {
 						case DOING -> {
-							values = new Value[4];
-							values[0] = new Value(1.0/4,1.0/4,"Фотосинтез",Color.GREEN);
-							values[1] = new Value(2.0/4,1.0/4,"Охота",Color.RED);
-							values[2] = new Value(3.0/4,1.0/4,"Минерализация",Color.BLUE);
-							values[3] = new Value(4.0/4,1.0/4,"Мёртвый",new Color(139,69,19,100));
+							values = new Value[6];
+							values[0] = new Value(1.0/values.length,1.0/values.length,"Фотосинтез",Color.GREEN);
+							values[1] = new Value(2.0/values.length,1.0/values.length,"Охота",Color.RED);
+							values[2] = new Value(3.0/values.length,1.0/values.length,"ДНК атака",Color.BLACK);
+							values[3] = new Value(4.0/values.length,1.0/values.length,"Минерализация",Color.BLUE);
+							values[4] = new Value(5.0/values.length,1.0/values.length,"Мёртвый",new Color(139,69,19,100));
+							values[5] = new Value(6.0/values.length,1.0/values.length,"Новорождённый",Color.WHITE);
 						}
 						case HP ->{
 							values = new Value[10];
@@ -73,9 +74,9 @@ public class Legend extends JPanel {
 						}
 						case YEAR ->{
 							maxAge = 0;
-							for (int x = 0; x < World.MAP_CELLS.width; x++) {
-								for (int y = 0; y < World.MAP_CELLS.height; y++) {
-									CellObject cell = World.world.get(new Point(x,y));
+							for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+								for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+									CellObject cell = Configurations.world.get(new Point(x,y));
 									if(cell != null && cell instanceof AliveCell)
 										maxAge = Math.max(maxAge, ((AliveCell) cell).getAge());
 								}
@@ -88,9 +89,9 @@ public class Legend extends JPanel {
 						case PHEN -> {values = new Value[0];}
 						case GENER ->{
 							maxGenDef = 0;
-							for (int x = 0; x < World.MAP_CELLS.width; x++) {
-								for (int y = 0; y < World.MAP_CELLS.height; y++) {
-									CellObject cell = World.world.get(new Point(x,y));
+							for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+								for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+									CellObject cell = Configurations.world.get(new Point(x,y));
 									if(cell != null && cell instanceof AliveCell)
 										maxGenDef = Math.max(maxGenDef, ((AliveCell) cell).getGeneration());
 								}
@@ -102,9 +103,9 @@ public class Legend extends JPanel {
 						}
 						case MINERALS ->{
 							long maxMP = 0;
-							for (int x = 0; x < World.MAP_CELLS.width; x++) {
-								for (int y = 0; y < World.MAP_CELLS.height; y++) {
-									CellObject cell = World.world.get(new Point(x,y));
+							for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+								for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+									CellObject cell = Configurations.world.get(new Point(x,y));
 									if(cell != null && cell instanceof AliveCell)
 										maxMP = Math.max(maxMP, ((AliveCell) cell).getMineral());
 								}
@@ -117,9 +118,9 @@ public class Legend extends JPanel {
 					}
 			    	if(isNedUpdate) {
 			    		isNedUpdate = false;
-				    	for (int x = 0; x < World.MAP_CELLS.width; x++) {
-							for (int y = 0; y < World.MAP_CELLS.height; y++) {
-								CellObject cell = World.world.get(new Point(x,y));
+				    	for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+								CellObject cell = Configurations.world.get(new Point(x,y));
 								if(cell != null)
 									cell.repaint();
 							}

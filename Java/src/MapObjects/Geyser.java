@@ -5,6 +5,8 @@ import java.awt.Graphics;
 
 import Utils.ColorRec;
 import main.World;
+import main.Configurations;
+import main.Point;
 import main.Point.DIRECTION;
 
 /**
@@ -81,25 +83,25 @@ public class Geyser {
 		int startL = startX;
 		int endR = endX;
 		for(int i = 0 ; i < GRADIENT ; i++) {
-			int startXPxL = (int) Math.round(World.border.width+startL*World.scale + World.scale/2);
-			int lenghtPx = (int) Math.round(lenghtSection*World.scale);
+			int startXPxL = Point.getRx(startL);
+			int lenghtPx = Point.getRr(lenghtSection);
 			Color color;
 			if(dir == DIRECTION.DOWN)
 				color = new Color(0, 0, 205, 10 + 6*i/(GRADIENT-1));
 			else
 				color = new Color(220, 20, 60, 13 + 12*i/(GRADIENT-1));
-			cr[i] 				   = new Section(startXPxL, World.border.height, lenghtPx, h-World.border.height*2, color,startL,lenghtSection, 1 + power * i / (GRADIENT-1));
+			cr[i] 				   = new Section(startXPxL, Configurations.border.height, lenghtPx, h-Configurations.border.height*2, color,startL,lenghtSection, 1 + power * i / (GRADIENT-1));
 			if(i == GRADIENT - 1) {
 				lenghtSection = endR - (startL+lenghtSection);
-				lenghtPx = (int) Math.round(lenghtSection*World.scale);
+				lenghtPx = Point.getRr(lenghtSection);
 			}
-			int startXPxR = (int) Math.round(World.border.width+(endR - lenghtSection)*World.scale + World.scale/2);
-			cr[GRADIENT*2 - i - 1] = new Section(startXPxR, World.border.height, lenghtPx, h-World.border.height*2, color,endR-lenghtSection,lenghtSection, 1 + power * i / (GRADIENT-1));
+			int startXPxR = Point.getRx(endR - lenghtSection);
+			cr[GRADIENT*2 - i - 1] = new Section(startXPxR, Configurations.border.height, lenghtPx, h-Configurations.border.height*2, color,endR-lenghtSection,lenghtSection, 1 + power * i / (GRADIENT-1));
 			startL += lenghtSection;
 			endR -= lenghtSection;
 		}
 		upWall = (endX - startX)/2;
-		downWall = World.MAP_CELLS.height - upWall;
+		downWall = Configurations.MAP_CELLS.height - upWall;
 	}
 	/**Нарисовать гейзер на экране*/
 	public void paint(Graphics g) {

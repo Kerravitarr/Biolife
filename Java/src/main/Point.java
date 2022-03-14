@@ -53,13 +53,22 @@ public class Point{
 		setY(j.getI("y"));
 	}
 	public int getRx() {
-		return (int) Math.round(x*World.scale + pixelXDel);
+		return getRx(x);
+	}
+	public static int getRx(int x) {
+		return (int) Math.round(x*Configurations.scale + pixelXDel);
 	}
 	public int getRy() {
-		return (int) Math.round(y*World.scale + pixelYDel);
+		return getRy(y);
+	}
+	public static int getRy(int y) {
+		return (int) Math.round(y*Configurations.scale + pixelYDel);
 	}
 	public int getRr() {
-		return (int) Math.round(World.scale) ;
+		return getRr(1);
+	}
+	public static int getRr(int r) {
+		return (int) Math.round(r * Configurations.scale) ;
 	}
 	public Point next(DIRECTION dir) {
 		setX(x + dir.addX);
@@ -67,10 +76,10 @@ public class Point{
 		return this;
 	}
 	public void setX(int x) {
-		while(x >= World.MAP_CELLS.width)
-			x -= World.MAP_CELLS.width;
+		while(x >= Configurations.MAP_CELLS.width)
+			x -= Configurations.MAP_CELLS.width;
 		while(x < 0)
-			x += World.MAP_CELLS.width;
+			x += Configurations.MAP_CELLS.width;
 		this.x = x;
 	}
 	public void setY(int y) {
@@ -90,7 +99,7 @@ public class Point{
 		setY(point.y);
 	}
 	public static void update() {
-		pixelXDel = World.border.width + World.scale/2;
-		pixelYDel = World.border.height + World.scale/2;
+		pixelXDel = Configurations.border.width + Configurations.scale/2;
+		pixelYDel = Configurations.border.height + Configurations.scale/2;
 	}
 }

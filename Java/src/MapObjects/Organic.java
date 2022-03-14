@@ -6,6 +6,7 @@ import java.awt.Graphics;
 import Utils.JSONmake;
 import Utils.Utils;
 import main.World;
+import main.Configurations;
 import main.Point.DIRECTION;
 
 public class Organic extends CellObject {
@@ -36,7 +37,7 @@ public class Organic extends CellObject {
 	public void step() {
 		if((getAge()) % 2 == 0) { //  Скорость падения
 			moveD(DIRECTION.DOWN);
-			energy -= 1.0/World.TIK_TO_EXIT;
+			energy -= 1.0/Configurations.TIK_TO_EXIT;
 			if(energy <= 0)
 				remove();
 		}

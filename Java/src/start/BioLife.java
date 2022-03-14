@@ -28,7 +28,7 @@ import javax.swing.border.EmptyBorder;
 import MapObjects.CellObject;
 import main.World;
 import panels.BotInfo;
-import panels.EvolTree;
+import panels.EvolTreeDialog;
 import panels.Legend;
 import panels.Settings;
 
@@ -39,7 +39,7 @@ public class BioLife extends JFrame {
 	Settings settings = null;
 	private World world;
 	private JScrollPane scrollPane;
-	private EvolTree dialog = new EvolTree();
+	private EvolTreeDialog dialog = new EvolTreeDialog();
 
 	/**
 	 * Launch the application.
@@ -166,7 +166,7 @@ public class BioLife extends JFrame {
 		settings = new Settings();
 		panel_1.add(settings, BorderLayout.CENTER);
 		
-		world = new World(botInfo,settings);
+		world = new World();
 		
 		scrollPane = new JScrollPane();
 		scrollPane.addComponentListener(new ComponentAdapter() {
@@ -182,9 +182,7 @@ public class BioLife extends JFrame {
 		
 		JMenuItem restart = new JMenuItem("Рестарт");
 		restart.addActionListener(e->{
-			contentPane.remove(world);
-			world = new World(botInfo,settings);
-			contentPane.add(world, BorderLayout.CENTER);
+			world.worldGenerate();
 			world.repaint();
 		});
 		//Menu.add(restart);

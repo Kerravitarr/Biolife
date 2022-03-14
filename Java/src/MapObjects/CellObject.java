@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 
 import Utils.JSONmake;
+import main.Configurations;
 import main.Point;
 import main.World;
 import main.Point.DIRECTION;
@@ -71,7 +72,7 @@ public abstract class CellObject {
 		 * Дополнительное правило карте.
 		 * Слева есть восходящий поток жидкости и два нисходящих
 		 */
-		for(Geyser gz : World.geysers)
+		for(Geyser gz : Configurations.geysers)
 			gz.action(this);
 		
 		step();
@@ -143,10 +144,10 @@ public abstract class CellObject {
 	 */
 	protected OBJECT seeA(DIRECTION direction) {
 	    Point point = fromVektorA(direction);
-	    OBJECT obj = World.world.test(point);
+	    OBJECT obj = Configurations.world.test(point);
 	    if (obj != OBJECT.BOT)
 	        return obj;
-	    else if (isRelative(this, World.world.get(point)))
+	    else if (isRelative(this, Configurations.world.get(point)))
 	        return OBJECT.FRIEND;
 	    else
 	        return OBJECT.ENEMY;
@@ -159,9 +160,9 @@ public abstract class CellObject {
 	protected boolean moveA(DIRECTION direction) {
 		if(seeA(direction) == OBJECT.CLEAN){
 			Point point = fromVektorA(direction);
-			World.world.clean(getPos());
+			Configurations.world.clean(getPos());
 	        setPos(point);
-	        World.world.add(this);
+	        Configurations.world.add(this);
 	        return true;
 	    }
 	    return false;
@@ -238,7 +239,7 @@ public abstract class CellObject {
 	 * Убирает бота с карты и проводит все необходимые процедуры при этом
 	 */
 	public void remove() {
-		World.world.clean(getPos());
+		Configurations.world.clean(getPos());
 		alive = LV_STATUS.GHOST;
     }
 	/**
