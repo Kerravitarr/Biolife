@@ -4,8 +4,8 @@ import java.awt.Graphics;
 
 import Utils.ColorRec;
 import Utils.Utils;
+import main.Configurations;
 import main.Point;
-import main.World;
 
 /**
  * Солнышко, которое нас освещает
@@ -25,6 +25,9 @@ public class Sun {
 		//Строки в этой части
 		ColorRec[] rows;
 		
+		/**На сколько подпунктов делить ячейки, на сколько плавно будут смотреться переходы*/
+		static final double sizeDraw = 2;
+		
 		public void paint(Graphics g) {
 			for (ColorRec colorRec : rows)
 				colorRec.paint(g);
@@ -33,65 +36,48 @@ public class Sun {
 			return "x0: " + startX + " endx: " + endX + " pw: " + power;
 		}
 		public void resize(int w, int h) {
-			ColorRec[] rowsL = new ColorRec[(int) Math.round(World.DIRTY_WATER)];
-			int lenghtY = h-World.border.height*2;
-	        int heightSun = (int) Math.ceil(lenghtY/World.DIRTY_WATER);
-	        int startXPx = (int) Math.round(World.border.width+startX*World.scale + World.scale/2);
-	        int endPx = (int) Math.round(World.border.width+endX*World.scale + World.scale/2);
-			for (int i = 0; i < World.DIRTY_WATER; i++) {
-				float sunPower = (float) ((240 - Math.max(0, (power - i)/(power+1))*60)/360);
-				rowsL[i] = new ColorRec(startXPx,World.border.height + i*heightSun, endPx-startXPx, heightSun,Utils.getHSBColor(sunPower, 1, 1,0.5));
+			ColorRec[] rowsL = new ColorRec[(int) Math.round(Configurations.DIRTY_WATER*sizeDraw)];
+			int lenghtY = h-Configurations.border.height*2;
+	        int heightSun = (int) Math.ceil(lenghtY/(Configurations.DIRTY_WATER*sizeDraw));
+	        int startXPx = Point.getRx(startX);
+	        int endPx = Point.getRx(endX);
+			for (int i = 0; i < Configurations.DIRTY_WATER*sizeDraw; i++) {
+				float sunPower = (float) ((240 - Math.max(0, (power - i/sizeDraw)/(power+1))*60)/360);
+				rowsL[i] = new ColorRec(startXPx,Configurations.border.height + i*heightSun, endPx-startXPx, heightSun,Utils.getHSBColor(sunPower, 1, 1,0.7));
 			}
 			rows = rowsL;
 		}
 		public double getEnergy(Point pos) {
-			return  power - (World.DIRTY_WATER * pos.y / World.MAP_CELLS.height);
+			return  power - (Configurations.DIRTY_WATER * pos.y / Configurations.MAP_CELLS.height);
 		}
 		public void repaint() {
-			for (int i = 0; i < World.DIRTY_WATER; i++) {
-				float sunPower = (float) ((240 - Math.max(0, (power - i)/(power+1))*60)/360);
-				rows[i].setColor(Utils.getHSBColor(sunPower, 1, 1,0.5));
+			for (int i = 0; i < Configurations.DIRTY_WATER*sizeDraw; i++) {
+				float sunPower = (float) ((240 - Math.max(0, (power - i/sizeDraw)/(power+1))*60)/360);
+				rows[i].setColor(Utils.getHSBColor(sunPower, 1, 1,0.7));
 			}
 		}
 	}
-	/**На сколько частей нужно поделить экран*/
-	private int PARTS = 30;
-	//Скорость движения солнца в тиках мира
-	private int SPEED = 1;
-	//Положение солнца в частях экрана
-	private int SunPos;
-	/**"Ширина" солнечного света в частях экрана*/
-	private int SunLenght = 20;
 	
 	Part[] cr;
 	
 	public Sun(int width, int height){
-		cr = new Part[PARTS];
+		Configurations.sun = this;
+		cr = new Part[Configurations.SUN_PARTS];
 		int startX = 0;
-		for (int i = 0; i < PARTS; i++) {
-			int lenght = (i+1) * World.MAP_CELLS.width / PARTS - startX;
+		for (int i = 0; i < Configurations.SUN_PARTS; i++) {
+			int lenght = (i+1) * Configurations.MAP_CELLS.width / Configurations.SUN_PARTS - startX;
 			cr[i] = new Part(startX,lenght);	
-			startX = (i+1) * World.MAP_CELLS.width / PARTS;
+			startX = (i+1) * Configurations.MAP_CELLS.width / Configurations.SUN_PARTS;
 		}
 		startX= 0;
-		SunPos = PARTS / 2;
+		Configurations.SUN_POSITION = Configurations.SUN_PARTS / 2;
 		resize(width, height);
 	}
 
 	public void resize(int width, int height) {
-		for(int i = 0 ; i < PARTS ; i++) {
-			int pos = (SunPos-SunLenght/2) + i;
-			while(pos >= PARTS)
-				pos -= PARTS;
-			while(pos < 0)
-				pos += PARTS;
-			if(i > SunLenght) {
-				cr[pos].power = 0;
-			}else {
-				cr[pos].power = (int) Math.round(World.SUN_POWER * Math.cos((1.0*i/SunLenght - 0.5)*Math.PI));
-			}
-			cr[pos].resize(width,height);
-		}
+		setPowers();
+		for (Part part : cr)
+			part.resize(width,height);
 	}
 
 	public double getEnergy(Point pos) {
@@ -107,26 +93,47 @@ public class Sun {
 		for (Part colorRec : cr)
 			colorRec.paint(g);
 	}
+	
+	public void repaint() {
+		setPowers();
+		for (Part part : cr)
+			part.repaint();
+	}
 
 	/**Шаг мира для пересчёта*/
 	public void step(long step) {
-		if(step % SPEED == 0) {
-			SunPos++;
-			if(SunPos >= PARTS)
-				SunPos -= PARTS;
-			for(int i = 0 ; i < PARTS ; i++) {
-				int pos = (SunPos-SunLenght/2) + i;
-				while(pos >= PARTS)
-					pos -= PARTS;
-				while(pos < 0)
-					pos += PARTS;
-				if(i > SunLenght) {
-					cr[pos].power = 0;
-				}else {
-					cr[pos].power = World.SUN_POWER * Math.cos((1.0*i/SunLenght - 0.5)*Math.PI);
-				}
-				cr[pos].repaint();
+		if(step % Configurations.SUN_SPEED == 0) {
+			Configurations.SUN_POSITION++;
+			if(Configurations.SUN_POSITION >= Configurations.SUN_PARTS)
+				Configurations.SUN_POSITION -= Configurations.SUN_PARTS;
+			repaint();
+		}
+	}
+
+	private void setPowers() {
+		for (int i = 0; i < Configurations.SUN_PARTS / 2 + 1; i++) {
+			int pos = Configurations.SUN_POSITION + i;
+			while (pos >= Configurations.SUN_PARTS)
+				pos -= Configurations.SUN_PARTS;
+			
+			if (i > Configurations.SUN_LENGHT/2) {
+				cr[pos].power = 0;
+			} else {
+				cr[pos].power = Configurations.SUN_POWER * Math.cos((1.0 * i / Configurations.SUN_LENGHT) * Math.PI);
 			}
+			
+			if(i != 0) {
+				pos = Configurations.SUN_POSITION - i;
+				while (pos < 0)
+					pos += Configurations.SUN_PARTS;
+				
+				if (i > Configurations.SUN_LENGHT/2) {
+					cr[pos].power = 0;
+				} else {
+					cr[pos].power = Configurations.SUN_POWER * Math.cos((1.0 * i / Configurations.SUN_LENGHT) * Math.PI);
+				}
+			}
+			
 		}
 	}
 
