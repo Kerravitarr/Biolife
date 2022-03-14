@@ -1,18 +1,13 @@
 package main;
 
 import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
-import javax.swing.JPanel;
-
+import MapObjects.AliveCell;
 import Utils.JSONmake;
-import Utils.Utils;
 
 //@Deprecated
 public class EvolutionTree {
@@ -31,12 +26,17 @@ public class EvolutionTree {
 		/**Наш родитель, общий предок, если хотите*/
 		Node perrent = null;
 		
+		//ПРИМЕЧАТЕЛЬНЫЕ ТОЧКИ
+		//ДНК клетки, образующей узел
+		public int [] DNA = null;
+		//Цвет
+		public Color phenotype = null;
+		
 		//====================СПЕЦ ПЕРЕМЕННЫЕ. Нужны для дерева эволюции
 		//Показывает, нужно ли обновлять цвета у ботов
 		boolean isSelected = false;
 		
-		public Node(){
-		};
+		private Node(){	};
 		
 		public Node(JSONmake node) {
 			this();
@@ -44,6 +44,12 @@ public class EvolutionTree {
 			generation = node.getL("generation");
 			branshCount = node.getI("branshCount");
 			countAliveCell = 0;
+			phenotype = new Color((Long.decode("0x"+node.getS("phenotype"))).intValue(),true);
+
+	    	List<Long> mindL = node.getAL("DNA");
+	    	DNA = new int[mindL.size()];
+	    	for (int i = 0; i < DNA.length; i++) 
+	    		DNA[i] = mindL.get(i).intValue();
 			
 			for(JSONmake i : node.getAJ("Nodes")) {
 				Node nodeR = new Node(i);
@@ -56,7 +62,7 @@ public class EvolutionTree {
 		 * @param time - текущее время, когда произошла мутация
 		 * @return новый узел
 		 */
-		public Node newNode(long time) {
+		public Node newNode(AliveCell cell,long time) {
 			Node node = new Node();
 			synchronized (root) {
 				node.generation = ++branshCount;
@@ -66,8 +72,18 @@ public class EvolutionTree {
 				node.time = time;
 				node.isSelected = isSelected();
 			}
+			node.setChild(cell);
 			remove(); //Мы больше не служим нашему родителю!
 			return node;
+		}
+
+		private void setChild(AliveCell cell) {
+			DNA = cell.getDNA();
+			if(DNA == null) {
+				Configurations.world.isActiv = false;
+				return;
+			}
+			phenotype = new Color(cell.phenotype.getRGB());
 		}
 		/**Создаёт новую ветку, куда будем эволюционировать*/
 		public Node clone() {
@@ -124,6 +140,8 @@ public class EvolutionTree {
 			make.add("branshCount", branshCount);
 			make.add("countAliveCell", countAliveCell);
 			make.add("branch", getBranch());
+			make.add("phenotype",phenotype.getRGB()+"");
+			make.add("DNA", DNA);
 			
 			JSONmake[] nodes = new JSONmake[getChild().size()];
 			for (int i = 0; i < nodes.length; i++) {
@@ -238,5 +256,10 @@ public class EvolutionTree {
 			if(node.countAliveCell == 0)
 				node.remove();
 		}
+	}
+
+	public void setAdam(AliveCell adam) {
+		root.countAliveCell = 1;
+		root.setChild(adam);
 	}
 }
