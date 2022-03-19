@@ -3,6 +3,7 @@ package MapObjects;
 import java.awt.Color;
 import java.awt.Graphics;
 
+import MapObjects.Poison.TYPE;
 import Utils.JSONmake;
 import Utils.Utils;
 import main.World;
@@ -39,8 +40,14 @@ public class Organic extends CellObject {
 			moveD(DIRECTION.DOWN);
 			energy -= 1.0/Configurations.TIK_TO_EXIT;
 			if(energy <= 0)
-				remove();
+				destroy();
 		}
+	}
+	
+	protected boolean toxinDamage(TYPE type, int damag) {
+		addHealth(damag); //Мы становимся полностью ядовитыми
+		setHealth(-getHealth());
+        return true;
 	}
 
 	@Override
