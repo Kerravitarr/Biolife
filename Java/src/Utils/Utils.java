@@ -137,4 +137,21 @@ public class Utils {
 		System.arraycopy(second, 0, result, first.length, second.length);
 		return result;
 	}
+	
+	public static int betwin(int min, int val, int max) {
+		if (val > max)
+			return max;
+		else if (val < min)
+			return min;
+		else
+			return val;
+	}
+	public static double betwin(double min, double val, double max) {
+		if (val > max)
+			return max;
+		else if (val < min)
+			return min;
+		else
+			return val;
+	}
 }
