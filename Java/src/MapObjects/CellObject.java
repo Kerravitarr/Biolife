@@ -3,6 +3,8 @@ package MapObjects;
 import java.awt.Color;
 import java.awt.Graphics;
 
+import MapObjects.CellObject.OBJECT;
+import MapObjects.Poison.TYPE;
 import Utils.JSONmake;
 import main.Configurations;
 import main.Point;
@@ -16,17 +18,41 @@ import main.Point.DIRECTION;
  */
 public abstract class CellObject {
 	/**Статус*/
-	public enum LV_STATUS {LV_ALIVE,LV_ORGANIC,GHOST};
+	public enum LV_STATUS {LV_ALIVE,LV_ORGANIC,LV_POISON,GHOST};
     /**Состояние объекта*/
     public LV_STATUS alive;
 	/**Статус*/
-	public enum OBJECT {WALL(1),CLEAN(0),ORGANIC(2),FRIEND(3),ENEMY(4), BOT(5);
+	public enum OBJECT {
+		WALL(1),
+		CLEAN(0,true,false,false),
+		ORGANIC(2),
+		FRIEND(3,false,false,true),ENEMY(4,false,false,true),
+		POISON(5,true,true,false),NOT_POISON(6,true,true,false),
+		BOT(7,false,false,true);
 		private static final OBJECT[] myEnumValues = OBJECT.values();
 		/**На сколько нужно сдвинуть счётчик команда дополнительно, типо развилка*/
 		int nextCMD;
-		OBJECT(int nextCMD) {this.nextCMD=nextCMD;}
+		//Является это место пустым
+		boolean isEmptyPlase;
+		//Является это место ядовитым
+		boolean isPosion;
+		//Является это место ботом
+		boolean isBot;
+		OBJECT(int nextCMD) {this(nextCMD,false,false,false);}
+		OBJECT(int nextCMD, boolean isEmptyPlase, boolean isPosion, boolean isBot) {
+			this.nextCMD=nextCMD;
+			this.isEmptyPlase=isEmptyPlase;
+			this.isPosion=isPosion;
+			this.isBot=isBot;
+		}
 		public static int size() {return myEnumValues.length;}
 	};
+	
+	protected class CellObjectRemoveException extends RuntimeException {
+		CellObjectRemoveException(){
+			super("Удалили клетку " + CellObject.this);
+		}
+	}
 	
     /**Цвет бота зависит от того, что он делает*/
 	protected Color color_DO;
@@ -68,14 +94,19 @@ public abstract class CellObject {
 		stepCount = step;
 		years++;
 
-		/**
-		 * Дополнительное правило карте.
-		 * Слева есть восходящий поток жидкости и два нисходящих
-		 */
-		for(Geyser gz : Configurations.geysers)
-			gz.action(this);
-		
-		step();
+		try {
+			/**
+			 * Дополнительное правило карте.
+			 * Слева есть восходящий поток жидкости и два нисходящих
+			 */
+			for(Geyser gz : Configurations.geysers)
+				gz.action(this);
+			step();
+		}catch (CellObjectRemoveException e) {
+			//Мы умерли, собственно пошли отсюда
+			if(!aliveStatus(LV_STATUS.GHOST))
+				throw e;
+		}
 	}
 	/**
 	 * Сделать шаг
@@ -126,6 +157,13 @@ public abstract class CellObject {
 	 * @return
 	 */
 	abstract void setHealth(long h);
+	/**
+	 * Добавляет энергию к существующей
+	 * @return
+	 */
+	public void addHealth(long h) {
+		setHealth(getHealth() + h);
+	}
 
 	/**
 	 * Отдаёт следующие координаты относительно глобальных координат
@@ -145,12 +183,14 @@ public abstract class CellObject {
 	protected OBJECT seeA(DIRECTION direction) {
 	    Point point = fromVektorA(direction);
 	    OBJECT obj = Configurations.world.test(point);
-	    if (obj != OBJECT.BOT)
+	    if (obj.isBot) {
+	    	if (isRelative(this, Configurations.world.get(point)))
+		        return OBJECT.FRIEND;
+		    else
+		        return OBJECT.ENEMY;
+	    } else {
 	        return obj;
-	    else if (isRelative(this, Configurations.world.get(point)))
-	        return OBJECT.FRIEND;
-	    else
-	        return OBJECT.ENEMY;
+	    }
 	}
 	/**
 	 * Перемещает бота в абсолютном направлении
@@ -158,14 +198,31 @@ public abstract class CellObject {
 	 * @return
 	 */
 	protected boolean moveA(DIRECTION direction) {
-		if(seeA(direction) == OBJECT.CLEAN){
-			Point point = fromVektorA(direction);
-			Configurations.world.clean(getPos());
-	        setPos(point);
-	        Configurations.world.add(this);
-	        return true;
-	    }
-	    return false;
+		switch (seeA(direction)) {
+			case FRIEND:
+			case ENEMY:
+			case ORGANIC:
+			case WALL : return false;
+			case CLEAN : {
+				Point point = fromVektorA(direction);
+				Configurations.world.move(this,point);
+			} return true;
+			case POISON:
+			case NOT_POISON:{
+				Point point = fromVektorA(direction);
+				Poison poison = (Poison) Configurations.world.get(point);
+				if(toxinDamage(poison.type, (int) poison.getHealth())) {
+					poison.addHealth(-getHealth());
+					destroy();
+			        return true; // Не важно что мы вернём - мы мертвы
+				} else {
+					poison.remove_NE(); // Удаляем яд, который мы заменили
+					Configurations.world.move(this, point);
+				}
+			}return true;
+			default :
+				throw new IllegalArgumentException("Unexpected value: " + seeA(direction));
+		}
 	}
 	/**
 	 * Перемещает бота в направлении, если не получится прямо в этом направлении - перемещает
@@ -238,10 +295,22 @@ public abstract class CellObject {
 	/**
 	 * Убирает бота с карты и проводит все необходимые процедуры при этом
 	 */
-	public void remove() {
+	public void destroy() {
 		Configurations.world.clean(getPos());
 		alive = LV_STATUS.GHOST;
-    }
+		throw new CellObjectRemoveException();
+	}
+	/**
+	 * Убирает бота с карты и проводит все необходимые процедуры при этом
+	 * не вызывает исключение, что может быть важно, когда функция вызвается
+	 * не на нас
+	 */
+	public void remove_NE() {
+		try {
+			destroy();
+		}catch (CellObjectRemoveException e) {
+		}
+	}
 	/**
 	 * Экстренно перерисовывает объект
 	 */
@@ -260,6 +329,8 @@ public abstract class CellObject {
 	}
 	
 	public String toString() {
-		return "Cell in " + pos;
+		return "Cell " + Integer.toHexString(hashCode()) + " in " + pos + " type " + alive;
 	}
+	/**Что с нами сделал токсин. true, если он нас убьёт*/
+	protected abstract boolean toxinDamage(TYPE type, int damag);
 }
