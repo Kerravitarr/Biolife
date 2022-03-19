@@ -34,15 +34,16 @@ public class Settings extends JPanel{
 	private JScrollBar scrollBar_4;
 	private JScrollBar scrollBar_2;
 	private JScrollBar scrollBar_1;
-	private JScrollBar scrollBar;
+	private JScrollBar const_SP;
 	public JScrollBar scale;
 	JComponent listener = null;
 	private JButton play;
 	private JScrollBar sun_speed;
-	private JScrollBar sun_size;
+	private JScrollBar scroll_SP;
 	private JButton load_button;
 	private JButton saveButton;
 	private JButton step_button;
+	private JScrollBar sun_size;
 	
 	/**
 	 * Create the panel.
@@ -86,26 +87,29 @@ public class Settings extends JPanel{
 		JPanel panel_4 = new JPanel();
 		
 		JPanel panel_9 = new JPanel();
+		
+		JPanel panel_10 = new JPanel();
 		GroupLayout gl_panel = new GroupLayout(panel);
 		gl_panel.setHorizontalGroup(
 			gl_panel.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addComponent(panel_9, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_4, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(panel_1, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_2, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(saveButton, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(load_button, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(play, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(step_button, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_6, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_5, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_8, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_7, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_4_1, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(panel_3, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_4_1, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_7, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_8, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE))
+						.addComponent(panel_5, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_6, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_10, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_4, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_2, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_9, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
@@ -113,11 +117,13 @@ public class Settings extends JPanel{
 				.addGroup(gl_panel.createSequentialGroup()
 					.addComponent(panel_1, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(panel_9, GroupLayout.PREFERRED_SIZE, 30, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_2, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_9, GroupLayout.PREFERRED_SIZE, 30, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panel_10, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_6, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
@@ -127,10 +133,10 @@ public class Settings extends JPanel{
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_4_1, GroupLayout.PREFERRED_SIZE, 34, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_7, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_8, GroupLayout.PREFERRED_SIZE, 28, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED, 198, Short.MAX_VALUE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(panel_7, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED, 163, Short.MAX_VALUE)
 					.addComponent(step_button)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(play)
@@ -140,19 +146,30 @@ public class Settings extends JPanel{
 					.addComponent(saveButton)
 					.addContainerGap())
 		);
+		panel_10.setLayout(new BorderLayout(0, 0));
+		
+		JLabel lblNewLabel_11 = new JLabel("Размер солнца");
+		lblNewLabel_11.setHorizontalAlignment(SwingConstants.CENTER);
+		panel_10.add(lblNewLabel_11, BorderLayout.NORTH);
+		
+		sun_size = new JScrollBar();
+		sun_size.setVisibleAmount (0); // Значение экстента равно 0
+		sun_size.setMinimum(1);
+		sun_size.setMaximum(Configurations.SUN_PARTS*2);
+		sun_size.setOrientation(JScrollBar.HORIZONTAL);
+		panel_10.add(sun_size, BorderLayout.SOUTH);
 		panel_9.setLayout(new BorderLayout(0, 0));
 		
-		JLabel lblNewLabel_10 = new JLabel("Размер солнца");
+		JLabel lblNewLabel_10 = new JLabel("Движущаяся освещённость");
 		lblNewLabel_10.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_9.add(lblNewLabel_10, BorderLayout.NORTH);
 		
-		sun_size = new JScrollBar();
-		sun_size.setMinimum(1);
-		sun_size.setVisibleAmount (0); // Значение экстента равно 0
-		sun_size.setMaximum(Configurations.SUN_PARTS*2);
-		sun_size.setValue(Configurations.SUN_LENGHT);
-		sun_size.setOrientation(JScrollBar.HORIZONTAL);
-		panel_9.add(sun_size, BorderLayout.SOUTH);
+		scroll_SP = new JScrollBar();
+		scroll_SP.setVisibleAmount (0); // Значение экстента равно 0
+		scroll_SP.setMinimum(1);
+		scroll_SP.setMaximum(30);
+		scroll_SP.setOrientation(JScrollBar.HORIZONTAL);
+		panel_9.add(scroll_SP, BorderLayout.SOUTH);
 		panel_4.setLayout(new BorderLayout(0, 0));
 		
 		JLabel lblNewLabel_4 = new JLabel("Скорость солнца");
@@ -245,16 +262,16 @@ public class Settings extends JPanel{
 		panel_2.add(scrollBar_1, BorderLayout.SOUTH);
 		panel_1.setLayout(new BorderLayout(0, 0));
 		
-		JLabel lblNewLabel_1 = new JLabel("Освещённость");
+		JLabel lblNewLabel_1 = new JLabel("Постоянная освещённость");
 		lblNewLabel_1.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_1.add(lblNewLabel_1, BorderLayout.NORTH);
 		
-		scrollBar = new JScrollBar();
-		scrollBar.setMinimum(1);
-		scrollBar.setVisibleAmount (0); // Значение экстента равно 0
-		scrollBar.setMaximum(50);
-		scrollBar.setOrientation(JScrollBar.HORIZONTAL);
-		panel_1.add(scrollBar, BorderLayout.SOUTH);
+		const_SP = new JScrollBar();
+		const_SP.setVisibleAmount (0); // Значение экстента равно 0
+		const_SP.setMinimum(1);
+		const_SP.setMaximum(30);
+		const_SP.setOrientation(JScrollBar.HORIZONTAL);
+		panel_1.add(const_SP, BorderLayout.SOUTH);
 		panel.setLayout(gl_panel);
 		setListeners();
 	}
@@ -265,8 +282,8 @@ public class Settings extends JPanel{
 		else
 			play.setText("Пуск");
 		sun_speed.setValue(sun_speed.getMaximum() - Configurations.SUN_SPEED + 1);
-		sun_size.setMaximum(Configurations.SUN_PARTS*10);
-		
+		scroll_SP.setValue(Configurations.ADD_SUN_POWER);
+		sun_size.setMaximum(Configurations.SUN_PARTS*2);
 		if(Configurations.SUN_LENGHT <= Configurations.SUN_PARTS)
 			sun_size.setValue(Configurations.SUN_LENGHT);
 		else
@@ -277,11 +294,15 @@ public class Settings extends JPanel{
 		scrollBar_4.setValue((int)  Math.round((1-Configurations.LEVEL_MINERAL)*100));
 		scrollBar_2.setValue((int) Math.round(Configurations.AGGRESSIVE_ENVIRONMENT*100));
 		scrollBar_1.setValue((int) Math.round(Configurations.DIRTY_WATER));
-		scrollBar.setValue((int) Math.round(Configurations.SUN_POWER));
+		const_SP.setValue((int) Math.round(Configurations.BASE_SUN_POWER));
 	}
 	
 	public void setListeners() {
 
+		scroll_SP.addAdjustmentListener(e->{
+			Configurations.ADD_SUN_POWER =  e.getValue();
+			Configurations.world.recalculate();
+		});
 		sun_size.addAdjustmentListener(e->{
 			if(e.getValue() <= Configurations.SUN_PARTS)
 				Configurations.SUN_LENGHT = e.getValue();
@@ -292,8 +313,8 @@ public class Settings extends JPanel{
 		sun_speed.addAdjustmentListener(e->{
 			Configurations.SUN_SPEED =  (int) Math.pow(sun_speed.getMaximum() - e.getValue() + 1,1.5);
 		});
-		scrollBar.addAdjustmentListener(e->{
-			Configurations.SUN_POWER = e.getValue();
+		const_SP.addAdjustmentListener(e->{
+			Configurations.BASE_SUN_POWER = e.getValue();
 			Configurations.world.recalculate();
 		});
 		scrollBar_1.addAdjustmentListener(e->{
@@ -331,39 +352,41 @@ public class Settings extends JPanel{
 			}
 			updateScrols();
 		});
-		load_button.addActionListener(e->{			
-			World.isActiv = false;
-			String pathToRoot = System.getProperty("user.dir");
-			JFileChooser fileopen = new JFileChooser(pathToRoot);
-			fileopen.setFileFilter(new FileNameExtensionFilter("JSON", "json"));
-			int ret = fileopen.showDialog(null, "Выбрать файл");
-			if (ret == JFileChooser.APPROVE_OPTION) {
-				try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
-					Configurations.world.update(new JSONmake(reader));
-				} catch (FileNotFoundException e1) {
-					e1.printStackTrace();
-				} catch (IOException e1) {
-					e1.printStackTrace();
-				}
-			}
-		});
-		saveButton.addActionListener(e->{
-			boolean oldStateWorld = World.isActiv;				
-			World.isActiv = false;
-			Utils.Utils.pause(2);
-			Date date = new Date();
-			SimpleDateFormat formater = new SimpleDateFormat("yyyy_MM_dd HHч mmм ssс");
-			String name = "World_" + formater.format(date) + ".json";
-			try(FileWriter writer = new FileWriter(name, true)){
-				Configurations.world.serelization().writeToFormatJSONString(writer);
-				writer.flush();
-			} catch (IOException e1) {
-				e1.printStackTrace();
-			}
-			World.isActiv = oldStateWorld;
+		load_button.addActionListener(e->load());
+		saveButton.addActionListener(e->save());
+	}
 
+	public void load() {
+		World.isActiv = false;
+		String pathToRoot = System.getProperty("user.dir");
+		JFileChooser fileopen = new JFileChooser(pathToRoot);
+		fileopen.setFileFilter(new FileNameExtensionFilter("JSON", "json"));
+		int ret = fileopen.showDialog(null, "Выбрать файл");
+		if (ret == JFileChooser.APPROVE_OPTION) {
+			try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
+				Configurations.world.update(new JSONmake(reader));
+			} catch (IOException | java.lang.RuntimeException e1) {
+				e1.printStackTrace();
+				JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
+			} 
+		}
+	}
+	
+	public void save() {
+		boolean oldStateWorld = World.isActiv;				
+		World.isActiv = false;
+		Date date = new Date();
+		SimpleDateFormat formater = new SimpleDateFormat("yyyy_MM_dd HHч mmм ssс");
+		String name = "World_" + formater.format(date) + ".json";
+		try(FileWriter writer = new FileWriter(name, true)){
+			Configurations.world.serelization().writeToFormatJSONString(writer);
+			writer.flush();
 			JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	"BioLife", JOptionPane.INFORMATION_MESSAGE);
-		});
+		} catch (IOException | java.lang.RuntimeException e1) {
+			e1.printStackTrace();
+			JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
+		}
+		World.isActiv = oldStateWorld;
 	}
 
 	public void setListener(JComponent scrollPane) {

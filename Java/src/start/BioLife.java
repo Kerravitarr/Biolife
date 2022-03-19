@@ -26,11 +26,14 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
 import MapObjects.CellObject;
+import main.Configurations;
 import main.World;
 import panels.BotInfo;
 import panels.EvolTreeDialog;
 import panels.Legend;
 import panels.Settings;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 
 public class BioLife extends JFrame {
 
@@ -193,6 +196,14 @@ public class BioLife extends JFrame {
 			dialog.setVisible(true);
 		});
 		Menu.add(mntmNewMenuItem);
+		
+		JMenuItem save_menu = new JMenuItem("Сохранить");
+		save_menu.addActionListener(e->Configurations.settings.save());
+		Menu.add(save_menu);
+		
+		JMenuItem load_menu = new JMenuItem("Загрузить");
+		load_menu.addActionListener(e->Configurations.settings.load());
+		Menu.add(load_menu);
 		this.addKeyListener(new KeyAdapter() {
 			public void keyPressed(KeyEvent e) {
 				//System.out.println(e);
