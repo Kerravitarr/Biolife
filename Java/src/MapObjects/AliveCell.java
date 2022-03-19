@@ -8,13 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import MapObjects.CellObject.OBJECT;
+import MapObjects.Poison.TYPE;
 import Utils.JSONmake;
 import Utils.Utils;
 import main.Configurations;
 import main.EvolutionTree;
-import main.Point;
-import main.World;
 import main.EvolutionTree.Node;
+import main.Point;
 import main.Point.DIRECTION;
 import panels.Legend;
 public class AliveCell extends CellObject{
@@ -24,7 +25,7 @@ public class AliveCell extends CellObject{
 	/**Размер мозга максимальный, чтобы небыло взрывного роста и поедания памяти*/
 	public static final int MAX_MINDE_SIZE = 1024;
 	/**Сколько вообще может быть команд*/
-	private static final int COUNT_COMAND = 10*8; // 8 - DIRECTION.size()
+	private static final int COUNT_COMAND = 11*8; // 8 - DIRECTION.size()
 	/**Начальный уровень здоровья клеток*/
 	private static final int StartHP = 5;
 	/**Начальный уровень минералов клеток*/
@@ -41,6 +42,8 @@ public class AliveCell extends CellObject{
 	private static final long HP_TO_DNA_WALL = 1;
 	/**Столько максимум может быть укреплений у ДНК*/
 	private static final long MAX_DNA_WALL = 30;
+	/**Столько энергии тратит бот на выделение яда, причём 2/3 этого числа идут яду, 1/3 сгорает*/
+	private static final long HP_FOR_POISON = 20;
 	
 	//=================Внутреннее состояние бота
 	/**Внутренний счётчик процессора*/
@@ -59,6 +62,10 @@ public class AliveCell extends CellObject{
     public Point.DIRECTION direction = Point.DIRECTION.UP;
     //Защитный покров ДНК, он мешает изменить Нашу ДНК
     private int DNA_wall = 0;
+    /**Тип яда к которому клетка устойчива*/
+    private Poison.TYPE posionType = Poison.TYPE.NONE;
+    /**Сила устойчивости к яду*/
+    private int posionPower = 0;
     
     //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
     /**Поколение (мутационное)*/
@@ -84,6 +91,7 @@ public class AliveCell extends CellObject{
     	for (int i = 0; i < mind.length; i++)
     		mind[i] = block1; // У клетки по базе только одна функция - фотосинтез
     	color_DO = new Color(255,255,255);
+		evolutionNode = EvolutionTree.root;
     }
 
     /**
@@ -98,6 +106,10 @@ public class AliveCell extends CellObject{
     	mineral = cell.getL("mineral");
     	direction = DIRECTION.toEnum(cell.getI("direction"));
     	DNA_wall = cell.getI("DNA_wall");
+    	posionType =  Poison.TYPE.toEnum(cell.getI("posionType"));
+    	posionPower = cell.getI("posionPower");
+    	
+    	
     	Generation = cell.getI("Generation");
     	phenotype = new Color((Long.decode("0x"+cell.getS("phenotype"))).intValue(),true);
     	photosynthesisEffect = cell.getD("photosynthesisEffect");
@@ -127,7 +139,8 @@ public class AliveCell extends CellObject{
 	    cell.setMineral(cell.getMineral() / 2);
 	    DNA_wall = cell.DNA_wall /2;
 	    cell.DNA_wall = cell.DNA_wall / 2; //Забирается половина защиты ДНК
-	    
+	    posionType = cell.getPosionType();
+		posionPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
 	
 	    phenotype = new Color(cell.phenotype.getRGB(),true);   // цвет такой же, как у предка
 	    direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));   // направление, куда повернут новорожденный, генерируется случайно
@@ -135,6 +148,7 @@ public class AliveCell extends CellObject{
 	    mind = new int[cell.mind.length];
 	    for (int i = 0; i < mind.length; i++)  // копируем геном в нового бота
 	    	mind[i] = cell.mind[i];
+	    processorTik = cell.processorTik; // Новая клетка продолжит с того-же места, ведь ДНК - кольцевая
 	
 	    hpForDiv = cell.hpForDiv;
 	    maxMP = cell.maxMP;
@@ -148,12 +162,12 @@ public class AliveCell extends CellObject{
 	        mutation();
 	}
 
-	public static final int block1 = COUNT_COMAND * 1 / 6;
-    public static final int block2 = COUNT_COMAND * 2 / 6;
-    public static final int block5 = (block1+block2)/2;
-    public static final int block3 = COUNT_COMAND * 3 / 6;
-    public static final int block4 = COUNT_COMAND * 4 / 6;
-    public static final int block6 = COUNT_COMAND * 5 / 6;
+	public static final int block1 = COUNT_COMAND * 1 / 7;
+    public static final int block2 = COUNT_COMAND * 2 / 7;
+    public static final int block3 = COUNT_COMAND * 3 / 7;
+    public static final int block4 = COUNT_COMAND * 4 / 7;
+    public static final int block5 = COUNT_COMAND * 5 / 7;
+    public static final int block6 = COUNT_COMAND * 6 / 7;
     
     /**
      * Один шаг из жизни бота
@@ -175,49 +189,74 @@ public class AliveCell extends CellObject{
 					break loop;
 				//Клонирование
 				case block1+2:
+					nextCommand(1); // Чтобы у потомка выполнилась следующая команда
 					botDouble();
-					nextCommand(1);
 				break loop;
 				//Самоубийство
 				case block1+3:
 					setHealth(-getHealth());
 				break loop;
+				//Пукнуть - выделить немного яда относительно
+				case block1+4:
+					if(getPosionType() != TYPE.NONE)
+						addPosionR(DIRECTION.toEnum(param(0,DIRECTION.size())));
+					nextCommand(2);
+				break loop;
+				//Пукнуть - выделить немного яда абсолютно
+				case block1+5:
+					if(getPosionType() != TYPE.NONE)
+						addPosionA(DIRECTION.toEnum(param(0,DIRECTION.size())));
+					nextCommand(2);
+				break loop;
 					
-					//=============================================================================ФУНКЦИИ ПРОГРАММИРОЫВАНИЯ=============================================================================
-				//Заменить ДНК из параметра 1 в месте параметр 2 Заменить - самопрограммирование
+				//=============================================================================ФУНКЦИИ ПРОГРАММИРОЫВАНИЯ=============================================================================
+				//У соседа заменить будущую команду пороцессора на свою
 				case block5:{
-					int ma = param(0,mind.length-1); //Индекс гена
-	                int mc = param(1);  //Его значение
-	                this.mind[ma] = mc;
-	        		setGeneration(getGeneration() + 1);
-	        		evolutionNode = evolutionNode.newNode(this,stepCount);
-					nextCommand(3);
-				}break loop;
-				//у соседа ДНК из параметра 1 в месте параметр 2 Заменить - взлом кода, абсолютный
-				case block5+1:{
 					OBJECT see = seeA(direction);
-					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND){
+					if(see.isBot){
 					    Point point = fromVektorA(direction);
 					    AliveCell bot = (AliveCell) Configurations.world.get(point);
 					    if(bot.DNA_wall > 0) {
 					    	bot.DNA_wall--;
 					    } else {
-							int ma = param(0,bot.mind.length-1); //Индекс гена
+							int ma = bot.processorTik + param(0,bot.mind.length-1); //Индекс гена
+							while (ma >= bot.mind.length)
+								ma -= bot.mind.length;
 			                int mc = param(1);  //Его значение
 			                bot.mind[ma] = mc;
 			                bot.setGeneration(bot.getGeneration() + 1);
-			                bot.evolutionNode = bot.evolutionNode.newNode(bot,bot.stepCount);
+			                bot.evolutionNode = bot.evolutionNode.newNode(bot,stepCount);
 					    }
 		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 		        			color_DO = Color.BLACK;
 					}
 					nextCommand(3);
 				}break loop;
+				//У соседа подложить команду под процессор свою
+				case block5+1:{
+					OBJECT see = seeA(direction);
+					if(see.isBot){
+					    Point point = fromVektorA(direction);
+					    AliveCell bot = (AliveCell) Configurations.world.get(point);
+					    if(bot.DNA_wall > 0) {
+					    	bot.DNA_wall--;
+					    } else {
+							int ma = bot.getProcessorTik(); //Индекс гена
+			                int mc = param(0);  //Его значение
+			                bot.mind[ma] = mc;
+			                bot.setGeneration(bot.getGeneration() + 1);
+			                bot.evolutionNode = bot.evolutionNode.newNode(bot,stepCount);
+					    }
+		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
+		        			color_DO = Color.BLACK;
+					}
+					nextCommand(2);
+				}break loop;
 				//у соседа ДНК переписать на своё - встраивание. Встраивается кусок кода сразу за командой
 				case block5+2:{
 					OBJECT see = seeA(direction);
-				    int length_DNA = param(0,mind.length-1);
-					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND){
+				    int length_DNA = param(0,mind.length);
+					if(see.isBot){
 					    Point point = fromVektorA(direction);
 					    AliveCell bot = (AliveCell) Configurations.world.get(point);
 					    if(bot.DNA_wall > 0) {
@@ -232,32 +271,33 @@ public class AliveCell extends CellObject{
 								 bot.mind[adr] = getCmdA(startPos + i); // +2 - Так как 
 							}
 			                bot.setGeneration(bot.getGeneration() + 1);
-			                bot.evolutionNode = bot.evolutionNode.newNode(bot,bot.stepCount);
+			                bot.evolutionNode = bot.evolutionNode.newNode(bot,stepCount);
 					    }
 		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 		        			color_DO = Color.BLACK;
 					}
 					nextCommand(2 + length_DNA); //Но этот код не наш, мы его не выполняем!
 				}break loop;
-				//у соседа ДНК из параметра 1 в месте параметр 2 Заменить - взлом кода, относительный, подложить под процессор
-				case block5+3:{
+				//ДНК соседа встроить в свой код, полностью!
+				case block5 + 3:{
 					OBJECT see = seeA(direction);
-					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND){
+					if(see.isBot){
 					    Point point = fromVektorA(direction);
 					    AliveCell bot = (AliveCell) Configurations.world.get(point);
-					    if(bot.DNA_wall > 0) {
-					    	bot.DNA_wall--;
-					    } else {
-							int ma = bot.getProcessorTik(); //Индекс гена
-			                int mc = param(0);  //Его значение
-			                bot.mind[ma] = mc;
-			                bot.setGeneration(bot.getGeneration() + 1);
-			                bot.evolutionNode = bot.evolutionNode.newNode(bot,bot.stepCount);
-					    }
+						for (int i = 0; i < bot.mind.length; i++) {
+							int adrThis = getProcessorTik() + i;
+							while (adrThis >= mind.length)
+								adrThis -= mind.length;
+							mind[adrThis] = bot.getCmdA(getProcessorTik() + i); // +2 -Так как
+						}
+		                setGeneration(getGeneration() + 1);
+		                evolutionNode = evolutionNode.newNode(bot,stepCount);
 		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
-		        			color_DO = Color.BLACK;
+		        			color_DO = Color.GRAY;
+		        		//Смены команды не будет, ведь мы эту команду перезаписали уже на нужную
+					} else {
+						nextCommand(1); //Просто живём дальше, будто ни чего и не было
 					}
-					nextCommand(2);
 				}break loop;
 				//Укрепить свою ДНК. На 1 единицу стройматериала требуется целых 4 жизни
 				case block5+4:
@@ -268,7 +308,7 @@ public class AliveCell extends CellObject{
 				//Пробить ДНК у соседа
 				case block5+5:{
 					OBJECT see = seeA(direction);
-					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND){
+					if(see.isBot){
 					    Point point = fromVektorA(direction);
 					    AliveCell bot = (AliveCell) Configurations.world.get(point);
 					    bot.DNA_wall = Math.max(0, bot.DNA_wall - 2);
@@ -366,7 +406,7 @@ public class AliveCell extends CellObject{
 					//..............Мы можем заняться фотосинтезом?........................
 				case block3+6:{
 			        //Показывает эффективность нашего фотосинтеза
-			        double t = (1+this.photosynthesisEffect) + this.getMineral() / this.maxMP;
+			        double t = (1+this.photosynthesisEffect) * this.getMineral() / this.maxMP;
 			        if (Configurations.sun.getEnergy(getPos()) + t > 0) 
 						this.nextCommandFromAdr(1);
 					else
@@ -382,7 +422,7 @@ public class AliveCell extends CellObject{
 				//..............Сколкько здоровья у того, на кого смотрю........................
 				case block3+8:{
 	                OBJECT see = seeA(direction);
-					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND) {
+					if(see.isBot){
 						Point point = fromVektorA(direction);
 						AliveCell cell = (AliveCell) Configurations.world.get(point);
 						// если уровень бота ниже, чем полученное значение,
@@ -399,7 +439,7 @@ public class AliveCell extends CellObject{
 				//..............Сколкько минералов у того, на кого смотрю........................
 				case block3+9:{
 	                OBJECT see = seeA(direction);
-					if(see == OBJECT.ENEMY || see == OBJECT.FRIEND) {
+					if(see.isBot){
 						Point point = fromVektorA(direction);
 						AliveCell cell = (AliveCell) Configurations.world.get(point);
 						// если уровень бота ниже, чем полученное значение,
@@ -502,6 +542,18 @@ public class AliveCell extends CellObject{
 	                else
 						this.nextCommandFromAdr(3+seeR(dir).nextCMD);
 				}break loop;
+				//Толкнуть отностиельно
+				case block4 + 8:{
+					DIRECTION dir = DIRECTION.toEnum(param(0,DIRECTION.size()));
+					pullR(dir);
+					nextCommand(2);
+				}break loop;
+				//Толкнуть абсолютно
+				case block4 + 9:{
+					DIRECTION dir = DIRECTION.toEnum(param(0,DIRECTION.size()));
+					pullA(dir);
+					nextCommand(2);
+				}break loop;
 				
 
 				//=============================================================================ФУНКЦИИ МНОГОКЛЕТОЧНЫХ=============================================================================
@@ -516,15 +568,17 @@ public class AliveCell extends CellObject{
 					nextCommand(2);
 				break loop;
 				//Родить присосавшегося потомка относительно
-				case block6+2:
-					cloneR(DIRECTION.toEnum(param(0,DIRECTION.size())));
-					nextCommand(2);
-				break loop;
+				case block6+2:{
+					int par = param(0,DIRECTION.size());
+					nextCommand(2); // Чтобы у потомка выполнилась следующая команда
+					cloneR(DIRECTION.toEnum(par));
+				}break loop;
 				//Родить присосавшегося потомка абсолютно
-				case block6+3:
-					cloneA(DIRECTION.toEnum(param(0,DIRECTION.size())));
-					nextCommand(2);
-				break loop;
+				case block6+3:{
+					int par = param(0,DIRECTION.size());
+					nextCommand(2); // Чтобы у потомка выполнилась следующая команда
+					cloneA(DIRECTION.toEnum(par));
+				}break loop;
 				
 				
 				default :
@@ -624,14 +678,14 @@ public class AliveCell extends CellObject{
 	/**
 	 * Убирает бота с карты и проводит все необходимые процедуры при этом
 	 */
-    public void remove() {
+    public void destroy() {
 		evolutionNode.remove();
 		synchronized (friends) {
 	    	for (AliveCell cell : friends.values() ) 
 				cell.friends.remove(this.getPos());
 	    	friends.clear();
 		}
-		super.remove();
+		super.destroy();
     }
 	
 	/**
@@ -641,7 +695,7 @@ public class AliveCell extends CellObject{
 	 */
 	private void photosynthesis() {
         //Показывает эффективность нашего фотосинтеза
-        double t = (1+this.photosynthesisEffect) + this.getMineral() / this.maxMP;
+        double t = (1+this.photosynthesisEffect) * this.getMineral() / this.maxMP;
         // формула вычисления энергии
         double hlt = Configurations.sun.getEnergy(getPos()) + t;
         if (hlt > 0) {
@@ -676,10 +730,21 @@ public class AliveCell extends CellObject{
 
         Point n = findEmptyDirection();    // проверим, окружен ли бот
         if (n == null) {           	// если бот окружен, то он в муках погибает
-        	setHealth(-this.getHealth() - getMineral());
+        	setHealth(-this.getHealth());
             return;
         }
-        Configurations.world.add(new AliveCell(this,n));
+        if(Configurations.world.test(n).isPosion) {
+			Poison posion = (Poison) Configurations.world.get(n);
+            AliveCell newbot = new AliveCell(this,n);
+            if(newbot.toxinDamage(posion.type, (int) posion.getHealth())) { //Нас убило, а значит и удалили с карты яд - плохо реализованная функция
+            	newbot.evolutionNode.remove(); //Мы так и не родились, так что нам не нужен узел
+            } else { // Мы сильнее яда! Так что удаляем яд и занимаем его место
+            	posion.remove_NE();
+            	Configurations.world.add(newbot);
+            }
+        } else {
+            Configurations.world.add(new AliveCell(this,n));
+        }
 	}
 
 	/**
@@ -706,7 +771,8 @@ public class AliveCell extends CellObject{
 			}
 		} else {
 			//Многоклеточный. Тут логика куда интереснее!
-			if(seeA(direction) == OBJECT.CLEAN){
+			OBJECT see = super.seeA(direction);
+			if(see.isEmptyPlase){
 				//Туда двинуться можно, уже хорошо.
 				Point point = fromVektorA(direction);
 
@@ -726,11 +792,7 @@ public class AliveCell extends CellObject{
 		    	}
 		        setHealth(getHealth() - 1); // бот теряет на этом 1 энергию
 		    	//Все условия проверены, можно выдвигаться!
-		        Configurations.world.clean(getPos());
-		        setPos(point);
-		        Configurations.world.add(this);
-
-				return true;
+				return super.moveA(direction);
 			}
 			return false;
 		}
@@ -743,7 +805,7 @@ public class AliveCell extends CellObject{
 		/**Дельта, гуляет от -1 до 1*/
 		double del = (0.5 - Math.random())*2;
 		//TODO К сожалению первые два слишком сильно убегают вперёд
-        switch (Utils.random(2, 8)) { // К сожалению 0 и 1 вырезаны. Существа перерастают делиться и эволюция заканчивается
+        switch (Utils.random(2, 10)) { // К сожалению 0 и 1 вырезаны. Существа перерастают делиться и эволюция заканчивается
             case 0: //Мутирует количество энергии для деления
                 this.hpForDiv *= del;
                 break;
@@ -782,6 +844,8 @@ public class AliveCell extends CellObject{
                 	mindL[mc+1] = mindL[mc]; //Дублирование гена
                 	System.arraycopy(mind, mc+1, mindL, mc+2, mind.length - 1 - mc);
             	    mind = mindL;
+                	if(processorTik > mc)
+                		nextCommand(1);
             	}
             } break;
             case 8:{ //Геном укорачивается на последний ген
@@ -791,9 +855,17 @@ public class AliveCell extends CellObject{
             	System.arraycopy(mind, 0, mindL, 0, mc);
             	System.arraycopy(mind, mc+1, mindL, mc, mind.length - 1 - mc);
         	    mind = mindL;
-                while (processorTik >= mind.length)
-                	processorTik--;
+            	if(processorTik >= mc)
+            		nextCommand(-1);
             } break;
+            case 9:{ // Смена типа яда на который мы отзываемся
+            	posionType = TYPE.toEnum(Utils.random(0, TYPE.size()));
+            	posionPower = 0; //К этому у нас защищённости ни какой
+            }break;
+            case 10:{ // Случайная устойчивость к яду
+            	if(posionType != TYPE.NONE)
+            		posionPower = Utils.random(0, (int) (HP_FOR_POISON * 2 / 3));
+            }break;
         }
 		evolutionNode = evolutionNode.newNode(this,stepCount);
 	}
@@ -802,8 +874,12 @@ public class AliveCell extends CellObject{
 	 * Превращает бота в органику
 	 */
 	private void bot2Organic() {
-    	remove(); //Удаляем себя
-    	Configurations.world.add(new Organic(this)); //Мы просто заменяем себя
+		try {
+			destroy(); // Удаляем себя
+		} catch (CellObjectRemoveException e) {
+	    	Configurations.world.add(new Organic(this)); //Мы просто заменяем себя
+	    	throw e;
+		}
 	}
 
 
@@ -816,6 +892,25 @@ public class AliveCell extends CellObject{
 	 */
 	private OBJECT seeR(DIRECTION direction) {
 		return seeA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
+	}
+	/**
+	 * Подглядывает за бота в абсолютном направлении
+	 * @param {*} bot - бот 
+	 * @param {*} direction направление, DIRECTION
+	 * @returns параметры OBJECT
+	 */
+	protected OBJECT seeA(DIRECTION direction) {
+		OBJECT see = super.seeA(direction);
+		if(see == OBJECT.POISON){
+			Point point = fromVektorA(direction);
+			Poison cell = (Poison) Configurations.world.get(point);
+			if(cell.type == getPosionType())
+				return OBJECT.NOT_POISON;
+			else
+				return OBJECT.POISON;
+		} else {
+			return see;
+		}
 	}
 
 	/**
@@ -859,9 +954,9 @@ public class AliveCell extends CellObject{
 			case ORGANIC: {
 				Point point = fromVektorA(direction);
 				CellObject cell = Configurations.world.get(point);
-				setHealth(health - cell.getHealth());    //здоровье увеличилось на сколько осталось
-	            goRed((int) -cell.getHealth());           // бот покраснел
-	            cell.remove();
+				setHealth(health + cell.getHealth());    //здоровье увеличилось на сколько осталось
+	            goRed((int) cell.getHealth());           // бот покраснел
+	            cell.remove_NE();
 			} return true;
 			case ENEMY:
 			case FRIEND:{
@@ -876,7 +971,7 @@ public class AliveCell extends CellObject{
 		        if (min0 >= min1) {
 		        	setMineral( min0 - min1); // количество минералов у бота уменьшается на количество минералов у жертвы
 		            // типа, стесал свои зубы о панцирь жертвы
-		            cell.remove(); // удаляем жертву из списков
+		            cell.remove_NE(); // удаляем жертву из списков
 		            long cl = hl / 2;           // количество энергии у бота прибавляется на (половину от энергии жертвы)
 		            this.setHealth(health + cl);
 		            goRed((int) cl);                    // бот краснеет
@@ -889,7 +984,7 @@ public class AliveCell extends CellObject{
 		            //------ если здоровья в 2 раза больше, чем минералов у жертвы  ------
 		            //------ то здоровьем проламываем минералы ---------------------------
 		            if (health >= 2 * min1) {
-			            cell.remove(); // удаляем жертву из списков
+			            cell.remove_NE(); // удаляем жертву из списков
 		            	long cl = Math.max(0,(hl / 2) - 2 * min1); // вычисляем, сколько энергии смог получить бот
 		            	this.setHealth(health + cl);
 		                goRed((int) cl);                   // бот краснеет
@@ -929,13 +1024,12 @@ public class AliveCell extends CellObject{
 			case ORGANIC: {
 				Point point = fromVektorA(direction);
 				CellObject cell = Configurations.world.get(point);
-				setHealth(health - cell.getHealth()/4);    //здоровье увеличилось
-	            goRed((int) -cell.getHealth()/4);           // бот покраснел
+				setHealth(health + cell.getHealth()/4);    //здоровье увеличилось
+	            goRed((int) +cell.getHealth()/4);           // бот покраснел
 	            cell.setHealth(cell.getHealth()*3/4); //Одну четверть отдали
 			} return true;
 			case ENEMY:
 			case FRIEND:{
-				//--------- дошли до сюда, значит впереди живой бот -------------------
 				Point point = fromVektorA(direction);
 				AliveCell cell = (AliveCell) Configurations.world.get(point);
 				
@@ -978,29 +1072,26 @@ public class AliveCell extends CellObject{
 	 * @returns параметры OBJECT
 	 */
 	private boolean careA(DIRECTION direction) {
-        switch (seeA(direction)) {
-			case ENEMY:
-			case FRIEND:{
-		        //------- если мы здесь, то в данном направлении живой ----------
-				Point point = fromVektorA(direction);
-				AliveCell cell = (AliveCell) Configurations.world.get(point);
-		        long hlt0 = health;         // определим количество энергии и минералов
-		        long hlt1 = cell.health;  // у бота и его соседа
-		        long min0 = mineral;
-		        long min1 = cell.mineral;
-		        if (hlt0 > hlt1) {              // если у бота больше энергии, чем у соседа
-		        	long hlt = (hlt0 - hlt1) / 2;   // то распределяем энергию поровну
-		            setHealth(health - hlt);
-		            cell.setHealth(cell.health + hlt);
-		        }
-		        if (min0 > min1) {              // если у бота больше минералов, чем у соседа
-		        	long min = (min0 - min1) / 2;   // то распределяем их поровну
-		            setMineral(mineral - min);
-		            cell.setMineral(cell.mineral + min);
-		        }
-		        return true;
-			}
-			default: return false;
+		if(seeA(direction).isBot) {
+			Point point = fromVektorA(direction);
+			AliveCell cell = (AliveCell) Configurations.world.get(point);
+	        long hlt0 = health;         // определим количество энергии и минералов
+	        long hlt1 = cell.health;  // у бота и его соседа
+	        long min0 = mineral;
+	        long min1 = cell.mineral;
+	        if (hlt0 > hlt1) {              // если у бота больше энергии, чем у соседа
+	        	long hlt = (hlt0 - hlt1) / 2;   // то распределяем энергию поровну
+	            setHealth(health - hlt);
+	            cell.setHealth(cell.health + hlt);
+	        }
+	        if (min0 > min1) {              // если у бота больше минералов, чем у соседа
+	        	long min = (min0 - min1) / 2;   // то распределяем их поровну
+	            setMineral(mineral - min);
+	            cell.setMineral(cell.mineral + min);
+	        }
+	        return true;
+		} else {
+			return false;
 		}
 	}
 	
@@ -1021,26 +1112,23 @@ public class AliveCell extends CellObject{
 	 * @returns параметры OBJECT
 	 */
 	private boolean giveA(DIRECTION direction) {
-        switch (seeA(direction)) {
-			case ENEMY:
-			case FRIEND:{
-		        //------- если мы здесь, то в данном направлении живой ----------
-				Point point = fromVektorA(direction);
-				AliveCell cell = (AliveCell) Configurations.world.get(point);
-				long hlt0 = health;  // бот отдает четверть своей энергии
-				long hlt = hlt0 / 4;
-	            setHealth(health - hlt);
-	            cell.setHealth(cell.health + hlt);
+		if(seeA(direction).isBot) {
+			Point point = fromVektorA(direction);
+			AliveCell cell = (AliveCell) Configurations.world.get(point);
+			long hlt0 = health;  // бот отдает четверть своей энергии
+			long hlt = hlt0 / 4;
+            setHealth(health - hlt);
+            cell.setHealth(cell.health + hlt);
 
-	            long min0 = mineral;  // бот отдает четверть своих минералов
-		        if (min0 > 3) {                 // только если их у него не меньше 4
-		        	long min = min0 / 4;
-		            setMineral(min0 - min);
-		            cell.setMineral(cell.mineral + min);
-		        }
-		        return true;
-			}
-			default: return false;
+            long min0 = mineral;  // бот отдает четверть своих минералов
+	        if (min0 > 3) {                 // только если их у него не меньше 4
+	        	long min = min0 / 4;
+	            setMineral(min0 - min);
+	            cell.setMineral(cell.mineral + min);
+	        }
+	        return true;
+		} else {
+			return false;
 		}
 	}
 	
@@ -1054,7 +1142,7 @@ public class AliveCell extends CellObject{
 	 */
 	private void clingA(DIRECTION direction) {
 		OBJECT see = seeA(direction);
-		if(see == OBJECT.ENEMY || see == OBJECT.FRIEND) {
+		if(see.isBot){
 			Point point = fromVektorA(direction);
 		    setFriend((AliveCell) Configurations.world.get(point));
 		}
@@ -1064,19 +1152,95 @@ public class AliveCell extends CellObject{
 		cloneA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
 	}
 	private void cloneA(DIRECTION direction) {
+		OBJECT see = seeA(direction);
+		if(!see.isEmptyPlase)
+			return;
     	setHealth(this.getHealth() - HP_FOR_DOUBLE);      // бот затрачивает 150 единиц энергии на создание копии
-        if (this.getHealth() <= 0) {
-            return;
-        }   // если у него было меньше 150, то пора помирать
-
-        if(seeA(direction) == OBJECT.CLEAN) {
+        if (this.getHealth() <= 0)// если у него было меньше 150, то пора помирать
+            return; 
+        if(see == OBJECT.CLEAN) {
 			Point point = fromVektorA(direction);
-            AliveCell newbot = new AliveCell(this,point);
-            Configurations.world.add(newbot);//Сделали потомка
+            Configurations.world.add(new AliveCell(this,point));//Сделали потомка
             clingA(direction); // Присосались друг к дуругу
+        } else if(see.isPosion) {
+			Point point = fromVektorA(direction);
+			Poison posion = (Poison) Configurations.world.get(point);
+            AliveCell newbot = new AliveCell(this,point);
+            if(newbot.toxinDamage(posion.type, (int) posion.getHealth())) { //Нас убило
+            	posion.addHealth(-newbot.getHealth());
+            	newbot.evolutionNode.remove(); //Мы так и не родились, так что нам не нужен узел
+			} else { // Мы сильнее яда! Так что удаляем яд и занимаем его место
+				posion.remove_NE();
+				Configurations.world.add(newbot);
+				clingA(direction); // Присосались друг к дуругу
+			}
         }
 	}
 	
+	
+	private void addPosionR(DIRECTION direction) {
+		addPosionA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
+	}
+	
+	private void addPosionA(DIRECTION enum1) {
+		OBJECT see = seeA(direction);
+		if(see == OBJECT.WALL) {
+			return; //Ну что мы можем сделать со стеной? О_О
+		}
+
+    	setHealth(this.getHealth() - HP_FOR_POISON);      // бот затрачивает энергию на это, причём только 2/3 идёт на токсин
+    	if(this.getHealth() <= 0)
+    		return;
+    	if(see.isEmptyPlase) {
+			Point point = fromVektorA(direction);
+			if(see == OBJECT.CLEAN) {
+				Poison newPoison = new Poison(getPosionType(),stepCount,point,HP_FOR_POISON * 2/3);
+	            Configurations.world.add(newPoison);//Сделали потомка
+			} else {
+				CellObject cell = Configurations.world.get(point);
+				if(cell.toxinDamage(getPosionType(), (int) (HP_FOR_POISON * 2/3)))
+					cell.remove_NE();
+			}
+    	}
+	}
+
+
+	private void pullR(DIRECTION direction) {
+		pullA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
+	}
+
+
+	private void pullA(DIRECTION direction) {
+		OBJECT see = seeA(direction);
+		if(see == OBJECT.WALL || see == OBJECT.CLEAN) {
+			return; //Ну что мы можем сделать со стеной или пустотой? О_О
+		} else {
+			setHealth(this.getHealth() - 2); // Но немного потратились на это
+			Point point = fromVektorA(direction);
+			CellObject cell = Configurations.world.get(point);
+			try {
+				cell.moveD(direction); // Вот мы и толкнули
+			}catch (CellObjectRemoveException e) {
+				// А она возьми да умри. Вот ржака!
+			}
+		}
+	}
+
+
+	/**
+	 * Удар токсином по клетке
+	 */
+	public boolean toxinDamage(TYPE type,int damag) {
+		if(type == getPosionType()) {
+			if(getPosionPower() >= damag)
+				posionPower = getPosionPower() + 1;
+			else
+				addHealth(-damag);
+		} else {
+			addHealth(-damag);
+		}
+		return getHealth() <= 0;
+	}
 	/**
 	 *  * Ищет свободные ячейки вокруг бота.
 	 * Сначала прямо, потом лево право, потом зад лево/право и наконец назад
@@ -1084,15 +1248,15 @@ public class AliveCell extends CellObject{
 	 * @return Найденые координаты
  	 */
 	public Point findEmptyDirection() {
-	    for (int i = 0; i < 5; i++) {
+	    for (int i = 0; i < DIRECTION.size()/2+1; i++) {
 	        Point point = fromVektorR(DIRECTION.toEnum(i));
 	        OBJECT obj = Configurations.world.test(point);
-	        if (obj == OBJECT.CLEAN)
+	        if (obj.isEmptyPlase)
 	            return point;
 	        if (i != 0 && i != 4) {
 	            point = fromVektorR(DIRECTION.toEnum(-i));
 		        obj = Configurations.world.test(point);
-		        if (obj == OBJECT.CLEAN)
+		        if (obj.isEmptyPlase)
 		            return point;
 	        }
 	    }
@@ -1120,7 +1284,7 @@ public class AliveCell extends CellObject{
 		int red = color_DO.getRed();
 		int green = color_DO.getGreen();
 		int blue = color_DO.getBlue();
-		green = Math.min(green + num, 255);
+		green = Utils.betwin(0,green + num, 255);
         int nm = num / 2;
         // убавляем красноту
         red = red - nm;
@@ -1132,8 +1296,8 @@ public class AliveCell extends CellObject{
         if (blue < 0) {
             red += blue;
         }
-        red = Math.max(red, 0);
-        blue = Math.max(blue, 0);
+        red = Utils.betwin(0,red,255);
+        blue = Utils.betwin(0,blue,255);
         color_DO = new Color(red, green, blue , color_DO.getAlpha());
 	}
 	/**
@@ -1147,7 +1311,7 @@ public class AliveCell extends CellObject{
 		int red = color_DO.getRed();
 		int green = color_DO.getGreen();
 		int blue = color_DO.getBlue();
-		blue = Math.min(blue + num, 255);
+		blue = Utils.betwin(0,blue + num, 255);
         int nm = num / 2;
         // убавляем зелену
         green = green - nm;
@@ -1159,8 +1323,8 @@ public class AliveCell extends CellObject{
         if (red < 0) {
         	green += red;
         }
-        green = Math.max(green, 0);
-        red = Math.max(red, 0);
+        green = Utils.betwin(0,green,255);
+        red = Utils.betwin(0,red,255);
         color_DO = new Color(red, green, blue , color_DO.getAlpha());
 	}
 	/**
@@ -1174,7 +1338,7 @@ public class AliveCell extends CellObject{
 		int red = color_DO.getRed();
 		int green = color_DO.getGreen();
 		int blue = color_DO.getBlue();
-		red = Math.min(red + num, 255);
+		red = Utils.betwin(0,red + num,255);
         int nm = num / 2;
         // убавляем зелену
         green = green - nm;
@@ -1186,8 +1350,8 @@ public class AliveCell extends CellObject{
         if (blue < 0) {
         	green += blue;
         }
-        green = Math.max(green, 0);
-        blue = Math.max(blue, 0);
+        green = Utils.betwin(0,green,255);
+        blue = Utils.betwin(0,blue,255);
         color_DO = new Color(red, green, blue , color_DO.getAlpha());
 	}
 	
@@ -1285,8 +1449,8 @@ public class AliveCell extends CellObject{
 	
 	public void repaint() {
 		switch (Legend.Graph.getMode()) {
-			case MINERALS -> color_DO = new Color(0,0,(int) Math.max(0,Math.min(255, (255.0*mineral/maxMP))),evolutionNode.getAlpha());
-			case GENER -> color_DO = Utils.getHSBColor(Math.max(0, (0.5*Generation/Legend.Graph.getMaxGen())), 1, 1,evolutionNode.getAlpha()/255.0);
+			case MINERALS -> color_DO = new Color(0,0,(int) Utils.betwin(0, (255.0*mineral/maxMP),255),evolutionNode.getAlpha());
+			case GENER -> color_DO = Utils.getHSBColor(Utils.betwin(0, 0.5*Generation/Legend.Graph.getMaxGen(),1), 1, 1,evolutionNode.getAlpha()/255.0);
 			case YEAR -> color_DO = Utils.getHSBColor(Math.max(0, (1.0*getAge()/Legend.Graph.getMaxAge())), 1, 1,evolutionNode.getAlpha()/255.0);
 			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,health)/maxHP)),0,0,evolutionNode.getAlpha());
 			case PHEN -> color_DO = new Color(phenotype.getRed(), phenotype.getGreen(), phenotype.getBlue(),evolutionNode.getAlpha());
@@ -1335,6 +1499,8 @@ public class AliveCell extends CellObject{
 		make.add("mineral",mineral);
 		make.add("direction",DIRECTION.toNum(direction));
 		make.add("DNA_wall",DNA_wall);
+		make.add("posionType",getPosionType().ordinal());
+		make.add("posionPower",getPosionPower());
 
 	    //=================ПАРАМЕТРЫ БОТА============
 		make.add("Generation",Generation);
@@ -1352,5 +1518,19 @@ public class AliveCell extends CellObject{
 			fr[i] = ((Point)points[i]).toJSON();
 		make.add("friends",fr);
 		return make;
+	}
+
+	/**
+	 * @return the posionType
+	 */
+	public Poison.TYPE getPosionType() {
+		return posionType;
+	}
+
+	/**
+	 * @return the posionPower
+	 */
+	public int getPosionPower() {
+		return posionPower;
 	}
 }
