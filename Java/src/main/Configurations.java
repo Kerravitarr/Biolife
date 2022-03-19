@@ -24,16 +24,18 @@ public class Configurations {
 	public static Dimension MAP_CELLS = new Dimension(500,200);
 	/**Сам мир*/
 	public static CellObject [][] worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
+	/**Базовая освещённость карты, то есть сколько света падает постоянно*/
+	public static int BASE_SUN_POWER = 8;
 	/**Освещённость карты*/
-	public static int SUN_POWER = 12;
+	public static int ADD_SUN_POWER = 4;
 	//Скорость движения солнца в тиках мира
 	public static int SUN_SPEED = 15;
 	//Положение солнца в частях экрана
 	public static int SUN_POSITION = 0;
 	/**"Ширина" солнечного света в частях экрана*/
-	public static int SUN_LENGHT = 40;
+	public static int SUN_LENGHT = 30;
 	/**На сколько частей нужно поделить экран для солнца*/
-	public static final int SUN_PARTS = 30;
+	public static final int SUN_PARTS = 60;
 	/**Уровень загрязнения воды*/
 	public static double DIRTY_WATER = 19;
 	/**Степень мутагенности воды*/
@@ -73,7 +75,8 @@ public class Configurations {
 	/**Сохраняет конфигурацию мира*/
 	public static JSONmake toJSON() {
 		JSONmake configWorld = new JSONmake();
-		configWorld.add("SUN_POWER", SUN_POWER);
+		configWorld.add("BASE_SUN_POWER", BASE_SUN_POWER);
+		configWorld.add("ADD_SUN_POWER", ADD_SUN_POWER);
 		configWorld.add("MAP_CELLS", new int[] {MAP_CELLS.width,MAP_CELLS.height});
 		configWorld.add("DIRTY_WATER", DIRTY_WATER);
 		configWorld.add("AGGRESSIVE_ENVIRONMENT", AGGRESSIVE_ENVIRONMENT);
@@ -101,5 +104,7 @@ public class Configurations {
 		SUN_SPEED = configWorld.getI("SUN_SPEED");
 		SUN_LENGHT = configWorld.getI("SUN_LENGHT");
 		SUN_POSITION = configWorld.getI("SUN_POSITION");
+		BASE_SUN_POWER = configWorld.getI("BASE_SUN_POWER");
+		ADD_SUN_POWER = configWorld.getI("ADD_SUN_POWER");
 	}
 }
