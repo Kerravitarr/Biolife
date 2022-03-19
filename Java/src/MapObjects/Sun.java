@@ -35,7 +35,7 @@ public class Sun {
 		public String toString() {
 			return "x0: " + startX + " endx: " + endX + " pw: " + power;
 		}
-		public void resize(int w, int h) {
+		public synchronized void resize(int w, int h) {
 			ColorRec[] rowsL = new ColorRec[(int) Math.round(Configurations.DIRTY_WATER*sizeDraw)];
 			int lenghtY = h-Configurations.border.height*2;
 	        int heightSun = (int) Math.ceil(lenghtY/(Configurations.DIRTY_WATER*sizeDraw));
@@ -50,7 +50,7 @@ public class Sun {
 		public double getEnergy(Point pos) {
 			return  power - (Configurations.DIRTY_WATER * pos.y / Configurations.MAP_CELLS.height);
 		}
-		public void repaint() {
+		public synchronized void repaint() {
 			for (int i = 0; i < Configurations.DIRTY_WATER*sizeDraw; i++) {
 				float sunPower = (float) ((240 - Math.max(0, (power - i/sizeDraw)/(power+1))*60)/360);
 				rows[i].setColor(Utils.getHSBColor(sunPower, 1, 1,0.7));
@@ -119,8 +119,9 @@ public class Sun {
 			if (i > Configurations.SUN_LENGHT/2) {
 				cr[pos].power = 0;
 			} else {
-				cr[pos].power = Configurations.SUN_POWER * Math.cos((1.0 * i / Configurations.SUN_LENGHT) * Math.PI);
+				cr[pos].power = Configurations.ADD_SUN_POWER * Math.cos((1.0 * i / Configurations.SUN_LENGHT) * Math.PI);
 			}
+			cr[pos].power+= Configurations.BASE_SUN_POWER;
 			
 			if(i != 0) {
 				pos = Configurations.SUN_POSITION - i;
@@ -130,8 +131,9 @@ public class Sun {
 				if (i > Configurations.SUN_LENGHT/2) {
 					cr[pos].power = 0;
 				} else {
-					cr[pos].power = Configurations.SUN_POWER * Math.cos((1.0 * i / Configurations.SUN_LENGHT) * Math.PI);
+					cr[pos].power = Configurations.ADD_SUN_POWER * Math.cos((1.0 * i / Configurations.SUN_LENGHT) * Math.PI);
 				}
+				cr[pos].power+= Configurations.BASE_SUN_POWER;
 			}
 			
 		}
