@@ -102,4 +102,7 @@ public class Point{
 		pixelXDel = Configurations.border.width + Configurations.scale/2;
 		pixelYDel = Configurations.border.height + Configurations.scale/2;
 	}
+	public boolean equals(Point obj) {
+        return (this.x == obj.x) && (this.y == obj.y);
+    }
 }
