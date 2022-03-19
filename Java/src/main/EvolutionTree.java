@@ -2,11 +2,13 @@ package main;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import MapObjects.AliveCell;
+import MapObjects.Poison;
 import Utils.JSONmake;
 
 //@Deprecated
@@ -20,9 +22,9 @@ public class EvolutionTree {
 		//Потомки нашего узла
 		Vector<Node> child = new Vector<>();
 		/**Счётчик ветвей*/
-		int branshCount = 0;
+		private AtomicInteger branshCount = new AtomicInteger(0);
 		/**Число живых потомков*/
-		int countAliveCell = 0;
+		private AtomicInteger countAliveCell = new AtomicInteger(0);
 		/**Наш родитель, общий предок, если хотите*/
 		Node perrent = null;
 		
@@ -31,6 +33,8 @@ public class EvolutionTree {
 		public int [] DNA = null;
 		//Цвет
 		public Color phenotype = null;
+		/**Устойчивость к яду*/
+		public Poison.TYPE poisonType = null;
 		
 		//====================СПЕЦ ПЕРЕМЕННЫЕ. Нужны для дерева эволюции
 		//Показывает, нужно ли обновлять цвета у ботов
@@ -42,9 +46,10 @@ public class EvolutionTree {
 			this();
 			time = node.getL("time");
 			generation = node.getL("generation");
-			branshCount = node.getI("branshCount");
-			countAliveCell = 0;
+			branshCount.set(node.getI("branshCount"));
+			countAliveCell.set(0);
 			phenotype = new Color((Long.decode("0x"+node.getS("phenotype"))).intValue(),true);
+			poisonType = Poison.TYPE.toEnum(node.getI("poisonType"));
 
 	    	List<Long> mindL = node.getAL("DNA");
 	    	DNA = new int[mindL.size()];
@@ -54,7 +59,7 @@ public class EvolutionTree {
 			for(JSONmake i : node.getAJ("Nodes")) {
 				Node nodeR = new Node(i);
 				nodeR.perrent = this;
-				getChild().add(nodeR);
+				child.add(nodeR);
 			}
 		}
 		/**
@@ -64,72 +69,80 @@ public class EvolutionTree {
 		 */
 		public Node newNode(AliveCell cell,long time) {
 			Node node = new Node();
-			synchronized (root) {
-				node.generation = ++branshCount;
-				node.countAliveCell = 1;
-				getChild().add(node);
-				node.perrent = this;
-				node.time = time;
-				node.isSelected = isSelected();
-			}
+			node.generation = branshCount.incrementAndGet();
+			node.countAliveCell.set(1);
+			node.isSelected = isSelected();
+			node.time = time;
 			node.setChild(cell);
+			
+			node.perrent = this;
+			child.add(node);
 			remove(); //Мы больше не служим нашему родителю!
 			return node;
 		}
 
 		private void setChild(AliveCell cell) {
 			DNA = cell.getDNA();
-			if(DNA == null) {
-				Configurations.world.isActiv = false;
-				return;
-			}
 			phenotype = new Color(cell.phenotype.getRGB());
+			poisonType = cell.getPosionType();
 		}
-		/**Создаёт новую ветку, куда будем эволюционировать*/
+		/**Не создаёт ветки эволюции, просто помечает, что существует ещё один потомок у этой ветки эволюции*/
 		public Node clone() {
-			countAliveCell++;
+			countAliveCell.incrementAndGet();
 			return this;
 		}
 		/**Увы, очередной наш потомок того. Если потомков больше нет, то ветвь тупиковая - удаляем!*/
-		public void remove() {
-			countAliveCell--;
-			if(countAliveCell <= 0 && getChild().size() == 0)// У нас нет детей, всё, удаляем у родителя
-				perrent.remove(this); 
-			else if(countAliveCell <= 0 && getChild().size() == 1) 
-				merge();
-			
+		public void remove(){
+			if(countAliveCell.decrementAndGet() == 0 && child.size() <= 1)
+				removeNode.add(this);
 		}
 		/**Наш ребёнок сказал нам, что умер. Если это был последний наш ребёнок, то всё - сворачиваем лавочку*/
 		private void remove(Node node) {
 			getChild().remove(node);
-			if(countAliveCell <= 0 && getChild().size() == 0)
+			node.removeChild();
+			if(countAliveCell.get() == 0 && child.size() == 0)
 				perrent.remove(this);
-			else if(countAliveCell <= 0 && getChild().size() == 1)
+			else if(countAliveCell.get() == 0 && child.size() == 1)
 				merge();
 		}
 		/**
 		 * Сливает нас с нашим предком сверху
 		 */
 		private void merge() {
+			if(child == null)
+				return;
+			Node margeNode = child.get(0);
 			if(perrent != null) {
-				synchronized (root) {
-					perrent.getChild().add(getChild().get(0)); 
-					getChild().get(0).perrent = perrent;
-					getChild().get(0).generation = getGeneration();
+				perrent.getChild().add(margeNode); 
+				margeNode.perrent = perrent;
+				margeNode.generation = getGeneration();
+				perrent.remove(this);
+				if(perrent.child == null)
+					return;
+				
+				HashMap<Long, Integer> map = new HashMap<>();
+				for (Node node : perrent.child) {
+					if(!map.containsKey(node.generation)) {
+						map.put(node.generation, 0);
+					} else {
+						throw new RuntimeException("ЖОПА");
+					}
 				}
-				perrent.remove(this); 
 			} else {
-				synchronized (root) {
-					root = getChild().get(0); 
-					root.perrent = null;
-					root.generation = 0;
-				}
+				root = margeNode; 
+				root.perrent = null;
+				root.generation = 0;
 			}
+		}
+		
+		private void removeChild() {
+			child = null;
 		}
 		
 		public String toString() {
 			String ret = "Поколение " + getGeneration() + " мутация произошла в " + time + " от рожденства Адама. ";
-			ret += "Мутация порадила " + getChild().size() + " потомков";
+			if(child != null)
+				ret += "Мутация порадила " + getChild().size() + " потомков";
 			return ret;
 		}
 		
@@ -137,11 +150,12 @@ public class EvolutionTree {
 			JSONmake make = new JSONmake();
 			make.add("time", time);
 			make.add("generation", getGeneration());
-			make.add("branshCount", branshCount);
-			make.add("countAliveCell", countAliveCell);
+			make.add("branshCount", branshCount.get());
+			make.add("countAliveCell", countAliveCell.get());
 			make.add("branch", getBranch());
-			make.add("phenotype",phenotype.getRGB()+"");
+			make.add("phenotype",Integer.toHexString(phenotype.getRGB()));
 			make.add("DNA", DNA);
+			make.add("poisonType", poisonType.ordinal());
 			
 			JSONmake[] nodes = new JSONmake[getChild().size()];
 			for (int i = 0; i < nodes.length; i++) {
@@ -218,6 +232,8 @@ public class EvolutionTree {
 	
 	/**Корень эволюционного дерева, адам*/
 	public static Node root = new Node();
+	/***/
+	private static Vector<Node> removeNode = new Vector<>();
 	
 	public EvolutionTree() {};
 	public EvolutionTree(JSONmake json) {
@@ -242,10 +258,11 @@ public class EvolutionTree {
 		String[] numbers = s.split(">");
 		Node ret = root;
 		
-		for (int i = 1; i < numbers.length; i++)
+		for (int i = 1; i < numbers.length; i++) {
 			ret = ret.getChild(Long.parseLong(numbers[i]));
+		}
 		
-		ret.countAliveCell++; //Подсчитали ещё одного живчика
+		ret.countAliveCell.incrementAndGet(); //Подсчитали ещё одного живчика
 		return ret;
 	}
 	/**
@@ -253,13 +270,26 @@ public class EvolutionTree {
 	 */
 	public void updatre() {
 		for(Node node : root.getEndNode()) {
-			if(node.countAliveCell == 0)
+			if(node.countAliveCell.get() <= 0)
 				node.remove();
+		}
+	}
+	public void step() {
+		if(removeNode.size() > 0) {
+			for(Node node :removeNode) {
+				if(node.getChild() == null)
+					continue;
+				else if (node.getChild().size() == 0)// У нас нет детей, всё, удаляем у родителя
+					node.perrent.remove(node); 
+				else if(node.getChild().size() == 1) 
+					node.merge();
+			}
+			removeNode.clear();
 		}
 	}
 
 	public void setAdam(AliveCell adam) {
-		root.countAliveCell = 1;
+		root.countAliveCell.set(1);
 		root.setChild(adam);
 	}
 }
