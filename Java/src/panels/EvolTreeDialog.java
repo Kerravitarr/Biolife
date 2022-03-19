@@ -3,10 +3,10 @@ package panels;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.Vector;
 
 import javax.swing.GroupLayout;
@@ -21,13 +21,11 @@ import main.Configurations;
 import main.EvolutionTree;
 import main.EvolutionTree.Node;
 import main.Point;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 
 public class EvolTreeDialog extends JDialog {
 	static int delX = 23;
 	static int minX = delX * 2;
-	static int minY = 40;
+	static int minY = 55;
 	
 	public class NodeJpanel extends JPanel{
 		Node node = null;
@@ -35,14 +33,10 @@ public class EvolTreeDialog extends JDialog {
 			this.node = node;
 			addMouseListener(new MouseAdapter() {
 			    public void mouseClicked(MouseEvent e) {
-			    	boolean newSelected = !NodeJpanel.this.node.isSelected();
 			    	EvolutionTree.root.setSelected(true);
-			    	NodeJpanel.this.node.setSelected(newSelected);
+			    	NodeJpanel.this.node.setSelected(false);
 			    	CellUpdate();
-			    	if(!newSelected)
-			    		activNode = NodeJpanel.this;
-			    	else
-			    		activNode = null;
+		    		activNode = NodeJpanel.this;
 			    }
 			});
 		}
@@ -96,20 +90,20 @@ public class EvolTreeDialog extends JDialog {
 			if(activNode != null) {
 				g.drawString("Примечательные точки узла:", minX, 10);
 				String DNA_s = "";
-				if(activNode.node.DNA == null) {
-					Configurations.world.isActiv = false;
-					return;
-				}
 				for(int i : activNode.node.DNA) {
 					if(!DNA_s.isEmpty())
 						DNA_s+= ", ";
 					DNA_s += i + "";
 				}
-				g.drawString("ДНК (" + activNode.node.DNA.length + "): " + DNA_s, minX, 20);
+				g.drawString("ДНК (" + activNode.node.DNA.length + "): " + DNA_s, minX, 25);
 				Color oldC = g.getColor();
 				g.setColor(activNode.node.phenotype);
-				g.drawString("Фенотип", minX, 30);
+				g.drawString("Фенотип: " + "[r="
+						+ activNode.node.phenotype.getRed() + ",g="
+						+ activNode.node.phenotype.getGreen() + ",b="
+						+ activNode.node.phenotype.getBlue() + "]", minX, 40);
 				g.setColor(oldC);
+				g.drawString("Устойчивость к яду: " + activNode.node.poisonType, minX, 55);
 			}
 		}
 		
