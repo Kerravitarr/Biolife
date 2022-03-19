@@ -19,19 +19,20 @@ import javax.swing.border.TitledBorder;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
+import MapObjects.Poison;
 import Utils.Utils;
 import main.Configurations;
 
 public class BotInfo extends JPanel {
 	enum CELL_COMMAND{
-		PHOT(AliveCell.block1),MIN_TO_EN(AliveCell.block1+1),CLONE(AliveCell.block1+2),
-		DNA_PROG(AliveCell.block5,2),DNA_CRASH_A(AliveCell.block5+1,2),DNA_COPY(AliveCell.block5+2,1),DNA_CRASH_O(AliveCell.block5+3,1),DNA_WALL(AliveCell.block5+4),WALL_BIT(AliveCell.block5+5),LOOP(AliveCell.block5+6,1),
-		N_DIR_A(AliveCell.block2,1),N_DIR_R(AliveCell.block2+1,1),STEP_A(AliveCell.block2+2,1,AliveCell.OBJECT.size()-2),STEP_R(AliveCell.block2+3,1,AliveCell.OBJECT.size()-2),DIR_UP(AliveCell.block2+4),
-		SEE_A(AliveCell.block3,1,AliveCell.OBJECT.size()-1),SEE_R(AliveCell.block3+1,1,AliveCell.OBJECT.size()-1),H_LV(AliveCell.block3+2,1,2),HP_LV(AliveCell.block3+3,1,2),MP_LV(AliveCell.block3+4,1,2),WHO_NEAR(AliveCell.block3+5,0,2),
-			CAN_PH(AliveCell.block3+6,0,2),CAN_MIN(AliveCell.block3+7,0,2),HP_NEAR(AliveCell.block3+8,1,2+AliveCell.OBJECT.size()-3),MP_NEAR(AliveCell.block3+9,1,2+AliveCell.OBJECT.size()-3),I_MANY(AliveCell.block3+10,0,2),HOW_OLD(AliveCell.block3+11,1,2),HOW_DNA_W(AliveCell.block3+12,1,2),
-		EAT_A(AliveCell.block4,1,1+AliveCell.OBJECT.size()-4),EAT_R(AliveCell.block4+1,1,1+AliveCell.OBJECT.size()-4),BITE_A(AliveCell.block4+2,1,1+AliveCell.OBJECT.size()-3),BITE_R(AliveCell.block4+3,1,1+AliveCell.OBJECT.size()-3),
-		CARE_A(AliveCell.block4+4,1,1+AliveCell.OBJECT.size()-32),CARE_R(AliveCell.block4+5,1,1+AliveCell.OBJECT.size()-3),GIVE_A(AliveCell.block4+6,1,1+AliveCell.OBJECT.size()-3),GIVE_R(AliveCell.block4+7,1,1+AliveCell.OBJECT.size()-3),
-		CLING_R(AliveCell.block6,1),CLING_A(AliveCell.block6+1,1),CLONE_R(AliveCell.block6+2,1),CLONE_A(AliveCell.block6+3,1),
+		ФОТОСИНТЕЗ(AliveCell.block1),НямМинералы(AliveCell.block1+1),Диление(AliveCell.block1+2),Умереть(AliveCell.block1+3),Пукнуть_О(AliveCell.block1+4,1),Пукнуть_А(AliveCell.block1+5,1),
+		Сломать_ДНК(AliveCell.block5,2),Подлож_ком_ДНК(AliveCell.block5+1,1),Подложить_ДНК(AliveCell.block5+2,1),Скопировать_ДНК(AliveCell.block5+3),Укрепить_ДНК(AliveCell.block5+4),Сломать_Защиту_ДНК(AliveCell.block5+5),Цикл(AliveCell.block5+6,1),
+		Повернуться_А(AliveCell.block2,1),Повернуться_О(AliveCell.block2+1,1),Шаг_А(AliveCell.block2+2,1,AliveCell.OBJECT.size()-2),Шаг_О(AliveCell.block2+3,1,AliveCell.OBJECT.size()-2),Выпрямиться(AliveCell.block2+4),
+		Смотреть_А(AliveCell.block3,1,AliveCell.OBJECT.size()-1),Смотреть_О(AliveCell.block3+1,1,AliveCell.OBJECT.size()-1),Какая_Высота(AliveCell.block3+2,1,2),Сколько_ХП(AliveCell.block3+3,1,2),Сколько_МП(AliveCell.block3+4,1,2),Кто_рядом(AliveCell.block3+5,0,2),
+			Есть_солнце(AliveCell.block3+6,0,2),Есть_минералы(AliveCell.block3+7,0,2),ХП_Рядом(AliveCell.block3+8,1,2+AliveCell.OBJECT.size()-3),МП_Рядом(AliveCell.block3+9,1,2+AliveCell.OBJECT.size()-3),Я_Многоклеточный(AliveCell.block3+10,0,2),Склько_лет(AliveCell.block3+11,1,2),Сколько_Защит_ДНК(AliveCell.block3+12,1,2),
+		Съесть_А(AliveCell.block4,1,1+AliveCell.OBJECT.size()-4),Съесть_О(AliveCell.block4+1,1,1+AliveCell.OBJECT.size()-4),Кусь_А(AliveCell.block4+2,1,1+AliveCell.OBJECT.size()-3),Кусь_О(AliveCell.block4+3,1,1+AliveCell.OBJECT.size()-3),
+		Поделиться_А(AliveCell.block4+4,1,1+AliveCell.OBJECT.size()-32),Поделиться_О(AliveCell.block4+5,1,1+AliveCell.OBJECT.size()-3),Отдать_А(AliveCell.block4+6,1,1+AliveCell.OBJECT.size()-3),Отдать_О(AliveCell.block4+7,1,1+AliveCell.OBJECT.size()-3),Пнуть_О(AliveCell.block4+8,1),Пнуть_А(AliveCell.block4+9,1),
+		Объедин_О(AliveCell.block6,1),Объедин_А(AliveCell.block6+1,1),Связ_Клон_О(AliveCell.block6+2,1),Связ_Клон_A(AliveCell.block6+3,1),
 		;
 		private static final CELL_COMMAND[] myEnumValues = CELL_COMMAND.values();
 		
@@ -64,6 +65,7 @@ public class BotInfo extends JPanel {
 	/**Филогинетическое дерево*/
 	private JTextField filogen;
 	private JTextField pos;
+	private JTextField toxicFIeld;
 	
 	class WorkTask implements Runnable{
 		public void run() {
@@ -148,9 +150,9 @@ public class BotInfo extends JPanel {
 			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
-					.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, 299, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panel_4, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_2, GroupLayout.DEFAULT_SIZE, 401, Short.MAX_VALUE)
+					.addComponent(panel_2, GroupLayout.DEFAULT_SIZE, 368, Short.MAX_VALUE)
 					.addContainerGap())
 		);
 		
@@ -185,21 +187,24 @@ public class BotInfo extends JPanel {
 		JPanel panel_1 = new JPanel();
 		
 		JPanel panel_12 = new JPanel();
+		
+		JPanel panel_13 = new JPanel();
 		GroupLayout gl_panel_4 = new GroupLayout(panel_4);
 		gl_panel_4.setHorizontalGroup(
 			gl_panel_4.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel_4.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(gl_panel_4.createParallelGroup(Alignment.LEADING)
-						.addComponent(panel_12, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_1, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_11, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_10, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_9, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_8, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_7, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addComponent(panel_6, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
-						.addGroup(gl_panel_4.createParallelGroup(Alignment.TRAILING, false)
+					.addGroup(gl_panel_4.createParallelGroup(Alignment.TRAILING)
+						.addComponent(panel_13, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_12, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_11, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_10, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_9, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_8, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_7, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addComponent(panel_6, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)
+						.addGroup(Alignment.LEADING, gl_panel_4.createParallelGroup(Alignment.TRAILING, false)
 							.addComponent(panel_5, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
 							.addComponent(panel_3, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 152, Short.MAX_VALUE)))
 					.addGap(59))
@@ -227,8 +232,21 @@ public class BotInfo extends JPanel {
 					.addComponent(panel_1, GroupLayout.PREFERRED_SIZE, 21, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_12, GroupLayout.PREFERRED_SIZE, 19, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(24, Short.MAX_VALUE))
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(panel_13, GroupLayout.PREFERRED_SIZE, 19, GroupLayout.PREFERRED_SIZE)
+					.addContainerGap(19, Short.MAX_VALUE))
 		);
+		panel_13.setLayout(new BoxLayout(panel_13, BoxLayout.X_AXIS));
+		
+		JLabel lblNewLabel_11 = new JLabel("Химзащита:");
+		panel_13.add(lblNewLabel_11);
+		
+		toxicFIeld = new JTextField();
+		toxicFIeld.setBackground(Color.WHITE);
+		toxicFIeld.setEditable(false);
+		toxicFIeld.setEnabled(false);
+		panel_13.add(toxicFIeld);
+		toxicFIeld.setColumns(10);
 		panel_12.setLayout(new BoxLayout(panel_12, BoxLayout.X_AXIS));
 		
 		JLabel lblNewLabel_10 = new JLabel("Позиция:");
@@ -363,13 +381,14 @@ public class BotInfo extends JPanel {
 			return;
 
 		setDinamicHaracteristiks();
-		if (getCell() instanceof AliveCell) {
+		if (getCell() instanceof AliveCell) {			
 			AliveCell new_name = (AliveCell) getCell();
 			generation.setText(new_name.getGeneration()+"");
 			photos.setText((new_name.photosynthesisEffect+"").substring(0, 3));
 			phenotype.setBackground(new_name.phenotype);
 			phenotype.setText(Integer.toHexString(new_name.phenotype.getRGB()));
 			filogen.setText(new_name.getBranch());
+		} else {
 		}
 	}
 
@@ -385,6 +404,11 @@ public class BotInfo extends JPanel {
 			double realLv = new_name.getPos().y - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
         	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
 			mp.setText(new_name.getMineral()+"+" + Math.round(Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - new_name.photosynthesisEffect)));
+			toxicFIeld.setText(new_name.getPosionType() + ":" + new_name.getPosionPower());
+		} else if (getCell() instanceof Poison) {
+			Poison new_name = (Poison) getCell();
+			hp.setText(getCell().getHealth() + "");
+			toxicFIeld.setText(new_name.type + "");
 		} else {
 			hp.setText(getCell().getHealth() + "");
 		}
@@ -400,6 +424,7 @@ public class BotInfo extends JPanel {
 		phenotype.setText("");
 		filogen.setText("");
 		pos.setText("");
+		toxicFIeld.setText("");
 	}
 
 
