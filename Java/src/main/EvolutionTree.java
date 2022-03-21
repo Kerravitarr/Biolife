@@ -82,7 +82,7 @@ public class EvolutionTree {
 		}
 
 		private void setChild(AliveCell cell) {
-			DNA = cell.getDNA();
+			DNA = cell.getDna().mind;
 			phenotype = new Color(cell.phenotype.getRGB());
 			poisonType = cell.getPosionType();
 		}
