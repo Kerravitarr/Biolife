@@ -1,4 +1,4 @@
-# Biolife
+## Biolife
 Greetings to everyone who comes!
 
 I am a self-taught programmer from Russia. And in the beginning I want to express my gratitude to the project CyberBiology - https://github.com/CyberBiology/CyberBiology. It was he who became my main inspiration!
@@ -16,11 +16,11 @@ Poison. But for now I don't like it.
 Initially, I wanted to adapt the code for javascript. Unfortunately, the game gave out only 5-10 moves per second. Therefore, I quickly rewrote the code in Java. But if you are interested, you can also check out the old code.
 Now on a six-core machine and a 500x200 field, it is possible to achieve 80-120 moves per second and 2-5 fps.
 
-BUILDING
+### BUILD
 
 Currently only available for Windows. I promise to add Linux support soon.
 
-Windows:
+#### Windows:
 1. Install JDK and JRE
 2. Run WindowsMake.bat
 3. Launching the application from the /build
