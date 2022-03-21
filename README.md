@@ -1,11 +1,11 @@
 # Biolife
 Greetings to everyone who comes!
 
-I am a self-taught programmer from Russia. And in the beginning I want to express my gratitude to the project CyberBiology - github.com/CyberBiology/CyberBiology. It was he who became my main inspiration!
+I am a self-taught programmer from Russia. And in the beginning I want to express my gratitude to the project CyberBiology - https://github.com/CyberBiology/CyberBiology. It was he who became my main inspiration!
 
 The project is dedicated to the simulation of natural selection. The variability of the surrounding world is supported.
 In this game, there is only one goal - to survive. The player acts as an observer. This game shows how well life adapts.
-You can read more about this on Wikipedia: en.wikipedia.org/wiki/Evolutionary_computation
+You can read more about this on Wikipedia: https://en.wikipedia.org/wiki/Evolutionary_computation
 
 What has already been implemented:
 Two types of energy - the sun and minerals.
