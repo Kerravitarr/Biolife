@@ -15,7 +15,7 @@ public class Poison extends CellObject {
 	static final int MAX_TOXIC = 2000;
 	
 	public enum TYPE {
-		NONE, YELLOW, PINK, MAGENTA;
+		НЕТ, ЖЁЛ, РОЗ, ЧЁР;
 		private static TYPE[] vals = values();
 
 		public static TYPE toEnum(int num) {
@@ -44,6 +44,7 @@ public class Poison extends CellObject {
 		setHealth((long) poison.getD("energy"));
 		type =TYPE.toEnum(poison.getI("type"));
 		nextDouble = getTimeToNextDouble();
+		repaint();
 	}
 
 	public Poison(TYPE type, long stepCount, Point point, long newEnergy) {
@@ -51,8 +52,8 @@ public class Poison extends CellObject {
 		setPos(point);
 		setHealth(newEnergy);
 		this.type=type;
-		repaint();
 		nextDouble = getTimeToNextDouble();
+		repaint();
 	}
 
 	@Override
@@ -91,7 +92,7 @@ public class Poison extends CellObject {
 	}
 	
 	private int getTimeToNextDouble() {
-		return (int) Math.round(getAge() + 100 - 50 * energy / MAX_TOXIC);
+		return (int) Math.round(getAge() + Configurations.POISON_STREAM * (2 - energy / MAX_TOXIC));
 	}
 
 	protected boolean moveA(DIRECTION direction) {
@@ -115,7 +116,7 @@ public class Poison extends CellObject {
 				Point point = fromVektorA(direction);
 				CellObject cell = Configurations.world.get(point);
 				if(cell.toxinDamage(type,(int) getHealth())) {
-					setHealth(Math.abs(cell.getHealth())); // Вот мы и покушали свежатинкой
+					addHealth(Math.abs(cell.getHealth())); // Вот мы и покушали свежатинкой
 					cell.remove_NE();
 				} else { // Покушали нами
 					destroy();
@@ -130,7 +131,8 @@ public class Poison extends CellObject {
 		if (this.type == type) {
 			addHealth(damag);
 		} else {
-			addHealth((long) -damag); // Мы компенсируем другие яды
+			damag = (int) Math.min(damag, getHealth()*2); // Мы не можем принять больше яда, чем в нас хп
+			addHealth(-damag); // Мы компенсируем другие яды
 		}
 		return energy <= 1;
 	}
@@ -159,7 +161,7 @@ public class Poison extends CellObject {
 
 	@Override
 	void setHealth(long h) {
-		energy = h;
+		energy = h;//Math.min(h, MAX_TOXIC);
 		radius = Math.min(1, 0.3 + 0.7 * energy/MAX_TOXIC);
 		nextDouble = Math.min(nextDouble,getTimeToNextDouble());
 	}
@@ -180,9 +182,9 @@ public class Poison extends CellObject {
 			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,getHealth())/MAX_TOXIC)),0,0,255);
 			default -> {
 				switch (type) {
-					case YELLOW -> color_DO = (Color.YELLOW);
-					case PINK -> color_DO = (Color.PINK);
-					case MAGENTA -> color_DO = (Color.MAGENTA);
+					case ЖЁЛ -> color_DO = (Color.YELLOW);
+					case РОЗ -> color_DO = (Color.PINK);
+					case ЧЁР -> color_DO = (Color.BLACK);
 					default -> color_DO = (Color.BLACK);
 				}
 			}

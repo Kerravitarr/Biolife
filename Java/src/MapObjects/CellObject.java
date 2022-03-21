@@ -212,7 +212,7 @@ public abstract class CellObject {
 				Point point = fromVektorA(direction);
 				Poison poison = (Poison) Configurations.world.get(point);
 				if(toxinDamage(poison.type, (int) poison.getHealth())) {
-					poison.addHealth(-getHealth());
+					poison.addHealth(Math.abs(getHealth()));
 					destroy();
 			        return true; // Не важно что мы вернём - мы мертвы
 				} else {
