@@ -44,6 +44,7 @@ public class Settings extends JPanel{
 	private JButton saveButton;
 	private JButton step_button;
 	private JScrollBar sun_size;
+	private JScrollBar PoisonStreem;
 	
 	/**
 	 * Create the panel.
@@ -89,27 +90,30 @@ public class Settings extends JPanel{
 		JPanel panel_9 = new JPanel();
 		
 		JPanel panel_10 = new JPanel();
+		
+		JPanel panel_11 = new JPanel();
 		GroupLayout gl_panel = new GroupLayout(panel);
 		gl_panel.setHorizontalGroup(
 			gl_panel.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
-					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addComponent(panel_1, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(saveButton, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(load_button, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(play, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(step_button, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_8, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_7, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_4_1, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_3, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_5, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_6, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_10, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_4, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_2, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(panel_9, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE))
+					.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
+						.addComponent(panel_11, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_1, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(saveButton, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(load_button, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(play, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(step_button, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_7, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_4_1, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_3, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_5, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_6, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_10, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_4, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_2, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_9, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
+						.addComponent(panel_8, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
@@ -133,10 +137,12 @@ public class Settings extends JPanel{
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_4_1, GroupLayout.PREFERRED_SIZE, 34, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_8, GroupLayout.PREFERRED_SIZE, 28, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panel_11, GroupLayout.PREFERRED_SIZE, 28, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(panel_7, GroupLayout.PREFERRED_SIZE, 29, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED, 163, Short.MAX_VALUE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(panel_8, GroupLayout.PREFERRED_SIZE, 28, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED, 129, Short.MAX_VALUE)
 					.addComponent(step_button)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(play)
@@ -146,6 +152,19 @@ public class Settings extends JPanel{
 					.addComponent(saveButton)
 					.addContainerGap())
 		);
+		panel_11.setLayout(new BorderLayout(0, 0));
+		
+		JLabel lblNewLabel_12 = new JLabel("Вязкость яда");
+		lblNewLabel_12.setHorizontalAlignment(SwingConstants.CENTER);
+		panel_11.add(lblNewLabel_12, BorderLayout.NORTH);
+		
+		PoisonStreem = new JScrollBar();
+		PoisonStreem.setBlockIncrement(3);
+		PoisonStreem.setVisibleAmount (0); // Значение экстента равно 0
+		PoisonStreem.setMaximum(16);
+		PoisonStreem.setValue((int) Math.round(Math.log(Configurations.POISON_STREAM)));
+		PoisonStreem.setOrientation(JScrollBar.HORIZONTAL);
+		panel_11.add(PoisonStreem, BorderLayout.SOUTH);
 		panel_10.setLayout(new BorderLayout(0, 0));
 		
 		JLabel lblNewLabel_11 = new JLabel("Размер солнца");
@@ -299,6 +318,10 @@ public class Settings extends JPanel{
 	
 	public void setListeners() {
 
+		PoisonStreem.addAdjustmentListener(e->{
+			Configurations.POISON_STREAM =  (int) Math.round(Math.exp(e.getValue()));
+			System.out.println(Configurations.POISON_STREAM);
+		});
 		scroll_SP.addAdjustmentListener(e->{
 			Configurations.ADD_SUN_POWER =  e.getValue();
 			Configurations.world.recalculate();
