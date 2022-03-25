@@ -5,7 +5,7 @@ import java.awt.Graphics;
 
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Poison.TYPE;
-import Utils.JSONmake;
+import Utils.JSON;
 import main.Configurations;
 import main.Point;
 import main.World;
@@ -71,11 +71,11 @@ public abstract class CellObject {
      * Загрузка
      * @param cell - JSON объект, который содержит всю информацюи о клетке
      */
-    public CellObject(JSONmake cell) {
+    public CellObject(JSON cell) {
     	setPos(new Point(cell.getJ("pos")));
-    	this.alive = LV_STATUS.values()[cell.getI("alive")];
+    	this.alive = LV_STATUS.values()[(int)cell.get("alive")];
     	stepCount = cell.getL("stepCount");
-    	years = cell.getI("years");
+    	years = cell.getL("years");
 	}
 
 	/**
@@ -137,15 +137,15 @@ public abstract class CellObject {
 	 * Серелизует объект
 	 * @return
 	 */
-	public JSONmake toJSON() {
-		JSONmake make = new JSONmake();
+	public JSON toJSON() {
+		JSON make = new JSON();
 		make.add("pos", getPos().toJSON());
 		make.add("alive",alive.ordinal());
 		make.add("stepCount",stepCount);
 		make.add("years",years);
 		return toJSON(make);
 	}
-	public abstract JSONmake toJSON(JSONmake make);
+	public abstract JSON toJSON(JSON make);
 
 	/**
 	 * Возваращет некий аналог энергии

@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import MapObjects.AliveCell;
 import MapObjects.Poison;
-import Utils.JSONmake;
+import Utils.JSON;
 
 //@Deprecated
 public class EvolutionTree {
@@ -42,21 +42,21 @@ public class EvolutionTree {
 		
 		private Node(){	};
 		
-		public Node(JSONmake node) {
+		public Node(JSON node) {
 			this();
 			time = node.getL("time");
 			generation = node.getL("generation");
-			branshCount.set(node.getI("branshCount"));
+			branshCount.set(node.get("branshCount"));
 			countAliveCell.set(0);
-			phenotype = new Color((Long.decode("0x"+node.getS("phenotype"))).intValue(),true);
-			poisonType = Poison.TYPE.toEnum(node.getI("poisonType"));
+			phenotype = new Color((Long.decode("0x"+node.get("phenotype"))).intValue(),true);
+			poisonType = Poison.TYPE.toEnum(node.get("poisonType"));
 
-	    	List<Long> mindL = node.getAL("DNA");
+	    	List<Integer> mindL = node.getA("DNA");
 	    	DNA = new int[mindL.size()];
 	    	for (int i = 0; i < DNA.length; i++) 
-	    		DNA[i] = mindL.get(i).intValue();
+	    		DNA[i] = mindL.get(i);
 			
-			for(JSONmake i : node.getAJ("Nodes")) {
+			for(JSON i : node.getAJ("Nodes")) {
 				Node nodeR = new Node(i);
 				nodeR.perrent = this;
 				child.add(nodeR);
@@ -146,8 +146,8 @@ public class EvolutionTree {
 			return ret;
 		}
 		
-		public JSONmake toJSON() {
-			JSONmake make = new JSONmake();
+		public JSON toJSON() {
+			JSON make = new JSON();
 			make.add("time", time);
 			make.add("generation", getGeneration());
 			make.add("branshCount", branshCount.get());
@@ -157,7 +157,7 @@ public class EvolutionTree {
 			make.add("DNA", DNA);
 			make.add("poisonType", poisonType.ordinal());
 			
-			JSONmake[] nodes = new JSONmake[getChild().size()];
+			JSON[] nodes = new JSON[getChild().size()];
 			for (int i = 0; i < nodes.length; i++) {
 				nodes[i] = getChild().get(i).toJSON();
 			}
@@ -236,7 +236,7 @@ public class EvolutionTree {
 	private static Vector<Node> removeNode = new Vector<>();
 	
 	public EvolutionTree() {};
-	public EvolutionTree(JSONmake json) {
+	public EvolutionTree(JSON json) {
 		root = new Node(json.getJ("Node"));
 	}
 
@@ -244,8 +244,8 @@ public class EvolutionTree {
 		return root.toString();
 	}
 
-	public JSONmake toJSON() {
-		JSONmake make = new JSONmake();
+	public JSON toJSON() {
+		JSON make = new JSON();
 		make.add("Node", root.toJSON());
 		return make;
 	}

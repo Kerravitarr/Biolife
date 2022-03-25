@@ -25,7 +25,7 @@ import MapObjects.Organic;
 import MapObjects.Poison;
 import MapObjects.Sun;
 import Utils.FPScounter;
-import Utils.JSONmake;
+import Utils.JSON;
 import Utils.Utils;
 import main.Point.DIRECTION;
 
@@ -387,10 +387,10 @@ public class World extends JPanel {
 		Configurations.sun.resize(getWidth(),getHeight());
 	}
 
-	public synchronized JSONmake serelization() {
-		JSONmake make = new JSONmake();
+	public synchronized JSON serelization() {
+		JSON make = new JSON();
 
-		JSONmake configWorld = Configurations.toJSON();
+		JSON configWorld = Configurations.toJSON();
 		configWorld.add("step", step);
 		make.add("configWorld", configWorld);
 		System.out.println("Конфигурация мира - готово");
@@ -405,7 +405,7 @@ public class World extends JPanel {
 					cells.add(cell2);
 			}
 		}
-		JSONmake[] nodes = new JSONmake[cells.size()];
+		JSON[] nodes = new JSON[cells.size()];
 		for (int i = 0; i < nodes.length; i++) {
 			nodes[i] = cells.get(i).toJSON();
 		}
@@ -414,19 +414,19 @@ public class World extends JPanel {
 		return make;
 	}
 
-	public synchronized void update(JSONmake jsoNmake) {
-		JSONmake configWorld = jsoNmake.getJ("configWorld");
+	public synchronized void update(JSON JSON) {
+		JSON configWorld = JSON.getJ("configWorld");
 		Configurations.load(configWorld);
 		step = configWorld.getL("step");
 		System.out.println("Конфигурация мира - готово");
 		
-		Configurations.tree = new EvolutionTree(jsoNmake.getJ("EvoTree"));
+		Configurations.tree = new EvolutionTree(JSON.getJ("EvoTree"));
 		System.out.println("Дерево эволюции - готово");
 		
-		List<JSONmake> cells = jsoNmake.getAJ("Cells");		
+		List<JSON> cells = JSON.getAJ("Cells");		
 		Configurations.worldMap = new CellObject[Configurations.MAP_CELLS.width][Configurations.MAP_CELLS.height];
-		for (JSONmake cell : cells) {
-			switch (LV_STATUS.values()[cell.getI("alive")]) {
+		for (JSON cell : cells) {
+			switch (LV_STATUS.values()[(int)cell.get("alive")]) {
 				case LV_ALIVE : {
 			    	//Point pos = new Point(cell.getJ("pos"));
 					//if(pos.x == MAP_CELLS.width/2 && (pos.y > 100 && pos.y < 120))
@@ -447,15 +447,15 @@ public class World extends JPanel {
 		System.out.println("Объекты на поле - готовы");
 		
 		//Когда все сохранены, обновялем список друзей
-		for (JSONmake cell : cells) {
+		for (JSON cell : cells) {
 	    	Point pos = new Point(cell.getJ("pos"));
 	    	CellObject realCell = get(pos);
 	    	if(realCell == null || !(realCell instanceof AliveCell))
 	    		continue;
 
-	    	List<JSONmake> mindL = cell.getAJ("friends");
+	    	List<JSON> mindL = cell.getAJ("friends");
 			AliveCell new_name = (AliveCell) realCell;
-	    	for (JSONmake pointFriend : mindL) {
+	    	for (JSON pointFriend : mindL) {
 	    		pos = new Point(pointFriend);
 	    		if (get(pos) instanceof AliveCell)
 		    		new_name.setFriend((AliveCell)get(pos));

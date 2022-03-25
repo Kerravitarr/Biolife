@@ -3,12 +3,10 @@ package main;
 import java.awt.Dimension;
 import java.util.List;
 
-import javax.swing.JOptionPane;
-
 import MapObjects.CellObject;
 import MapObjects.Geyser;
 import MapObjects.Sun;
-import Utils.JSONmake;
+import Utils.JSON;
 import panels.BotInfo;
 import panels.Settings;
 
@@ -75,8 +73,8 @@ public class Configurations {
 	public static Settings settings = null;
 	
 	/**Сохраняет конфигурацию мира*/
-	public static JSONmake toJSON() {
-		JSONmake configWorld = new JSONmake();
+	public static JSON toJSON() {
+		JSON configWorld = new JSON();
 		configWorld.add("BASE_SUN_POWER", BASE_SUN_POWER);
 		configWorld.add("ADD_SUN_POWER", ADD_SUN_POWER);
 		configWorld.add("MAP_CELLS", new int[] {MAP_CELLS.width,MAP_CELLS.height});
@@ -92,23 +90,23 @@ public class Configurations {
 		return configWorld;
 	}
 	/**Загрузка конфигурации мира*/
-	public static void load(JSONmake configWorld) {
-		List<Long> map = configWorld.getAL("MAP_CELLS");
+	public static void load(JSON configWorld) {
+		List<Integer> map = configWorld.getA("MAP_CELLS");
 		if(map.get(0) != MAP_CELLS.width || map.get(1) != MAP_CELLS.height) {
 			MAP_CELLS.width = map.get(0).intValue();
 			MAP_CELLS.height = map.get(1).intValue();
 			worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 		}
-		DIRTY_WATER = configWorld.getD("DIRTY_WATER");
-		AGGRESSIVE_ENVIRONMENT = configWorld.getD("AGGRESSIVE_ENVIRONMENT");
-		LEVEL_MINERAL = configWorld.getD("LEVEL_MINERAL");
-		CONCENTRATION_MINERAL = configWorld.getD("CONCENTRATION_MINERAL");
-		TIK_TO_EXIT = configWorld.getI("TIK_TO_EXIT");
-		SUN_SPEED = configWorld.getI("SUN_SPEED");
-		SUN_LENGHT = configWorld.getI("SUN_LENGHT");
-		SUN_POSITION = configWorld.getI("SUN_POSITION");
-		BASE_SUN_POWER = configWorld.getI("BASE_SUN_POWER");
-		ADD_SUN_POWER = configWorld.getI("ADD_SUN_POWER");
-		POISON_STREAM = configWorld.getI("POISON_STREAM");
+		DIRTY_WATER = configWorld.get("DIRTY_WATER");
+		AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
+		LEVEL_MINERAL = configWorld.get("LEVEL_MINERAL");
+		CONCENTRATION_MINERAL = configWorld.get("CONCENTRATION_MINERAL");
+		TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
+		SUN_SPEED = configWorld.get("SUN_SPEED");
+		SUN_LENGHT = configWorld.get("SUN_LENGHT");
+		SUN_POSITION = configWorld.get("SUN_POSITION");
+		BASE_SUN_POWER = configWorld.get("BASE_SUN_POWER");
+		ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
+		POISON_STREAM = configWorld.get("POISON_STREAM");
 	}
 }

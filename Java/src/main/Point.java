@@ -1,6 +1,6 @@
 package main;
 
-import Utils.JSONmake;
+import Utils.JSON;
 
 public class Point{
 	/**Направление*/
@@ -48,9 +48,9 @@ public class Point{
 		setX(point.x);
 		setY(point.y);
 	}
-	public Point(JSONmake j) {
-		setX(j.getI("x"));
-		setY(j.getI("y"));
+	public Point(JSON j) {
+		setX(j.get("x"));
+		setY(j.get("y"));
 	}
 	public int getRx() {
 		return getRx(x);
@@ -85,8 +85,8 @@ public class Point{
 	public void setY(int y) {
 		this.y=y;
 	}
-	public JSONmake toJSON() {
-		JSONmake make = new JSONmake();
+	public JSON toJSON() {
+		JSON make = new JSON();
 		make.add("x", x);
 		make.add("y", y);
 		return make;

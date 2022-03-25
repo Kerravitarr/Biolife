@@ -10,7 +10,7 @@ import java.util.Map.Entry;
 
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Poison.TYPE;
-import Utils.JSONmake;
+import Utils.JSON;
 import Utils.Utils;
 import main.Configurations;
 import main.EvolutionTree;
@@ -67,13 +67,13 @@ public class AliveCell extends CellObject{
 			this.mind=dna.mind;
 			this.instruction=dna.instruction;
 		}
-		private DNA(JSONmake dna) {
-			this.size=dna.getI("size");
-	    	List<Long> mindL = dna.getAL("mind");
+		private DNA(JSON dna) {
+			this.size=dna.get("size");
+	    	List<Integer> mindL = dna.getA("mind");
 	    	mind = new int[size];
 	    	for (int i = 0; i < size; i++) 
 				mind[i] = mindL.get(i).intValue();
-			this.instruction=dna.getI("instruction");
+			this.instruction=dna.get("instruction");
 		}
 		private int getIndex(int offset) {
 			int ret = (instruction + offset) % size;
@@ -122,8 +122,8 @@ public class AliveCell extends CellObject{
 		private void update(int index, int value) {
 			mind[getIndex(index)] = value;
 		}
-		private JSONmake toJSON() {
-			JSONmake make = new JSONmake();
+		private JSON toJSON() {
+			JSON make = new JSON();
 			make.add("size", size);
 			make.add("mind", mind);
 			make.add("instruction", instruction);
@@ -215,21 +215,21 @@ public class AliveCell extends CellObject{
      * @param cell - JSON объект, который содержит всю информацюи о клетке
      * @param tree - Дерево эволюции 
      */
-    public AliveCell(JSONmake cell, EvolutionTree tree) {
+    public AliveCell(JSON cell, EvolutionTree tree) {
     	super(cell);
-    	dna = new DNA(cell.getJ("DNA"));
+    	dna = new DNA((JSON)cell.get("DNA"));
     	health = cell.getL("health");
     	mineral = cell.getL("mineral");
-    	direction = DIRECTION.toEnum(cell.getI("direction"));
-    	DNA_wall = cell.getI("DNA_wall");
-    	posionType =  Poison.TYPE.toEnum(cell.getI("posionType"));
-    	posionPower = cell.getI("posionPower");
+    	direction = DIRECTION.toEnum(cell.get("direction"));
+    	DNA_wall = cell.get("DNA_wall");
+    	posionType =  Poison.TYPE.toEnum(cell.get("posionType"));
+    	posionPower = cell.get("posionPower");
     	
-    	Generation = cell.getI("Generation");
-    	phenotype = new Color((Long.decode("0x"+cell.getS("phenotype"))).intValue(),true);
-    	photosynthesisEffect = cell.getD("photosynthesisEffect");
+    	Generation = cell.get("Generation");
+    	phenotype = new Color((Long.decode("0x"+cell.get("phenotype"))).intValue(),true);
+    	photosynthesisEffect = cell.get("photosynthesisEffect");
     	
-    	evolutionNode = tree.getNode(cell.getS("GenerationTree"));
+    	evolutionNode = tree.getNode(cell.get("GenerationTree"));
     	
     	color_DO = new Color(255,255,255);
 	}
@@ -1519,7 +1519,7 @@ public class AliveCell extends CellObject{
 		return DNA_wall;
 	}
 
-	public JSONmake toJSON(JSONmake make) {
+	public JSON toJSON(JSON make) {
 		make.add("DNA",dna.toJSON());
 		make.add("health",health);
 		make.add("mineral",mineral);
@@ -1538,7 +1538,7 @@ public class AliveCell extends CellObject{
 		make.add("photosynthesisEffect",photosynthesisEffect);
 		
 		//===============МНОГОКЛЕТОЧНОСТЬ===================
-		JSONmake[] fr = new JSONmake[friends.size()];
+		JSON[] fr = new JSON[friends.size()];
 		Object[] points = friends.keySet().toArray();
 		for (int i = 0; i < fr.length; i++)
 			fr[i] = ((Point)points[i]).toJSON();

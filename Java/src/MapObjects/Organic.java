@@ -4,7 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 
 import MapObjects.Poison.TYPE;
-import Utils.JSONmake;
+import Utils.JSON;
 import Utils.Utils;
 import main.World;
 import main.Configurations;
@@ -27,9 +27,9 @@ public class Organic extends CellObject {
      * @param cell - JSON объект, который содержит всю информацюи о клетке
      * @param tree - Дерево эволюции 
      */
-    public Organic(JSONmake cell) {
+    public Organic(JSON cell) {
     	super(cell);
-    	energy = cell.getD("energy");
+    	energy = cell.get("energy");
     	super.color_DO = color_DO;
 	}
 
@@ -60,7 +60,7 @@ public class Organic extends CellObject {
 	}
 
 	@Override
-	public JSONmake toJSON(JSONmake make) {
+	public JSON toJSON(JSON make) {
 		make.add("energy", energy);
 		return make;
 	}

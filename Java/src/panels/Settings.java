@@ -23,7 +23,8 @@ import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import Utils.JSONmake;
+import Utils.JSON;
+import Utils.JSON.ParseException;
 import main.Configurations;
 import main.World;
 
@@ -387,8 +388,8 @@ public class Settings extends JPanel{
 		int ret = fileopen.showDialog(null, "Выбрать файл");
 		if (ret == JFileChooser.APPROVE_OPTION) {
 			try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
-				Configurations.world.update(new JSONmake(reader));
-			} catch (IOException | java.lang.RuntimeException e1) {
+				Configurations.world.update(new JSON(reader));
+			} catch (IOException | java.lang.RuntimeException | ParseException e1) {
 				e1.printStackTrace();
 				JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
 			} 
@@ -402,7 +403,7 @@ public class Settings extends JPanel{
 		SimpleDateFormat formater = new SimpleDateFormat("yyyy_MM_dd HHч mmм ssс");
 		String name = "World_" + formater.format(date) + ".json";
 		try(FileWriter writer = new FileWriter(name, true)){
-			Configurations.world.serelization().writeToFormatJSONString(writer);
+			Configurations.world.serelization().toBeautifulJSONString(writer);
 			writer.flush();
 			JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	"BioLife", JOptionPane.INFORMATION_MESSAGE);
 		} catch (IOException | java.lang.RuntimeException e1) {

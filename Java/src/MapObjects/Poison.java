@@ -3,7 +3,7 @@ package MapObjects;
 import java.awt.Color;
 import java.awt.Graphics;
 
-import Utils.JSONmake;
+import Utils.JSON;
 import Utils.Utils;
 import main.Configurations;
 import main.Point;
@@ -39,10 +39,10 @@ public class Poison extends CellObject {
 	/**Когда следующее деление*/
 	public int nextDouble;
 
-	public Poison(JSONmake poison) {
+	public Poison(JSON poison) {
 		super(poison);
-		setHealth((long) poison.getD("energy"));
-		type =TYPE.toEnum(poison.getI("type"));
+		setHealth(Math.round((double)poison.get("energy")));
+		type = TYPE.toEnum(poison.get("type"));
 		nextDouble = getTimeToNextDouble();
 		repaint();
 	}
@@ -148,7 +148,7 @@ public class Poison extends CellObject {
 	}
 
 	@Override
-	public JSONmake toJSON(JSONmake make) {
+	public JSON toJSON(JSON make) {
 		make.add("energy", energy);
 		make.add("type", type.ordinal());
 		return make;
