@@ -42,7 +42,7 @@ public class Poison extends CellObject {
 	public Poison(JSON poison) {
 		super(poison);
 		setHealth(Math.round((double)poison.get("energy")));
-		type = TYPE.toEnum(poison.get("type"));
+		type = TYPE.toEnum(poison.getI("type"));
 		nextDouble = getTimeToNextDouble();
 		repaint();
 	}
@@ -80,7 +80,7 @@ public class Poison extends CellObject {
 					CellObject cell = Configurations.world.get(point);
 					if(cell.toxinDamage(type,(int) (getHealth()))) {
 						cell.remove_NE();
-						Poison newPoison = new Poison(type,stepCount,point,-cell.getHealth());
+						Poison newPoison = new Poison(type,stepCount,point,Math.abs(cell.getHealth()));
 			            Configurations.world.add(newPoison);//Сделали новую каплю
 					} // А иначе мы не создаём просто нашу копию, нас-же переварили
 				}break;
@@ -107,6 +107,7 @@ public class Poison extends CellObject {
 				if(cell.toxinDamage(type,(int) getHealth())) {
 					cell.type = type;
 					cell.setHealth(Math.abs(cell.getHealth()));
+					cell.repaint();
 				}
 				destroy(); // Не важно что мы вернём - мы того
 			}return true;
