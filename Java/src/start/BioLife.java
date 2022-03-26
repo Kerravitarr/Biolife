@@ -10,30 +10,33 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 import MapObjects.CellObject;
+import Utils.GifSequenceWriter;
 import main.Configurations;
 import main.World;
 import panels.BotInfo;
 import panels.EvolTreeDialog;
 import panels.Legend;
 import panels.Settings;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 
 public class BioLife extends JFrame {
 
@@ -43,6 +46,8 @@ public class BioLife extends JFrame {
 	private World world;
 	private JScrollPane scrollPane;
 	private EvolTreeDialog dialog = new EvolTreeDialog();
+	private GifSequenceWriter gifs = null;
+	private JMenuItem startRecord;
 
 	/**
 	 * Launch the application.
@@ -59,12 +64,26 @@ public class BioLife extends JFrame {
 					    public void run() {
 					    	frame.setTitle("ФПС" + frame.world.fps.FPS()+" кадров/секунду. "
 					    			+ "Шёл " + df.format(frame.world.step) + " цикл эволюции (" + frame.world.sps.FPS() + " шаг/сек) "
-					    					+ "Живых: " + df.format(frame.world.countLife) + ", плоти: " + df.format(frame.world.countOrganic));
+					    			+ "Живых: " + df.format(frame.world.countLife) + ", "
+					    			+ "плоти: " + df.format(frame.world.countOrganic)
+					    			+ "яда: " + df.format(frame.world.countOrganic) + " капель");
 					    	if(frame.dialog.isVisible())
 					    		frame.dialog.repaint();
 					    	frame.world.repaint();
+					    	if(frame.gifs != null) {
+								try {
+									frame.gifs.nextFrame(g->Configurations.world.paintComponent(g));
+								} catch (IOException e) {
+									World.isActiv = false;
+									e.printStackTrace();
+									JOptionPane.showMessageDialog(null,	"<html>Запись видео оборвалась по причине<br>"
+									+ e.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
+									frame.gifs = null;
+									frame.startRecord.setText("Начать запись");
+								}
+					    	}
 					    } 
-					}, 0L, 1000);
+					}, 1000, 1000);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -204,6 +223,51 @@ public class BioLife extends JFrame {
 		JMenuItem load_menu = new JMenuItem("Загрузить");
 		load_menu.addActionListener(e->Configurations.settings.load());
 		Menu.add(load_menu);
+		
+		startRecord = new JMenuItem("Начать запись");
+		startRecord.addActionListener(e->{
+			if(gifs == null) { //Запуск
+				World.isActiv = false;
+			    int result = javax.swing.JOptionPane.showConfirmDialog(null, "<html>ВНИМАНИЕ!!!<br>"
+			    		+ "Запись видео будет происходить в текущем разрешении ("
+			    		+ Configurations.world.getWidth() + "x" + Configurations.world.getHeight()
+			    		+ "пк)<br>"
+			    		+ "Менять во время записи размеры программы и открывать/закрывать панели "
+			    		+ "крайне нерекомендуется!<br>"
+			    		+ "Это может привести к кривой записи!!!<br>"
+			    		+ "Снимок экрана производится раз в секунду, воспроизводится 25 кадров в секунду<br>"
+			    		+ "Вы согласны начать запись?",
+			        "BioLife", javax.swing.JOptionPane.OK_CANCEL_OPTION);
+			    if(result == javax.swing.JOptionPane.CANCEL_OPTION) return;
+
+				String pathToRoot = System.getProperty("user.dir");
+				JFileChooser fileopen = new JFileChooser(pathToRoot);
+				fileopen.setFileFilter(new FileNameExtensionFilter("gif", "gif"));
+				int ret = fileopen.showDialog(null, "Началь запись");
+				if (ret != JFileChooser.APPROVE_OPTION) return;
+				try {
+					String fileName = fileopen.getSelectedFile().getPath();
+					if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
+						if(!fileName.substring(fileName.lastIndexOf(".")+1).equals("gif"))
+							fileName += ".gif";
+					} else {
+						fileName += ".gif";
+					}
+					gifs = new GifSequenceWriter(fileName, true, Configurations.world.getSize());
+					World.isActiv = true;
+					startRecord.setText("Остановить запись");
+				} catch (IOException e1) {
+					JOptionPane.showMessageDialog(null,	"<html>Запись видео неудалась по причине<br>"
+							+ e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
+				}
+			} else { // Закончили
+				World.isActiv = false;
+				try {gifs.close();} catch (IOException e1) {e1.printStackTrace();}
+				gifs = null;
+				startRecord.setText("Начать запись");
+			}
+		});
+		Menu.add(startRecord);
 		this.addKeyListener(new KeyAdapter() {
 			public void keyPressed(KeyEvent e) {
 				//System.out.println(e);
