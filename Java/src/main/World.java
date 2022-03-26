@@ -84,7 +84,9 @@ public class World extends JPanel {
 						System.out.println(cell);
 						JOptionPane.showMessageDialog(null,	"<html>Критическая ошибка!!!<br>"
 								+ "Вызвала клетка "+cell+" с координат" + point + "<br>"
-										+ "Описание: " + e.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
+								+ "Описание: " + e.getMessage() + "<br>"
+								+ "К сожалению дальнейшее моделирование невозможно. <br>"
+								+ "Вы можете сохранить мир и перезагрузить программу.",	"BioLife", JOptionPane.ERROR_MESSAGE);
 					}
 				}
 			}
@@ -110,6 +112,8 @@ public class World extends JPanel {
 	public int countOrganic = 0;
 	/**Счётчик живых*/
 	public int countLife = 0;
+	/**Счётчик капель яда*/
+	public int countPoison = 0;
 	/**Все цвета, которые мы должны отобразить на поле*/
 	Color [] colors;
 	//private static DecimalFormat df = new DecimalFormat( "###,###" );
@@ -264,13 +268,15 @@ public class World extends JPanel {
 		if(isActiv && (msTimeout != 0 && timeoutStep % msTimeout == 0)) {
 			step();
 		}
-		int localCl = 0,localCO = 0;
+		int localCl = 0,localCO = 0,localCP = 0;
 		for (CellObject[] cell : Configurations.worldMap) {
 			for (CellObject cell2 : cell) {
 				if(cell2 != null) {
 					cell2.paint(g);
 					if(cell2.aliveStatus(LV_STATUS.LV_ALIVE))
 						localCl++;
+					else if(cell2.aliveStatus(LV_STATUS.LV_POISON))
+						localCP++;
 					else
 						localCO++;
 				}
@@ -278,6 +284,7 @@ public class World extends JPanel {
 		}
 		countLife = localCl;
 		countOrganic = localCO;
+		countPoison = localCP;
 		if(Configurations.info.getCell() != null) {
 			g.setColor(Color.GRAY);
 			g.drawLine(Configurations.info.getCell().getPos().getRx(), Configurations.border.height, Configurations.info.getCell().getPos().getRx(), getHeight()-Configurations.border.height);
