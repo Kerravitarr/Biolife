@@ -88,7 +88,10 @@ public class EvolTreeDialog extends JDialog {
 			paint(g,EvolutionTree.root,minX,minY,maxY);
 			
 			if(activNode != null) {
-				g.drawString("Примечательные точки узла:", minX, 10);
+				if(activNode.node.countAliveCell() > 0)
+					g.drawString("Примечательные точки узла("+activNode.node.countAliveCell()+"клеток):", minX, 10);
+				else
+					g.drawString("Примечательные точки узла:", minX, 10);
 				String DNA_s = "";
 				for(int i : activNode.node.DNA) {
 					if(!DNA_s.isEmpty())
