@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import MapObjects.CellObject.OBJECT;
 import MapObjects.Poison.TYPE;
 import Utils.JSON;
 import Utils.Utils;
@@ -21,7 +20,7 @@ import panels.Legend;
 public class AliveCell extends CellObject{
 	//КОНСТАНТЫ
 	/**Размер мозга изначальный*/
-	public static final int DEF_MINDE_SIZE = 32;
+	public static final int DEF_MINDE_SIZE = 64;
 	/**Размер мозга максимальный, чтобы небыло взрывного роста и поедания памяти*/
 	public static final int MAX_MINDE_SIZE = 1024;
 	/**Сколько вообще может быть команд*/
@@ -62,18 +61,28 @@ public class AliveCell extends CellObject{
 			}
 			instruction = 0;
 		}
+		/**ДНК у нас неизменяемая, поэтому при копировании мы можем сослаться на старую версию*/
 		private DNA(DNA dna){
 			this.size=dna.size;
 			this.mind=dna.mind;
 			this.instruction=dna.instruction;
 		}
 		private DNA(JSON dna) {
-			this.size=dna.get("size");
+			this.size=dna.getI("size");
 	    	List<Integer> mindL = dna.getA("mind");
 	    	mind = new int[size];
 	    	for (int i = 0; i < size; i++) 
 				mind[i] = mindL.get(i).intValue();
-			this.instruction=dna.get("instruction");
+			this.instruction=dna.getI("instruction");
+		}
+		/**А вот теперь ссылаться поздно - нам нужно поменять данные*/
+		public DNA(DNA dna, int index, int value) {
+			this.size=dna.size;
+			this.mind = new int[dna.size];
+	    	System.arraycopy(dna.mind, 0, mind, 0, size);
+			this.instruction=dna.instruction;
+			//Изменение гена
+			this.mind[getIndex(index)] = value;
 		}
 		private int getIndex(int offset) {
 			int ret = (instruction + offset) % size;
@@ -118,9 +127,10 @@ public class AliveCell extends CellObject{
 		 * Обновляет значение гена в геноме
 		 * @param index индекс в гене, причём 0 - под процессором
 		 * @param value - значение, на которое надо заменить
+		 * @return ДНК с обнавлёнными значениями
 		 */
-		private void update(int index, int value) {
-			mind[getIndex(index)] = value;
+		private DNA update(int index, int value) {
+			return new DNA(this,index,value);
 		}
 		private JSON toJSON() {
 			JSON make = new JSON();
@@ -179,9 +189,9 @@ public class AliveCell extends CellObject{
     //Защитный покров ДНК, он мешает изменить Нашу ДНК
     private int DNA_wall = 0;
     /**Тип яда к которому клетка устойчива*/
-    private Poison.TYPE posionType = Poison.TYPE.НЕТ;
+    private Poison.TYPE poisonType = Poison.TYPE.НЕТ;
     /**Сила устойчивости к яду*/
-    private int posionPower = 0;
+    private int poisonPower = 0;
     
     //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
     /**Поколение (мутационное)*/
@@ -217,15 +227,15 @@ public class AliveCell extends CellObject{
      */
     public AliveCell(JSON cell, EvolutionTree tree) {
     	super(cell);
-    	dna = new DNA((JSON)cell.get("DNA"));
+    	dna = new DNA(cell.getJ("DNA"));
     	health = cell.getL("health");
     	mineral = cell.getL("mineral");
-    	direction = DIRECTION.toEnum(cell.get("direction"));
-    	DNA_wall = cell.get("DNA_wall");
-    	posionType =  Poison.TYPE.toEnum(cell.get("posionType"));
-    	posionPower = cell.get("posionPower");
+    	direction = DIRECTION.toEnum(cell.getI("direction"));
+    	DNA_wall = cell.getI("DNA_wall");
+    	poisonType =  Poison.TYPE.toEnum(cell.getI("posionType"));
+    	poisonPower = cell.getI("posionPower");
     	
-    	Generation = cell.get("Generation");
+    	Generation = cell.getI("Generation");
     	phenotype = new Color((Long.decode("0x"+cell.get("phenotype"))).intValue(),true);
     	photosynthesisEffect = cell.get("photosynthesisEffect");
     	
@@ -249,8 +259,8 @@ public class AliveCell extends CellObject{
 	    cell.setMineral(cell.getMineral() / 2);
 	    DNA_wall = cell.DNA_wall /2;
 	    cell.DNA_wall = cell.DNA_wall / 2; //Забирается половина защиты ДНК
-	    posionType = cell.getPosionType();
-		posionPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
+	    poisonType = cell.getPosionType();
+		poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
 	
 	    phenotype = new Color(cell.phenotype.getRGB(),true);   // цвет такой же, как у предка
 	    direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));   // направление, куда повернут новорожденный, генерируется случайно
@@ -554,6 +564,7 @@ public class AliveCell extends CellObject{
 				case block5:{
 					OBJECT see = seeA(direction);
 					if(see.isBot){
+						 addHealth(-2); // бот теряет на этом 2 энергии в независимости от результата
 					    Point point = fromVektorA(direction);
 					    AliveCell bot = (AliveCell) Configurations.world.get(point);
 					    if(bot.DNA_wall > 0) {
@@ -561,7 +572,7 @@ public class AliveCell extends CellObject{
 					    } else {
 							int ma = dna.param(0); //Индекс гена
 			                int mc = dna.param(1);  //Его значение
-			                bot.dna.update(ma,mc);
+			                bot.dna = bot.dna.update(ma,mc);
 			                bot.setGeneration(bot.getGeneration() + 1);
 			                bot.evolutionNode = bot.evolutionNode.newNode(bot,stepCount);
 					    }
@@ -574,13 +585,14 @@ public class AliveCell extends CellObject{
 				case block5+1:{
 					OBJECT see = seeA(direction);
 					if(see.isBot){
+						addHealth(-2); // бот теряет на этом 2 энергии в независимости от результата
 					    Point point = fromVektorA(direction);
 					    AliveCell bot = (AliveCell) Configurations.world.get(point);
 					    if(bot.DNA_wall > 0) {
 					    	bot.DNA_wall--;
 					    } else {
 			                int mc = dna.param(0);  //Его значение
-			                bot.dna.update(0,mc);
+			                bot.dna = bot.dna.update(0,mc);
 			                bot.setGeneration(bot.getGeneration() + 1);
 			                bot.evolutionNode = bot.evolutionNode.newNode(bot,stepCount);
 					    }
@@ -594,6 +606,7 @@ public class AliveCell extends CellObject{
 					OBJECT see = seeA(direction);
 				    int length_DNA = dna.param(0,dna.size);
 					if(see.isBot){
+						 addHealth(-4); // бот теряет на этом 2 энергии в независимости от результата
 					    Point point = fromVektorA(direction);
 					    AliveCell bot = (AliveCell) Configurations.world.get(point);
 					    if(bot.DNA_wall > 0) {
@@ -602,7 +615,7 @@ public class AliveCell extends CellObject{
 					    	//Встраиваемая комбинация начинается сразу за командой и её параметром
 					    	//Мы не можем встроить команду на встраивание. Вот главная особенность!
 							for (int i = 0; i < length_DNA && (dna.get(2+i)) != (block5+2); i++)
-								 bot.dna.update(i, dna.get(2+i));
+								bot.dna = bot.dna.update(i, dna.get(2+i));
 			                bot.setGeneration(bot.getGeneration() + 1);
 			                bot.evolutionNode = bot.evolutionNode.newNode(bot,stepCount);
 					    }
@@ -615,10 +628,11 @@ public class AliveCell extends CellObject{
 				case block5 + 3:{
 					OBJECT see = seeA(direction);
 					if(see.isBot){
+						 addHealth(-8); // бот теряет на этом 2 энергии в независимости от результата
 					    Point point = fromVektorA(direction);
 					    AliveCell bot = (AliveCell) Configurations.world.get(point);
 						for (int i = 0; i < bot.dna.size; i++)
-							dna.update(i, bot.dna.get(i));
+							dna = dna.update(i, bot.dna.get(i));
 		                setGeneration(getGeneration() + 1);
 		                evolutionNode = evolutionNode.newNode(bot,stepCount);
 		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
@@ -700,14 +714,18 @@ public class AliveCell extends CellObject{
     		long allMin = getMineral();
     		int allDNA_wall = DNA_wall;
     		int friend = friends.size() + 1;
+    		int maxToxic = poisonPower;
     		Point delP = null;
 			synchronized (friends) {
-				for (Entry<Point, AliveCell> cell : friends.entrySet()) {
-					allHp+=cell.getValue().getHealth();
-					allMin+=cell.getValue().getMineral();
-					allDNA_wall+=cell.getValue().DNA_wall;
-					if(!cell.getValue().aliveStatus(LV_STATUS.LV_ALIVE))
-						delP = cell.getKey();
+				for (Entry<Point, AliveCell> cell_e : friends.entrySet()) {
+					AliveCell cell = cell_e.getValue();
+					allHp+=cell.getHealth();
+					allMin+=cell.getMineral();
+					allDNA_wall+=cell.DNA_wall;
+					if(cell.poisonType == poisonType)
+						maxToxic = Math.max(maxToxic, cell.poisonPower);
+					if(!cell.aliveStatus(LV_STATUS.LV_ALIVE))
+						delP = cell_e.getKey();
 				}
 	    		if(delP != null)
 	    			friends.remove(delP);
@@ -722,6 +740,8 @@ public class AliveCell extends CellObject{
 				cell.setHealth(allHp);
 				cell.setMineral(allMin);
 				cell.DNA_wall = allDNA_wall;
+				if(cell.poisonType == poisonType)
+					cell.poisonPower += cell.poisonPower < maxToxic ? 1 : 0;
 			}
     	}
         // если бот находится на глубине ниже половины
@@ -754,7 +774,7 @@ public class AliveCell extends CellObject{
 	 */
 	private void photosynthesis() {
         //Показывает эффективность нашего фотосинтеза
-        double t = (1+this.photosynthesisEffect) * this.getMineral() / this.MAX_MP;
+        double t = (1+this.photosynthesisEffect) * this.getMineral() / AliveCell.MAX_MP;
         // формула вычисления энергии
         double hlt = Configurations.sun.getEnergy(getPos()) + t;
         if (hlt > 0) {
@@ -795,7 +815,8 @@ public class AliveCell extends CellObject{
         if(Configurations.world.test(n).isPosion) {
 			Poison posion = (Poison) Configurations.world.get(n);
             AliveCell newbot = new AliveCell(this,n);
-            if(newbot.toxinDamage(posion.type, (int) posion.getHealth())) { //Нас убило, а значит и удалили с карты яд - плохо реализованная функция
+            if(newbot.toxinDamage(posion.type, (int) posion.getHealth())) { //Нас убило
+            	posion.addHealth(Math.abs(newbot.getHealth()));
             	newbot.evolutionNode.remove(); //Мы так и не родились, так что нам не нужен узел
             } else { // Мы сильнее яда! Так что удаляем яд и занимаем его место
             	posion.remove_NE();
@@ -864,14 +885,14 @@ public class AliveCell extends CellObject{
 		/**Дельта, гуляет от -1 до 1*/
 		double del = (0.5 - Math.random())*2;
 		//TODO К сожалению первые два слишком сильно убегают вперёд
-        switch (Utils.random(2, 10)) { // К сожалению 0 и 1 вырезаны.
+        switch (Utils.random(2, 9)) { // К сожалению 0 и 1 вырезаны.
             case 2: //Мутирует эффективность фотосинтеза
                 this.photosynthesisEffect = Math.max(0, Math.min(this.photosynthesisEffect * (1+del*0.1), 4));
                 break;
             case 3:{ //Мутирует геном
                 int ma = Utils.random(0, dna.size-1); //Индекс гена
                 int mc = Utils.random(0, COUNT_COMAND); //Его значение
-                dna.update(ma, mc);
+                dna = dna.update(ma, mc);
             	}break;
             case 4: //Мутирует красный цвет
         		int red = phenotype.getRed();
@@ -899,12 +920,11 @@ public class AliveCell extends CellObject{
             	dna = dna.compression(mc);
             } break;
             case 9:{ // Смена типа яда на который мы отзываемся
-            	posionType = TYPE.toEnum(Utils.random(0, TYPE.size()));
-            	posionPower = 0; //К этому у нас защищённости ни какой
-            }break;
-            case 10:{ // Случайная устойчивость к яду
-            	if(posionType != TYPE.НЕТ)
-            		posionPower = Utils.random(0, (int) (HP_FOR_POISON * 2 / 3));
+            	poisonType = TYPE.toEnum(Utils.random(0, TYPE.size()));
+            	if(poisonType != TYPE.НЕТ)
+            		poisonPower = Utils.random(1, (int) (HP_FOR_POISON * 2 / 3));
+            	else
+            		poisonPower = 0; //К этому у нас защищённости ни какой
             }break;
         }
 		evolutionNode = evolutionNode.newNode(this,stepCount);
@@ -955,12 +975,12 @@ public class AliveCell extends CellObject{
 
 	/**
 	 * Родственные-ли боты?
-	 * Определеяет родственников по фенотипу, по тому как они выглядят
+	 * Определеяет родственников по фенотипу, по тому как они выглядят.
 	 * @param cell
 	 * @param cell2
 	 * @return
 	 */
-	protected boolean isRelative(CellObject cell0) {
+	/*protected boolean isRelative(CellObject cell0) {
 		if (cell0 instanceof AliveCell) {
 			AliveCell bot0 = (AliveCell) cell0;
 		    int dif = 0;    // счетчик несовпадений в фенотипе
@@ -968,6 +988,30 @@ public class AliveCell extends CellObject{
 		    dif += Math.abs(bot0.phenotype.getGreen() - this.phenotype.getGreen());
 		    dif += Math.abs(bot0.phenotype.getBlue() - this.phenotype.getBlue());
 		    return dif < 10;
+		} else {
+			return false;
+		}
+	}*/
+	/**
+	 * Родственные-ли боты?
+	 * Определеяет родственников по генотипу, по тому различаются их ДНК на 2 и более признака
+	 * @param cell
+	 * @param cell2
+	 * @return
+	 */
+	protected boolean isRelative(CellObject cell0) {
+		if (cell0 instanceof AliveCell) {
+			AliveCell bot0 = (AliveCell) cell0;
+			if(this.dna.mind == bot0.dna.mind) //Они ссылаются на один финальный массив - они полностью равны
+				return true;
+			if(this.dna.size != bot0.dna.size) //У них разная длинна, это априорно даст разные ДНК
+				return false;
+			int dif = 0;
+			for (int i = 0; i < this.dna.size && dif < 2; i++) {
+				if(this.dna.mind[i] != bot0.dna.mind[i])
+					dif++;
+			}
+			return dif >= 2;
 		} else {
 			return false;
 		}
@@ -1059,7 +1103,7 @@ public class AliveCell extends CellObject{
 	 * @returns параметры OBJECT
 	 */
 	private boolean biteA(DIRECTION direction) {
-        setHealth(health - 2); // бот теряет на этом 2 энергии в независимости от результата
+        addHealth(-2); // бот теряет на этом 2 энергии в независимости от результата
         switch (seeA(direction)) {
 			case ORGANIC: {
 				Point point = fromVektorA(direction);
@@ -1195,7 +1239,7 @@ public class AliveCell extends CellObject{
 		OBJECT see = seeA(direction);
 		if(!see.isEmptyPlase)
 			return;
-    	setHealth(this.getHealth() - HP_FOR_DOUBLE);      // бот затрачивает 150 единиц энергии на создание копии
+		addHealth(- HP_FOR_DOUBLE);      // бот затрачивает 150 единиц энергии на создание копии
         if (this.getHealth() <= 0)// если у него было меньше 150, то пора помирать
             return; 
         if(see == OBJECT.CLEAN) {
@@ -1228,17 +1272,17 @@ public class AliveCell extends CellObject{
 			return; //Ну что мы можем сделать со стеной? О_О
 		}
 
-    	setHealth(this.getHealth() - HP_FOR_POISON);      // бот затрачивает энергию на это, причём только 2/3 идёт на токсин
+    	addHealth(-HP_FOR_POISON);      // бот затрачивает энергию на это, причём только 2/3 идёт на токсин
     	if(this.getHealth() <= 0)
     		return;
     	if(see.isEmptyPlase) {
 			Point point = fromVektorA(direction);
 			if(see == OBJECT.CLEAN) {
-				Poison newPoison = new Poison(getPosionType(),stepCount,point,HP_FOR_POISON * 2/3);
+				Poison newPoison = new Poison(getPosionType(),stepCount,point,Math.min(HP_FOR_POISON * 2/3, poisonPower));
 	            Configurations.world.add(newPoison);//Сделали потомка
 			} else {
 				CellObject cell = Configurations.world.get(point);
-				if(cell.toxinDamage(getPosionType(), (int) (HP_FOR_POISON * 2/3)))
+				if(cell.toxinDamage(getPosionType(), (int) Math.min(HP_FOR_POISON * 2/3, poisonPower)))
 					cell.remove_NE();
 			}
     	}
@@ -1273,7 +1317,7 @@ public class AliveCell extends CellObject{
 	public boolean toxinDamage(TYPE type,int damag) {
 		if(type == getPosionType() && getPosionPower() >= damag) {
 			if(getPosionPower() >= damag)
-				posionPower = getPosionPower() + 1;
+				poisonPower = getPosionPower() + 1;
 			else {
 				damag = (int) Math.min(damag, getHealth()*2); // Мы не можем принять больше яда, чем в нас хп
 				addHealth(-damag);
@@ -1291,16 +1335,20 @@ public class AliveCell extends CellObject{
  	 */
 	public Point findEmptyDirection() {
 	    for (int i = 0; i < DIRECTION.size()/2+1; i++) {
-	        Point point = fromVektorR(DIRECTION.toEnum(i));
-	        OBJECT obj = Configurations.world.test(point);
-	        if (obj.isEmptyPlase)
-	            return point;
-	        if (i != 0 && i != 4) {
-	            point = fromVektorR(DIRECTION.toEnum(-i));
-		        obj = Configurations.world.test(point);
-		        if (obj.isEmptyPlase)
+	    	if(i == 0 || i == 4) {
+		        Point point = fromVektorR(DIRECTION.toEnum(i));
+		        if (Configurations.world.test(point).isEmptyPlase)
 		            return point;
-	        }
+	    	} else {
+	    		int dir = getAge() % 2 == 0 ? i : -i; //Хоть какой-то фактр рандомности появления потомка
+	    		Point point = fromVektorR(DIRECTION.toEnum(dir));
+		        if (Configurations.world.test(point).isEmptyPlase)
+		            return point;
+		        dir = -dir;
+	    		point = fromVektorR(DIRECTION.toEnum(dir));
+		        if (Configurations.world.test(point).isEmptyPlase)
+		            return point;
+	    	}
 	    }
 	    return null;
 	}
@@ -1550,14 +1598,14 @@ public class AliveCell extends CellObject{
 	 * @return the posionType
 	 */
 	public Poison.TYPE getPosionType() {
-		return posionType;
+		return poisonType;
 	}
 
 	/**
 	 * @return the posionPower
 	 */
 	public int getPosionPower() {
-		return posionPower;
+		return poisonPower;
 	}
 	/**
 	 * @return the dna
