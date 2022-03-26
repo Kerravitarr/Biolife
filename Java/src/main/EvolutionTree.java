@@ -93,7 +93,7 @@ public class EvolutionTree {
 		}
 		/**Увы, очередной наш потомок того. Если потомков больше нет, то ветвь тупиковая - удаляем!*/
 		public void remove(){
-			if(countAliveCell.decrementAndGet() == 0 && child.size() <= 1)
+			if(countAliveCell.decrementAndGet() <= 0 && child.size() <= 1)
 				removeNode.add(this);
 		}
 		/**Наш ребёнок сказал нам, что умер. Если это был последний наш ребёнок, то всё - сворачиваем лавочку*/
@@ -227,6 +227,11 @@ public class EvolutionTree {
 		 */
 		public boolean isSelected() {
 			return isSelected;
+		}
+
+		/**Возвращает количество живых потомков*/
+		public int countAliveCell() {
+			return countAliveCell.get();
 		}
 	}
 	
