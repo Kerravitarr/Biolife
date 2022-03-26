@@ -92,7 +92,7 @@ public class GifSequenceWriter {
 	 * Записывает метаданные в файл
 	 * @param delay - задержка воспроизведенеия
 	 * @param loop - зацикленность
-	 * @throws IIOInvalidTreeException
+	 * @throws IIOInvalidTreeException - возникает при ошибке чтения файла метаданных
 	 */
 	private void configureRootMetadata(int delay, boolean loop) throws IIOInvalidTreeException {
 		String metaFormatName = metadata.getNativeMetadataFormatName();
@@ -139,7 +139,7 @@ public class GifSequenceWriter {
 	}
 	
 	/**Дорисовывает новый кадр*/
-	public void nextFrame(FrameFun f) throws IOException {
+	public synchronized void nextFrame(FrameFun f) throws IOException {
 		BufferedImage image = new BufferedImage(size.width, size.height,typeImg);
 		f.paint(image.getGraphics());
 		writer.writeToSequence(new IIOImage(image, null, metadata), params);
@@ -149,7 +149,7 @@ public class GifSequenceWriter {
 	 * Обязательное закрытие потоков
 	 * @throws IOException
 	 */
-	public void close() throws IOException {
+	public synchronized void close() throws IOException {
 		writer.endWriteSequence();
 	}
 }
