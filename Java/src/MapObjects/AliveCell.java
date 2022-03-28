@@ -1,8 +1,10 @@
 package MapObjects;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
-import java.util.Arrays;
+import java.awt.Graphics2D;
+import java.awt.Stroke;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -375,7 +377,7 @@ public class AliveCell extends CellObject{
 	                int param = dna.param(0,Configurations.MAP_CELLS.height);
 	                // если уровень бота ниже, чем полученное значение,
 	                // то прибавляем к указатели текущей команды значение 2-го байта, после выполняемой команды
-	                if (getPos().y < param) {
+	                if (getPos().getY() < param) {
 	                	dna.nextFromAdr(2);
 	                } else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после выполняемой команды
 	                	dna.nextFromAdr(3);
@@ -417,7 +419,7 @@ public class AliveCell extends CellObject{
 				}break;
 					//..............Минералы прибавляются?........................
 				case block3+7:
-			        if (this.getPos().y >= (Configurations.MAP_CELLS.height  *Configurations.LEVEL_MINERAL)) 
+			        if (this.getPos().getY() >= (Configurations.MAP_CELLS.height  *Configurations.LEVEL_MINERAL)) 
 			        	dna.nextFromAdr(1);
 					else
 						dna.nextFromAdr(2);
@@ -746,8 +748,8 @@ public class AliveCell extends CellObject{
     	}
         // если бот находится на глубине ниже половины
         // то он автоматом накапливает минералы, но не более 999
-        if (this.getPos().y >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL)) {
-        	double realLv = this.getPos().y - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
+        if (this.getPos().getY() >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL)) {
+        	double realLv = this.getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
         	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
             this.setMineral(Math.round(this.getMineral() + Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - this.photosynthesisEffect))); //Эффективный фотосинтез мешает нам переваривать пищу
         }
@@ -802,7 +804,7 @@ public class AliveCell extends CellObject{
 	 * Отпочковать потомка
 	 */
     private void botDouble() {
-    	setHealth(this.getHealth() - HP_FOR_DOUBLE);      // бот затрачивает 150 единиц энергии на создание копии
+    	addHealth(- HP_FOR_DOUBLE);      // бот затрачивает 150 единиц энергии на создание копии
         if (this.getHealth() <= 0) {
             return;
         }   // если у него было меньше 150, то пора помирать
@@ -865,8 +867,8 @@ public class AliveCell extends CellObject{
 				 * 	Можно поглядеть код точки. В таком случае они всё равно будут рядом по х.
 				 */
 		    	for (AliveCell cell : friends.values() ) {
-		    		int delx = Math.abs(point.x - cell.getPos().x);
-		    		int dely = Math.abs(point.y - cell.getPos().y);
+		    		int delx = Math.abs(point.getX() - cell.getPos().getX());
+		    		int dely = Math.abs(point.getY() - cell.getPos().getY());
 		    		if(dely > 1 || (delx > 1 && delx != Configurations.MAP_CELLS.width-1))
 		    			return false;
 		    	}
@@ -1451,22 +1453,35 @@ public class AliveCell extends CellObject{
 		int r = getPos().getRr();
 		int rx = getPos().getRx();
 		int ry = getPos().getRy();
-		if(friends.size() == 0)
+		//if(friends.size() == 0)
 			Utils.fillCircle(g,rx,ry,r);
-		else
-			Utils.fillSquare(g,rx,ry,r);
+		//else
+		//	Utils.fillSquare(g,rx,ry,r);
 		if(r > 5 && friends.size() > 0) {
-			g.setColor(Color.BLACK);
 			synchronized (friends) {
 				try {
 				for(AliveCell i : friends.values()) {
 					int rxc = i.getPos().getRx();
-					if(getPos().x == 0 && i.getPos().x == Configurations.MAP_CELLS.width -1)
+					if(getPos().getX() == 0 && i.getPos().getX() == Configurations.MAP_CELLS.width -1)
 						rxc = rx - r;
-					else if(i.getPos().x == 0 && getPos().x == Configurations.MAP_CELLS.width -1)
+					else if(i.getPos().getX() == 0 && getPos().getX() == Configurations.MAP_CELLS.width -1)
 							rxc = rx + r;
 					int ryc = i.getPos().getRy();
-					g.drawLine(rx,ry, rxc,ryc);
+					
+					int delx = rxc - rx;
+					int dely = ryc - ry;
+					
+					//Рисуем толстую линию, физическую связь
+					Graphics2D g2 = (Graphics2D) g;
+				    Stroke oldStr = g2.getStroke();
+					g2.setStroke(new BasicStroke(r/2));
+					g.setColor(color_DO);
+					g.drawLine(rx,ry, rx+delx/3,ry+dely/3);
+
+					//А теперь рисуем тонкую линию, чтобы видно было как они выглядят
+					g2.setStroke(oldStr);
+					g.setColor(Color.BLACK);
+					g.drawLine(rx,ry, rx+delx,ry+dely);
 				}
 				}catch (java.util.ConcurrentModificationException e) {
 					// Я хз от почему, но выскакивает!
@@ -1475,7 +1490,7 @@ public class AliveCell extends CellObject{
 		}
 		if(r > 10) {
 			g.setColor(Color.PINK);
-			g.drawLine(rx,ry, rx+ direction.addX*r/2,ry + direction.addY*r/2);
+			g.drawLine(rx,ry, rx + direction.addX*r/2,ry + direction.addY*r/2);
 		}
 			
 	}
