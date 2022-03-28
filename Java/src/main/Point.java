@@ -3,7 +3,7 @@ package main;
 import Utils.JSON;
 
 public class Point{
-	/**Направление*/
+	/**Направление, вектор среди точек*/
 	public enum DIRECTION {
 		UP(0,-1), UP_R(1,-1), RIGHT(1,0), DOWN_R(1,1), DOWN(0,1), DOWN_L(-1,1), LEFT(-1,0), UP_L(-1,-1);
 		
@@ -38,8 +38,8 @@ public class Point{
 	private static double pixelXDel;
 	private static double pixelYDel;
 	
-	public int x;
-	public int y;
+	private int x;
+	private int y;
 	public Point(int x, int y){
 		setX(x);
 		setY(y);
@@ -71,18 +71,16 @@ public class Point{
 		return (int) Math.round(r * Configurations.scale) ;
 	}
 	public Point next(DIRECTION dir) {
-		setX(x + dir.addX);
-		setY(y + dir.addY);
-		return this;
+		return new Point(x + dir.addX,y + dir.addY);
 	}
-	public void setX(int x) {
+	private void setX(int x) {
 		while(x >= Configurations.MAP_CELLS.width)
 			x -= Configurations.MAP_CELLS.width;
 		while(x < 0)
 			x += Configurations.MAP_CELLS.width;
 		this.x = x;
 	}
-	public void setY(int y) {
+	private void setY(int y) {
 		this.y=y;
 	}
 	public JSON toJSON() {
@@ -105,4 +103,6 @@ public class Point{
 	public boolean equals(Point obj) {
         return (this.x == obj.x) && (this.y == obj.y);
     }
+	public int getX() {return x;}
+	public int getY() {return y;}
 }
