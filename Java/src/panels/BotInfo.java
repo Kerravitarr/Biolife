@@ -624,7 +624,7 @@ public class BotInfo extends JPanel {
             mp.setText(new_name.getMineral()+"");
 			direction.setText(new_name.direction.name());
 			hp.setText(getCell().getHealth()+"+" + Math.round(Configurations.sun.getEnergy(new_name.getPos())+(1+new_name.photosynthesisEffect) * new_name.getMineral() / AliveCell.MAX_MP)+"\\" + new_name.getDNA_wall());
-			double realLv = new_name.getPos().y - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
+			double realLv = new_name.getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
         	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
 			mp.setText(new_name.getMineral()+"+" + Math.round(Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - new_name.photosynthesisEffect)));
 			toxicFIeld.setText(new_name.getPosionType() + ":" + new_name.getPosionPower());

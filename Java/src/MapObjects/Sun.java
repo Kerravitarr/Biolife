@@ -48,7 +48,7 @@ public class Sun {
 			rows = rowsL;
 		}
 		public double getEnergy(Point pos) {
-			return  power - (Configurations.DIRTY_WATER * pos.y / Configurations.MAP_CELLS.height);
+			return  power - (Configurations.DIRTY_WATER * pos.getY() / Configurations.MAP_CELLS.height);
 		}
 		public synchronized void repaint() {
 			for (int i = 0; i < Configurations.DIRTY_WATER*sizeDraw; i++) {
@@ -82,7 +82,7 @@ public class Sun {
 
 	public double getEnergy(Point pos) {
 		for (Part pa : cr) {
-			if(pa.startX <= pos.x && pos.x <= pa.endX) {
+			if(pa.startX <= pos.getX() && pos.getX() <= pa.endX) {
 				return pa.getEnergy(pos);
 			}
 		}

@@ -112,14 +112,14 @@ public class Geyser {
 	
 	/**Клетка проходящая через гейзер. Или не проходящая, как получится*/
 	public void action(CellObject cell) {
-		if(!(startX <= cell.getPos().x && cell.getPos().x <= endX))
+		if(!(startX <= cell.getPos().getX() && cell.getPos().getX() <= endX))
 			return;
 		for (Section se : cr) {
-			if(se.startX <= cell.getPos().x && cell.getPos().x <= se.endX) {
+			if(se.startX <= cell.getPos().getX() && cell.getPos().getX() <= se.endX) {
 				if(cell.getAge() % (power - se.power + 2) == 0) { // +2 так как se.power меняется от 1 до power + 1, а на ноль делить нельзя
 					cell.moveD(dir); // Некая сила
-					if (cell.getPos().y < upWall) { // Сдувание клетки в верхней части гейзера (засасывание/выталкивание)
-						boolean right = cell.getPos().x - center > 0;
+					if (cell.getPos().getY() < upWall) { // Сдувание клетки в верхней части гейзера (засасывание/выталкивание)
+						boolean right = cell.getPos().getX() - center > 0;
 						if (right && dir == DIRECTION.UP || !right  && dir == DIRECTION.DOWN)
 							cell.moveD(DIRECTION.RIGHT);
 						else if(right && dir == DIRECTION.DOWN || !right  && dir == DIRECTION.UP)
@@ -128,8 +128,8 @@ public class Geyser {
 							cell.moveD(DIRECTION.RIGHT);
 						else
 							cell.moveD(DIRECTION.LEFT);
-					}  else if (cell.getPos().y > downWall) { // Сдувание клетки в нижней части гейзера (выталкивание/засасывание)
-						boolean right = cell.getPos().x - center > 0;
+					}  else if (cell.getPos().getY() > downWall) { // Сдувание клетки в нижней части гейзера (выталкивание/засасывание)
+						boolean right = cell.getPos().getX() - center > 0;
 						if (right && dir == DIRECTION.UP || !right  && dir == DIRECTION.DOWN)
 							cell.moveD(DIRECTION.LEFT);
 						else if(right && dir == DIRECTION.DOWN || !right  && dir == DIRECTION.UP)

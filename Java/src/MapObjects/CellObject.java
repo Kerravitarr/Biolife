@@ -171,8 +171,7 @@ public abstract class CellObject {
 	 * @return
 	 */
 	protected Point fromVektorA(DIRECTION direction) {
-		Point point = new Point(getPos());
-	    return point.next(direction);
+	    return getPos().next(direction);
 	}
 	/**
 	 * Подглядывает за бота в абсолютном направлении

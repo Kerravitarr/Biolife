@@ -43,7 +43,7 @@ public class World extends JPanel {
 		class WorkThread{
 			public WorkThread(Point[] cells) {
 				points = cells;
-				startX = points[0].x;
+				startX = points[0].getX();
 			}
 			/**Точки потока*/
 			Point [] points;
@@ -347,7 +347,7 @@ public class World extends JPanel {
 	}
 
 	public OBJECT test(Point point) {
-		if(point.y < 0 || point.y >= Configurations.MAP_CELLS.height)
+		if(point.getY() < 0 || point.getY() >= Configurations.MAP_CELLS.height)
 			return OBJECT.WALL;
 		CellObject cell = get(point);
 		if(cell == null || cell.aliveStatus(LV_STATUS.GHOST))
@@ -361,7 +361,7 @@ public class World extends JPanel {
 	}
 
 	public CellObject get(Point point) {
-		return Configurations.worldMap[point.x][point.y];
+		return Configurations.worldMap[point.getX()][point.getY()];
 	}
 	
 	public void add(CellObject cell) {
@@ -370,14 +370,14 @@ public class World extends JPanel {
 		} else if(cell.aliveStatus(LV_STATUS.GHOST)) {
 			throw new RuntimeException("Требуется добавить " + cell + " только вот он уже мёртв!!! ");
 		} else {
-			Configurations.worldMap[cell.getPos().x][cell.getPos().y] = cell;	
+			Configurations.worldMap[cell.getPos().getX()][cell.getPos().getY()] = cell;	
 		}
 	}
 	public void clean(Point point) {
 		if(get(point) == null) {
 			throw new RuntimeException("Объект нужно удалить с " + point + ", да тут свободо, вот в чём проблема!!!");
 		}
-		Configurations.worldMap[point.x][point.y] = null;
+		Configurations.worldMap[point.getX()][point.getY()] = null;
 	}
 	public void move(CellObject cell,Point target) {
 		clean(cell.getPos());
