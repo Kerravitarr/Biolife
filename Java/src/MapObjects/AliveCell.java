@@ -45,6 +45,8 @@ public class AliveCell extends CellObject{
 	public static final int MAX_DNA_WALL = 30;
 	/**Столько энергии тратит бот на выделение яда, причём 2/3 этого числа идут яду, 1/3 сгорает*/
 	private static final long HP_FOR_POISON = 20;
+	/**Столько здоровья требуется клетке для жизни на ход*/
+	private static final long HP_PER_STEP = 4;
 	
 	/**ДНК бота*/
 	public static class DNA {
@@ -183,7 +185,7 @@ public class AliveCell extends CellObject{
 	/**Мозг*/
 	private DNA dna;
     /**Жизни*/
-    private long health = StartHP;
+    private double health = StartHP;
     //Минералы
     private long mineral = StartMP;
     /**Направление движения*/
@@ -194,6 +196,8 @@ public class AliveCell extends CellObject{
     private Poison.TYPE poisonType = Poison.TYPE.НЕТ;
     /**Сила устойчивости к яду*/
     private int poisonPower = 0;
+    /**Плавучесть. Меняется от -10 до 10 Где -10 - тонуть каждый ход, 10 - всплывать каждый ход, 1 - тонуть каждые 10 ходов*/
+    private int buoyancy = 0;
     
     //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
     /**Поколение (мутационное)*/
@@ -202,13 +206,11 @@ public class AliveCell extends CellObject{
     public Color phenotype = new Color(128,128,128);
     //Показывает на сколько организм тяготеет к фотосинтезу
     public double photosynthesisEffect = defFotosin;
-    //TODO Сила укуса - мы больше тратим энергии на укус, но наш укус становится сильнее
     /**Дерево эволюции*/
     public Node evolutionNode = null;
     
     //===============Параметры братства, многоклеточность=======
     private Map<Point,AliveCell> friends = new HashMap<>();
-   // private MegaCell megaCell = null;
     
     /**
      * Создание клетки без рода и племени
@@ -291,412 +293,12 @@ public class AliveCell extends CellObject{
      * @param step
      */
 	public void step() {
-		loop : for (int cyc = 0; (cyc < 15); cyc++) {
-			int command = dna.get(); // текущая команда
- 			switch (command) {
-				// БАЗОВЫЕ ФУНКЦИИ
-				case block1 : // Фотосинтез
-					this.photosynthesis();
-					dna.next(1);
-					break loop;
-					//.................. преобразовать минералы в энерию ...................
-				case block1+1:
-					this.mineral2Energy();
-					dna.next(1);
-					break loop;
-				//Клонирование
-				case block1+2:
-					dna.next(1); // Чтобы у потомка выполнилась следующая команда
-					botDouble();
-				break loop;
-				//Самоубийство
-				case block1+3:
-					setHealth(-getHealth());
-				break loop;
-				//Пукнуть - выделить немного яда относительно
-				case block1+4:
-					if(getPosionType() != TYPE.НЕТ)
-						addPosionR(DIRECTION.toEnum(dna.param(0,DIRECTION.size())));
-					dna.next(2);
-				break loop;
-				//Пукнуть - выделить немного яда абсолютно
-				case block1+5:
-					if(getPosionType() != TYPE.НЕТ)
-						addPosionA(DIRECTION.toEnum(dna.param(0,DIRECTION.size())));
-					dna.next(2);
-				break loop;
-					
-					//=============================================================================ФУНКЦИИ ДВИЖЕНИЯ=============================================================================
-					//...............  сменить направление относительно   ....
-				case block2 :
-	                direction = DIRECTION.toEnum(DIRECTION.toNum(direction) + dna.param(0,DIRECTION.size()));
-	                dna.next(2);
-				break;
-				//...............  сменить направление абсолютно   ....
-				case block2 +1:
-	                direction = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					dna.next(2);
-				break;
-				//...............  шаг  в относительном напралении  ................
-				case block2 +2:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-	                if(moveR(dir))
-	                	dna.nextFromAdr(2);
-	                else {
-	                	dna.nextFromAdr(2+seeR(dir).nextCMD);
-	                }
-				}break loop;
-				//...............  шаг  в абсолютном напралении  ................
-				case block2 +3:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-	                if(moveA(dir))
-	                	dna.nextFromAdr(2);
-	                else {
-	                	dna.nextFromAdr(2+seeA(dir).nextCMD);
-	                }
-				}break loop;
-				//...............  выровниться вверх   ....
-				case block2 +4:
-	                direction = DIRECTION.UP;
-					dna.next(1);
-				break;
-				
-				
-					//=============================================================================ФУНКЦИИ ИССЛЕДОВАНИЯ=============================================================================
-					//.............   посмотреть  в относительном напралении ...................................
-				case block3 :
-					dna.nextFromAdr(2+seeR(DIRECTION.toEnum(dna.param(0,DIRECTION.size()))).nextCMD);
-	            break;
-	        	//.............   посмотреть  в абсолютном напралении ...................................
-				case block3+1 :
-					dna.nextFromAdr(2+seeA(DIRECTION.toEnum(dna.param(0,DIRECTION.size()))).nextCMD);
-	            break;
-	            //...................  на какой высоте бот  .........
-				case block3+2 :{
-					 // байт в геноме может иметь значение от 0 до COUNT_COMAND, а нужно от 0 до World.MAP_CELLS.height
-	                int param = dna.param(0,Configurations.MAP_CELLS.height);
-	                // если уровень бота ниже, чем полученное значение,
-	                // то прибавляем к указатели текущей команды значение 2-го байта, после выполняемой команды
-	                if (getPos().getY() < param) {
-	                	dna.nextFromAdr(2);
-	                } else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после выполняемой команды
-	                	dna.nextFromAdr(3);
-	                }
-				}break;
-					//...................  какое моё здоровье  ...............................
-				case block3+3 :{
-	                // если здоровье бота ниже, чем полученное значение,
-	                // то прибавляем к указатели текущей команды значение 2-го байта, после выполняемой команды
-	                if (health < dna.param(0,maxHP)) {
-	                	dna.nextFromAdr(2);
-	                } else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после выполняемой команды
-	                	dna.nextFromAdr(3);
-	                }
-				}break;
-					//...................сколько  минералов ...............................
-				case block3+4 :{
-		            if (mineral < dna.param(0,MAX_MP)) {
-		            	dna.nextFromAdr(2);
-		            } else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после выполняемой команды
-		            	dna.nextFromAdr(3);
-		            }
-				}break;
-					//...............  окружен ли бот    ................
-				case block3+5 :{
-					if(findEmptyDirection() != null)
-						dna.nextFromAdr(1);
-					else
-						dna.nextFromAdr(2);
-				}break;
-					//..............Мы можем заняться фотосинтезом?........................
-				case block3+6:{
-			        //Показывает эффективность нашего фотосинтеза
-			        double t = (1+this.photosynthesisEffect) * this.getMineral() / MAX_MP;
-			        if (Configurations.sun.getEnergy(getPos()) + t > 0) 
-			        	dna.nextFromAdr(1);
-					else
-						dna.nextFromAdr(2);
-				}break;
-					//..............Минералы прибавляются?........................
-				case block3+7:
-			        if (this.getPos().getY() >= (Configurations.MAP_CELLS.height  *Configurations.LEVEL_MINERAL)) 
-			        	dna.nextFromAdr(1);
-					else
-						dna.nextFromAdr(2);
-				break;
-				//..............Сколкько здоровья у того, на кого смотрю........................
-				case block3+8:{
-	                OBJECT see = seeA(direction);
-					if(see.isBot){
-						Point point = fromVektorA(direction);
-						AliveCell cell = (AliveCell) Configurations.world.get(point);
-						// если уровень бота ниже, чем полученное значение,
-		                // то прибавляем к указатели текущей команды значение 2-го байта, после выполняемой команды
-		                if (cell.health < dna.param(0, maxHP)) {
-		                	dna.nextFromAdr(2);
-		                } else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после выполняемой команды
-		                	dna.nextFromAdr(3);
-		                }
-					} else {
-						dna.nextFromAdr(4+see.nextCMD);
-					}
-				}break;
-				//..............Сколкько минералов у того, на кого смотрю........................
-				case block3+9:{
-	                OBJECT see = seeA(direction);
-					if(see.isBot){
-						Point point = fromVektorA(direction);
-						AliveCell cell = (AliveCell) Configurations.world.get(point);
-						// если уровень бота ниже, чем полученное значение,
-		                // то прибавляем к указатели текущей команды значение 2-го байта, после выполняемой команды
-						if (cell.mineral < dna.param(0,MAX_MP)) {
-							dna.nextFromAdr(2);
-		                } else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после выполняемой команды
-		                	dna.nextFromAdr(3);
-		                }
-					} else {
-						dna.nextFromAdr(4+see.nextCMD);
-					}
-				}break;
-				//Я многоклеточный?
-				case block3+10:
-					if(friends.size() == 0)
-						dna.nextFromAdr(1);
-					else
-						dna.nextFromAdr(2);
-				break;
-				//Сколько мне десятков лет?
-				case block3+11:
-	                if(getAge() > dna.param(0)*10)
-	                	dna.nextFromAdr(2);
-	                else
-	                	dna.nextFromAdr(3);
-				break;
-				//Сколько у меня защиты ДНК?
-				case block3+12:
-	                if(DNA_wall > dna.param(0,MAX_DNA_WALL))
-	                	dna.nextFromAdr(2);
-	                else
-	                	dna.nextFromAdr(3);
-				break;
-				
-				
-					//=============================================================================ФУНКЦИИ ВЗАИМОДЕЙТСВИЯ=============================================================================
-	            	//..............   съесть в относительном напралении       ...............
-				case block4 :{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					if(eatR(dir))
-						dna.nextFromAdr(2);
-	                else
-	                	dna.nextFromAdr(3+seeR(dir).nextCMD);
-				}break loop;
-					//..............   съесть в абсолютном напралении       ...............
-				case block4 +1:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					if(eatA(dir))
-						dna.nextFromAdr(2);
-	                else
-	                	dna.nextFromAdr(3+seeA(dir).nextCMD);
-				}break loop;
-				//Не убить соседа, а лишь куисить в относительном напралении
-				case block4 + 2:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					if(biteR(dir))
-						dna.nextFromAdr(2);
-	                else
-	                	dna.nextFromAdr(3+seeR(dir).nextCMD);
-				}break loop;
-				//Не убить соседа, а лишь куисить в абсолютном напралении
-				case block4 + 3:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					if(biteA(dir))
-						dna.nextFromAdr(2);
-	                else
-	                	dna.nextFromAdr(3+seeR(dir).nextCMD);
-				}break loop;
-					
-				//Поделиться, если у соседа меньше в относительном напралении
-				case block4 + 4:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					if(careR(dir))
-						dna.nextFromAdr(2);
-	                else
-	                	dna.nextFromAdr(3+seeR(dir).nextCMD);
-				}break loop;
-				//Поделиться, если у соседа меньше в абсолютном напралении
-				case block4 + 5:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					if(careA(dir))
-						dna.nextFromAdr(2);
-	                else
-	                	dna.nextFromAdr(3+seeR(dir).nextCMD);
-				}break loop;
-				//Отдать безвозмездно в относительном напралении
-				case block4 + 6:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					if(giveR(dir))
-						dna.nextFromAdr(2);
-	                else
-	                	dna.nextFromAdr(3+seeR(dir).nextCMD);
-				}break loop;
-				//Отдать безвозмездно в абсолютном напралении
-				case block4 + 7:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					if(giveA(dir))
-						dna.nextFromAdr(2);
-	                else
-	                	dna.nextFromAdr(3+seeR(dir).nextCMD);
-				}break loop;
-				//Толкнуть отностиельно
-				case block4 + 8:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					pullR(dir);
-					dna.next(2);
-				}break loop;
-				//Толкнуть абсолютно
-				case block4 + 9:{
-					DIRECTION dir = DIRECTION.toEnum(dna.param(0,DIRECTION.size()));
-					pullA(dir);
-					dna.next(2);
-				}break loop;
-				
-
-				//=============================================================================ФУНКЦИИ ПРОГРАММИРОЫВАНИЯ=============================================================================
-				//У соседа заменить будущую команду пороцессора на свою
-				case block5:{
-					OBJECT see = seeA(direction);
-					if(see.isBot){
-						 addHealth(-2); // бот теряет на этом 2 энергии в независимости от результата
-					    Point point = fromVektorA(direction);
-					    AliveCell bot = (AliveCell) Configurations.world.get(point);
-					    if(bot.DNA_wall > 0) {
-					    	bot.DNA_wall--;
-					    } else {
-							int ma = dna.param(0); //Индекс гена
-			                int mc = dna.param(1);  //Его значение
-			                bot.dna = bot.dna.update(ma,mc);
-			                bot.setGeneration(bot.getGeneration() + 1);
-			                bot.evolutionNode = bot.evolutionNode.newNode(bot,stepCount);
-					    }
-		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
-		        			color_DO = Color.BLACK;
-					}
-					dna.next(3);
-				}break loop;
-				//У соседа подложить команду под процессор свою
-				case block5+1:{
-					OBJECT see = seeA(direction);
-					if(see.isBot){
-						addHealth(-2); // бот теряет на этом 2 энергии в независимости от результата
-					    Point point = fromVektorA(direction);
-					    AliveCell bot = (AliveCell) Configurations.world.get(point);
-					    if(bot.DNA_wall > 0) {
-					    	bot.DNA_wall--;
-					    } else {
-			                int mc = dna.param(0);  //Его значение
-			                bot.dna = bot.dna.update(0,mc);
-			                bot.setGeneration(bot.getGeneration() + 1);
-			                bot.evolutionNode = bot.evolutionNode.newNode(bot,stepCount);
-					    }
-		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
-		        			color_DO = Color.BLACK;
-					}
-					dna.next(2);
-				}break loop;
-				//у соседа ДНК переписать на своё - встраивание. Встраивается кусок кода сразу за командой
-				case block5+2:{
-					OBJECT see = seeA(direction);
-				    int length_DNA = dna.param(0,dna.size);
-					if(see.isBot){
-						 addHealth(-4); // бот теряет на этом 2 энергии в независимости от результата
-					    Point point = fromVektorA(direction);
-					    AliveCell bot = (AliveCell) Configurations.world.get(point);
-					    if(bot.DNA_wall > 0) {
-					    	bot.DNA_wall--;
-					    } else {
-					    	//Встраиваемая комбинация начинается сразу за командой и её параметром
-					    	//Мы не можем встроить команду на встраивание. Вот главная особенность!
-							for (int i = 0; i < length_DNA && (dna.get(2+i)) != (block5+2); i++)
-								bot.dna = bot.dna.update(i, dna.get(2+i));
-			                bot.setGeneration(bot.getGeneration() + 1);
-			                bot.evolutionNode = bot.evolutionNode.newNode(bot,stepCount);
-					    }
-		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
-		        			color_DO = Color.BLACK;
-					}
-					dna.next(2 + length_DNA); //Но этот код не наш, мы его не выполняем!
-				}break loop;
-				//ДНК соседа встроить в свой код, полностью!
-				case block5 + 3:{
-					OBJECT see = seeA(direction);
-					if(see.isBot){
-						 addHealth(-8); // бот теряет на этом 2 энергии в независимости от результата
-					    Point point = fromVektorA(direction);
-					    AliveCell bot = (AliveCell) Configurations.world.get(point);
-						for (int i = 0; i < bot.dna.size; i++)
-							dna = dna.update(i, bot.dna.get(i));
-		                setGeneration(getGeneration() + 1);
-		                evolutionNode = evolutionNode.newNode(bot,stepCount);
-		        		if(Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
-		        			color_DO = Color.GRAY;
-		        		//Смены команды не будет, ведь мы эту команду перезаписали уже на нужную
-					} else {
-						dna.next(1); //Просто живём дальше, будто ни чего и не было
-					}
-				}break loop;
-				//Укрепить свою ДНК. На 1 единицу стройматериала требуется целых 4 жизни
-				case block5+4:
-					DNA_wall = (int) Math.min(MAX_DNA_WALL,DNA_wall+1);
-					setHealth(getHealth() - HP_TO_DNA_WALL);
-					dna.next(1);
-				break loop;
-				//Пробить ДНК у соседа
-				case block5+5:{
-					OBJECT see = seeA(direction);
-					if(see.isBot){
-					    Point point = fromVektorA(direction);
-					    AliveCell bot = (AliveCell) Configurations.world.get(point);
-					    bot.DNA_wall = Math.max(0, bot.DNA_wall - 2);
-					    setHealth(getHealth() - 1); //На это нужно усилие
-					}
-					dna.next(1);
-				}break loop;
-				//Цикл, переход не вперёд по ДНК, а назад!
-				case block5 + 6:
-					dna.next(-dna.param(0)); //Но тут всегда абсолютно! Ибо от изменения длины ДНК всё поплывёт
-				break loop;
-				
-
-				//=============================================================================ФУНКЦИИ МНОГОКЛЕТОЧНЫХ=============================================================================
-				//Присосаться относительно
-				case block6:
-					clingR(DIRECTION.toEnum(dna.param(0,DIRECTION.size())));
-					dna.next(2);
-				break loop;
-				//Присосаться абсолютно
-				case block6 +1:
-					clingA(DIRECTION.toEnum(dna.param(0,DIRECTION.size())));
-					dna.next(2);
-				break loop;
-				//Родить присосавшегося потомка относительно
-				case block6+2:{
-					int par = dna.param(0,DIRECTION.size());
-					dna.next(2); // Чтобы у потомка выполнилась следующая команда
-					cloneR(DIRECTION.toEnum(par));
-				}break loop;
-				//Родить присосавшегося потомка абсолютно
-				case block6+3:{
-					int par = dna.param(0,DIRECTION.size());
-					dna.next(2); // Чтобы у потомка выполнилась следующая команда
-					cloneA(DIRECTION.toEnum(par));
-				}break loop;
-				
-				
-				default :
-					this.dna.next(command);
-					break loop;
-			}
-		}
+		for (int cyc = 0; (cyc < 15); cyc++)
+			if(execute()) break;
+		if(getBuoyancy() < 0 && getAge() % (getBuoyancy()+11) == 0)
+			moveD(DIRECTION.DOWN);
+		else if(getBuoyancy() > 0 && getAge() % (11-getBuoyancy()) == 0)
+			moveD(DIRECTION.UP);
         
       //###########################################################################
         //.......  входит ли бот в        ........
@@ -704,7 +306,7 @@ public class AliveCell extends CellObject{
         //.......  энергию и минералы с соседями                            ........
         //.......  также проверить, количество накопленой энергии, возможно ........
         //.......  пришло время подохнуть или породить потомка              ........
-        setHealth(this.getHealth() - 3); //Пожили - устали
+        addHealth(- HP_PER_STEP); //Пожили - устали
         if (this.getHealth() < 1) { //Очень жаль, но мы того - всё
             this.bot2Organic();
             return;
@@ -712,7 +314,7 @@ public class AliveCell extends CellObject{
             this.botDouble();
         }
     	if(friends.size() != 0) { // Колония безвозмездно делится всем, что имеет
-    		long allHp = getHealth();
+    		double allHp = getHealth();
     		long allMin = getMineral();
     		int allDNA_wall = DNA_wall;
     		int friend = friends.size() + 1;
@@ -753,6 +355,451 @@ public class AliveCell extends CellObject{
         	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
             this.setMineral(Math.round(this.getMineral() + Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - this.photosynthesisEffect))); //Эффективный фотосинтез мешает нам переваривать пищу
         }
+	}
+	
+	/**
+	 * Исполняет текущую команду
+	 * @return true, если это команда полная (то есть заканчивающая ход)
+	 */
+	private boolean execute() {
+		int command = dna.get(); // текущая команда
+		switch (command) {
+		// БАЗОВЫЕ ФУНКЦИИ
+		case block1: // Фотосинтез
+			this.photosynthesis();
+			dna.next(1);
+			return true;
+		// .................. преобразовать минералы в энерию ...................
+		case block1 + 1:
+			this.mineral2Energy();
+			dna.next(1);
+			return true;
+		// Клонирование
+		case block1 + 2:
+			dna.next(1); // Чтобы у потомка выполнилась следующая команда
+			botDouble();
+			return true;
+		// Самоубийство
+		case block1 + 3:
+			setHealth(-getHealth());
+			return true;
+		// Пукнуть - выделить немного яда относительно
+		case block1 + 4:
+			if (getPosionType() != TYPE.НЕТ)
+				addPosionR(DIRECTION.toEnum(dna.param(0, DIRECTION.size())));
+			dna.next(2);
+			return true;
+		// Пукнуть - выделить немного яда абсолютно
+		case block1 + 5:
+			if (getPosionType() != TYPE.НЕТ)
+				addPosionA(DIRECTION.toEnum(dna.param(0, DIRECTION.size())));
+			dna.next(2);
+			return true;
+		// Спать, сохранить энергию
+		case block1 + 6:
+			addHealth(HP_PER_STEP-1); // Мы уснули, поэтому потратим всего 1 единицу энергии
+			dna.next(1);
+			return true;
+		//Увеличить плавучесть
+		case block1 + 7:
+			addHealth(-1);//Переводит 1 хп в 0.1 плавучести
+			buoyancy = Math.min(10, getBuoyancy() + 1);
+			dna.next(1);
+			return true;
+		//Уменьшить плавучесть
+		case block1 + 8:
+			addHealth(-1);//Переводит 1 хп в 0.1 плавучести
+			buoyancy = Math.max(-10, getBuoyancy() - 1);
+			dna.next(1);
+			return true;
+
+		// =============================================================================ФУНКЦИИ
+		// ДВИЖЕНИЯ=============================================================================
+		// ............... сменить направление относительно ....
+		case block2:
+			direction = DIRECTION.toEnum(DIRECTION.toNum(direction) + dna.param(0, DIRECTION.size()));
+			dna.next(2);
+			return false;
+		// ............... сменить направление абсолютно ....
+		case block2 + 1:
+			direction = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			dna.next(2);
+			return false;
+		// ............... шаг в относительном напралении ................
+		case block2 + 2: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if (moveR(dir)) {
+		        setHealth(getHealth() - 1); // бот теряет на этом 1 энергию
+				dna.nextFromAdr(2);
+			}else {
+				dna.nextFromAdr(2 + seeR(dir).nextCMD);
+			}
+		}return true;
+		// ............... шаг в абсолютном напралении ................
+		case block2 + 3: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if (moveA(dir)) {
+		        setHealth(getHealth() - 1); // бот теряет на этом 1 энергию
+				dna.nextFromAdr(2);
+			}else {
+				dna.nextFromAdr(2 + seeA(dir).nextCMD);
+			}
+		}return false;
+		// ............... выровниться вверх ....
+		case block2 + 4:
+			direction = DIRECTION.UP;
+			dna.next(1);
+			return false;
+
+		// =============================================================================ФУНКЦИИ
+		// ИССЛЕДОВАНИЯ=============================================================================
+		// ............. посмотреть в относительном напралении
+		// ...................................
+		case block3:
+			dna.nextFromAdr(2 + seeR(DIRECTION.toEnum(dna.param(0, DIRECTION.size()))).nextCMD);
+			return false;
+		// ............. посмотреть в абсолютном напралении
+		// ...................................
+		case block3 + 1:
+			dna.nextFromAdr(2 + seeA(DIRECTION.toEnum(dna.param(0, DIRECTION.size()))).nextCMD);
+			return false;
+		// ................... на какой высоте бот .........
+		case block3 + 2: {
+			// байт в геноме может иметь значение от 0 до COUNT_COMAND, а нужно от 0 до
+			// World.MAP_CELLS.height
+			int param = dna.param(0, Configurations.MAP_CELLS.height);
+			// если уровень бота ниже, чем полученное значение,
+			// то прибавляем к указатели текущей команды значение 2-го байта, после
+			// выполняемой команды
+			if (getPos().getY() < param) {
+				dna.nextFromAdr(2);
+			} else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после
+						// выполняемой команды
+				dna.nextFromAdr(3);
+			}
+		}return false;
+		// ................... какое моё здоровье ...............................
+		case block3 + 3: {
+			// если здоровье бота ниже, чем полученное значение,
+			// то прибавляем к указатели текущей команды значение 2-го байта, после
+			// выполняемой команды
+			if (health < dna.param(0, maxHP)) {
+				dna.nextFromAdr(2);
+			} else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после
+						// выполняемой команды
+				dna.nextFromAdr(3);
+			}
+		}return false;
+		// ...................сколько минералов ...............................
+		case block3 + 4: {
+			if (mineral < dna.param(0, MAX_MP)) {
+				dna.nextFromAdr(2);
+			} else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после
+						// выполняемой команды
+				dna.nextFromAdr(3);
+			}
+		}return false;
+		// ............... окружен ли бот ................
+		case block3 + 5: {
+			if (findEmptyDirection() != null)
+				dna.nextFromAdr(1);
+			else
+				dna.nextFromAdr(2);
+		}return false;
+		// ..............Мы можем заняться фотосинтезом?........................
+		case block3 + 6: {
+			// Показывает эффективность нашего фотосинтеза
+			double t = (1 + this.photosynthesisEffect) * this.getMineral() / MAX_MP;
+			if (Configurations.sun.getEnergy(getPos()) + t > 0)
+				dna.nextFromAdr(1);
+			else
+				dna.nextFromAdr(2);
+		}return false;
+		// ..............Минералы прибавляются?........................
+		case block3 + 7:
+			if (this.getPos().getY() >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL))
+				dna.nextFromAdr(1);
+			else
+				dna.nextFromAdr(2);
+			return false;
+		// ..............Сколкько здоровья у того, на кого
+		// смотрю........................
+		case block3 + 8: {
+			OBJECT see = seeA(direction);
+			if (see.isBot) {
+				Point point = fromVektorA(direction);
+				AliveCell cell = (AliveCell) Configurations.world.get(point);
+				// если уровень бота ниже, чем полученное значение,
+				// то прибавляем к указатели текущей команды значение 2-го байта, после
+				// выполняемой команды
+				if (cell.health < dna.param(0, maxHP)) {
+					dna.nextFromAdr(2);
+				} else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после
+							// выполняемой команды
+					dna.nextFromAdr(3);
+				}
+			} else {
+				dna.nextFromAdr(4 + see.nextCMD);
+			}
+		}return false;
+		// ..............Сколкько минералов у того, на кого
+		// смотрю........................
+		case block3 + 9: {
+			OBJECT see = seeA(direction);
+			if (see.isBot) {
+				Point point = fromVektorA(direction);
+				AliveCell cell = (AliveCell) Configurations.world.get(point);
+				// если уровень бота ниже, чем полученное значение,
+				// то прибавляем к указатели текущей команды значение 2-го байта, после
+				// выполняемой команды
+				if (cell.mineral < dna.param(0, MAX_MP)) {
+					dna.nextFromAdr(2);
+				} else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после
+							// выполняемой команды
+					dna.nextFromAdr(3);
+				}
+			} else {
+				dna.nextFromAdr(4 + see.nextCMD);
+			}
+		}return false;
+		// Я многоклеточный?
+		case block3 + 10:
+			if (friends.size() == 0)
+				dna.nextFromAdr(1);
+			else
+				dna.nextFromAdr(2);
+			return false;
+		// Сколько мне десятков лет?
+		case block3 + 11:
+			if (getAge() > dna.param(0) * 10)
+				dna.nextFromAdr(2);
+			else
+				dna.nextFromAdr(3);
+			return false;
+		// Сколько у меня защиты ДНК?
+		case block3 + 12:
+			if (DNA_wall > dna.param(0, MAX_DNA_WALL))
+				dna.nextFromAdr(2);
+			else
+				dna.nextFromAdr(3);
+			return false;
+
+		// =============================================================================ФУНКЦИИ
+		// ВЗАИМОДЕЙТСВИЯ=============================================================================
+		// .............. съесть в относительном напралении ...............
+		case block4: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if (eatR(dir))
+				dna.nextFromAdr(2);
+			else
+				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+		}return true;
+		// .............. съесть в абсолютном напралении ...............
+		case block4 + 1: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if (eatA(dir))
+				dna.nextFromAdr(2);
+			else
+				dna.nextFromAdr(3 + seeA(dir).nextCMD);
+		}return true;
+		// Не убить соседа, а лишь куисить в относительном напралении
+		case block4 + 2: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if (biteR(dir))
+				dna.nextFromAdr(2);
+			else
+				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+		}return true;
+		// Не убить соседа, а лишь куисить в абсолютном напралении
+		case block4 + 3: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if (biteA(dir))
+				dna.nextFromAdr(2);
+			else
+				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+		}return true;
+
+		// Поделиться, если у соседа меньше в относительном напралении
+		case block4 + 4: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if (careR(dir))
+				dna.nextFromAdr(2);
+			else
+				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+		}return true;
+		// Поделиться, если у соседа меньше в абсолютном напралении
+		case block4 + 5: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if (careA(dir))
+				dna.nextFromAdr(2);
+			else
+				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+		}return true;
+		// Отдать безвозмездно в относительном напралении
+		case block4 + 6: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if (giveR(dir))
+				dna.nextFromAdr(2);
+			else
+				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+		}return true;
+		// Отдать безвозмездно в абсолютном напралении
+		case block4 + 7: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if (giveA(dir))
+				dna.nextFromAdr(2);
+			else
+				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+		}return true;
+		// Толкнуть отностиельно
+		case block4 + 8: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			pullR(dir);
+			dna.next(2);
+		}return true;
+		// Толкнуть абсолютно
+		case block4 + 9: {
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			pullA(dir);
+			dna.next(2);
+		}return true;
+
+		// =============================================================================ФУНКЦИИ
+		// ПРОГРАММИРОЫВАНИЯ=============================================================================
+		// У соседа заменить будущую команду пороцессора на свою
+		case block5: {
+			OBJECT see = seeA(direction);
+			if (see.isBot) {
+				addHealth(-2); // бот теряет на этом 2 энергии в независимости от результата
+				Point point = fromVektorA(direction);
+				AliveCell bot = (AliveCell) Configurations.world.get(point);
+				if (bot.DNA_wall > 0) {
+					bot.DNA_wall--;
+				} else {
+					int ma = dna.param(0); // Индекс гена
+					int mc = dna.param(1); // Его значение
+					bot.dna = bot.dna.update(ma, mc);
+					bot.setGeneration(bot.getGeneration() + 1);
+					bot.evolutionNode = bot.evolutionNode.newNode(bot, stepCount);
+				}
+				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
+					color_DO = Color.BLACK;
+			}
+			dna.next(3);
+		}return true;
+		// У соседа подложить команду под процессор свою
+		case block5 + 1: {
+			OBJECT see = seeA(direction);
+			if (see.isBot) {
+				addHealth(-2); // бот теряет на этом 2 энергии в независимости от результата
+				Point point = fromVektorA(direction);
+				AliveCell bot = (AliveCell) Configurations.world.get(point);
+				if (bot.DNA_wall > 0) {
+					bot.DNA_wall--;
+				} else {
+					int mc = dna.param(0); // Его значение
+					bot.dna = bot.dna.update(0, mc);
+					bot.setGeneration(bot.getGeneration() + 1);
+					bot.evolutionNode = bot.evolutionNode.newNode(bot, stepCount);
+				}
+				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
+					color_DO = Color.BLACK;
+			}
+			dna.next(2);
+		}return true;
+		// у соседа ДНК переписать на своё - встраивание. Встраивается кусок кода сразу
+		// за командой
+		case block5 + 2: {
+			OBJECT see = seeA(direction);
+			int length_DNA = dna.param(0, dna.size);
+			if (see.isBot) {
+				addHealth(-4); // бот теряет на этом 2 энергии в независимости от результата
+				Point point = fromVektorA(direction);
+				AliveCell bot = (AliveCell) Configurations.world.get(point);
+				if (bot.DNA_wall > 0) {
+					bot.DNA_wall--;
+				} else {
+					// Встраиваемая комбинация начинается сразу за командой и её параметром
+					// Мы не можем встроить команду на встраивание. Вот главная особенность!
+					for (int i = 0; i < length_DNA && (dna.get(2 + i)) != (block5 + 2); i++)
+						bot.dna = bot.dna.update(i, dna.get(2 + i));
+					bot.setGeneration(bot.getGeneration() + 1);
+					bot.evolutionNode = bot.evolutionNode.newNode(bot, stepCount);
+				}
+				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
+					color_DO = Color.BLACK;
+			}
+			dna.next(2 + length_DNA); // Но этот код не наш, мы его не выполняем!
+		}return true;
+		// ДНК соседа встроить в свой код, полностью!
+		case block5 + 3: {
+			OBJECT see = seeA(direction);
+			if (see.isBot) {
+				addHealth(-8); // бот теряет на этом 2 энергии в независимости от результата
+				Point point = fromVektorA(direction);
+				AliveCell bot = (AliveCell) Configurations.world.get(point);
+				for (int i = 0; i < bot.dna.size; i++)
+					dna = dna.update(i, bot.dna.get(i));
+				setGeneration(getGeneration() + 1);
+				evolutionNode = evolutionNode.newNode(bot, stepCount);
+				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
+					color_DO = Color.GRAY;
+				// Смены команды не будет, ведь мы эту команду перезаписали уже на нужную
+			} else {
+				dna.next(1); // Просто живём дальше, будто ни чего и не было
+			}
+		}return true;
+		// Укрепить свою ДНК. На 1 единицу стройматериала требуется целых 4 жизни
+		case block5 + 4:
+			DNA_wall = (int) Math.min(MAX_DNA_WALL, DNA_wall + 1);
+			setHealth(getHealth() - HP_TO_DNA_WALL);
+			dna.next(1);
+			return true;
+		// Пробить ДНК у соседа
+		case block5 + 5: {
+			OBJECT see = seeA(direction);
+			if (see.isBot) {
+				Point point = fromVektorA(direction);
+				AliveCell bot = (AliveCell) Configurations.world.get(point);
+				bot.DNA_wall = Math.max(0, bot.DNA_wall - 2);
+				setHealth(getHealth() - 1); // На это нужно усилие
+			}
+			dna.next(1);
+		}return true;
+		// Цикл, переход не вперёд по ДНК, а назад!
+		case block5 + 6:
+			dna.next(-dna.param(0)); // Но тут всегда абсолютно! Ибо от изменения длины ДНК всё поплывёт
+			return true;
+
+		// =============================================================================ФУНКЦИИ
+		// МНОГОКЛЕТОЧНЫХ=============================================================================
+		// Присосаться относительно
+		case block6:
+			clingR(DIRECTION.toEnum(dna.param(0, DIRECTION.size())));
+			dna.next(2);
+			return true;
+		// Присосаться абсолютно
+		case block6 + 1:
+			clingA(DIRECTION.toEnum(dna.param(0, DIRECTION.size())));
+			dna.next(2);
+			return true;
+		// Родить присосавшегося потомка относительно
+		case block6 + 2: {
+			int par = dna.param(0, DIRECTION.size());
+			dna.next(2); // Чтобы у потомка выполнилась следующая команда
+			cloneR(DIRECTION.toEnum(par));
+		}return true;
+		// Родить присосавшегося потомка абсолютно
+		case block6 + 3: {
+			int par = dna.param(0, DIRECTION.size());
+			dna.next(2); // Чтобы у потомка выполнилась следующая команда
+			cloneA(DIRECTION.toEnum(par));
+		}return true;
+
+		default:
+			this.dna.next(command);
+			return true;
+		}
 	}
 
     
@@ -846,7 +893,6 @@ public class AliveCell extends CellObject{
 	protected boolean moveA(DIRECTION direction) {
 		if(friends.size() == 0) {
 			if(super.moveA(direction)) {
-		        setHealth(getHealth() - 1); // бот теряет на этом 1 энергию
 		        return true;
 			} else {
 				return false;
@@ -872,7 +918,6 @@ public class AliveCell extends CellObject{
 		    		if(dely > 1 || (delx > 1 && delx != Configurations.MAP_CELLS.width-1))
 		    			return false;
 		    	}
-		        addHealth(-1); // бот теряет на этом 1 энергию
 		    	//Все условия проверены, можно выдвигаться!
 				return super.moveA(direction);
 			}
@@ -886,7 +931,6 @@ public class AliveCell extends CellObject{
 		setGeneration(getGeneration() + 1);
 		/**Дельта, гуляет от -1 до 1*/
 		double del = (0.5 - Math.random())*2;
-		//TODO К сожалению первые два слишком сильно убегают вперёд
         switch (Utils.random(2, 9)) { // К сожалению 0 и 1 вырезаны.
             case 2: //Мутирует эффективность фотосинтеза
                 this.photosynthesisEffect = Math.max(0, Math.min(this.photosynthesisEffect * (1+del*0.1), 4));
@@ -1052,13 +1096,13 @@ public class AliveCell extends CellObject{
 				
 		        long min0 = mineral;  // определим количество минералов у нас
 		        long min1 = cell.mineral;  // определим количество минералов у потенциального обеда
-		        long hl = cell.health;  // определим энергию у потенциального обеда
+		        double hl = cell.health;  // определим энергию у потенциального обеда
 		        // если у бота минералов больше
 		        if (min0 >= min1) {
 		        	setMineral( min0 - min1); // количество минералов у бота уменьшается на количество минералов у жертвы
 		            // типа, стесал свои зубы о панцирь жертвы
 		            cell.remove_NE(); // удаляем жертву из списков
-		            long cl = hl / 2;           // количество энергии у бота прибавляется на (половину от энергии жертвы)
+		            double cl = hl / 2;           // количество энергии у бота прибавляется на (половину от энергии жертвы)
 		            this.setHealth(health + cl);
 		            goRed((int) cl);                    // бот краснеет
 		            return true;                  // возвращаем 5
@@ -1071,13 +1115,13 @@ public class AliveCell extends CellObject{
 		            //------ то здоровьем проламываем минералы ---------------------------
 		            if (health >= 2 * min1) {
 			            cell.remove_NE(); // удаляем жертву из списков
-		            	long cl = Math.max(0,(hl / 2) - 2 * min1); // вычисляем, сколько энергии смог получить бот
+			            double cl = Math.max(0,(hl / 2) - 2 * min1); // вычисляем, сколько энергии смог получить бот
 		            	this.setHealth(health + cl);
 		                goRed((int) cl);                   // бот краснеет
 		                return true;                             // возвращаем 5
 		            } else {
 			            //--- если здоровья меньше, чем (минералов у жертвы)*2, то бот погибает от жертвы
-		            	cell.setMineral(min1 - (health / 2));  // у жертвы минералы истраченны
+		            	cell.setMineral(min1 - Math.round(health / 2));  // у жертвы минералы истраченны
 		            	setHealth(0);  // здоровье уходит в ноль
 			            return true;
 		            }
@@ -1122,12 +1166,12 @@ public class AliveCell extends CellObject{
 		        long min0 = mineral;  // определим количество минералов у нас
 		        long min1 = cell.mineral / 2;  // определим количество минералов у цели,
 		        							//но так как мы только кусаем - то и прорываться нам не через весь панцирь
-		        long hl = cell.health;  // определим энергию у потенциального кусиха
+		        double hl = cell.health;  // определим энергию у потенциального кусиха
 		        //Если у цели минералов не слишком много, а у нас жизней сильно меньше - можем его кусить
 		        if (min0 >= (min1/2) && (health/2 < hl)) {
 		        	setMineral(min0 - min1/2); // количество минералов у бота уменьшается на количество минералов у жертвы
 		            // типа, стесал свои зубы о панцирь жертвы
-		            long cl = hl / 4;           // количество энергии у бота прибавляется лишь чуть чуть, мы же кусили
+		        	double cl = hl / 4;           // количество энергии у бота прибавляется лишь чуть чуть, мы же кусили
 		            this.setHealth(health + cl);
 		            cell.setHealth(cell.health - cl);
 		            goRed((int) cl);                    // бот краснеет
@@ -1161,12 +1205,12 @@ public class AliveCell extends CellObject{
 		if(seeA(direction).isBot) {
 			Point point = fromVektorA(direction);
 			AliveCell cell = (AliveCell) Configurations.world.get(point);
-	        long hlt0 = health;         // определим количество энергии и минералов
-	        long hlt1 = cell.health;  // у бота и его соседа
+			double hlt0 = health;         // определим количество энергии и минералов
+			double hlt1 = cell.health;  // у бота и его соседа
 	        long min0 = mineral;
 	        long min1 = cell.mineral;
 	        if (hlt0 > hlt1) {              // если у бота больше энергии, чем у соседа
-	        	long hlt = (hlt0 - hlt1) / 2;   // то распределяем энергию поровну
+	        	double hlt = (hlt0 - hlt1) / 2;   // то распределяем энергию поровну
 	            setHealth(health - hlt);
 	            cell.setHealth(cell.health + hlt);
 	        }
@@ -1201,8 +1245,8 @@ public class AliveCell extends CellObject{
 		if(seeA(direction).isBot) {
 			Point point = fromVektorA(direction);
 			AliveCell cell = (AliveCell) Configurations.world.get(point);
-			long hlt0 = health;  // бот отдает четверть своей энергии
-			long hlt = hlt0 / 4;
+			double hlt0 = health;  // бот отдает четверть своей энергии
+			double hlt = hlt0 / 4;
             setHealth(health - hlt);
             cell.setHealth(cell.health + hlt);
 
@@ -1498,11 +1542,11 @@ public class AliveCell extends CellObject{
 	/**
 	 * @return the health
 	 */
-	public long getHealth() {
+	public double getHealth() {
 		return health;
 	}
 	
-	public void setHealth(long health) {
+	public void setHealth(double health) {
 		this.health=health;
 		if(health < 0) health = 0;
 		if((Legend.Graph.getMode() == Legend.Graph.MODE.HP))
@@ -1627,5 +1671,9 @@ public class AliveCell extends CellObject{
 	 */
 	public DNA getDna() {
 		return dna;
+	}
+
+	public int getBuoyancy() {
+		return buoyancy;
 	}
 }
