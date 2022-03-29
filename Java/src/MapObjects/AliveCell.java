@@ -232,7 +232,7 @@ public class AliveCell extends CellObject{
     public AliveCell(JSON cell, EvolutionTree tree) {
     	super(cell);
     	dna = new DNA(cell.getJ("DNA"));
-    	health = cell.getL("health");
+    	health = cell.get("health");
     	mineral = cell.getL("mineral");
     	direction = DIRECTION.toEnum(cell.getI("direction"));
     	DNA_wall = cell.getI("DNA_wall");
