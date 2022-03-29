@@ -81,6 +81,12 @@ public class BotInfo extends JPanel {
 			return DIRECTION.toEnum(Integer.parseInt(super.get(cell, val))).toString();
 		}
 	};
+	private static ComandOpt DNA_SIZE = new ComandOpt(DIRECTION.size()) {
+		public String get(AliveCell cell, int val) {
+			maxVal = cell.getDna().size;
+			return super.get(cell, val);
+		}
+	};
 	
 	private static NextCmd SEE = new NextCmd(OBJECT.size() - 2,1);
 	
@@ -97,8 +103,8 @@ public class BotInfo extends JPanel {
 		
 		CMD2_0("♲ О","Повернуться О",RELATIVELY),
 		CMD2_1("♲ A","Повернуться A",ABSOLUTELY),
-		CMD2_2("⍖ O","Шаг O",RELATIVELY,SEE),
-		CMD2_3("⍖ А","Шаг А",ABSOLUTELY,SEE),
+		CMD2_2("⍖ O","Шаг O",RELATIVELY),
+		CMD2_3("⍖ А","Шаг А",ABSOLUTELY),
 		CMD2_4("↟","Ориентация вверх"),
 		
 		CMD3_0("O_O O","Смотреть О",RELATIVELY,SEE),
@@ -106,23 +112,23 @@ public class BotInfo extends JPanel {
 		CMD3_2("∸","Какая высота",new ComandOpt(Configurations.MAP_CELLS.height),new NextCmd(2,2)),
 		CMD3_3("♡∸","Сколько ХП",new ComandOpt(AliveCell.maxHP),new NextCmd(2,2)),
 		CMD3_4("♢∸","Сколько МП",new ComandOpt(AliveCell.MAX_MP),new NextCmd(2,2)),
-		CMD3_5("∅","Я окружён?",new NextCmd(2,2)),
-		CMD3_6("♡🠑","Много солнца?",new NextCmd(2,2)),
-		CMD3_7("♢🠑","Есть минералы?",new NextCmd(2,2)),
-		CMD3_8("O_O ♡∸","ХП у него ск?",new ComandOpt(AliveCell.maxHP),SEE),
-		CMD3_9("O_O ♢∸","ХП у него ск?",new ComandOpt(AliveCell.maxHP),SEE),
-		CMD3_10("⋇","Я многокл?",new NextCmd(2,2)),
+		CMD3_5("∅","Я окружён?",new NextCmd(1,2)),
+		CMD3_6("♡🠑","Много солнца?",new NextCmd(1,2)),
+		CMD3_7("♢🠑","Есть минералы?",new NextCmd(1,2)),
+		CMD3_8("O_O ♡∸","ХП у него ск?",new ComandOpt(AliveCell.maxHP),new NextCmd(3,2)),
+		CMD3_9("O_O ♢∸","ХП у него ск?",new ComandOpt(AliveCell.maxHP),new NextCmd(3,2)),
+		CMD3_10("⋇","Я многокл?",new NextCmd(1,2)),
 		CMD3_11("Я стар","Сколько лет?",new ComandOpt(),new NextCmd(2,2)),
 		CMD3_12("ДНК ⊡","ДНК защищена?",new ComandOpt(AliveCell.MAX_DNA_WALL),new NextCmd(2,2)),
 		
-		CMD4_0("⇲ O","Съесть О",RELATIVELY,SEE),
-		CMD4_1("⇲ А","Съесть А",ABSOLUTELY,SEE),
-		CMD4_2("⭹ O","Кусить О",RELATIVELY,SEE),
-		CMD4_3("⭹ А","Кусить А",ABSOLUTELY,SEE),
-		CMD4_4("↹ O","Поделиться О",RELATIVELY,SEE),
-		CMD4_5("↹ А","Поделиться А",ABSOLUTELY,SEE),
-		CMD4_6("⤞ O","Отдать О",RELATIVELY,SEE),
-		CMD4_7("⤞ А","Отдать А",ABSOLUTELY,SEE),
+		CMD4_0("⇲ O","Съесть О",RELATIVELY),
+		CMD4_1("⇲ А","Съесть А",ABSOLUTELY),
+		CMD4_2("⭹ O","Кусить О",RELATIVELY),
+		CMD4_3("⭹ А","Кусить А",ABSOLUTELY),
+		CMD4_4("↹ O","Поделиться О",RELATIVELY),
+		CMD4_5("↹ А","Поделиться А",ABSOLUTELY),
+		CMD4_6("⤞ O","Отдать О",RELATIVELY),
+		CMD4_7("⤞ А","Отдать А",ABSOLUTELY),
 		CMD4_8("↭ O","Толкнуть О",RELATIVELY),
 		CMD4_9("↭ А","Толкнуть А",ABSOLUTELY),
 		
@@ -134,10 +140,10 @@ public class BotInfo extends JPanel {
 		CMD5_5("ДНК ⊡⭹","Проломить ДНК"),
 		CMD5_6("ЦИКЛ","Цикл",new ComandOpt()),
 
-		CMD6_0("□∪□ O","Присосаться О",RELATIVELY,SEE),
-		CMD6_1("□∪□ А","Присосаться А",ABSOLUTELY,SEE),
-		CMD6_2("⊶∪□ O","Клон и присос О",RELATIVELY,SEE),
-		CMD6_3("⊶∪□ А","Клон и присос А",ABSOLUTELY,SEE),
+		CMD6_0("□∪□ O","Присосаться О",RELATIVELY),
+		CMD6_1("□∪□ А","Присосаться А",ABSOLUTELY),
+		CMD6_2("⊶∪□ O","Клон и присос О",RELATIVELY,DNA_SIZE),
+		CMD6_3("⊶∪□ А","Клон и присос А",ABSOLUTELY,DNA_SIZE),
 		
 		;
 		private static final CELL_COMMAND[] vals = CELL_COMMAND.values();
@@ -252,14 +258,18 @@ public class BotInfo extends JPanel {
 	private CellObject cell = null;
 	private int oldIndex = -1;
 	private boolean isFullMod = false;
-	private JList<String> list;
+	private JList<String> listDNA;
 	/**Филогинетическое дерево*/
 	private TextPair filogen;
 	private TextPair pos;
 	private TextPair toxicFIeld;
 	private TextPair Buoyancy;
 	private JPanel panel_variant;
+	/**Панель, на которой написано про ДНК*/
 	private JPanel panel_DNA;
+	/**Список с прерываниями*/
+	private JList<String> list_inter;
+	private JScrollPane scrollPane_inter;
 	
 	class WorkTask implements Runnable{
 		public void run() {
@@ -320,8 +330,11 @@ public class BotInfo extends JPanel {
 								}
 								model.add(i, row);
 							}
-							list.setModel(model);
+							listDNA.setModel(model);
 						}
+						
+						
+						
 					}
 					Utils.pause_ms(100);
 				} else {
@@ -329,7 +342,7 @@ public class BotInfo extends JPanel {
 						cell = null;
 						clearText();
 
-						list.setModel(new DefaultListModel<String> ());
+						listDNA.setModel(new DefaultListModel<String> ());
 					}
 					Utils.pause(1);
 				}
@@ -354,28 +367,42 @@ public class BotInfo extends JPanel {
 		
 		panel_variant = new JPanel();
 		panel_variant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u041F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0435", TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		
+		scrollPane_inter = new JScrollPane();
+		scrollPane_inter.setEnabled(false);
 		GroupLayout gl_panel = new GroupLayout(panel);
 		gl_panel.setHorizontalGroup(
 			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addComponent(panel_variant, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 176, Short.MAX_VALUE)
-						.addComponent(panel_DNA, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 176, Short.MAX_VALUE)
-						.addComponent(panel_const, GroupLayout.DEFAULT_SIZE, 176, Short.MAX_VALUE))
+						.addComponent(panel_DNA, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
+						.addComponent(scrollPane_inter, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
+						.addComponent(panel_const, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
+						.addComponent(panel_variant, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
 			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(panel_const, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
-					.addGap(1)
-					.addComponent(panel_variant, GroupLayout.PREFERRED_SIZE, 223, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panel_const, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addGap(5)
+					.addComponent(panel_variant, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_DNA, GroupLayout.DEFAULT_SIZE, 209, Short.MAX_VALUE)
-					.addGap(9))
+					.addComponent(scrollPane_inter, GroupLayout.PREFERRED_SIZE, 76, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(panel_DNA, GroupLayout.DEFAULT_SIZE, 121, Short.MAX_VALUE)
+					.addContainerGap())
 		);
+		
+		JLabel lblNewLabel = new JLabel("Прерывания");
+		lblNewLabel.setHorizontalAlignment(SwingConstants.CENTER);
+		scrollPane_inter.setColumnHeaderView(lblNewLabel);
+		
+		list_inter = new JList<String>();
+		list_inter.setEnabled(false);
+		list_inter.setModel(new DefaultListModel<String> ());
+		scrollPane_inter.setViewportView(list_inter);
 		generation = new TextPair("Покаление:");
 		mp = new TextPair("Минералов:");
 		direction = new TextPair("Оринетация:");
@@ -484,18 +511,18 @@ public class BotInfo extends JPanel {
 		JScrollPane scrollPane = new JScrollPane();
 		panel_DNA.add(scrollPane, BorderLayout.CENTER);
 		
-		list = new JList<String>();
-		list.addMouseListener(new MouseAdapter() {
+		listDNA = new JList<String>();
+		listDNA.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
 				isFullMod = !isFullMod;
 				oldIndex = -1;
 			}
 		});
-		list.setVisibleRowCount(3);
-		list.setEnabled(false);
-		scrollPane.setViewportView(list);
-		list.setModel(new DefaultListModel<String> ());
-		list.setSelectedIndex(0);
+		listDNA.setVisibleRowCount(3);
+		listDNA.setEnabled(false);
+		scrollPane.setViewportView(listDNA);
+		listDNA.setModel(new DefaultListModel<String> ());
+		listDNA.setSelectedIndex(0);
 		panel.setLayout(gl_panel);
 		
 		new Thread(new WorkTask()).start();
@@ -512,12 +539,20 @@ public class BotInfo extends JPanel {
 		if (getCell() instanceof AliveCell) {
 			panel_variant.setVisible(true);
 			panel_DNA.setVisible(true);
+			scrollPane_inter.setVisible(true);
 			AliveCell new_name = (AliveCell) getCell();
 			generation.setText(new_name.getGeneration()+"");
 			photos.setText((new_name.photosynthesisEffect+"").substring(0, 3));
 			phenotype.setBackground(new_name.phenotype);
 			phenotype.setText(Integer.toHexString(new_name.phenotype.getRGB()));
 			filogen.setText(new_name.getBranch());
+			
+			DefaultListModel<String> model = new DefaultListModel<String> ();
+			DNA dna = new_name.getDna();
+			model.setSize(dna.interrupts.length);
+			for(int i = 0 ; i < dna.interrupts.length ; i++)
+				model.add(i,OBJECT.get(i) + " - " + String.valueOf(dna.interrupts[i] % dna.size));
+			list_inter.setModel(model);
 		} else if (getCell() instanceof Poison){
 			panel_variant.setVisible(true);
 		}
@@ -558,9 +593,10 @@ public class BotInfo extends JPanel {
 		pos.setText("");
 		toxicFIeld.setText("");
 		Buoyancy.clear();
-		list.setModel(new DefaultListModel<>());
+		listDNA.setModel(new DefaultListModel<>());
 		panel_variant.setVisible(false);
 		panel_DNA.setVisible(false);
+		scrollPane_inter.setVisible(false);
 		oldIndex = -1;
 		isFullMod = false;
 	}

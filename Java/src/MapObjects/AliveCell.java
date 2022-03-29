@@ -49,13 +49,22 @@ public class AliveCell extends CellObject{
 	private static final long HP_PER_STEP = 4;
 	
 	/**ДНК бота*/
-	public static class DNA {
+	public class DNA {
 		/**Размер мозга*/
 		public final int size;
 		/**Мозг*/
 		public final int [] mind;
 		/**Номер выполняемой инструкции*/
 		private int instruction;
+		
+		/**
+		 * Вектор прерываний:
+		 * 0-(OBJECT.size()-1) по зрению. То есть если клетка не может совершить действие, потому что там стена (WALL(1)),
+		 * то выполнится инструкция, адрес который записан в этом массиве на месте [1]
+		 */
+		public final int [] interrupts = new int[(OBJECT.size()-1)]; 
+		/**Флаг нахождения в прерывании*/
+		private boolean activInterrupt = false;
 		
 		private DNA(int size){
 			this.size=size;
@@ -64,20 +73,27 @@ public class AliveCell extends CellObject{
 				mind[i] = block1; // У клетки по базе только одна функция - фотосинтез
 			}
 			instruction = 0;
+			for (int i = 0; i < interrupts.length; i++)
+				interrupts[i] = 0;
 		}
 		/**ДНК у нас неизменяемая, поэтому при копировании мы можем сослаться на старую версию*/
 		private DNA(DNA dna){
 			this.size=dna.size;
 			this.mind=dna.mind;
 			this.instruction=dna.instruction;
+			for (int i = 0; i < this.interrupts.length; i++)
+				this.interrupts[i] = dna.interrupts[i];
 		}
 		private DNA(JSON dna) {
 			this.size=dna.getI("size");
 	    	List<Integer> mindL = dna.getA("mind");
 	    	mind = new int[size];
 	    	for (int i = 0; i < size; i++) 
-				mind[i] = mindL.get(i).intValue();
+				mind[i] = mindL.get(i);
 			this.instruction=dna.getI("instruction");
+	    	List<Integer> interruptsL = dna.getA("interrupts");
+	    	for (int i = 0; i < interrupts.length; i++) 
+	    		interrupts[i] = interruptsL.get(i);
 		}
 		/**А вот теперь ссылаться поздно - нам нужно поменять данные*/
 		public DNA(DNA dna, int index, int value) {
@@ -85,9 +101,27 @@ public class AliveCell extends CellObject{
 			this.mind = new int[dna.size];
 	    	System.arraycopy(dna.mind, 0, mind, 0, size);
 			this.instruction=dna.instruction;
+	    	for (int i = 0; i < interrupts.length; i++) 
+				this.interrupts[i] = dna.interrupts[i];
 			//Изменение гена
 			this.mind[getIndex(index)] = value;
 		}
+		
+		/**
+		 * Прерывание
+		 * @param num - его номер
+		 */
+		private void interrupt(int num) {
+			if(activInterrupt) return;
+			activInterrupt = true;
+			int stackInstr = instruction; // Кладём в стек PC
+			instruction = interrupts[num] % size;
+			for (int cyc = 0; (cyc < 15); cyc++)
+				if(execute()) break; // Выполняем программу прерывания
+			instruction = stackInstr; // Возвращаем из стека PC
+			activInterrupt = false;
+		}
+		
 		private int getIndex(int offset) {
 			int ret = (instruction + offset) % size;
 	        if(ret < 0)
@@ -141,6 +175,7 @@ public class AliveCell extends CellObject{
 			make.add("size", size);
 			make.add("mind", mind);
 			make.add("instruction", instruction);
+			make.add("interrupts", interrupts);
 			return make;
 		}
 		/**
@@ -153,8 +188,12 @@ public class AliveCell extends CellObject{
         	System.arraycopy(mind, 0, ret.mind, 0, index+1);
         	ret.mind[index+1] = ret.mind[index]; //Дублирование гена
         	System.arraycopy(mind, index+1, ret.mind, index+2, size - 1 - index);
-        	if(ret.instruction > index)
-        		ret.next(1);
+        	if(ret.instruction > index) {
+        		ret.next(1); // Наш тактовый счётчик идёт дальше
+        		for (int i = 0; i < interrupts.length; i++) {
+					if(interrupts[i] > index) interrupts[i] = (interrupts[i]+1)%ret.size; // И все прерывания тоже сдвигаются
+				}
+        	}
 			return ret;
 		}
 		/**
@@ -166,8 +205,12 @@ public class AliveCell extends CellObject{
 			DNA ret = new DNA(size-1);
         	System.arraycopy(mind, 0, ret.mind, 0, index);
         	System.arraycopy(mind, index+1, ret.mind, index, size - 1 - index);
-        	if(ret.instruction >= index)
+        	if(ret.instruction >= index) {
         		ret.next(-1);
+        		for (int i = 0; i < interrupts.length; i++) {
+					if(interrupts[i] >= index) interrupts[i] = Math.max(0,interrupts[i]-1); // И все прерывания тоже сдвигаются
+				}
+        	}
 			return ret;
 		}
 		public int getIndex() {
@@ -198,6 +241,8 @@ public class AliveCell extends CellObject{
     private int poisonPower = 0;
     /**Плавучесть. Меняется от -10 до 10 Где -10 - тонуть каждый ход, 10 - всплывать каждый ход, 1 - тонуть каждые 10 ходов*/
     private int buoyancy = 0;
+    /**Специальный флаг, показывает, что бот на этом ходу спит*/
+    private boolean isSleep = false;
     
     //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
     /**Поколение (мутационное)*/
@@ -306,7 +351,12 @@ public class AliveCell extends CellObject{
         //.......  энергию и минералы с соседями                            ........
         //.......  также проверить, количество накопленой энергии, возможно ........
         //.......  пришло время подохнуть или породить потомка              ........
-        addHealth(- HP_PER_STEP); //Пожили - устали
+		if(isSleep) {
+			isSleep = false;
+	        addHealth(-1); //Спать куда эффективнее
+		} else {
+	        addHealth(- HP_PER_STEP); //Пожили - устали
+		}
         if (this.getHealth() < 1) { //Очень жаль, но мы того - всё
             this.bot2Organic();
             return;
@@ -375,10 +425,12 @@ public class AliveCell extends CellObject{
 			dna.next(1);
 			return true;
 		// Клонирование
-		case block1 + 2:
-			dna.next(1); // Чтобы у потомка выполнилась следующая команда
+		case block1 + 2:{
+			int childCMD = dna.param(0, dna.size); // Откуда будет выполняться команда ребёнка
+			dna.next(1+childCMD); // Чтобы у потомка выполнилась следующая команда
 			botDouble();
-			return true;
+			dna.next(-childCMD); // А родитель выполняет свои инструкции далее
+			}return true;
 		// Самоубийство
 		case block1 + 3:
 			setHealth(-getHealth());
@@ -397,7 +449,7 @@ public class AliveCell extends CellObject{
 			return true;
 		// Спать, сохранить энергию
 		case block1 + 6:
-			addHealth(HP_PER_STEP-1); // Мы уснули, поэтому потратим всего 1 единицу энергии
+			isSleep = true;
 			dna.next(1);
 			return true;
 		//Увеличить плавучесть
@@ -413,8 +465,7 @@ public class AliveCell extends CellObject{
 			dna.next(1);
 			return true;
 
-		// =============================================================================ФУНКЦИИ
-		// ДВИЖЕНИЯ=============================================================================
+		// ======================================ФУНКЦИИ ДВИЖЕНИЯ=============================
 		// ............... сменить направление относительно ....
 		case block2:
 			direction = DIRECTION.toEnum(DIRECTION.toNum(direction) + dna.param(0, DIRECTION.size()));
@@ -428,22 +479,20 @@ public class AliveCell extends CellObject{
 		// ............... шаг в относительном напралении ................
 		case block2 + 2: {
 			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
-			if (moveR(dir)) {
+			if (moveR(dir))
 		        setHealth(getHealth() - 1); // бот теряет на этом 1 энергию
-				dna.nextFromAdr(2);
-			}else {
-				dna.nextFromAdr(2 + seeR(dir).nextCMD);
-			}
+			else
+				dna.interrupt(seeR(dir).nextCMD);
+			dna.next(2);
 		}return true;
 		// ............... шаг в абсолютном напралении ................
 		case block2 + 3: {
 			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
-			if (moveA(dir)) {
+			if (moveA(dir))
 		        setHealth(getHealth() - 1); // бот теряет на этом 1 энергию
-				dna.nextFromAdr(2);
-			}else {
-				dna.nextFromAdr(2 + seeA(dir).nextCMD);
-			}
+			else
+				dna.interrupt(seeA(dir).nextCMD);
+			dna.next(2);
 		}return false;
 		// ............... выровниться вверх ....
 		case block2 + 4:
@@ -451,53 +500,36 @@ public class AliveCell extends CellObject{
 			dna.next(1);
 			return false;
 
-		// =============================================================================ФУНКЦИИ
-		// ИССЛЕДОВАНИЯ=============================================================================
-		// ............. посмотреть в относительном напралении
-		// ...................................
+		//==============================ФУНКЦИИ ИССЛЕДОВАНИЯ=====================================
+		// ............. посмотреть в относительном напралении...................................
 		case block3:
 			dna.nextFromAdr(2 + seeR(DIRECTION.toEnum(dna.param(0, DIRECTION.size()))).nextCMD);
 			return false;
-		// ............. посмотреть в абсолютном напралении
-		// ...................................
+		// ............. посмотреть в абсолютном напралении ...................................
 		case block3 + 1:
 			dna.nextFromAdr(2 + seeA(DIRECTION.toEnum(dna.param(0, DIRECTION.size()))).nextCMD);
 			return false;
 		// ................... на какой высоте бот .........
 		case block3 + 2: {
-			// байт в геноме может иметь значение от 0 до COUNT_COMAND, а нужно от 0 до
-			// World.MAP_CELLS.height
 			int param = dna.param(0, Configurations.MAP_CELLS.height);
-			// если уровень бота ниже, чем полученное значение,
-			// то прибавляем к указатели текущей команды значение 2-го байта, после
-			// выполняемой команды
-			if (getPos().getY() < param) {
+			if (getPos().getY() < param)
 				dna.nextFromAdr(2);
-			} else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после
-						// выполняемой команды
+			else
 				dna.nextFromAdr(3);
-			}
 		}return false;
 		// ................... какое моё здоровье ...............................
 		case block3 + 3: {
-			// если здоровье бота ниже, чем полученное значение,
-			// то прибавляем к указатели текущей команды значение 2-го байта, после
-			// выполняемой команды
-			if (health < dna.param(0, maxHP)) {
+			if (health < dna.param(0, maxHP))
 				dna.nextFromAdr(2);
-			} else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после
-						// выполняемой команды
+			else
 				dna.nextFromAdr(3);
-			}
 		}return false;
 		// ...................сколько минералов ...............................
 		case block3 + 4: {
-			if (mineral < dna.param(0, MAX_MP)) {
+			if (mineral < dna.param(0, MAX_MP))
 				dna.nextFromAdr(2);
-			} else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после
-						// выполняемой команды
+			else
 				dna.nextFromAdr(3);
-			}
 		}return false;
 		// ............... окружен ли бот ................
 		case block3 + 5: {
@@ -522,44 +554,34 @@ public class AliveCell extends CellObject{
 			else
 				dna.nextFromAdr(2);
 			return false;
-		// ..............Сколкько здоровья у того, на кого
-		// смотрю........................
+		// ..............Сколкько здоровья у того, на кого смотрю...................
 		case block3 + 8: {
 			OBJECT see = seeA(direction);
 			if (see.isBot) {
 				Point point = fromVektorA(direction);
 				AliveCell cell = (AliveCell) Configurations.world.get(point);
-				// если уровень бота ниже, чем полученное значение,
-				// то прибавляем к указатели текущей команды значение 2-го байта, после
-				// выполняемой команды
-				if (cell.health < dna.param(0, maxHP)) {
+				if (cell.health < dna.param(0, maxHP))
 					dna.nextFromAdr(2);
-				} else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после
-							// выполняемой команды
+				else
 					dna.nextFromAdr(3);
-				}
 			} else {
-				dna.nextFromAdr(4 + see.nextCMD);
+				dna.interrupt(see.nextCMD);
+				dna.nextFromAdr(4);
 			}
 		}return false;
-		// ..............Сколкько минералов у того, на кого
-		// смотрю........................
+		// ............Сколкько минералов у того, на кого смотрю......................
 		case block3 + 9: {
 			OBJECT see = seeA(direction);
 			if (see.isBot) {
 				Point point = fromVektorA(direction);
 				AliveCell cell = (AliveCell) Configurations.world.get(point);
-				// если уровень бота ниже, чем полученное значение,
-				// то прибавляем к указатели текущей команды значение 2-го байта, после
-				// выполняемой команды
-				if (cell.mineral < dna.param(0, MAX_MP)) {
+				if (cell.mineral < dna.param(0, MAX_MP))
 					dna.nextFromAdr(2);
-				} else { // иначе прибавляем к указатели текущей команды значение 3-го байта, после
-							// выполняемой команды
+				else
 					dna.nextFromAdr(3);
-				}
 			} else {
-				dna.nextFromAdr(4 + see.nextCMD);
+				dna.interrupt(see.nextCMD);
+				dna.nextFromAdr(4);
 			}
 		}return false;
 		// Я многоклеточный?
@@ -584,72 +606,63 @@ public class AliveCell extends CellObject{
 				dna.nextFromAdr(3);
 			return false;
 
-		// =============================================================================ФУНКЦИИ
-		// ВЗАИМОДЕЙТСВИЯ=============================================================================
+		// =============================================ФУНКЦИИ ВЗАИМОДЕЙТСВИЯ===============================================
 		// .............. съесть в относительном напралении ...............
 		case block4: {
 			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
-			if (eatR(dir))
-				dna.nextFromAdr(2);
-			else
-				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+			if (!eatR(dir))
+				dna.interrupt(seeR(dir).nextCMD);
+			dna.next(2);
 		}return true;
 		// .............. съесть в абсолютном напралении ...............
 		case block4 + 1: {
 			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
-			if (eatA(dir))
-				dna.nextFromAdr(2);
-			else
-				dna.nextFromAdr(3 + seeA(dir).nextCMD);
+			if (!eatA(dir))
+				dna.interrupt(seeA(dir).nextCMD);
+			dna.next(2);
 		}return true;
 		// Не убить соседа, а лишь куисить в относительном напралении
 		case block4 + 2: {
 			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
-			if (biteR(dir))
-				dna.nextFromAdr(2);
-			else
-				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+			if (!biteR(dir))
+				dna.interrupt(seeR(dir).nextCMD);
+			dna.next(2);
 		}return true;
 		// Не убить соседа, а лишь куисить в абсолютном напралении
 		case block4 + 3: {
 			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
-			if (biteA(dir))
-				dna.nextFromAdr(2);
-			else
-				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+			if (!biteA(dir))
+				dna.interrupt(seeA(dir).nextCMD);
+			dna.next(2);
 		}return true;
 
 		// Поделиться, если у соседа меньше в относительном напралении
 		case block4 + 4: {
 			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
-			if (careR(dir))
-				dna.nextFromAdr(2);
-			else
-				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+			if (!careR(dir))
+				dna.interrupt(seeR(dir).nextCMD);
+			dna.next(2);
 		}return true;
 		// Поделиться, если у соседа меньше в абсолютном напралении
 		case block4 + 5: {
 			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
-			if (careA(dir))
-				dna.nextFromAdr(2);
-			else
-				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+			if (!careA(dir))
+				dna.interrupt(seeA(dir).nextCMD);
+			dna.next(2);
 		}return true;
 		// Отдать безвозмездно в относительном напралении
 		case block4 + 6: {
 			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
-			if (giveR(dir))
-				dna.nextFromAdr(2);
-			else
-				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+			if (!giveR(dir))
+				dna.interrupt(seeR(dir).nextCMD);
+			dna.next(2);
 		}return true;
 		// Отдать безвозмездно в абсолютном напралении
 		case block4 + 7: {
 			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
-			if (giveA(dir))
-				dna.nextFromAdr(2);
-			else
-				dna.nextFromAdr(3 + seeR(dir).nextCMD);
+			if (!giveA(dir))
+				dna.interrupt(seeA(dir).nextCMD);
+			dna.next(2);
 		}return true;
 		// Толкнуть отностиельно
 		case block4 + 8: {
@@ -664,8 +677,7 @@ public class AliveCell extends CellObject{
 			dna.next(2);
 		}return true;
 
-		// =============================================================================ФУНКЦИИ
-		// ПРОГРАММИРОЫВАНИЯ=============================================================================
+		// ======================================ФУНКЦИИ ПРОГРАММИРОЫВАНИЯ==============================================
 		// У соседа заменить будущую команду пороцессора на свою
 		case block5: {
 			OBJECT see = seeA(direction);
@@ -684,6 +696,8 @@ public class AliveCell extends CellObject{
 				}
 				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 					color_DO = Color.BLACK;
+			} else {
+				dna.interrupt(see.nextCMD);
 			}
 			dna.next(3);
 		}return true;
@@ -704,6 +718,8 @@ public class AliveCell extends CellObject{
 				}
 				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 					color_DO = Color.BLACK;
+			} else {
+				dna.interrupt(see.nextCMD);
 			}
 			dna.next(2);
 		}return true;
@@ -728,6 +744,8 @@ public class AliveCell extends CellObject{
 				}
 				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 					color_DO = Color.BLACK;
+			} else {
+				dna.interrupt(see.nextCMD);
 			}
 			dna.next(2 + length_DNA); // Но этот код не наш, мы его не выполняем!
 		}return true;
@@ -746,6 +764,7 @@ public class AliveCell extends CellObject{
 					color_DO = Color.GRAY;
 				// Смены команды не будет, ведь мы эту команду перезаписали уже на нужную
 			} else {
+				dna.interrupt(see.nextCMD);
 				dna.next(1); // Просто живём дальше, будто ни чего и не было
 			}
 		}return true;
@@ -763,6 +782,8 @@ public class AliveCell extends CellObject{
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				bot.DNA_wall = Math.max(0, bot.DNA_wall - 2);
 				setHealth(getHealth() - 1); // На это нужно усилие
+			} else {
+				dna.interrupt(see.nextCMD);
 			}
 			dna.next(1);
 		}return true;
@@ -775,25 +796,33 @@ public class AliveCell extends CellObject{
 		// МНОГОКЛЕТОЧНЫХ=============================================================================
 		// Присосаться относительно
 		case block6:
-			clingR(DIRECTION.toEnum(dna.param(0, DIRECTION.size())));
+			DIRECTION dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if(!clingR(dir))
+				dna.interrupt(seeA(dir).nextCMD);
 			dna.next(2);
 			return true;
 		// Присосаться абсолютно
 		case block6 + 1:
-			clingA(DIRECTION.toEnum(dna.param(0, DIRECTION.size())));
+			dir = DIRECTION.toEnum(dna.param(0, DIRECTION.size()));
+			if(!clingA(dir))
+				dna.interrupt(seeA(dir).nextCMD);
 			dna.next(2);
 			return true;
 		// Родить присосавшегося потомка относительно
 		case block6 + 2: {
 			int par = dna.param(0, DIRECTION.size());
-			dna.next(2); // Чтобы у потомка выполнилась следующая команда
+			int childCMD = dna.param(1, dna.size); // Откуда будет выполняться команда ребёнка
+			dna.next(3+childCMD); // Чтобы у потомка выполнилась следующая команда
 			cloneR(DIRECTION.toEnum(par));
+			dna.next(-childCMD); // А родитель выполняет свои инструкции далее
 		}return true;
 		// Родить присосавшегося потомка абсолютно
 		case block6 + 3: {
 			int par = dna.param(0, DIRECTION.size());
-			dna.next(2); // Чтобы у потомка выполнилась следующая команда
+			int childCMD = dna.param(1, dna.size); // Откуда будет выполняться команда ребёнка
+			dna.next(3+childCMD); // Чтобы у потомка выполнилась следующая команда
 			cloneA(DIRECTION.toEnum(par));
+			dna.next(-childCMD); // А родитель выполняет свои инструкции далее
 		}return true;
 
 		default:
@@ -931,7 +960,7 @@ public class AliveCell extends CellObject{
 		setGeneration(getGeneration() + 1);
 		/**Дельта, гуляет от -1 до 1*/
 		double del = (0.5 - Math.random())*2;
-        switch (Utils.random(2, 9)) { // К сожалению 0 и 1 вырезаны.
+        switch (Utils.random(2, 10)) { // К сожалению 0 и 1 вырезаны.
             case 2: //Мутирует эффективность фотосинтеза
                 this.photosynthesisEffect = Math.max(0, Math.min(this.photosynthesisEffect * (1+del*0.1), 4));
                 break;
@@ -971,6 +1000,11 @@ public class AliveCell extends CellObject{
             		poisonPower = Utils.random(1, (int) (HP_FOR_POISON * 2 / 3));
             	else
             		poisonPower = 0; //К этому у нас защищённости ни какой
+            }break;
+            case 10:{ //Мутирует вектор прерываний
+                int ma = Utils.random(0, dna.interrupts.length-1); //Индекс в векторе
+                int mc = Utils.random(0, COUNT_COMAND); //Его значение
+                dna.interrupts[ma] = mc;
             }break;
         }
 		evolutionNode = evolutionNode.newNode(this,stepCount);
@@ -1263,19 +1297,20 @@ public class AliveCell extends CellObject{
 	}
 	
 
-	private void clingR(DIRECTION direction) {
-		clingA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
+	private boolean clingR(DIRECTION direction) {
+		return clingA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
 	}
 	/**
 	 * Присосаться к другой клетке
 	 * @param direction
+	 * @return 
 	 */
-	private void clingA(DIRECTION direction) {
+	private boolean clingA(DIRECTION direction) {
 		OBJECT see = seeA(direction);
-		if(see.isBot){
-			Point point = fromVektorA(direction);
-		    setFriend((AliveCell) Configurations.world.get(point));
-		}
+		if(!see.isBot) return false;
+		Point point = fromVektorA(direction);
+	    setFriend((AliveCell) Configurations.world.get(point));
+	    return true;
 	}
 	
 	private void cloneR(DIRECTION direction) {
@@ -1315,7 +1350,8 @@ public class AliveCell extends CellObject{
 	private void addPosionA(DIRECTION enum1) {
 		OBJECT see = seeA(direction);
 		if(see == OBJECT.WALL) {
-			return; //Ну что мы можем сделать со стеной? О_О
+			poisonPower = getPosionPower() + 1;
+			return; //Мы пукнули в стену, а попало в нас. Согласен, спорный момент
 		}
 
     	addHealth(-HP_FOR_POISON);      // бот затрачивает энергию на это, причём только 2/3 идёт на токсин
