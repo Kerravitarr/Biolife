@@ -27,7 +27,7 @@ public abstract class CellObject {
 		FRIEND(3,false,false,true),ENEMY(4,false,false,true),
 		POISON(5,true,true,false),NOT_POISON(6,true,true,false),
 		BOT(7,false,false,true);
-		private static final OBJECT[] myEnumValues = OBJECT.values();
+		public static final OBJECT[] myEnumValues = OBJECT.values();
 		/**На сколько нужно сдвинуть счётчик команда дополнительно, типо развилка*/
 		int nextCMD;
 		//Является это место пустым
@@ -44,6 +44,13 @@ public abstract class CellObject {
 			this.isBot=isBot;
 		}
 		public static int size() {return myEnumValues.length;}
+		public static OBJECT get(int index) {
+			for (OBJECT object : myEnumValues) {
+				if(object.nextCMD == index)
+					return object;
+			}
+			return null;
+		}
 	};
 	
 	protected class CellObjectRemoveException extends RuntimeException {
