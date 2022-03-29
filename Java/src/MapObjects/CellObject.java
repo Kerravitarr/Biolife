@@ -151,17 +151,17 @@ public abstract class CellObject {
 	 * Возваращет некий аналог энергии
 	 * @return
 	 */
-	public abstract long getHealth();
+	public abstract double getHealth();
 	/**
 	 * Сохраняет некий аналог энергии
 	 * @return
 	 */
-	abstract void setHealth(long h);
+	abstract void setHealth(double h);
 	/**
 	 * Добавляет энергию к существующей
 	 * @return
 	 */
-	public void addHealth(long h) {
+	public void addHealth(double h) {
 		setHealth(getHealth() + h);
 	}
 
