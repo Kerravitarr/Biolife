@@ -2,8 +2,8 @@ package panels;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import javax.swing.BoxLayout;
@@ -92,6 +92,9 @@ public class BotInfo extends JPanel {
 		CMD1_3("х-х","Смерть"),
 		CMD1_4("+Яд О","Пукнуть О",RELATIVELY),
 		CMD1_5("+Яд A","Пукнуть A",ABSOLUTELY),
+		CMD1_6("Zzz","Уснуть"),
+		CMD1_7("☁","Стать легче"),
+		CMD1_8("◼","Стать тяжелее"),
 		
 		CMD2_0("♲ О","Повернуться О",RELATIVELY),
 		CMD2_1("♲ A","Повернуться A",ABSOLUTELY),
@@ -203,22 +206,59 @@ public class BotInfo extends JPanel {
 	}
 	
 	
-	private JTextField photos;
-	private JTextField state;
-	private JTextField hp;
-	private JTextField mp;
-	private JTextField direction;
-	private JTextField age;
-	private JTextField generation;
-	private JTextField phenotype;
+	private static class TextPair extends JPanel {
+		/**Текст пары */
+		private JLabel text = null;
+		/**Текстовое поле пары*/
+		private JTextField field = null;
+		
+		public TextPair(String label) {
+			setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+			text = new JLabel(label);
+			add(text);
+			
+			field = new JTextField();
+			field.setBackground(Color.WHITE);
+			field.setHorizontalAlignment(SwingConstants.CENTER);
+			field.setEnabled(false);
+			field.setEditable(false);
+			add(field);
+		}
+
+		public void clear() {
+			setText("");
+		}
+
+		public void setText(String string) {
+			field.setText(string);
+		}
+
+		public void setBackground(Color bg) {
+			super.setBackground(bg);
+			if(text != null && field != null) {
+				text.setBackground(bg);
+				field.setBackground(bg);
+			}
+		}
+	}
+	
+	private TextPair photos;
+	private TextPair state;
+	private TextPair hp;
+	private TextPair mp;
+	private TextPair direction;
+	private TextPair age;
+	private TextPair generation;
+	private TextPair phenotype;
 	private CellObject cell = null;
 	private int oldIndex = -1;
 	private boolean isFullMod = false;
 	private JList<String> list;
 	/**Филогинетическое дерево*/
-	private JTextField filogen;
-	private JTextField pos;
-	private JTextField toxicFIeld;
+	private TextPair filogen;
+	private TextPair pos;
+	private TextPair toxicFIeld;
+	private TextPair Buoyancy;
 	private JPanel panel_variant;
 	private JPanel panel_DNA;
 	
@@ -321,9 +361,9 @@ public class BotInfo extends JPanel {
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
-						.addComponent(panel_DNA, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 167, Short.MAX_VALUE)
-						.addComponent(panel_const, GroupLayout.DEFAULT_SIZE, 167, Short.MAX_VALUE)
-						.addComponent(panel_variant, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 167, Short.MAX_VALUE))
+						.addComponent(panel_variant, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 176, Short.MAX_VALUE)
+						.addComponent(panel_DNA, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 176, Short.MAX_VALUE)
+						.addComponent(panel_const, GroupLayout.DEFAULT_SIZE, 176, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
@@ -331,241 +371,110 @@ public class BotInfo extends JPanel {
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
 					.addComponent(panel_const, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE)
+					.addGap(1)
+					.addComponent(panel_variant, GroupLayout.PREFERRED_SIZE, 223, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_variant, GroupLayout.PREFERRED_SIZE, 200, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_DNA, GroupLayout.DEFAULT_SIZE, 449, Short.MAX_VALUE)
-					.addContainerGap())
+					.addComponent(panel_DNA, GroupLayout.DEFAULT_SIZE, 209, Short.MAX_VALUE)
+					.addGap(9))
 		);
-		
-		JPanel panel_3 = new JPanel();
-		panel_3.setLayout(new BoxLayout(panel_3, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel_8 = new JLabel("Покаление:");
-		panel_3.add(lblNewLabel_8);
-		
-		generation = new JTextField();
-		generation.setBackground(Color.WHITE);
-		generation.setHorizontalAlignment(SwingConstants.CENTER);
-		panel_3.add(generation);
-		generation.setEnabled(false);
-		generation.setEditable(false);
-		generation.setColumns(4);
-		
-		JPanel panel_8 = new JPanel();
-		panel_8.setLayout(new BoxLayout(panel_8, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel_5 = new JLabel("Минералов:");
-		panel_8.add(lblNewLabel_5);
-		
-		mp = new JTextField();
-		mp.setBackground(Color.WHITE);
-		mp.setHorizontalAlignment(SwingConstants.CENTER);
-		panel_8.add(mp);
-		mp.setEnabled(false);
-		mp.setEditable(false);
-		mp.setColumns(4);
-		
-		JPanel panel_9 = new JPanel();
-		panel_9.setLayout(new BoxLayout(panel_9, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel_6 = new JLabel("Оринетация:");
-		panel_9.add(lblNewLabel_6);
-		
-		direction = new JTextField();
-		direction.setBackground(Color.WHITE);
-		direction.setHorizontalAlignment(SwingConstants.CENTER);
-		panel_9.add(direction);
-		direction.setEnabled(false);
-		direction.setEditable(false);
-		direction.setColumns(7);
-		
-		JPanel panel_13 = new JPanel();
-		panel_13.setLayout(new BoxLayout(panel_13, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel_11 = new JLabel("Химзащита:");
-		panel_13.add(lblNewLabel_11);
-		
-		toxicFIeld = new JTextField();
-		toxicFIeld.setHorizontalAlignment(SwingConstants.CENTER);
-		toxicFIeld.setBackground(Color.WHITE);
-		toxicFIeld.setEditable(false);
-		toxicFIeld.setEnabled(false);
-		panel_13.add(toxicFIeld);
-		toxicFIeld.setColumns(15);
-		
-		JPanel panel_10 = new JPanel();
-		panel_10.setLayout(new BoxLayout(panel_10, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel_2 = new JLabel("Хлорофил:");
-		panel_10.add(lblNewLabel_2);
-		
-		photos = new JTextField();
-		photos.setBackground(Color.WHITE);
-		photos.setHorizontalAlignment(SwingConstants.CENTER);
-		panel_10.add(photos);
-		photos.setEnabled(false);
-		photos.setEditable(false);
-		photos.setColumns(4);
-		
-		JPanel panel_11 = new JPanel();
-		panel_11.setLayout(new BoxLayout(panel_11, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel_1 = new JLabel("Фенотип: ");
-		panel_11.add(lblNewLabel_1);
-		
-		phenotype = new JTextField();
-		phenotype.setHorizontalAlignment(SwingConstants.CENTER);
-		phenotype.setEditable(false);
-		phenotype.setEnabled(false);
-		panel_11.add(phenotype);
-		phenotype.setColumns(1);
-		
-		JPanel panel_1 = new JPanel();
-		panel_1.setLayout(new BoxLayout(panel_1, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel = new JLabel("Филоген:");
-		panel_1.add(lblNewLabel);
-		
-		filogen = new JTextField();
-		filogen.setHorizontalAlignment(SwingConstants.RIGHT);
-		filogen.setEnabled(false);
-		filogen.setBackground(Color.WHITE);
-		panel_1.add(filogen);
-		filogen.setColumns(10);
+		generation = new TextPair("Покаление:");
+		mp = new TextPair("Минералов:");
+		direction = new TextPair("Оринетация:");
+		toxicFIeld = new TextPair("Химзащита:");
+		photos = new TextPair("Хлорофил:");
+		phenotype = new TextPair("Фенотип:");
+		filogen = new TextPair("Филоген:");
+		Buoyancy = new TextPair("Плавучесть:");
 		GroupLayout gl_panel_variant = new GroupLayout(panel_variant);
 		gl_panel_variant.setHorizontalGroup(
-			gl_panel_variant.createParallelGroup(Alignment.TRAILING)
+			gl_panel_variant.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addGap(10)
-					.addGroup(gl_panel_variant.createParallelGroup(Alignment.TRAILING)
-						.addGroup(gl_panel_variant.createSequentialGroup()
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addComponent(panel_10, GroupLayout.DEFAULT_SIZE, 147, Short.MAX_VALUE))
-						.addGroup(gl_panel_variant.createSequentialGroup()
-							.addPreferredGap(ComponentPlacement.RELATED)
-							.addGroup(gl_panel_variant.createParallelGroup(Alignment.TRAILING)
-								.addComponent(panel_1, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 147, Short.MAX_VALUE)
-								.addComponent(panel_11, GroupLayout.DEFAULT_SIZE, 147, Short.MAX_VALUE))
-							.addPreferredGap(ComponentPlacement.RELATED)))
-					.addGap(10))
-				.addGroup(Alignment.LEADING, gl_panel_variant.createSequentialGroup()
 					.addContainerGap()
-					.addComponent(panel_3, GroupLayout.DEFAULT_SIZE, 147, Short.MAX_VALUE)
+					.addComponent(generation, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
 					.addContainerGap())
-				.addGroup(Alignment.LEADING, gl_panel_variant.createSequentialGroup()
+				.addGroup(gl_panel_variant.createSequentialGroup()
 					.addContainerGap()
-					.addComponent(panel_9, GroupLayout.DEFAULT_SIZE, 150, Short.MAX_VALUE)
+					.addComponent(direction, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
 					.addContainerGap())
-				.addGroup(Alignment.LEADING, gl_panel_variant.createSequentialGroup()
+				.addGroup(gl_panel_variant.createSequentialGroup()
 					.addContainerGap()
-					.addComponent(panel_8, GroupLayout.DEFAULT_SIZE, 445, Short.MAX_VALUE)
+					.addComponent(mp, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
 					.addContainerGap())
-				.addGroup(Alignment.LEADING, gl_panel_variant.createSequentialGroup()
+				.addGroup(gl_panel_variant.createSequentialGroup()
 					.addContainerGap()
-					.addComponent(panel_13, GroupLayout.DEFAULT_SIZE, 445, Short.MAX_VALUE)
+					.addComponent(toxicFIeld, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+					.addContainerGap())
+				.addGroup(gl_panel_variant.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(phenotype, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+					.addContainerGap())
+				.addGroup(gl_panel_variant.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(photos, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+					.addContainerGap())
+				.addGroup(gl_panel_variant.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(filogen, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+					.addContainerGap())
+				.addGroup(gl_panel_variant.createSequentialGroup()
+					.addContainerGap()
+					.addComponent(Buoyancy, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
 					.addContainerGap())
 		);
 		gl_panel_variant.setVerticalGroup(
 			gl_panel_variant.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addComponent(panel_13, GroupLayout.PREFERRED_SIZE, 19, GroupLayout.PREFERRED_SIZE)
-					.addGap(7)
-					.addComponent(panel_8, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addComponent(toxicFIeld, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_9, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addComponent(mp, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_3, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addComponent(direction, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_10, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addComponent(generation, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_11, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addComponent(photos, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_1, GroupLayout.PREFERRED_SIZE, 21, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(35, Short.MAX_VALUE))
+					.addComponent(phenotype, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(filogen, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addPreferredGap(ComponentPlacement.RELATED)
+					.addComponent(Buoyancy, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addContainerGap(20, Short.MAX_VALUE))
 		);
+		
 		panel_variant.setLayout(gl_panel_variant);
+
+		pos = new TextPair("Позиция:");
+		hp = new TextPair("Здоровье:");
+		state = new TextPair("Состояние:");
+		age = new TextPair("Возраст:");
+		age.setToolTipText("Через черту показывается степень защищённости ДНК");
 		
-		JPanel panel_5 = new JPanel();
 		
-		JPanel panel_6 = new JPanel();
-		
-		JPanel panel_7 = new JPanel();
-		
-		JPanel panel_12 = new JPanel();
 		GroupLayout gl_panel_const = new GroupLayout(panel_const);
 		gl_panel_const.setHorizontalGroup(
 			gl_panel_const.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel_const.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panel_const.createParallelGroup(Alignment.TRAILING)
-						.addComponent(panel_5, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE)
-						.addComponent(panel_6, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE)
-						.addComponent(panel_7, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE)
-						.addComponent(panel_12, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE))
+						.addComponent(age, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE)
+						.addComponent(state, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE)
+						.addComponent(hp, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE)
+						.addComponent(pos, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel_const.setVerticalGroup(
 			gl_panel_const.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel_const.createSequentialGroup()
-					.addComponent(panel_5, GroupLayout.PREFERRED_SIZE, 18, GroupLayout.PREFERRED_SIZE)
+					.addComponent(age, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_6, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addComponent(state, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_7, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addComponent(hp, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(panel_12, GroupLayout.PREFERRED_SIZE, 19, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(13, Short.MAX_VALUE))
+					.addComponent(pos, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addContainerGap(20, Short.MAX_VALUE))
 		);
-		panel_12.setLayout(new BoxLayout(panel_12, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel_10 = new JLabel("Позиция:");
-		panel_12.add(lblNewLabel_10);
-		
-		pos = new JTextField();
-		pos.setHorizontalAlignment(SwingConstants.CENTER);
-		pos.setBackground(Color.WHITE);
-		pos.setEnabled(false);
-		pos.setEditable(false);
-		panel_12.add(pos);
-		pos.setColumns(10);
-		panel_7.setLayout(new BoxLayout(panel_7, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel_4 = new JLabel("Здоровье:");
-		panel_7.add(lblNewLabel_4);
-		
-		hp = new JTextField();
-		hp.setBackground(Color.WHITE);
-		hp.setHorizontalAlignment(SwingConstants.CENTER);
-		panel_7.add(hp);
-		hp.setEnabled(false);
-		hp.setEditable(false);
-		hp.setColumns(4);
-		panel_6.setLayout(new BoxLayout(panel_6, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel_3 = new JLabel("Состояние:");
-		panel_6.add(lblNewLabel_3);
-		
-		state = new JTextField();
-		state.setBackground(Color.WHITE);
-		state.setHorizontalAlignment(SwingConstants.CENTER);
-		panel_6.add(state);
-		state.setEnabled(false);
-		state.setEditable(false);
-		state.setColumns(4);
-		panel_5.setLayout(new BoxLayout(panel_5, BoxLayout.X_AXIS));
-		
-		JLabel lblNewLabel_7 = new JLabel("Возраст:");
-		panel_5.add(lblNewLabel_7);
-		
-		age = new JTextField();
-		age.setToolTipText("Через черту показывается степень защищённости ДНК");
-		age.setHorizontalAlignment(SwingConstants.CENTER);
-		age.setBackground(Color.WHITE);
-		panel_5.add(age);
-		age.setEnabled(false);
-		age.setEditable(false);
-		age.setColumns(4);
 		panel_const.setLayout(gl_panel_const);
 		panel_DNA.setLayout(new BorderLayout(0, 0));
 		
@@ -618,22 +527,23 @@ public class BotInfo extends JPanel {
 	private void setDinamicHaracteristiks() {
 		pos.setText(cell.getPos().toString());
 		state.setText(getCell().alive.name());
-		age.setText(getCell().getAge()+"");
+		age.setText(String.valueOf(getCell().getAge()));
 		if (getCell() instanceof AliveCell) {
 			AliveCell new_name = (AliveCell) getCell();
-            mp.setText(new_name.getMineral()+"");
+            mp.setText(String.valueOf(new_name.getMineral()));
 			direction.setText(new_name.direction.name());
-			hp.setText(getCell().getHealth()+"+" + Math.round(Configurations.sun.getEnergy(new_name.getPos())+(1+new_name.photosynthesisEffect) * new_name.getMineral() / AliveCell.MAX_MP)+"\\" + new_name.getDNA_wall());
+			hp.setText(((int)getCell().getHealth())+"+" + Math.round(Configurations.sun.getEnergy(new_name.getPos())+(1+new_name.photosynthesisEffect) * new_name.getMineral() / AliveCell.MAX_MP)+"\\" + new_name.getDNA_wall());
 			double realLv = new_name.getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
         	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
 			mp.setText(new_name.getMineral()+"+" + Math.round(Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - new_name.photosynthesisEffect)));
 			toxicFIeld.setText(new_name.getPosionType() + ":" + new_name.getPosionPower());
+			Buoyancy.setText(String.valueOf(new_name.getBuoyancy()));
 		} else if (getCell() instanceof Poison) {
 			Poison new_name = (Poison) getCell();
-			hp.setText(getCell().getHealth() + "");
-			toxicFIeld.setText(new_name.type + "");
+			hp.setText(String.valueOf((int)getCell().getHealth()));
+			toxicFIeld.setText(new_name.type.name());
 		} else {
-			hp.setText(getCell().getHealth() + "");
+			hp.setText(String.valueOf((int)getCell().getHealth()));
 		}
 	}
 	private void clearText() {
@@ -648,6 +558,7 @@ public class BotInfo extends JPanel {
 		filogen.setText("");
 		pos.setText("");
 		toxicFIeld.setText("");
+		Buoyancy.clear();
 		list.setModel(new DefaultListModel<>());
 		panel_variant.setVisible(false);
 		panel_DNA.setVisible(false);
