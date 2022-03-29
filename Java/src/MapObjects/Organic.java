@@ -6,7 +6,6 @@ import java.awt.Graphics;
 import MapObjects.Poison.TYPE;
 import Utils.JSON;
 import Utils.Utils;
-import main.World;
 import main.Configurations;
 import main.Point.DIRECTION;
 
@@ -19,7 +18,7 @@ public class Organic extends CellObject {
 	public Organic(AliveCell cell) {
 		super(cell.stepCount, LV_STATUS.LV_ORGANIC);
 		setPos(cell.getPos());
-		energy = Math.abs(cell.getHealth()) + cell.maxHP/10.0 + cell.getMineral()/10.0; //Превращается в органику всё, что только может
+		energy = Math.abs(cell.getHealth()) + AliveCell.maxHP/10.0 + cell.getMineral()/10.0; //Превращается в органику всё, что только может
 	    super.color_DO = color_DO;
 	}
 	/**

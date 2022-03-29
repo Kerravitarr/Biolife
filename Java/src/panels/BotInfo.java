@@ -2,7 +2,8 @@ package panels;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,8 +29,6 @@ import MapObjects.Poison;
 import Utils.Utils;
 import main.Configurations;
 import main.Point.DIRECTION;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 public class BotInfo extends JPanel {
 	/**Класс описывает одну командную опцию*/

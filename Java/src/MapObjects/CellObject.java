@@ -3,12 +3,10 @@ package MapObjects;
 import java.awt.Color;
 import java.awt.Graphics;
 
-import MapObjects.CellObject.OBJECT;
 import MapObjects.Poison.TYPE;
 import Utils.JSON;
 import main.Configurations;
 import main.Point;
-import main.World;
 import main.Point.DIRECTION;
 
 /**
@@ -159,7 +157,6 @@ public abstract class CellObject {
 	abstract void setHealth(double h);
 	/**
 	 * Добавляет энергию к существующей
-	 * @return
 	 */
 	public void addHealth(double h) {
 		setHealth(getHealth() + h);
@@ -175,9 +172,8 @@ public abstract class CellObject {
 	}
 	/**
 	 * Подглядывает за бота в абсолютном направлении
-	 * @param {*} bot - бот 
-	 * @param {*} direction направление, DIRECTION
-	 * @returns параметры OBJECT
+	 * @param direction направление, DIRECTION
+	 * @return параметры OBJECT
 	 */
 	protected OBJECT seeA(DIRECTION direction) {
 	    Point point = fromVektorA(direction);

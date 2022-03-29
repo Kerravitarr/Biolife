@@ -3,9 +3,7 @@ package MapObjects;
 import java.awt.Color;
 import java.awt.Graphics;
 
-import MapObjects.CellObject.LV_STATUS;
 import Utils.ColorRec;
-import main.World;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;

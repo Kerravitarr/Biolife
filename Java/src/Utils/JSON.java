@@ -9,12 +9,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Objects;
 
 /**
  * Класс, который отвечает за стиль JSON
@@ -27,6 +24,7 @@ public class JSON {
 		BEGIN_OBJECT("{"), END_OBJECT("}"), BEGIN_ARRAY("["), END_ARRAY("]"), NULL("null"), NUMBER("number"),
 		STRING("str"), BOOLEAN("true/false"), SEP_COLON(":"), SEP_COMMA(","), END_DOCUMENT("");
 		/**Описание символа*/
+		@SuppressWarnings("unused")
 		private String help;
 		/**Номер перечисления, уникальный бит*/
 		int value;
@@ -335,9 +333,7 @@ public class JSON {
 	}
 
 	/**
-	 * ParseException explains why and where the error occurs in source JSON text.
-	 * 
-	 * @author FangYidong<fangyidong@yahoo.com.cn>
+	 * Разные ошибки, возникающие при парсинге файла
 	 *
 	 */
 	public class ParseException extends Exception {
