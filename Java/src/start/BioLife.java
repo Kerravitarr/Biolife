@@ -66,7 +66,7 @@ public class BioLife extends JFrame {
 					    			+ "Шёл " + df.format(frame.world.step) + " цикл эволюции (" + frame.world.sps.FPS() + " шаг/сек) "
 					    			+ "Живых: " + df.format(frame.world.countLife) + ", "
 					    			+ "плоти: " + df.format(frame.world.countOrganic)
-					    			+ "яда: " + df.format(frame.world.countOrganic) + " капель");
+					    			+ "яда: " + df.format(frame.world.countPoison) + " капель");
 					    	if(frame.dialog.isVisible())
 					    		frame.dialog.repaint();
 					    	frame.world.repaint();
