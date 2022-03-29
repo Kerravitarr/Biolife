@@ -2,8 +2,6 @@ package panels;
 
 import java.awt.BorderLayout;
 import java.awt.event.ComponentEvent;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
