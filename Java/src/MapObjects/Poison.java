@@ -47,7 +47,7 @@ public class Poison extends CellObject {
 		repaint();
 	}
 
-	public Poison(TYPE type, long stepCount, Point point, long newEnergy) {
+	public Poison(TYPE type, long stepCount, Point point, double newEnergy) {
 		super(stepCount, LV_STATUS.LV_POISON);
 		setPos(point);
 		setHealth(newEnergy);
@@ -156,12 +156,12 @@ public class Poison extends CellObject {
 	}
 
 	@Override
-	public long getHealth() {
+	public double getHealth() {
 		return Math.round(energy);
 	}
 
 	@Override
-	void setHealth(long h) {
+	void setHealth(double h) {
 		energy = h;//Math.min(h, MAX_TOXIC);
 		radius = Math.min(1, 0.3 + 0.7 * energy/MAX_TOXIC);
 		nextDouble = Math.min(nextDouble,getTimeToNextDouble());

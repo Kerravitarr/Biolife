@@ -67,13 +67,13 @@ public class Organic extends CellObject {
 
 
 	@Override
-	public long getHealth() {
+	public double getHealth() {
 		return Math.round(energy);
 	}
 
 
 	@Override
-	void setHealth(long h) {
+	void setHealth(double h) {
 		energy = h;
 	}
 
