@@ -9,10 +9,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.SplittableRandom;
 import java.util.Vector;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -64,12 +62,14 @@ public class World extends JPanel {
 		public Boolean call(){
 			activ = isFirst ? first : second;
 			Thread.currentThread().setName("Row: " + activ.startX);
-			/**Перетосовываем, чтобы у всех были равные шансы на ход*/
-			shuffle(activ.points);
-			for (Point point : activ.points) {
-				if(isError)
-					break;
-				CellObject cell = get(point);
+			Point[] points = activ.points;
+			for (int i = points.length - 1; i > 0 && !isError; i--) {
+				Point t = points[i];
+				if(t == null) continue; //Чего мы будем пустые клетки мешать?
+				int j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
+				points[i] = points[j];
+				points[j] = t;
+				CellObject cell = get(points[i]);
 				if(cell != null && cell.canStep(step)) {
 					try {
 						cell.step(step);
@@ -79,14 +79,14 @@ public class World extends JPanel {
 						e.printStackTrace();
 						System.out.println(cell);
 						JOptionPane.showMessageDialog(null,	"<html>Критическая ошибка!!!<br>"
-								+ "Вызвала клетка "+cell+" с координат" + point + "<br>"
+								+ "Вызвала клетка "+cell+" с координат" + points[i] + "<br>"
 								+ "Описание: " + e.getMessage() + "<br>"
 								+ "К сожалению дальнейшее моделирование невозможно. <br>"
 								+ "Вы можете сохранить мир и перезагрузить программу.",	"BioLife", JOptionPane.ERROR_MESSAGE);
 					}
 				}
 			}
-			return true;
+			return null;
 		}
 	}
 	
@@ -315,21 +315,6 @@ public class World extends JPanel {
 			Point from = new Point(x, 0);
 			Point to = new Point(x, Configurations.MAP_CELLS.height - 1);
 			g.drawLine(from.getRx(), from.getRy(), to.getRx(), to.getRy());
-		}
-	}
-
-
-	/**
-	 * Тасует вектор в случайном порядке
-	 * @param array
-	 */
-	private <T> void  shuffle(T[] array) {
-		for (int i = array.length - 1; i > 0; i--) {
-			T t = array[i];
-			if(t == null) continue; //Чего мы будем пустые клетки мешать?
-			int j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
-			array[i] = array[j];
-			array[j] = t;
 		}
 	}
 
