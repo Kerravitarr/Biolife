@@ -232,24 +232,24 @@ public abstract class CellObject {
 	 * @param direction
 	 * @return
 	 */
-	protected boolean moveD(DIRECTION direction) {
-		if(moveA(direction))
-			return true;
-		
-		if(Math.random() >= 0.5) {
-			if(moveA(direction.next()))
-				return true;
-			if(moveA(direction.prev()))
-				return true;
-		} else {
-			if(moveA(direction.prev()))
-				return true;
-			if(moveA(direction.next()))
-				return true;
-		}
-		
-		return false;
-	}
+        protected boolean moveD(DIRECTION direction) {
+            if (moveA(direction))
+                return true;
+
+            if (Configurations.rnd.nextBoolean()) {
+                if (moveA(direction.next()))
+                    return true;
+                if (moveA(direction.prev()))
+                    return true;
+            } else {
+                if (moveA(direction.prev()))
+                    return true;
+                if (moveA(direction.next()))
+                    return true;
+            }
+
+            return false;
+        }
 	
 	/**
 	 * Родственные-ли боты?

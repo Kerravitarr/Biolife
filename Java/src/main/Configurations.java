@@ -2,6 +2,7 @@ package main;
 
 import java.awt.Dimension;
 import java.util.List;
+import java.util.SplittableRandom;
 
 import MapObjects.CellObject;
 import MapObjects.Geyser;
@@ -71,6 +72,8 @@ public class Configurations {
 	public static BotInfo info = null;
 	/**Настройки мира*/
 	public static Settings settings = null;
+	/**ГСЧ для симуляции*/
+	public static SplittableRandom rnd = new SplittableRandom();
 	
 	/**Сохраняет конфигурацию мира*/
 	public static JSON toJSON() {

@@ -1,12 +1,17 @@
 package main;
+import static main.Configurations.geysers;
+
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.SplittableRandom;
 import java.util.Vector;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,7 +42,7 @@ public class World extends JPanel {
 	
 	class AutostartThread extends Thread{AutostartThread(Runnable target){super(target);start();}}
 	
-	class WorldTask implements Runnable{
+	class WorldTask implements Callable<Boolean>{
 		class WorkThread{
 			public WorkThread(Point[] cells) {
 				points = cells;
@@ -52,26 +57,19 @@ public class World extends JPanel {
 		WorkThread first;
 		WorkThread second;
 		WorkThread activ = null;
-		/**Помогает отслеживать, когда все потоки завершатся*/
-		private CountDownLatch mutex;
 		WorldTask(Point [] cellsFirst, Point[] cellsSecond){
 			first = new WorkThread(cellsFirst);
 			second = new WorkThread(cellsSecond);
 		}
-		public WorldTask start(CountDownLatch barrier, boolean isFirst) {
+		public Boolean call(){
 			activ = isFirst ? first : second;
-			this.mutex=barrier;
-			return this;
-		}
-		public void run() {
-			//long time = System.nanoTime();
 			Thread.currentThread().setName("Row: " + activ.startX);
 			/**Перетосовываем, чтобы у всех были равные шансы на ход*/
 			shuffle(activ.points);
 			for (Point point : activ.points) {
 				if(isError)
 					break;
-				CellObject cell= get(point);
+				CellObject cell = get(point);
 				if(cell != null && cell.canStep(step)) {
 					try {
 						cell.step(step);
@@ -88,9 +86,7 @@ public class World extends JPanel {
 					}
 				}
 			}
-			mutex.countDown();
-			//time = System.nanoTime() - time;
-			//System.out.println("Строка " + activ.startX + " выполнялась " + df.format(time) + "нс");
+			return true;
 		}
 	}
 	
@@ -99,7 +95,9 @@ public class World extends JPanel {
 	/**Специальный таймер, который позволяет замедлить симуляцию*/
 	public int timeoutStep = 0;
 	/**Всего точек по процессорам - сколько процессоров, в каждом ряду есть у*/
-	WorldTask [] cellsTask;
+	private List<WorldTask> cellsTask;
+	/**Флаг, показывает какую часть экрана обрабатываем (первую или вторую)*/
+	private boolean isFirst = false;
 	/**Очередь потоков, которая будет обсчитывать мир*/
 	private ExecutorService executor;
 	/**Счётчик ФПС*/
@@ -114,14 +112,13 @@ public class World extends JPanel {
 	public int countPoison = 0;
 	/**Все цвета, которые мы должны отобразить на поле*/
 	Color [] colors;
-	//private static DecimalFormat df = new DecimalFormat( "###,###" );
 	/**
 	 * Create the panel.
 	 */
 	public World() {
 		super();
 		Configurations.world = this;
-		executor = Executors.newWorkStealingPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 4));
+		executor = Executors.newWorkStealingPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)); // Один поток нужен системе для отрисовки
 		
 		worldGenerate();
 		
@@ -170,6 +167,7 @@ public class World extends JPanel {
 			public void run() {
 				Thread.currentThread().setName("World thread");
 				while(true) {
+					Thread.yield();
 					if(isActiv && msTimeout == 0)
 						step();
 					else
@@ -181,9 +179,9 @@ public class World extends JPanel {
 	}
 	
 	public void worldGenerate() {
-		Configurations.geysers = new Geyser[2];
-		Configurations.geysers[0]  = new Geyser(Configurations.MAP_CELLS.width * 10 / 40,Configurations.MAP_CELLS.width * 13 / 40,getWidth(),getHeight(),DIRECTION.DOWN,10);
-		Configurations.geysers[1]  = new Geyser(Configurations.MAP_CELLS.width * 30 / 40,Configurations.MAP_CELLS.width * 33 / 40,getWidth(),getHeight(),DIRECTION.UP,10);
+		geysers = new Geyser[2];
+		geysers[0]  = new Geyser(Configurations.MAP_CELLS.width * 10 / 40,Configurations.MAP_CELLS.width * 13 / 40,getWidth(),getHeight(),DIRECTION.DOWN,10);
+		geysers[1]  = new Geyser(Configurations.MAP_CELLS.width * 30 / 40,Configurations.MAP_CELLS.width * 33 / 40,getWidth(),getHeight(),DIRECTION.UP,10);
 		Configurations.sun = new Sun(getWidth(),getHeight());
 		Point.update();
 
@@ -217,11 +215,11 @@ public class World extends JPanel {
 		}
 		
 		
-		WorldTask[] cellsTask_l = new WorldTask[cellsFirst.length];
-		for (int i = 0; i < cellsTask_l.length; i++)
-			cellsTask_l[i] = new WorldTask(cellsFirst[i],cellsSecond[i]);
+		List<WorldTask> cellsTask_l = new ArrayList<>(cellsFirst.length);
+		for (int i = 0; i < cellsFirst.length; i++)
+			cellsTask_l.add(new WorldTask(cellsFirst[i],cellsSecond[i]));
 		if(cellsAdd.length != 0)
-			cellsTask_l[cellsTask_l.length-1].second.points = Utils.concat(cellsTask_l[cellsTask_l.length-1].second.points, cellsAdd);
+			cellsTask_l.get(cellsTask_l.size()-1).second.points = Utils.concat(cellsTask_l.get(cellsTask_l.size()-1).second.points, cellsAdd);
 		
 		//threads = new Thread[cellsTask_l.length];
 		cellsTask=cellsTask_l;
@@ -233,31 +231,21 @@ public class World extends JPanel {
 
 	public synchronized void step() {
 		try {
-			boolean flag = Math.random() <= 0.5;
-			CountDownLatch barrier = new CountDownLatch(cellsTask.length);
-			for (int i = cellsTask.length - 1; i >= 0; i--)
-				executor.execute(cellsTask[i].start(barrier,flag));
-			barrier.await();
-			barrier = new CountDownLatch(cellsTask.length);
-			flag = !flag;
-			for (int i = cellsTask.length - 1; i >= 0; i--)
-				executor.execute(cellsTask[i].start(barrier,flag));
-			barrier.await();
-		} catch (Exception e) {
+			isFirst = Configurations.rnd.nextBoolean();
+			executor.invokeAll(cellsTask);
+			isFirst = !isFirst;
+			executor.invokeAll(cellsTask);
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 		Configurations.sun.step(step);
 		Configurations.tree.step();
-		
-		if(step % 10_000 == 0) {
-			executor.shutdownNow();
-			executor = Executors.newWorkStealingPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 4));
-		}
 
 		step++;
 		sps.interapt();
 	}
 
+        @Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		
@@ -337,8 +325,9 @@ public class World extends JPanel {
 	 */
 	private <T> void  shuffle(T[] array) {
 		for (int i = array.length - 1; i > 0; i--) {
-			int j = (int) Math.floor(Math.random() * (i + 1)); // случайный индекс от 0 до i
 			T t = array[i];
+			if(t == null) continue; //Чего мы будем пустые клетки мешать?
+			int j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
 			array[i] = array[j];
 			array[j] = t;
 		}
