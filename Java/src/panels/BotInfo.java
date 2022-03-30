@@ -552,7 +552,7 @@ public class BotInfo extends JPanel {
 			DNA dna = new_name.getDna();
 			model.setSize(dna.interrupts.length);
 			for(int i = 0 ; i < dna.interrupts.length ; i++)
-				model.add(i,OBJECT.get(i) + " - " + String.valueOf(dna.interrupts[i] % dna.size));
+				model.add(i,OBJECT.get(i) + " - " + String.valueOf(dna.interrupts[i]));
 			list_inter.setModel(model);
 		} else if (getCell() instanceof Poison){
 			panel_variant.setVisible(true);

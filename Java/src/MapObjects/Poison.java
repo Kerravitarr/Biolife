@@ -66,7 +66,7 @@ public class Poison extends CellObject {
 					energy /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
 					if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
 					Point point = fromVektorA(dir);
-					Poison newPoison = new Poison(type,stepCount,point,getHealth());
+					Poison newPoison = new Poison(type,getStepCount(),point,getHealth());
 		            Configurations.world.add(newPoison);//Сделали новую каплю
 				}break;
 				case ORGANIC :
@@ -80,7 +80,7 @@ public class Poison extends CellObject {
 					CellObject cell = Configurations.world.get(point);
 					if(cell.toxinDamage(type,(int) (getHealth()))) {
 						cell.remove_NE();
-						Poison newPoison = new Poison(type,stepCount,point,Math.abs(cell.getHealth()));
+						Poison newPoison = new Poison(type,getStepCount(),point,Math.abs(cell.getHealth()));
 			            Configurations.world.add(newPoison);//Сделали новую каплю
 					} // А иначе мы не создаём просто нашу копию, нас-же переварили
 				}break;
@@ -95,7 +95,7 @@ public class Poison extends CellObject {
 		return (int) Math.round(getAge() + Configurations.POISON_STREAM * (2 - energy / MAX_TOXIC));
 	}
 
-	protected boolean moveA(DIRECTION direction) {
+	public boolean moveA(DIRECTION direction) {
 		switch (seeA(direction)) {
 			case WALL :
 			case CLEAN : 
@@ -128,7 +128,7 @@ public class Poison extends CellObject {
 		}
 	}
 	
-	protected boolean toxinDamage(TYPE type, int damag) {
+	public boolean toxinDamage(TYPE type, int damag) {
 		if (this.type == type) {
 			addHealth(damag);
 		} else {

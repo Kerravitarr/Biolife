@@ -28,14 +28,14 @@ public abstract class CellObject {
 		POISON(5,true,true,false),NOT_POISON(6,true,true,false),
 		BOT(7,false,false,true);
 		public static final OBJECT[] myEnumValues = OBJECT.values();
-		/**На сколько нужно сдвинуть счётчик команда дополнительно, типо развилка*/
-		int nextCMD;
+		/**На сколько нужно сдвинуть счётчик команда дополнительно, типо развилка. Это-же - номер прерывания*/
+		public final int nextCMD;
 		//Является это место пустым
-		boolean isEmptyPlase;
+		public final boolean isEmptyPlase;
 		//Является это место ядовитым
-		boolean isPosion;
+		public final boolean isPosion;
 		//Является это место ботом
-		boolean isBot;
+		public final boolean isBot;
 		OBJECT(int nextCMD) {this(nextCMD,false,false,false);}
 		OBJECT(int nextCMD, boolean isEmptyPlase, boolean isPosion, boolean isBot) {
 			this.nextCMD=nextCMD;
@@ -53,14 +53,14 @@ public abstract class CellObject {
 		}
 	};
 	
-	protected class CellObjectRemoveException extends RuntimeException {
+	public class CellObjectRemoveException extends RuntimeException {
 		CellObjectRemoveException(){
 			super("Удалили клетку " + CellObject.this);
 		}
 	}
 	
     /**Цвет бота зависит от того, что он делает*/
-	protected Color color_DO;
+	public Color color_DO;
     /**Позиция органики*/
 	private Point pos = new Point(0,0);
     //Счётчик, показывает ходил бот в этот ход или нет
@@ -89,7 +89,7 @@ public abstract class CellObject {
 	 * @return
 	 */
 	public final boolean canStep(long step) {
-		return stepCount != step;
+		return getStepCount() != step;
 	}
 	/**
 	 * Сделать шаг
@@ -146,7 +146,7 @@ public abstract class CellObject {
 		JSON make = new JSON();
 		make.add("pos", getPos().toJSON());
 		make.add("alive",alive.ordinal());
-		make.add("stepCount",stepCount);
+		make.add("stepCount",getStepCount());
 		make.add("years",years);
 		return toJSON(make);
 	}
@@ -199,7 +199,7 @@ public abstract class CellObject {
 	 * @param direction
 	 * @return
 	 */
-	protected boolean moveA(DIRECTION direction) {
+	public boolean moveA(DIRECTION direction) {
 		switch (seeA(direction)) {
 			case FRIEND:
 			case ENEMY:
@@ -232,24 +232,24 @@ public abstract class CellObject {
 	 * @param direction
 	 * @return
 	 */
-        protected boolean moveD(DIRECTION direction) {
-            if (moveA(direction))
-                return true;
+	public boolean moveD(DIRECTION direction) {
+		if (moveA(direction))
+			return true;
 
-            if (Configurations.rnd.nextBoolean()) {
-                if (moveA(direction.next()))
-                    return true;
-                if (moveA(direction.prev()))
-                    return true;
-            } else {
-                if (moveA(direction.prev()))
-                    return true;
-                if (moveA(direction.next()))
-                    return true;
-            }
+		if (Configurations.rnd.nextBoolean()) {
+			if (moveA(direction.next()))
+				return true;
+			if (moveA(direction.prev()))
+				return true;
+		} else {
+			if (moveA(direction.prev()))
+				return true;
+			if (moveA(direction.next()))
+				return true;
+		}
 
-            return false;
-        }
+		return false;
+	}
 	
 	/**
 	 * Родственные-ли боты?
@@ -334,5 +334,8 @@ public abstract class CellObject {
 		return "Cell " + Integer.toHexString(hashCode()) + " in " + pos + " type " + alive;
 	}
 	/**Что с нами сделал токсин. true, если он нас убьёт*/
-	protected abstract boolean toxinDamage(TYPE type, int damag);
+	public abstract boolean toxinDamage(TYPE type, int damag);
+	public long getStepCount() {
+		return stepCount;
+	}
 }

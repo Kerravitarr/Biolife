@@ -9,9 +9,8 @@ public class Point{
 		
 		private static final DIRECTION[] myEnumValues = DIRECTION.values();
 		public static DIRECTION toEnum(int direction) {
-			while (direction >= myEnumValues.length)
-				direction -= myEnumValues.length;
-			while (direction < 0)
+			direction = direction % myEnumValues.length;
+			if (direction < 0)
 				direction += myEnumValues.length;
 			return myEnumValues[direction];
 		}
@@ -27,6 +26,12 @@ public class Point{
 		DIRECTION(int x, int y){
 			addX = x;
 			addY = y;
+		}
+		public DIRECTION next(DIRECTION direction) {
+			return next(toNum(direction));
+		}
+		public DIRECTION next(int direction) {
+			return toEnum(toNum(this)+direction);
 		}
 		public DIRECTION next() {
 			return toEnum(toNum(this)+1);
