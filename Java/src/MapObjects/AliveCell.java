@@ -28,15 +28,15 @@ public class AliveCell extends CellObject{
 	/**Сколько вообще может быть команд*/
 	public static final int COUNT_COMAND = 11*8; // 8 - DIRECTION.size()
 	/**Начальный уровень здоровья клеток*/
-	private static final int StartHP = 5;
+	private static final int START_HP = 5;
 	/**Начальный уровень минералов клеток*/
-	private static final int StartMP = 5;
+	private static final int START_MP = 5;
 	/**Сколько нужно жизней для размножения, по умолчанию*/
-	public static final int maxHP = 999;
+	public static final int MAX_HP = 999;
 	/**Сколько можно сохранить минералов*/
 	public static final int MAX_MP = 999;
 	/**На сколько организм тяготеет к фотосинтезу (0-4)*/
-	private static final double defFotosin = 2;
+	private static final double DEF_PHOTOSIN = 2;
 	/**Столько энергии тратит бот на размножение*/
 	private static final long HP_FOR_DOUBLE = 150;
 	/**Столько ХП забирается на укрепление связей ДНК*/
@@ -228,9 +228,9 @@ public class AliveCell extends CellObject{
 	/**Мозг*/
 	private DNA dna;
     /**Жизни*/
-    private double health = StartHP;
+    private double health = START_HP;
     //Минералы
-    private long mineral = StartMP;
+    private long mineral = START_MP;
     /**Направление движения*/
     public Point.DIRECTION direction = Point.DIRECTION.UP;
     //Защитный покров ДНК, он мешает изменить Нашу ДНК
@@ -250,7 +250,7 @@ public class AliveCell extends CellObject{
     /**Фенотип бота*/
     public Color phenotype = new Color(128,128,128);
     //Показывает на сколько организм тяготеет к фотосинтезу
-    public double photosynthesisEffect = defFotosin;
+    public double photosynthesisEffect = DEF_PHOTOSIN;
     /**Дерево эволюции*/
     public Node evolutionNode = null;
     
@@ -360,7 +360,7 @@ public class AliveCell extends CellObject{
         if (this.getHealth() < 1) { //Очень жаль, но мы того - всё
             this.bot2Organic();
             return;
-        }else if (this.getHealth() > maxHP) { //Или наоборот, мы ещё как того!
+        }else if (this.getHealth() > MAX_HP) { //Или наоборот, мы ещё как того!
             this.botDouble();
         }
     	if(friends.size() != 0) { // Колония безвозмездно делится всем, что имеет
@@ -519,7 +519,7 @@ public class AliveCell extends CellObject{
 		}return false;
 		// ................... какое моё здоровье ...............................
 		case block3 + 3: {
-			if (health < dna.param(0, maxHP))
+			if (health < dna.param(0, MAX_HP))
 				dna.nextFromAdr(2);
 			else
 				dna.nextFromAdr(3);
@@ -560,7 +560,7 @@ public class AliveCell extends CellObject{
 			if (see.isBot) {
 				Point point = fromVektorA(direction);
 				AliveCell cell = (AliveCell) Configurations.world.get(point);
-				if (cell.health < dna.param(0, maxHP))
+				if (cell.health < dna.param(0, MAX_HP))
 					dna.nextFromAdr(2);
 				else
 					dna.nextFromAdr(3);
@@ -835,6 +835,7 @@ public class AliveCell extends CellObject{
 	/**
 	 * Убирает бота с карты и проводит все необходимые процедуры при этом
 	 */
+    @Override
     public void destroy() {
 		evolutionNode.remove();
 		synchronized (friends) {
@@ -1533,13 +1534,21 @@ public class AliveCell extends CellObject{
 		int r = getPos().getRr();
 		int rx = getPos().getRx();
 		int ry = getPos().getRy();
-		//if(friends.size() == 0)
+		if(friends.size() == 0)
 			Utils.fillCircle(g,rx,ry,r);
-		//else
-		//	Utils.fillSquare(g,rx,ry,r);
-		if(r > 5 && friends.size() > 0) {
+		else if(r < 5) 
+			Utils.fillSquare(g,rx,ry,r);
+		else {
+			Utils.fillCircle(g,rx,ry,r);
 			synchronized (friends) {
 				try {
+					//Приходится рисовать в два этапа, иначе получается ужас страшный.
+					//Этап первый - основные связи
+					
+				Graphics2D g2 = (Graphics2D) g;
+			    Stroke oldStr = g2.getStroke();
+				g.setColor(color_DO);
+				g2.setStroke(new BasicStroke(r/2));
 				for(AliveCell i : friends.values()) {
 					int rxc = i.getPos().getRx();
 					if(getPos().getX() == 0 && i.getPos().getX() == Configurations.MAP_CELLS.width -1)
@@ -1550,22 +1559,22 @@ public class AliveCell extends CellObject{
 					
 					int delx = rxc - rx;
 					int dely = ryc - ry;
-					
-					//Рисуем толстую линию, физическую связь
-					Graphics2D g2 = (Graphics2D) g;
-				    Stroke oldStr = g2.getStroke();
-					g2.setStroke(new BasicStroke(r/2));
-					g.setColor(color_DO);
 					g.drawLine(rx,ry, rx+delx/3,ry+dely/3);
-
+				}
+				g2.setStroke(oldStr);
+				g.setColor(Color.BLACK);
+				//Этап второй, всё тоже самое, но теперь лишь тонкие линии
+				for(AliveCell i : friends.values()) {
+					int rxc = i.getPos().getRx();
+					if(getPos().getX() == 0 && i.getPos().getX() == Configurations.MAP_CELLS.width -1)
+						rxc = rx - r;
+					else if(i.getPos().getX() == 0 && getPos().getX() == Configurations.MAP_CELLS.width -1)
+							rxc = rx + r;
+					int ryc = i.getPos().getRy();
 					//А теперь рисуем тонкую линию, чтобы видно было как они выглядят
-					g2.setStroke(oldStr);
-					g.setColor(Color.BLACK);
-					g.drawLine(rx,ry, rx+delx,ry+dely);
+					g.drawLine(rx,ry, rxc,ryc);
 				}
-				}catch (java.util.ConcurrentModificationException e) {
-					// Я хз от почему, но выскакивает!
-				}
+				}catch (java.util.ConcurrentModificationException e) {/* Выскакивает, если кто-то из наших друзей погиб*/	}
 			}
 		}
 		if(r > 10) {
@@ -1637,7 +1646,7 @@ public class AliveCell extends CellObject{
 			case MINERALS -> color_DO = new Color(0,0,(int) Utils.betwin(0, (255.0*mineral/MAX_MP),255),evolutionNode.getAlpha());
 			case GENER -> color_DO = Utils.getHSBColor(Utils.betwin(0, 0.5*Generation/Legend.Graph.getMaxGen(),1), 1, 1,evolutionNode.getAlpha()/255.0);
 			case YEAR -> color_DO = Utils.getHSBColor(Math.max(0, (1.0*getAge()/Legend.Graph.getMaxAge())), 1, 1,evolutionNode.getAlpha()/255.0);
-			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,health)/maxHP)),0,0,evolutionNode.getAlpha());
+			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,health)/MAX_HP)),0,0,evolutionNode.getAlpha());
 			case PHEN -> color_DO = new Color(phenotype.getRed(), phenotype.getGreen(), phenotype.getBlue(),evolutionNode.getAlpha());
 			case DOING -> color_DO = new Color(color_DO.getRed(), color_DO.getGreen(), color_DO.getBlue(),evolutionNode.getAlpha());
 		}

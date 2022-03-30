@@ -110,13 +110,13 @@ public class BotInfo extends JPanel {
 		CMD3_0("O_O O","Смотреть О",RELATIVELY,SEE),
 		CMD3_1("O_O А","Смотреть А",ABSOLUTELY,SEE),
 		CMD3_2("∸","Какая высота",new ComandOpt(Configurations.MAP_CELLS.height),new NextCmd(2,2)),
-		CMD3_3("♡∸","Сколько ХП",new ComandOpt(AliveCell.maxHP),new NextCmd(2,2)),
+		CMD3_3("♡∸","Сколько ХП",new ComandOpt(AliveCell.MAX_HP),new NextCmd(2,2)),
 		CMD3_4("♢∸","Сколько МП",new ComandOpt(AliveCell.MAX_MP),new NextCmd(2,2)),
 		CMD3_5("∅","Я окружён?",new NextCmd(1,2)),
 		CMD3_6("♡🠑","Много солнца?",new NextCmd(1,2)),
 		CMD3_7("♢🠑","Есть минералы?",new NextCmd(1,2)),
-		CMD3_8("O_O ♡∸","ХП у него ск?",new ComandOpt(AliveCell.maxHP),new NextCmd(3,2)),
-		CMD3_9("O_O ♢∸","ХП у него ск?",new ComandOpt(AliveCell.maxHP),new NextCmd(3,2)),
+		CMD3_8("O_O ♡∸","ХП у него ск?",new ComandOpt(AliveCell.MAX_HP),new NextCmd(3,2)),
+		CMD3_9("O_O ♢∸","ХП у него ск?",new ComandOpt(AliveCell.MAX_HP),new NextCmd(3,2)),
 		CMD3_10("⋇","Я многокл?",new NextCmd(1,2)),
 		CMD3_11("Я стар","Сколько лет?",new ComandOpt(),new NextCmd(2,2)),
 		CMD3_12("ДНК ⊡","ДНК защищена?",new ComandOpt(AliveCell.MAX_DNA_WALL),new NextCmd(2,2)),
@@ -273,6 +273,7 @@ public class BotInfo extends JPanel {
 	
 	class WorkTask implements Runnable{
 		public void run() {
+                    Thread.currentThread().setName("BotInfo");
 			while(true) {
 				if(isVisible() && getCell() != null && !getCell().aliveStatus(AliveCell.LV_STATUS.GHOST)) {
 					setDinamicHaracteristiks();

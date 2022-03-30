@@ -1,5 +1,7 @@
 package panels;
 
+import static main.World.isActiv;
+
 import java.awt.Adjustable;
 import java.awt.BorderLayout;
 import java.awt.event.AdjustmentEvent;
@@ -222,7 +224,7 @@ public class Settings extends JPanel{
 	}
 	
 	public void updateScrols() {
-		if(World.isActiv)
+		if(isActiv)
 			play.setText("Пауза");
 		else
 			play.setText("Пуск");
@@ -295,9 +297,9 @@ public class Settings extends JPanel{
 		});
 		play.addActionListener(e->{
 			if(play.getText().equals("Пауза")) {
-				World.isActiv = false;
+				isActiv = false;
 			} else {
-				World.isActiv = true;
+				isActiv = true;
 			}
 			updateScrols();
 		});
@@ -306,7 +308,7 @@ public class Settings extends JPanel{
 	}
 
 	public void load() {
-		World.isActiv = false;
+		isActiv = false;
 		String pathToRoot = System.getProperty("user.dir");
 		JFileChooser fileopen = new JFileChooser(pathToRoot);
 		fileopen.setFileFilter(new FileNameExtensionFilter("JSON", "json"));
@@ -322,8 +324,8 @@ public class Settings extends JPanel{
 	}
 	
 	public void save() {
-		boolean oldStateWorld = World.isActiv;				
-		World.isActiv = false;
+		boolean oldStateWorld = isActiv;				
+		isActiv = false;
 		Date date = new Date();
 		SimpleDateFormat formater = new SimpleDateFormat("yyyy_MM_dd HHч mmм ssс");
 		String name = "World_" + formater.format(date) + ".json";
@@ -335,7 +337,7 @@ public class Settings extends JPanel{
 			e1.printStackTrace();
 			JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
 		}
-		World.isActiv = oldStateWorld;
+		isActiv = oldStateWorld;
 	}
 
 	public void setListener(JComponent scrollPane) {

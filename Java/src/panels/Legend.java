@@ -69,7 +69,7 @@ public class Legend extends JPanel{
 						case HP ->{
 							values = new Value[10];
 							for (int i = 0; i < values.length; i++) {
-								values[i] = new Value(1.0 * (i+1) / values.length,1.0/values.length,(i*AliveCell.maxHP/values.length)+"",new Color((int) (255.0*i/values.length),0,0));
+								values[i] = new Value(1.0 * (i+1) / values.length,1.0/values.length,(i*AliveCell.MAX_HP/values.length)+"",new Color((int) (255.0*i/values.length),0,0));
 							}
 						}
 						case YEAR ->{

@@ -18,7 +18,7 @@ public class Organic extends CellObject {
 	public Organic(AliveCell cell) {
 		super(cell.stepCount, LV_STATUS.LV_ORGANIC);
 		setPos(cell.getPos());
-		energy = Math.abs(cell.getHealth()) + AliveCell.maxHP/10.0 + cell.getMineral()/10.0; //Превращается в органику всё, что только может
+		energy = Math.abs(cell.getHealth()) + AliveCell.MAX_HP/10.0 + cell.getMineral()/10.0; //Превращается в органику всё, что только может
 	    super.color_DO = color_DO;
 	}
 	/**
