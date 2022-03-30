@@ -27,7 +27,7 @@ public class PullA extends CommandDo {
 			case ENEMY:
 			case FRIEND:{
 				cell.addHealth(-HP_COST); // Но немного потратились на это
-				Point point = fromVektor(cell,direction);
+				Point point = nextPoint(cell,direction);
 				CellObject target = Configurations.world.get(point);
 				try {
 					target.moveD(direction); // Вот мы и толкнули

@@ -21,7 +21,7 @@ public class DNABreakNow extends CommandDo {
 			case ENEMY:
 			case FRIEND:
 				cell.addHealth(-HP_COST); // бот теряет на этом 2 энергии в независимости от результата
-				Point point = fromVektor(cell,cell.direction);
+				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				if (bot.getDNA_wall() > 0) {
 					bot.setDNA_wall(bot.getDNA_wall()-1);

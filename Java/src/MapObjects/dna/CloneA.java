@@ -19,13 +19,13 @@ public class CloneA extends Birth {
 		var see = cell.seeA(direction);
 		switch (see) {
 			case CLEAN:
-				Point point = fromVektor(cell,direction);
+				Point point = nextPoint(cell,direction);
 		        birth(cell,point,childCMD);
 		        cell.setFriend((AliveCell) Configurations.world.get(point));
 			break;
 			case NOT_POISON:
 			case POISON:
-				point = fromVektor(cell,direction);
+				point = nextPoint(cell,direction);
 				if(birth(cell,point,childCMD))
 					cell.setFriend((AliveCell) Configurations.world.get(point));
             break;

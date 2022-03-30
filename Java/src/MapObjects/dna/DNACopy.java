@@ -21,7 +21,7 @@ public class DNACopy extends CommandDNA {
 			case ENEMY:
 			case FRIEND:
 				cell.addHealth(-HP_COST); // бот теряет на этом 2 энергии в независимости от результата
-				Point point = fromVektor(cell,cell.direction);
+				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				var bot_dna = bot.getDna();
 				var pc = bot_dna.getIndex();

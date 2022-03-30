@@ -22,7 +22,7 @@ public class BiteA extends CommandDo {
 		var see = cell.seeA(direction);
 		switch (see) {
 		case ORGANIC: {
-			Point point = fromVektor(cell,direction);
+			Point point = nextPoint(cell,direction);
 			CellObject target = Configurations.world.get(point);
 			cell.addHealth(target.getHealth()/4);    //здоровье увеличилось
             cell.goRed((int)target.getHealth()/4);           // бот покраснел
@@ -31,7 +31,7 @@ public class BiteA extends CommandDo {
 		case ENEMY:
 		case FRIEND:{
 			//--------- дошли до сюда, значит впереди живой бот -------------------
-			Point point = fromVektor(cell,direction);
+			Point point = nextPoint(cell,direction);
 			AliveCell target = (AliveCell) Configurations.world.get(point);
 			
 	        var min0 = cell.getMineral();  // определим количество минералов у нас

@@ -19,7 +19,7 @@ public class CareA extends CommandDo {
 		switch (see) {
 			case ENEMY:
 			case FRIEND:{
-				Point point = fromVektor(cell,direction);
+				Point point = nextPoint(cell,direction);
 				AliveCell target = (AliveCell) Configurations.world.get(point);
 				var hlt0 = cell.getHealth();         // определим количество энергии и минералов
 				var hlt1 = target.getHealth();  // у бота и его соседа

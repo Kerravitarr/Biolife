@@ -9,8 +9,8 @@ import MapObjects.AliveCell;
  */
 public abstract class CommandDo extends CommandDNA {
 
-	protected CommandDo() {this(0);};
-	protected CommandDo(int countParams) {super(countParams);}
+	protected CommandDo(String shotName,String longName) {this(0,shotName,longName);};
+	protected CommandDo(int countParams,String shotName,String longName) {super(countParams,0,shotName,longName);}
 	@Override
 	protected int perform(AliveCell cell) {
 		doing(cell);

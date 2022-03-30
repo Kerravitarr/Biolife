@@ -19,7 +19,7 @@ public class GiveA extends CommandDo {
 		switch (see) {
 			case ENEMY:
 			case FRIEND:{
-				Point point = fromVektor(cell,direction);
+				Point point = nextPoint(cell,direction);
 				AliveCell target = (AliveCell) Configurations.world.get(point);
 				var hlt0 = cell.getHealth();  // бот отдает четверть своей энергии
 				var hlt = hlt0 / 4;

@@ -22,7 +22,7 @@ public class DNAInsert extends CommandDNA {
 			case ENEMY:
 			case FRIEND:
 				cell.addHealth(-HP_COST);
-				Point point = fromVektor(cell,cell.direction);
+				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				if (bot.getDNA_wall() > 0) {
 					bot.setDNA_wall(bot.getDNA_wall()-1);

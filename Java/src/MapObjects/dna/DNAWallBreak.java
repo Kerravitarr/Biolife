@@ -18,7 +18,7 @@ public class DNAWallBreak extends CommandDo {
 			case ENEMY:
 			case FRIEND:{
 				cell.addHealth(-HP_COST); // На это нужно усилие
-				Point point = fromVektor(cell,cell.direction);
+				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				bot.setDNA_wall(Math.max(0, bot.getDNA_wall() - 2));
 			}break;

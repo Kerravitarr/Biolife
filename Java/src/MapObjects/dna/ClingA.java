@@ -23,7 +23,7 @@ public class ClingA extends CommandDo {
 			case ENEMY:
 			case FRIEND:{
 				//--------- дошли до сюда, значит впереди живой бот -------------------
-				Point point = fromVektor(cell,direction);
+				Point point = nextPoint(cell,direction);
 			    cell.setFriend((AliveCell) Configurations.world.get(point));
 			}break;
 			case ORGANIC:
