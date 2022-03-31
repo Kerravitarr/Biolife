@@ -60,12 +60,12 @@ public class Poison extends CellObject {
 	void step() {
 		if ((getAge()) >= nextDouble) { // Вязкость яда
 			DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
-			switch (seeA(dir)) {
+			switch (see(dir)) {
 				case WALL: return; //Ну что мы можем сделать со стеной? О_О
 				case CLEAN:{
 					energy /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
 					if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
-					Point point = fromVektorA(dir);
+					Point point = getPos().next(dir);
 					Poison newPoison = new Poison(type,getStepCount(),point,getHealth());
 		            Configurations.world.add(newPoison);//Сделали новую каплю
 				}break;
@@ -76,7 +76,7 @@ public class Poison extends CellObject {
 				case NOT_POISON:{
 					energy /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
 					if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
-					Point point = fromVektorA(dir);
+					Point point = getPos().next(dir);
 					CellObject cell = Configurations.world.get(point);
 					if(cell.toxinDamage(type,(int) (getHealth()))) {
 						cell.remove_NE();
@@ -85,7 +85,7 @@ public class Poison extends CellObject {
 					} // А иначе мы не создаём просто нашу копию, нас-же переварили
 				}break;
 				default:
-				throw new IllegalArgumentException("Unexpected value: " + seeA(dir));
+				throw new IllegalArgumentException("Unexpected value: " + see(dir));
 			}
 			nextDouble = getTimeToNextDouble();
 		}
@@ -96,13 +96,13 @@ public class Poison extends CellObject {
 	}
 
 	public boolean moveA(DIRECTION direction) {
-		switch (seeA(direction)) {
+		switch (see(direction)) {
 			case WALL :
 			case CLEAN : 
 				return super.moveA(direction);
 			case POISON :
 			case NOT_POISON :{
-				Point point = fromVektorA(direction);
+				Point point = getPos().next(direction);
 				Poison cell = (Poison) Configurations.world.get(point);
 				if(cell.toxinDamage(type,(int) getHealth())) {
 					cell.type = type;
@@ -114,7 +114,7 @@ public class Poison extends CellObject {
 			case ORGANIC :
 			case ENEMY :
 			case FRIEND :{
-				Point point = fromVektorA(direction);
+				Point point = getPos().next(direction);
 				CellObject cell = Configurations.world.get(point);
 				if(cell.toxinDamage(type,(int) getHealth())) {
 					addHealth(Math.abs(cell.getHealth())); // Вот мы и покушали свежатинкой
@@ -124,7 +124,7 @@ public class Poison extends CellObject {
 				}
 			}return true;
 			default :
-				throw new IllegalArgumentException("Unexpected value: " + seeA(direction));
+				throw new IllegalArgumentException("Unexpected value: " + see(direction));
 		}
 	}
 	
