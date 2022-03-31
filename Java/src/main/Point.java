@@ -27,17 +27,25 @@ public class Point{
 			addX = x;
 			addY = y;
 		}
+		/**Поворачивает вектор на direction*/
 		public DIRECTION next(DIRECTION direction) {
 			return next(toNum(direction));
 		}
+		/**Поворачивает вектор на direction*/
 		public DIRECTION next(int direction) {
 			return toEnum(toNum(this)+direction);
 		}
+		/**Поворачивает вектор на чуть-чуть по часовой стрелки*/
 		public DIRECTION next() {
 			return toEnum(toNum(this)+1);
 		}
+		/**Поворачивает вектор на чуть-чуть против часовой стрелки*/
 		public DIRECTION prev() {
 			return toEnum(toNum(this)-1);
+		}
+		/**Возвращает противположный вектор к текущему*/
+		public DIRECTION inversion() {
+			return next(size()/2);
 		}
 	};
 	private static double pixelXDel;
