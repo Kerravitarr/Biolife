@@ -14,6 +14,7 @@ import MapObjects.dna.Birth;
 import MapObjects.dna.CommandList;
 import MapObjects.dna.CreatePoisonA;
 import MapObjects.dna.DNA;
+import MapObjects.dna.Destroy;
 import Utils.JSON;
 import Utils.Utils;
 import main.Configurations;
@@ -22,7 +23,7 @@ import main.EvolutionTree.Node;
 import main.Point;
 import main.Point.DIRECTION;
 import panels.Legend;
-public class AliveCell extends CellObject{
+public class AliveCell extends CellObject{	
 	//КОНСТАНТЫ
 	/**Размер мозга изначальный*/
 	public static final int DEF_MINDE_SIZE = 64;
@@ -147,6 +148,9 @@ public class AliveCell extends CellObject{
      * @param step
      */
 	public void step() {
+		//FIXIT 
+		if(aliveStatus(LV_STATUS.GHOST))
+			throw new RuntimeException("");
 		for (int cyc = 0; (cyc < 15); cyc++)
 			if(!dna.get().execute(this))
 				break;
@@ -167,12 +171,8 @@ public class AliveCell extends CellObject{
 		} else {
 	        addHealth(- HP_PER_STEP); //Пожили - устали
 		}
-        if (this.getHealth() < 1) { //Очень жаль, но мы того - всё
-            this.bot2Organic();
-            return;
-        }else if (this.getHealth() > MAX_HP) { //Или наоборот, мы ещё как того!
-            Birth.birth(this);
-        }
+        if (this.getHealth() > MAX_HP)
+        	Birth.birth(this);
     	if(getFriends().size() != 0) { // Колония безвозмездно делится всем, что имеет
     		double allHp = getHealth();
     		long allMin = getMineral();
@@ -246,10 +246,10 @@ public class AliveCell extends CellObject{
 			}
 		} else {
 			//Многоклеточный. Тут логика куда интереснее!
-			OBJECT see = super.seeA(direction);
+			OBJECT see = super.see(direction);
 			if(see.isEmptyPlase){
 				//Туда двинуться можно, уже хорошо.
-				Point point = fromVektorA(direction);
+				Point point = getPos().next(direction);
 
 				/**
 				 * Правило!
@@ -321,7 +321,7 @@ public class AliveCell extends CellObject{
             }break;
             case 10:{ //Мутирует вектор прерываний
                 int ma = Utils.random(0, dna.interrupts.length-1); //Индекс в векторе
-                int mc = Utils.random(0, dna.size); //Его значение
+                int mc = Utils.random(0, dna.size-1); //Его значение
                 dna.interrupts[ma] = mc;
             }break;
         }
@@ -331,7 +331,7 @@ public class AliveCell extends CellObject{
 	/**
 	 * Превращает бота в органику
 	 */
-	private void bot2Organic() {
+	public void bot2Organic() {
 		try {
 			destroy(); // Удаляем себя
 		} catch (CellObjectRemoveException e) {
@@ -346,10 +346,10 @@ public class AliveCell extends CellObject{
 	 * @param {*} direction направление, DIRECTION
 	 * @returns параметры OBJECT
 	 */
-	public OBJECT seeA(DIRECTION direction) {
-		OBJECT see = super.seeA(direction);
+	public OBJECT see(DIRECTION direction) {
+		OBJECT see = super.see(direction);
 		if(see == OBJECT.POISON){
-			Point point = fromVektorA(direction);
+			Point point = getPos().next(direction);
 			Poison cell = (Poison) Configurations.world.get(point);
 			if(cell.type == getPosionType())
 				return OBJECT.NOT_POISON;
@@ -395,22 +395,16 @@ public class AliveCell extends CellObject{
 		}
 	}
 
-
-	/**
-	 * Удар токсином по клетке
-	 */
 	public boolean toxinDamage(TYPE type,int damag) {
 		if(type == getPosionType() && getPosionPower() >= damag) {
-			if(getPosionPower() >= damag)
+			if(getPosionPower() >= damag) {
 				poisonPower = getPosionPower() + 1;
-			else {
-				damag = (int) Math.min(damag, getHealth()*2); // Мы не можем принять больше яда, чем в нас хп
-				addHealth(-damag);
+				return false;
+			}else if(damag < getHealth() * 2) {
+				setHealth(getHealth()*2 - damag);
 			}
-		} else {
-			setHealth(-getHealth()); // Мы не можем жить в этом яду!
 		}
-		return getHealth() <= 0;
+		return true;
 	}
 	/**
 	 *  * Ищет свободные ячейки вокруг бота.
@@ -445,7 +439,7 @@ public class AliveCell extends CellObject{
 	 * @returns Координаты следующей точки в этом направлении
 	 */
 	public Point fromVektorR(DIRECTION direction) {
-		return fromVektorA(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
+		return getPos().next(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
 	}
 
 	/**
@@ -595,7 +589,8 @@ public class AliveCell extends CellObject{
 	
 	public void setHealth(double health) {
 		this.health=health;
-		if(health < 0) health = 0;
+		if(this.health < 0)
+			bot2Organic();
 		if((Legend.Graph.getMode() == Legend.Graph.MODE.HP))
 			repaint();
 	}
@@ -729,7 +724,7 @@ public class AliveCell extends CellObject{
 	}
 
 	public void setBuoyancy(int buoyancy) {
-		this.buoyancy = buoyancy;
+		this.buoyancy = Utils.betwin(-10, buoyancy, 10);
 	}
 
 	public Map<Point,AliveCell> getFriends() {

@@ -168,22 +168,13 @@ public abstract class CellObject {
 	public void addHealth(double h) {
 		setHealth(getHealth() + h);
 	}
-
-	/**
-	 * Отдаёт следующие координаты относительно глобальных координат
-	 * @param direction
-	 * @return
-	 */
-	protected Point fromVektorA(DIRECTION direction) {
-	    return getPos().next(direction);
-	}
 	/**
 	 * Подглядывает за бота в абсолютном направлении
 	 * @param direction направление, DIRECTION
 	 * @return параметры OBJECT
 	 */
-	protected OBJECT seeA(DIRECTION direction) {
-	    Point point = fromVektorA(direction);
+	protected OBJECT see(DIRECTION direction) {
+	    Point point = getPos().next(direction);
 	    OBJECT obj = Configurations.world.test(point);
 	    if (obj.isBot) {
 	    	if (isRelative(this, Configurations.world.get(point)))
@@ -200,37 +191,36 @@ public abstract class CellObject {
 	 * @return
 	 */
 	public boolean moveA(DIRECTION direction) {
-		switch (seeA(direction)) {
+		switch (see(direction)) {
 			case FRIEND:
 			case ENEMY:
 			case ORGANIC:
 			case WALL : return false;
 			case CLEAN : {
-				Point point = fromVektorA(direction);
+				Point point = getPos().next(direction);
 				Configurations.world.move(this,point);
 			} return true;
 			case POISON:
 			case NOT_POISON:{
-				Point point = fromVektorA(direction);
+				Point point = getPos().next(direction);
 				Poison poison = (Poison) Configurations.world.get(point);
 				if(toxinDamage(poison.type, (int) poison.getHealth())) {
 					poison.addHealth(Math.abs(getHealth()));
-					destroy();
-			        return true; // Не важно что мы вернём - мы мертвы
+					destroy();// Не важно что мы вернём - мы мертвы
 				} else {
 					poison.remove_NE(); // Удаляем яд, который мы заменили
 					Configurations.world.move(this, point);
 				}
 			}return true;
 			default :
-				throw new IllegalArgumentException("Unexpected value: " + seeA(direction));
+				throw new IllegalArgumentException("Unexpected value: " + see(direction));
 		}
 	}
 	/**
 	 * Перемещает бота в направлении, если не получится прямо в этом направлении - перемещает
 	 * 		 в подобном направелнии. Например вниз, а затем вниз-право и вниз лево
 	 * @param direction
-	 * @return
+	 * @return true, если движение удалось
 	 */
 	public boolean moveD(DIRECTION direction) {
 		if (moveA(direction))
@@ -310,8 +300,7 @@ public abstract class CellObject {
 	public void remove_NE() {
 		try {
 			destroy();
-		}catch (CellObjectRemoveException e) {
-		}
+		}catch (CellObjectRemoveException e) {}
 	}
 	/**
 	 * Экстренно перерисовывает объект
@@ -333,7 +322,12 @@ public abstract class CellObject {
 	public String toString() {
 		return "Cell " + Integer.toHexString(hashCode()) + " in " + pos + " type " + alive;
 	}
-	/**Что с нами сделал токсин. true, если он нас убьёт*/
+	/**
+	 * Что с нами сделал токсин.
+	 * @param type - тип токсина
+	 * @param damag - его сила
+	 * @return true, если он нас убьёт
+	 */
 	public abstract boolean toxinDamage(TYPE type, int damag);
 	public long getStepCount() {
 		return stepCount;
