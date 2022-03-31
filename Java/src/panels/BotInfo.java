@@ -2,12 +2,12 @@ package panels;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.List;
 
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
@@ -22,195 +22,108 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
 import MapObjects.AliveCell;
-import MapObjects.AliveCell.DNA;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Poison;
+import MapObjects.dna.CommandDNA;
+import MapObjects.dna.CommandDo;
+import MapObjects.dna.CommandExplore;
+import MapObjects.dna.CommandList;
+import MapObjects.dna.DNA;
 import Utils.Utils;
 import main.Configurations;
-import main.Point.DIRECTION;
 
 public class BotInfo extends JPanel {
-	/**Класс описывает одну командную опцию*/
-	static class ComandOpt{
-		public ComandOpt() {
-			this(AliveCell.COUNT_COMAND);
-		}
-		public ComandOpt(int max_val) {
-			maxVal = max_val;
-		}
-
-		/**Максимальное значение опции*/
-		double maxVal = AliveCell.COUNT_COMAND;
-
-		public String get(AliveCell cell, int val) {
-			return "" + Math.round(maxVal * val / AliveCell.COUNT_COMAND);
-		}
-	}
-	/**Класс описывает возможные следующие опции*/
-	static class NextCmd{
-		/**Количество опций*/
-		int count;
-		/**Смещение опций относительно ТП*/
-		private int offset;
-
-		public NextCmd(int count, int offset) {
-			this.count = count;
-			this.offset = offset;
-		}
-
-		public NextCmd(NextCmd nextComands, int offset) {
-			this(nextComands.count,offset);
-		}
-	}
-	/**Описывает ситуацию, когда следующей будет выполняться инстуркция дальше*/
-	static class NextAdr extends NextCmd{
-		public NextAdr(int offset) {
-			super(1, offset);
-		}
-		
-	}
 	
-	private static ComandOpt RELATIVELY = new ComandOpt(DIRECTION.size()) {
-		public String get(AliveCell cell, int val) {
-			return DIRECTION.toEnum(Integer.parseInt(super.get(cell, val))+ DIRECTION.toNum(cell.direction)).toString();
-		}
-	};
-	private static ComandOpt ABSOLUTELY = new ComandOpt(DIRECTION.size()) {
-		public String get(AliveCell cell, int val) {
-			return DIRECTION.toEnum(Integer.parseInt(super.get(cell, val))).toString();
-		}
-	};
-	private static ComandOpt DNA_SIZE = new ComandOpt(DIRECTION.size()) {
-		public String get(AliveCell cell, int val) {
-			maxVal = cell.getDna().size;
-			return super.get(cell, val);
-		}
-	};
+	private static final Color RED = new Color(255, 0, 0, 10);
+	private static final Color BLUE = new Color(0, 0, 255, 10);
+	public static final Color YELLOW = new Color(255, 255, 0, 10);
+	public static final Color ARG = new Color(200, 200, 200, 10);
+	public static final Color PAR = new Color(255, 255, 255, 10);
 	
-	private static NextCmd SEE = new NextCmd(OBJECT.size() - 2,1);
-	
-	enum CELL_COMMAND{
-		CMD1_0("ФТС","Фотосинтез"),
-		CMD1_1("-МП","Ням мин"),
-		CMD1_2("⊶","Деление"),
-		CMD1_3("х-х","Смерть"),
-		CMD1_4("+Яд О","Пукнуть О",RELATIVELY),
-		CMD1_5("+Яд A","Пукнуть A",ABSOLUTELY),
-		CMD1_6("Zzz","Уснуть"),
-		CMD1_7("☁","Стать легче"),
-		CMD1_8("◼","Стать тяжелее"),
+	private class JListRow {
+		enum TYPE{
+			CMD,PARAM,ARG
+		}
+		/**Команда, которая выполняется. Или Главная команда, если тут её параметр*/
+		private CommandDNA command;
+		/**Порядковый номер гена в ДНК*/
+		private int number;
+		/**Числовое значение гена в ДНК*/
+		private int value;
+		/**Длина ДНК*/
+		private int size;
+		private Color color;
+		/**Тип строки*/
+		private TYPE type = TYPE.CMD;
 		
-		CMD2_0("♲ О","Повернуться О",RELATIVELY),
-		CMD2_1("♲ A","Повернуться A",ABSOLUTELY),
-		CMD2_2("⍖ O","Шаг O",RELATIVELY),
-		CMD2_3("⍖ А","Шаг А",ABSOLUTELY),
-		CMD2_4("↟","Ориентация вверх"),
-		
-		CMD3_0("O_O O","Смотреть О",RELATIVELY,SEE),
-		CMD3_1("O_O А","Смотреть А",ABSOLUTELY,SEE),
-		CMD3_2("∸","Какая высота",new ComandOpt(Configurations.MAP_CELLS.height),new NextCmd(2,2)),
-		CMD3_3("♡∸","Сколько ХП",new ComandOpt(AliveCell.MAX_HP),new NextCmd(2,2)),
-		CMD3_4("♢∸","Сколько МП",new ComandOpt(AliveCell.MAX_MP),new NextCmd(2,2)),
-		CMD3_5("∅","Я окружён?",new NextCmd(1,2)),
-		CMD3_6("♡🠑","Много солнца?",new NextCmd(1,2)),
-		CMD3_7("♢🠑","Есть минералы?",new NextCmd(1,2)),
-		CMD3_8("O_O ♡∸","ХП у него ск?",new ComandOpt(AliveCell.MAX_HP),new NextCmd(3,2)),
-		CMD3_9("O_O ♢∸","ХП у него ск?",new ComandOpt(AliveCell.MAX_HP),new NextCmd(3,2)),
-		CMD3_10("⋇","Я многокл?",new NextCmd(1,2)),
-		CMD3_11("Я стар","Сколько лет?",new ComandOpt(),new NextCmd(2,2)),
-		CMD3_12("ДНК ⊡","ДНК защищена?",new ComandOpt(AliveCell.MAX_DNA_WALL),new NextCmd(2,2)),
-		
-		CMD4_0("⇲ O","Съесть О",RELATIVELY),
-		CMD4_1("⇲ А","Съесть А",ABSOLUTELY),
-		CMD4_2("⭹ O","Кусить О",RELATIVELY),
-		CMD4_3("⭹ А","Кусить А",ABSOLUTELY),
-		CMD4_4("↹ O","Поделиться О",RELATIVELY),
-		CMD4_5("↹ А","Поделиться А",ABSOLUTELY),
-		CMD4_6("⤞ O","Отдать О",RELATIVELY),
-		CMD4_7("⤞ А","Отдать А",ABSOLUTELY),
-		CMD4_8("↭ O","Толкнуть О",RELATIVELY),
-		CMD4_9("↭ А","Толкнуть А",ABSOLUTELY),
-		
-		CMD5_0("ГЕН Х","Подменить ген",new ComandOpt(),new ComandOpt()),
-		CMD5_1("ДНК Х","Подменить команду",new ComandOpt()),
-		CMD5_2("ДНК ⊡→⊙","Подменить ДНК",new ComandOpt(100)),
-		CMD5_3("ДНК ⊡←⊙","Забрать ДНК"),
-		CMD5_4("ДНК ⊡++","Укрепить ДНК"),
-		CMD5_5("ДНК ⊡⭹","Проломить ДНК"),
-		CMD5_6("ЦИКЛ","Цикл",new ComandOpt()),
+		public JListRow(int number, int value,int size, CommandDNA cmd_o) {
+			this.number=number;
+			this.value=value;
+			this.size=size;
+			command = cmd_o;
+			if(command instanceof CommandDo)
+				color = RED;
+			else if(command instanceof CommandExplore)
+				color = YELLOW;
+			else
+				color = BLUE;
+		}
 
-		CMD6_0("□∪□ O","Присосаться О",RELATIVELY),
-		CMD6_1("□∪□ А","Присосаться А",ABSOLUTELY),
-		CMD6_2("⊶∪□ O","Клон и присос О",RELATIVELY,DNA_SIZE),
-		CMD6_3("⊶∪□ А","Клон и присос А",ABSOLUTELY,DNA_SIZE),
-		
-		;
-		private static final CELL_COMMAND[] vals = CELL_COMMAND.values();
-		
-		/**Адрес команды*/
-		int cmdNum;
-		/**Возможные переходы*/
-		private NextCmd commands;
-		/**Команды*/
-		private List<ComandOpt> params = new ArrayList<>();
-		private String shot_name;
-		private String long_name;
-
-		CELL_COMMAND(String shot_name, String long_name) {
-			this.shot_name=shot_name;
-			this.long_name=long_name;
-			String[] nums = this.toString().substring(3).split("_");
-			int block;
-			switch (nums[0]) {
-				case "1" :block = AliveCell.block1;	break;
-				case "2" :block = AliveCell.block2;	break;
-				case "3" :block = AliveCell.block3;	break;
-				case "4" :block = AliveCell.block4;	break;
-				case "5" :block = AliveCell.block5;	break;
-				case "6" :block = AliveCell.block6;	break;
-				default :
-					throw new IllegalArgumentException(
-							"Unexpected value: " + nums[0]);
+		public String getText() {
+			StringBuilder sb = new StringBuilder();
+			sb.append(number);
+			sb.append("=");
+			sb.append(value);
+			sb.append(" ");
+			switch (type) {
+				case PARAM-> {
+					sb.append("П");
+					sb.append(command.getParam(value));
+				}
+				case ARG->{
+					 sb.append("А(");
+					 sb.append((value)%size);
+					 sb.append(")");
+				}
+				case CMD->sb.append(command.toString(isFullMod));
 			}
-			cmdNum = block + Integer.parseInt(nums[1]);
-			commands = new NextAdr(1);
+			return sb.toString();
 		}
 
-		CELL_COMMAND(String shot_name, String long_name, ComandOpt comand) {
-			this(shot_name,long_name);
-			this.params.add(comand);
-			commands = new NextAdr(2);
+		public Color getColor() {
+			return color;
 		}
 
-		CELL_COMMAND(String shot_name, String long_name, ComandOpt comand,
-				NextCmd nextComands) {
-			this(shot_name,long_name,comand);
-			commands = new NextCmd(nextComands, 2);
-		}
-
-		CELL_COMMAND(String shot_name, String long_name, NextCmd nextComands) {
-			this(shot_name,long_name);
-			commands = new NextCmd(nextComands, 1);
-		}
-
-		CELL_COMMAND(String shot_name, String long_name, ComandOpt comand1,ComandOpt comand2) {
-			this(shot_name,long_name);
-			this.params.add(comand1);
-			this.params.add(comand2);
-			commands = new NextAdr(3);
-		}
-
-		static CELL_COMMAND get(int cmd) {
-			for(CELL_COMMAND cmdS : vals) {
-				if(cmdS.cmdNum == cmd)
-					return cmdS;
+		public void setType(TYPE type) {
+			this.type = type;
+			switch (type) {
+				case ARG->color = ARG;
+				case PARAM->color = PAR;
+				default ->{}
 			}
-			return null;
 		}
 	}
 	
-	
+	private static class JlistRender extends DefaultListCellRenderer{
+		 @Override
+         public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+              Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+              if(value == null) return c;
+              if (value instanceof JListRow) {
+            	  JListRow nextRow = (JListRow) value;
+                   setText(nextRow.getText());
+                   setBackground(nextRow.getColor());
+                   if (isSelected) {
+                        setBackground(getBackground().darker());
+                   }
+              } else {
+            	  throw new IllegalArgumentException("Список параметров содержит странные параметры. Это вообще что?! " + value.getClass());
+              }
+              return c;
+         }
+	}
+
 	private static class TextPair extends JPanel {
 		/**Текст пары */
 		private JLabel text = null;
@@ -258,7 +171,7 @@ public class BotInfo extends JPanel {
 	private CellObject cell = null;
 	private int oldIndex = -1;
 	private boolean isFullMod = false;
-	private JList<String> listDNA;
+	private JList<JListRow> listDNA;
 	/**Филогинетическое дерево*/
 	private TextPair filogen;
 	private TextPair pos;
@@ -279,11 +192,12 @@ public class BotInfo extends JPanel {
 					setDinamicHaracteristiks();
 					if((getCell() instanceof AliveCell)) {
 						AliveCell lcell = (AliveCell)getCell();
-						DefaultListModel<String> model = new DefaultListModel<String> ();
+						DefaultListModel<JListRow> model = new DefaultListModel<>();
 						DNA dna = lcell.getDna();
 						model.setSize(dna.size);
 						/**Индекс с которого идёт пеерсчёт*/
 						int index = dna.getIndex();
+						CommandDNA mainCMD = null;
 						if(index != oldIndex) {
 							oldIndex = index;
 							int countComands = 0;
@@ -291,45 +205,22 @@ public class BotInfo extends JPanel {
 							for(int i = 0 ; i < dna.size ; i ++) {
 								int cmd = dna.get(index,i);
 								int newNumber = (index+i)%dna.size;
-								String row = newNumber + " = " +  cmd;//Так как 0 - параметр следующей за тиком команды
-								CELL_COMMAND cmdS = CELL_COMMAND.get(cmd);
+								var cmd_o = CommandList.list[cmd];
+								JListRow obj_row = new JListRow(newNumber,cmd,dna.size,cmd_o);
 								if (countComands > 0) {
-									row += " - П";
+									obj_row.setType(JListRow.TYPE.PARAM);
+									obj_row.command = mainCMD;
 									countComands--;
 								} else if(countAdrs > 0){
-									row += " - A(" + ((index+i+cmd)%dna.size) + ")";
+									obj_row.setType(JListRow.TYPE.ARG);
+									obj_row.command = mainCMD;
 									countAdrs--;
-								} else	if(cmdS == null){
-									row += " PC += " + cmd + "(" + ((index+i+cmd)%dna.size) + ")";
-								} else {
-									row += " - ";
-									if(isFullMod)
-										row += cmdS.long_name;
-									else
-										row += cmdS.shot_name;
-									if (cmdS.params.size() > 0) {
-										row += " ( ";
-										countComands = cmdS.params.size();
-										for (int j = 0; j < cmdS.params.size(); j++) {
-											int val = dna.get(index, i + j + 1);
-											ComandOpt param = cmdS.params.get(j);
-											if (j != 0)row += " ";
-											row += param.get(lcell,val);
-										}
-										row += ")";
-									}
-									if (cmdS.commands.count == 1) {
-										row += " PC += " + cmdS.commands.offset;
-									} else {
-										countAdrs = cmdS.commands.count;
-										row += " PC += ";
-										for (int j = 0; j < cmdS.commands.count; j++) {
-											if (j != 0)row += " ";
-											row += dna.get(index,i + cmdS.commands.offset + j);
-										}
-									}
+								}else {
+									mainCMD = cmd_o;
+									countComands = cmd_o.getCountParams();
+									countAdrs = cmd_o.getCountBranch();
 								}
-								model.add(i, row);
+								model.add(i, obj_row);
 							}
 							listDNA.setModel(model);
 						}
@@ -343,7 +234,7 @@ public class BotInfo extends JPanel {
 						cell = null;
 						clearText();
 
-						listDNA.setModel(new DefaultListModel<String> ());
+						listDNA.setModel(new DefaultListModel<> ());
 					}
 					Utils.pause(1);
 				}
@@ -512,17 +403,18 @@ public class BotInfo extends JPanel {
 		JScrollPane scrollPane = new JScrollPane();
 		panel_DNA.add(scrollPane, BorderLayout.CENTER);
 		
-		listDNA = new JList<String>();
+		listDNA = new JList<JListRow>();
 		listDNA.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
 				isFullMod = !isFullMod;
 				oldIndex = -1;
 			}
 		});
+		listDNA.setCellRenderer(new JlistRender());
 		listDNA.setVisibleRowCount(3);
 		listDNA.setEnabled(false);
 		scrollPane.setViewportView(listDNA);
-		listDNA.setModel(new DefaultListModel<String> ());
+		listDNA.setModel(new DefaultListModel<> ());
 		listDNA.setSelectedIndex(0);
 		panel.setLayout(gl_panel);
 		
