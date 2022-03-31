@@ -1,8 +1,14 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-
+/**
+ * Проверяет, у нас больше минералов чем в параметре или меньше
+ * @author Kerravitarr
+ *
+ */
 public class HowMuchMP extends CommandExplore {
+
+	protected HowMuchMP() {super("♢∸","Сколько МП",1,2);}
 
 	@Override
 	protected int explore(AliveCell cell) {

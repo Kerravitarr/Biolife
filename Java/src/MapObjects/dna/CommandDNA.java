@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import MapObjects.CellObject.LV_STATUS;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -21,7 +22,13 @@ public abstract class CommandDNA {
 	private String shotName;
 	/**Полное имя*/
 	private String longName;
-	
+	/**
+	 * Констурктор класса
+	 * @param countParams - число параметров у функции
+	 * @param countBranch - число ветвей у функции
+	 * @param shotName - краткое имя у функции
+	 * @param longName - полное имя функции
+	 */
 	protected CommandDNA(int countParams,int countBranch,String shotName,String longName) {
 		this.countParams = countParams;
 		this.countBranch = countBranch;
@@ -31,18 +38,26 @@ public abstract class CommandDNA {
 
 	/**Выполняет действие над клеткой и возвращает truе, если это полное действие*/
 	public boolean execute(AliveCell cell) {
+		if(!cell.aliveStatus(LV_STATUS.LV_ALIVE))
+			return false;
 		/**Указывает какую ветвь выполнять функции*/
 		int branch = perform(cell);
-		if(isDoing()) {
-			cell.getDna().next(1 + countParams + branch);
+		if(getCountBranch() == 0) {
+			cell.getDna().next(1 + getCountParams() + branch);
 		}else {
 			var dna = cell.getDna();
-			var PC = dna.getIndex() + 1 + countParams;
+			var PC = dna.getIndex() + 1 + getCountParams();
 			dna.next(dna.get(PC, branch)); // Сдвижка определеяется параметром из ДНК
 		}
 		return isDoing();
 	}
-	/**Выполняет действие над клеткой*/
+	/**
+	 * Выполняет действие над клеткой
+	 * @param cell - клетка, над которой надо выполнить действие
+	 * @return специальный параметр. Если у функции есть ветви, то 
+	 * это число показывает какой из параметрв нужно использовать.
+	 * Иначе, он просто показывает на сколько дополнительно нужно сдвинуть PC
+	 */
 	protected abstract int perform(AliveCell cell);
 	
 	/**Возвращает true, если команда выполняет действие (конечная)*/
@@ -99,5 +114,41 @@ public abstract class CommandDNA {
 	/**Превращает относительное направление в абсолютное*/
 	protected static DIRECTION relatively(AliveCell cell,int direction) {
 		return cell.direction.next(direction);
+	}
+
+	protected String getLongName() {
+		return longName;
+	}
+
+	protected String getShotName() {
+		return shotName;
+	}
+
+	public int getCountParams() {
+		return countParams;
+	}
+
+	public int getCountBranch() {
+		return countBranch;
+	}
+
+	public String toString(boolean isFullMod) {
+		if (isFullMod)
+			return getLongName();
+		else
+			return getShotName();
+	}
+	/**Возвращает описание параметра по переданному значению*/
+	public String getParam(int value){return nonParam();};
+	/**Функция без параметров*/
+	protected String nonParam() {return "";};
+	/**
+	 * Возвращает параметр нормализованный от 0 до максимального значения
+	 * @param val
+	 * @param maxVal
+	 * @return
+	 */
+	protected int getParam(int val,int maxVal) {
+		return Math.round(maxVal * val / CommandList.COUNT_COMAND);
 	}
 }

@@ -2,9 +2,14 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 
+/**
+ * Проверяет, у нас больше ХП чем в параметре или меньше
+ * @author Kerravitarr
+ *
+ */
 public class HowMuchHP extends CommandExplore {
 	
-	public HowMuchHP() {super(1);};
+	public HowMuchHP() {super("♡∸","Сколько ХП",1,2);};
 
 	@Override
 	protected int explore(AliveCell cell) {

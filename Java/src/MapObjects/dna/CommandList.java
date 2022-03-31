@@ -1,5 +1,11 @@
 package MapObjects.dna;
 
+/**
+ * Специальный класс, по фатку представляющий доступ к массиву со всеми возможными функциями из ДНК
+ * Ну и связь их с индексом, разумеется
+ * @author Kerravitarr
+ *
+ */
 public class CommandList {
 	/**Сколько вообще может быть команд*/
 	public static final int COUNT_COMAND = 11*8; // 8 - DIRECTION.size()
@@ -17,7 +23,7 @@ public class CommandList {
 	/**Команды многоклеточности*/
     public static final int block6 = COUNT_COMAND * 6 / 7;
     
-    public static final CommandDNA[] list = new CommandDNA[COUNT_COMAND];
+    public static final CommandDNA[] list = new CommandDNA[COUNT_COMAND+1];
 	static {
 		for(var i = 0 ; i < list.length ; i++)
 			list[i] = get(i);
@@ -46,6 +52,7 @@ public class CommandList {
 		case block2+2: return new StepA();
 		case block2+3: return new StepR();
 		case block2+4: return new Align_UP();
+		//TODO развернуться на 180 градусов
 		
 		case block3: return new SeeA();
 		case block3+1: return new SeeR();

@@ -8,15 +8,20 @@ import main.Configurations;
 import main.Point;
 import panels.Legend;
 
-
+/**
+ * Забирает в свой код чужое ДНК.
+ * Копирует прям полностью, всё что есть у цели, прям 1 к 1
+ * @author Kerravitarr
+ *
+ */
 public class DNACopy extends CommandDNA {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 8;
 
-	public DNACopy() {super(0); isInterrupt = true;};
+	public DNACopy() {super(0,0,"ДНК ⊡←⊙","Забрать ДНК"); isInterrupt = true;};
 	@Override
 	protected int perform(AliveCell cell) {
-		OBJECT see = cell.seeA(cell.direction);
+		OBJECT see = cell.see(cell.direction);
 		switch (see) {
 			case ENEMY:
 			case FRIEND:
@@ -31,15 +36,15 @@ public class DNACopy extends CommandDNA {
 				cell.evolutionNode = cell.evolutionNode.newNode(bot, cell.getStepCount());
 				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 					cell.color_DO = Color.GRAY;
-				// Смены команды не будет, ведь мы эту команду перезаписали уже на нужную
-				return 0;
+				// Смены команды не будет, ведь мы эту команду перезаписали уже на нужную. Поэтому двигаем PC на шаг назад
+				return -1;
 			case NOT_POISON:
 			case ORGANIC:
 			case POISON:
 			case WALL:
 			case CLEAN:
 				cell.getDna().interrupt(cell, see.nextCMD);
-				return 1;
+				return 0;
 			default:
 				throw new IllegalArgumentException("Unexpected value: " + see);
 		}

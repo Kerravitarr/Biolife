@@ -8,15 +8,22 @@ import main.Configurations;
 import main.Point;
 import panels.Legend;
 
-
+/**
+ * Команда ломает заменяяет один из будущих генов цели
+ * На тот, что хочет.
+ * Для ограничения введено важное условие
+ * Работает только против того, на кого смотришь!
+ * @author Kerravitarr
+ *
+ */
 public class DNABreakNext extends CommandDo {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
 
-	public DNABreakNext() {super(2); isInterrupt = true;};
+	public DNABreakNext() {super(2,"ГЕН Х","Подменить ген"); isInterrupt = true;};
 	@Override
 	protected void doing(AliveCell cell) {
-		OBJECT see = cell.seeA(cell.direction);
+		OBJECT see = cell.see(cell.direction);
 		switch (see) {
 			case ENEMY:
 			case FRIEND:

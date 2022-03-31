@@ -3,14 +3,13 @@ package MapObjects.dna;
 import MapObjects.AliveCell;
 
 /**
- * Фотосинтез.
- * Если бот близко к солнышку, то можно получить жизни.
- * При этом, есть специальный флаг - photosynthesisEffect число, меняющееся от 0 до 4, показывает сколько дополнительно очков сможет получить ораганизм за фотосинтез
- * используя минералы
+ * Укрепляет ДНК клетки, защищая её от вирусных атак
  */
 public class DNAStrengthen extends CommandDo {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
+	
+	protected DNAStrengthen() {super("ДНК ⊡++","Укрепить ДНК");}
 
 	@Override
 	protected void doing(AliveCell cell) {

@@ -11,6 +11,8 @@ import main.Configurations;
  */
 public class Photosynthesis extends CommandDo {
 
+	protected Photosynthesis() {super("☀","Фотосинтез");}
+
 	@Override
 	protected void doing(AliveCell cell) {
         //Показывает эффективность нашего фотосинтеза

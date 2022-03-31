@@ -6,20 +6,31 @@ import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
 
-
+/**
+ * Кусает клетку, которую считает своей жертвой.
+ * В случае неудачи, просто остаётся ни с чем
+ * @author Kerravitarr
+ *
+ */
 public class BiteA extends CommandDo {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
 
-	public BiteA() {super(1); isInterrupt = true;};
+	public BiteA() {this("🍗 A","Кусить A");};
+	protected BiteA(String shotName, String longName) {	super(1,shotName, longName); isInterrupt = true;}
+	
 	@Override
 	protected void doing(AliveCell cell) {
 		bite(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
 	}
-	
+	/**
+	 * Непосредственно укус
+	 * @param cell - кто кусает
+	 * @param direction - в каком направлении от него
+	 */
 	protected void bite(AliveCell cell,DIRECTION direction) {
 		cell.addHealth(-HP_COST); // бот теряет на этом 1 энергию
-		var see = cell.seeA(direction);
+		var see = cell.see(direction);
 		switch (see) {
 		case ORGANIC: {
 			Point point = nextPoint(cell,direction);

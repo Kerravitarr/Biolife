@@ -8,15 +8,22 @@ import main.Configurations;
 import main.Point;
 import panels.Legend;
 
-
+/**
+ * Вставляет свою программу в код другой клетки
+ * Ограничений два:
+ * 1. Вставить можно только программу, а ты сам её не выполняешь
+ * 2. Нельзя вставить саму функцию. Ибо иначе треш начинается
+ * @author Kerravitarr
+ *
+ */
 public class DNAInsert extends CommandDNA {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 4;
 
-	public DNAInsert() {super(1); isInterrupt = true;};
+	public DNAInsert() {super(1,0,"ДНК ⊡→⊙","Подменить ДНК"); isInterrupt = true;};
 	@Override
 	protected int perform(AliveCell cell) {
-		OBJECT see = cell.seeA(cell.direction);
+		OBJECT see = cell.see(cell.direction);
 		int length_DNA = param(cell,0, cell.getDna().size);
 		switch (see) {
 			case ENEMY:

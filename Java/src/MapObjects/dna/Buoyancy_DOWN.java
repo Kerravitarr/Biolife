@@ -2,14 +2,17 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 
-
-public class Buoyancy_DOWN extends CommandDo {
-	private final int HP_COST = 1;
-	private final int DEL = 1;
+/**
+ * Функция уменьшает плотность клетки, заставляя последюю всплывать
+ * @author Kerravitarr
+ *
+ */
+public class Buoyancy_DOWN extends Buoyancy_UP {
+	
+	protected Buoyancy_DOWN() {super("■","Стать тяжелее");}
 
 	@Override
 	protected void doing(AliveCell cell) {
-		cell.addHealth(-HP_COST);//Переводит 1 хп в 0.1 плавучести
-		cell.setBuoyancy(Math.max(-10, cell.getBuoyancy() - DEL));
+		buoyancy(cell,false);
 	}
 }

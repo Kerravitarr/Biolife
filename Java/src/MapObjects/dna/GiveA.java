@@ -5,17 +5,28 @@ import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
 
-
+/**
+ * Безвозмездно отдаёт четверть от своего ХП соседу
+ * Туда-же уходят минералы
+ * @author Kerravitarr
+ *
+ */
 public class GiveA extends CommandDo {
-	
-	public GiveA() {super(1); isInterrupt = true;};
+
+	public GiveA() {this("➚ A","Отдать A");};
+	protected GiveA(String shotName, String longName) {super(1,shotName, longName); isInterrupt = true;}
+
 	@Override
 	protected void doing(AliveCell cell) {
 		give(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
 	}
-	
+	/**
+	 * Непосредственно отдать
+	 * @param cell - кто даёт
+	 * @param direction - в каком направлении цель искать
+	 */
 	protected void give(AliveCell cell,DIRECTION direction) {
-		var see = cell.seeA(direction);
+		var see = cell.see(direction);
 		switch (see) {
 			case ENEMY:
 			case FRIEND:{
@@ -39,6 +50,7 @@ public class GiveA extends CommandDo {
 			case WALL:
 			case CLEAN:
 				cell.getDna().interrupt(cell, see.nextCMD);
+			return;
 			default:
 				throw new IllegalArgumentException("Unexpected value: " + see);
 		}

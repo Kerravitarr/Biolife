@@ -16,7 +16,10 @@ public abstract class CommandDo extends CommandDNA {
 		doing(cell);
 		return 0;
 	}
-
+	/**
+	 * Непосредственно те действия, которые выполняет клетка
+	 * @param cell - клетка, которая очень уж хочет походить
+	 */
 	protected abstract void doing(AliveCell cell);
 
 	public boolean isDoing() {return true;};

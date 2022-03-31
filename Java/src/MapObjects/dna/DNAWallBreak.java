@@ -4,16 +4,20 @@ import MapObjects.AliveCell;
 import main.Configurations;
 import main.Point;
 
-
+/**
+ * Проламывает защиту ДНК у своей цели
+ * @author Kerravitarr
+ *
+ */
 public class DNAWallBreak extends CommandDo {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 1;
 
-	public DNAWallBreak() {super(1); isInterrupt = true;};
+	public DNAWallBreak() {super(1,"ДНК ⊡--","Проломить ДНК"); isInterrupt = true;};
 	@Override
 	protected void doing(AliveCell cell) {
 		cell.addHealth(-HP_COST); // бот теряет на этом 1 энергию
-		var see = cell.seeA(cell.direction);
+		var see = cell.see(cell.direction);
 		switch (see) {
 			case ENEMY:
 			case FRIEND:{

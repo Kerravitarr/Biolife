@@ -3,7 +3,14 @@ package MapObjects.dna;
 import MapObjects.AliveCell;
 import main.Configurations;
 
+/**
+ * Проверят как много солнца, можем ли мы получтить хотя бы что ни будь из него
+ * @author Kerravitarr
+ *
+ */
 public class HowMuchSun extends CommandExplore {
+
+	protected HowMuchSun() {super("☀∸","Много солнца?", 2);}
 
 	@Override
 	protected int explore(AliveCell cell) {

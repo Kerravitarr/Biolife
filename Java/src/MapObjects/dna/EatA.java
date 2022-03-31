@@ -6,20 +6,30 @@ import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
 
-
+/**
+ * Кушает клетку, которую выбирает своей жертвой
+ * @author Kerravitarr
+ *
+ */
 public class EatA extends CommandDo {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 4;
 
-	public EatA() {super(1); isInterrupt = true;};
+	public EatA() {this("🍴 А","Съесть А");};
+	protected EatA(String shotName, String longName) {super(1,shotName, longName); isInterrupt = true;}
+	
 	@Override
 	protected void doing(AliveCell cell) {
 		eat(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
 	}
-	
+	/**
+	 * Непосредственно фукнция поедания
+	 * @param cell - кто ест
+	 * @param direction - в каком направлении кушает
+	 */
 	protected void eat(AliveCell cell,DIRECTION direction) {
 		cell.addHealth(-HP_COST); // бот теряет на этом 1 энергию
-		var see = cell.seeA(direction);
+		var see = cell.see(direction);
 		switch (see) {
 		case ORGANIC: {
 			Point point = nextPoint(cell,direction);

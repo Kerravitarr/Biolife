@@ -5,17 +5,29 @@ import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
 
-
+/**
+ * Делится с окружающими.
+ * Если у нашего соседа здоровья меньше, то мы ему отдаём всё, чтобы свести разницу к нулю.
+ * Если у нашего соседа минералов меньше, то идея та-же
+ * @author Kerravitarr
+ *
+ */
 public class CareA extends CommandDo {
 	
-	public CareA() {super(1); isInterrupt = true;};
+	public CareA() {this("↹ A","Поделиться A");};
+	protected CareA(String shotName, String longName) {super(1,shotName, longName);isInterrupt = true;}
+	
 	@Override
 	protected void doing(AliveCell cell) {
 		care(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
 	}
-	
+	/**
+	 * Непосредственно подеться
+	 * @param cell - от кого
+	 * @param direction - в какую сторону
+	 */
 	protected void care(AliveCell cell,DIRECTION direction) {
-		var see = cell.seeA(direction);
+		var see = cell.see(direction);
 		switch (see) {
 			case ENEMY:
 			case FRIEND:{
@@ -42,6 +54,7 @@ public class CareA extends CommandDo {
 			case WALL:
 			case CLEAN:
 				cell.getDna().interrupt(cell, see.nextCMD);
+			return;
 			default:
 				throw new IllegalArgumentException("Unexpected value: " + see);
 		}

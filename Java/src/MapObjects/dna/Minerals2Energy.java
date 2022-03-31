@@ -8,6 +8,8 @@ import MapObjects.AliveCell;
  */
 public class Minerals2Energy extends CommandDo {
 
+	protected Minerals2Energy() {super("-МП","Ням мин");}
+
 	@Override
 	protected void doing(AliveCell cell) {
 		double maxMin = 20 * (1 + (4-cell.photosynthesisEffect));
