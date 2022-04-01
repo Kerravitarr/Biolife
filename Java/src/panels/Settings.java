@@ -141,7 +141,7 @@ public class Settings extends JPanel{
 		scrollBar_5 = new ScrollPanel("Концентрация минералов",0,40);
 		scrollBar_5.setBlockIncrement(5);
 		scrollBar_6 = new ScrollPanel("Скорость разложения",10,1);
-		scrollBar_7 = new ScrollPanel("Частота кадров",1000,0);
+		scrollBar_7 = new ScrollPanel("Частота кадров",100,0);
 		scrollBar_7.setBlockIncrement(20);
 		scale = new ScrollPanel("Масштаб",10,100);
 		scale.setValue(10);
