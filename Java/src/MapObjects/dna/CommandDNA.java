@@ -11,7 +11,7 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public abstract class CommandDNA {
+public abstract class CommandDNA {	
 	/**Возможность функции уйти в прерывание*/
 	protected boolean isInterrupt = false;
 	/**Количество параметров у клетки*/
@@ -22,6 +22,8 @@ public abstract class CommandDNA {
 	private String shotName;
 	/**Полное имя*/
 	private String longName;
+	/**Показывает, что мы должны отображать всё в кратком виде*/
+	private static boolean isFullMod = false;
 	/**
 	 * Констурктор класса
 	 * @param countParams - число параметров у функции
@@ -38,8 +40,6 @@ public abstract class CommandDNA {
 
 	/**Выполняет действие над клеткой и возвращает truе, если это полное действие*/
 	public boolean execute(AliveCell cell) {
-		if(!cell.aliveStatus(LV_STATUS.LV_ALIVE))
-			return false;
 		/**Указывает какую ветвь выполнять функции*/
 		int branch = perform(cell);
 		if(getCountBranch() == 0) {
@@ -132,16 +132,42 @@ public abstract class CommandDNA {
 		return countBranch;
 	}
 
-	public String toString(boolean isFullMod) {
+	public String toString() {
 		if (isFullMod)
 			return getLongName();
 		else
 			return getShotName();
 	}
-	/**Возвращает описание параметра по переданному значению*/
-	public String getParam(int value){return nonParam();};
+	public String toString(AliveCell cell) {
+		return toString();
+	}
+	/**
+	 * Возвращает описание параметра по переданному значению
+	 * @param cellObject - клетка, параметр который нам важен
+	 * @param numParam - номер этого параметра, считая от 0
+	 * @param value  - значение этого параметра
+	 * @return текстовое описание параметра
+	 */
+	public String getParam(AliveCell cell, int numParam, int value){return nonParam();};
 	/**Функция без параметров*/
 	protected String nonParam() {return "";};
+	/** Абсолютное направление */
+	protected String absoluteDirection(int value) {
+		value = getParam(value,DIRECTION.size());
+		if (isFullMod)
+			return DIRECTION.toEnum(value).name();
+		else
+			return DIRECTION.toEnum(value).toString();
+	};
+
+	/** Относительное направление */
+	protected String relativeDirection(AliveCell cell, int value) {
+		value = DIRECTION.toNum(cell.direction) + getParam(value,DIRECTION.size());
+		if (isFullMod)
+			return DIRECTION.toEnum(value).name();
+		else
+			return DIRECTION.toEnum(value).toString();
+	};
 	/**
 	 * Возвращает параметр нормализованный от 0 до максимального значения
 	 * @param val
@@ -150,5 +176,9 @@ public abstract class CommandDNA {
 	 */
 	protected int getParam(int val,int maxVal) {
 		return Math.round(maxVal * val / CommandList.COUNT_COMAND);
+	}
+
+	public static void setFullMod(boolean isFullMod) {
+		CommandDNA.isFullMod = isFullMod;
 	}
 }

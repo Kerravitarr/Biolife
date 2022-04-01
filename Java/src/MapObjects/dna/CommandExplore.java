@@ -12,7 +12,7 @@ import MapObjects.AliveCell;
  */
 public abstract class CommandExplore extends CommandDNA {
 
-	protected CommandExplore(String shotName, String longName,int countBranch) {this(shotName, longName,1,countBranch);}
+	protected CommandExplore(String shotName, String longName,int countBranch) {this(shotName, longName,0,countBranch);}
 	/**
 	 * Инициализирует класс исследователя
 	 * @param shotName - короткое имя функции
@@ -35,4 +35,15 @@ public abstract class CommandExplore extends CommandDNA {
 	protected abstract int explore(AliveCell cell);
 	/**Это явно не функция действия, мы можем сколько угодно рассматривать окружающий мир*/
 	public boolean isDoing() {return false;};
+	/**
+	 * Для всех команд открытия разрешено так делать. А знаете почему? Потому что команды открытия не меняют внутренее состояние!
+	 * Команда действие может сдвинуть клетку или заставить её что ни будь сделать, а это лишь изучит окружающий мир
+	 */
+	public String toString(AliveCell cell) {
+		StringBuffer sb = new StringBuffer();
+		sb.append(super.toString(cell));
+		sb.append(" = ");
+		sb.append(explore(cell));
+		return sb.toString();
+	}
 }

@@ -69,5 +69,5 @@ public class Birth extends CommandDo {
 	}
 	
 
-	public String getParam(int value){return String.valueOf(value);};
+	public String getParam(AliveCell cell, int numParam, int value){return String.valueOf(value);};
 }

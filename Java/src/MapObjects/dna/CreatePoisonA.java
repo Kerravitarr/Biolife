@@ -58,4 +58,5 @@ public class CreatePoisonA extends CommandDo {
 				throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
+	public String getParam(AliveCell cellObject, int numParam, int value) {return absoluteDirection(value);};
 }

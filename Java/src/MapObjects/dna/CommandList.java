@@ -52,7 +52,7 @@ public class CommandList {
 		case block2+2: return new StepA();
 		case block2+3: return new StepR();
 		case block2+4: return new Align_UP();
-		//TODO развернуться на 180 градусов
+		case block2+5: return new Reversal();
 		
 		case block3: return new SeeA();
 		case block3+1: return new SeeR();

@@ -48,12 +48,14 @@ public class PullA extends CommandDo {
 				cell.addHealth(-HP_COST); // Но немного потратились на это
 				Point point = nextPoint(cell,direction);
 				CellObject target = Configurations.world.get(point);
+				boolean targetStep = true;
 				try {
-					if(!target.moveD(direction))
-						cell.moveD(direction.inversion()); //Мы не смогли толкнуть цель, поэтому отлетаем сами
+					targetStep = target.moveD(direction);
 				}catch (CellObjectRemoveException e) {
 					// А она возьми да умри. Вот ржака!
 				}
+				if(!targetStep)
+					cell.moveD(direction.inversion()); //Мы не смогли толкнуть цель, поэтому отлетаем сами
 			}return;
 			case WALL:
 			case CLEAN:
@@ -63,4 +65,5 @@ public class PullA extends CommandDo {
 				throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
+	public String getParam(AliveCell cellObject, int numParam, int value) {return absoluteDirection(value);};
 }

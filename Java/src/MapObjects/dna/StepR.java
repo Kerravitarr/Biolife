@@ -17,4 +17,5 @@ public class StepR extends StepA {
 		DIRECTION dir = relatively(cell, param(cell,0, DIRECTION.size()));
 		step(cell,dir);
 	}
+	public String getParam(AliveCell cell, int numParam, int value) {return relativeDirection(cell, value);};
 }

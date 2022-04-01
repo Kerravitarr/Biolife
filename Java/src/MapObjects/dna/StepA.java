@@ -25,6 +25,6 @@ public class StepA extends CommandDo {
 		else
 			cell.getDna().interrupt(cell,cell.see(dir).nextCMD);
 	}
-	
-	public String getParam(int value){return DIRECTION.toEnum(getParam(value,DIRECTION.size())).name();};
+
+	public String getParam(AliveCell cellObject, int numParam, int value) {return absoluteDirection(value);};
 }

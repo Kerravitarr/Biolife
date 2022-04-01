@@ -19,4 +19,6 @@ public class TurnAroundA extends CommandDo {
 	
 	/**Эта команда не занимает времени*/
 	public boolean isDoing() {return false;};
+	
+	public String getParam(AliveCell cellObject, int numParam, int value) {return absoluteDirection(value);};
 }
