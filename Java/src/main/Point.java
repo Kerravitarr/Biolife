@@ -47,6 +47,20 @@ public class Point{
 		public DIRECTION inversion() {
 			return next(size()/2);
 		}
+		
+		public String toString() {
+			switch (this) {
+				case DOWN->{return "↓";}
+				case DOWN_L->{return "↙";}
+				case DOWN_R->{return "↘";}
+				case LEFT->{return "←";}
+				case RIGHT->{return "→";}
+				case UP->{return "↑";}
+				case UP_L->{return "↖";}
+				case UP_R->{return "↗";}
+				default->{return null;}
+			}
+		}
 	};
 	private static double pixelXDel;
 	private static double pixelYDel;
