@@ -14,7 +14,6 @@ import MapObjects.dna.Birth;
 import MapObjects.dna.CommandList;
 import MapObjects.dna.CreatePoisonA;
 import MapObjects.dna.DNA;
-import MapObjects.dna.Destroy;
 import Utils.JSON;
 import Utils.Utils;
 import main.Configurations;
@@ -148,11 +147,8 @@ public class AliveCell extends CellObject{
      * @param step
      */
 	public void step() {
-		//FIXIT 
-		if(aliveStatus(LV_STATUS.GHOST))
-			throw new RuntimeException("");
 		for (int cyc = 0; (cyc < 15); cyc++)
-			if(!dna.get().execute(this))
+			if(dna.get().execute(this))
 				break;
 		if(getBuoyancy() < 0 && getAge() % (getBuoyancy()+11) == 0)
 			moveD(DIRECTION.DOWN);
