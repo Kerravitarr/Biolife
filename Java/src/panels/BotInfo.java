@@ -35,11 +35,12 @@ import main.Configurations;
 
 public class BotInfo extends JPanel {
 	
-	private static final Color RED = new Color(255, 0, 0, 10);
-	private static final Color BLUE = new Color(0, 0, 255, 10);
-	public static final Color YELLOW = new Color(255, 255, 0, 10);
-	public static final Color ARG = new Color(200, 200, 200, 10);
-	public static final Color PAR = new Color(255, 255, 255, 10);
+	private static final Color RED = new Color(255, 0, 0, 30);
+	private static final Color RED2 = new Color(255, 0, 0, 60);
+	private static final Color BLUE = new Color(0, 0, 255, 30);
+	public static final Color YELLOW = new Color(255, 255, 0, 30);
+	public static final Color ARG = new Color(100, 100, 100, 30);
+	public static final Color PAR = new Color(255, 255, 255, 30);
 	
 	private class JListRow {
 		enum TYPE{
@@ -51,6 +52,8 @@ public class BotInfo extends JPanel {
 		private int number;
 		/**Числовое значение гена в ДНК*/
 		private int value;
+		/**Номер параметра гена*/
+		private int paramNum;
 		/**Длина ДНК*/
 		private int size;
 		private Color color;
@@ -62,10 +65,10 @@ public class BotInfo extends JPanel {
 			this.value=value;
 			this.size=size;
 			command = cmd_o;
-			if(command instanceof CommandDo)
-				color = RED;
-			else if(command instanceof CommandExplore)
+			if(command.isInterrupt())
 				color = YELLOW;
+			else if(command.isDoing())
+				color = RED;
 			else
 				color = BLUE;
 		}
@@ -78,15 +81,15 @@ public class BotInfo extends JPanel {
 			sb.append(" ");
 			switch (type) {
 				case PARAM-> {
-					sb.append("П");
-					sb.append(command.getParam(value));
+					sb.append("П ");
+					sb.append(command.getParam((AliveCell) getCell(),paramNum,value));
 				}
 				case ARG->{
-					 sb.append("А(");
-					 sb.append((value)%size);
+					 sb.append("А (");
+					 sb.append((paramNum+value)%size);
 					 sb.append(")");
 				}
-				case CMD->sb.append(command.toString(isFullMod));
+				case CMD->sb.append(command.toString((AliveCell) getCell()));
 			}
 			return sb.toString();
 		}
@@ -107,7 +110,7 @@ public class BotInfo extends JPanel {
 	
 	private static class JlistRender extends DefaultListCellRenderer{
 		 @Override
-         public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+         public Component getListCellRendererComponent(@SuppressWarnings("rawtypes") JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
               Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
               if(value == null) return c;
               if (value instanceof JListRow) {
@@ -183,6 +186,7 @@ public class BotInfo extends JPanel {
 	/**Список с прерываниями*/
 	private JList<String> list_inter;
 	private JScrollPane scrollPane_inter;
+	private JPanel panel;
 	
 	class WorkTask implements Runnable{
 		public void run() {
@@ -197,36 +201,39 @@ public class BotInfo extends JPanel {
 						model.setSize(dna.size);
 						/**Индекс с которого идёт пеерсчёт*/
 						int index = dna.getIndex();
-						CommandDNA mainCMD = null;
 						if(index != oldIndex) {
 							oldIndex = index;
 							int countComands = 0;
 							int countAdrs = 0;
+							CommandDNA mainCMD = CommandList.list[dna.get(index,0)];
+							int mainAdr = 0;
+							scrollPane_inter.setVisible(mainCMD.isInterrupt());
 							for(int i = 0 ; i < dna.size ; i ++) {
 								int cmd = dna.get(index,i);
 								int newNumber = (index+i)%dna.size;
 								var cmd_o = CommandList.list[cmd];
 								JListRow obj_row = new JListRow(newNumber,cmd,dna.size,cmd_o);
 								if (countComands > 0) {
-									obj_row.setType(JListRow.TYPE.PARAM);
 									obj_row.command = mainCMD;
+									obj_row.paramNum = mainCMD.getCountParams() - countComands;
+									obj_row.setType(JListRow.TYPE.PARAM);
 									countComands--;
 								} else if(countAdrs > 0){
-									obj_row.setType(JListRow.TYPE.ARG);
 									obj_row.command = mainCMD;
+									obj_row.paramNum = mainAdr;
+									obj_row.setType(JListRow.TYPE.ARG);
 									countAdrs--;
 								}else {
 									mainCMD = cmd_o;
+									mainAdr = newNumber;
 									countComands = cmd_o.getCountParams();
 									countAdrs = cmd_o.getCountBranch();
 								}
 								model.add(i, obj_row);
 							}
 							listDNA.setModel(model);
+							BotInfo.this.revalidate(); 
 						}
-						
-						
-						
 					}
 					Utils.pause_ms(100);
 				} else {
@@ -249,7 +256,7 @@ public class BotInfo extends JPanel {
 		Configurations.info = this;
 		setLayout(new BorderLayout(0, 0));
 		
-		JPanel panel = new JPanel();
+		panel = new JPanel();
 		add(panel, BorderLayout.CENTER);
 		
 		panel_DNA = new JPanel();
@@ -407,6 +414,7 @@ public class BotInfo extends JPanel {
 		listDNA.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent e) {
 				isFullMod = !isFullMod;
+				CommandDNA.setFullMod(isFullMod);
 				oldIndex = -1;
 			}
 		});
@@ -432,7 +440,6 @@ public class BotInfo extends JPanel {
 		if (getCell() instanceof AliveCell) {
 			panel_variant.setVisible(true);
 			panel_DNA.setVisible(true);
-			scrollPane_inter.setVisible(true);
 			AliveCell new_name = (AliveCell) getCell();
 			generation.setText(new_name.getGeneration()+"");
 			photos.setText((new_name.photosynthesisEffect+"").substring(0, 3));
@@ -492,6 +499,7 @@ public class BotInfo extends JPanel {
 		scrollPane_inter.setVisible(false);
 		oldIndex = -1;
 		isFullMod = false;
+		CommandDNA.setFullMod(isFullMod);
 	}
 
 
