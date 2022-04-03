@@ -1,15 +1,14 @@
 package main;
 
+import MapObjects.AliveCell;
+import MapObjects.Poison;
+import Utils.JSON;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Vector;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import MapObjects.AliveCell;
-import MapObjects.Poison;
-import Utils.JSON;
 
 //@Deprecated
 public class EvolutionTree {
@@ -20,17 +19,17 @@ public class EvolutionTree {
 		//Поколение в этой ветке
 		long generation = 0;
 		//Потомки нашего узла
-		Vector<Node> child = new Vector<>();
+		List<Node> child = new java.util.concurrent.CopyOnWriteArrayList<>();
 		/**Счётчик ветвей*/
-		private AtomicInteger branshCount = new AtomicInteger(0);
+		private final AtomicInteger branshCount;
 		/**Число живых потомков*/
-		private AtomicInteger countAliveCell = new AtomicInteger(0);
+		private final AtomicInteger countAliveCell;
 		/**Наш родитель, общий предок, если хотите*/
 		Node perrent = null;
 		
 		//ПРИМЕЧАТЕЛЬНЫЕ ТОЧКИ
 		//ДНК клетки, образующей узел
-		public int [] DNA = null;
+		public int [] DNA_mind = null;
 		//Цвет
 		public Color phenotype = null;
 		/**Устойчивость к яду*/
@@ -40,9 +39,12 @@ public class EvolutionTree {
 		//Показывает, нужно ли обновлять цвета у ботов
 		boolean isSelected = false;
 		
-		private Node(){	};
+		private Node() {
+			this.branshCount = new AtomicInteger(0);
+			this.countAliveCell = new AtomicInteger(0);
+		}
 		
-		public Node(JSON node) {
+		public Node(JSON node, Node aThis) {
 			this();
 			time = node.getL("time");
 			generation = node.getL("generation");
@@ -50,20 +52,20 @@ public class EvolutionTree {
 			countAliveCell.set(0);
 			phenotype = new Color((Long.decode("0x"+node.get("phenotype"))).intValue(),true);
 			poisonType = Poison.TYPE.toEnum(node.get("poisonType"));
+			perrent = aThis;
 
 	    	List<Integer> mindL = node.getA("DNA");
-	    	DNA = new int[mindL.size()];
-	    	for (int i = 0; i < DNA.length; i++) 
-	    		DNA[i] = mindL.get(i);
+	    	DNA_mind = new int[mindL.size()];
+	    	for (int i = 0; i < DNA_mind.length; i++) 
+	    		DNA_mind[i] = mindL.get(i);
 			
-			for(JSON i : node.getAJ("Nodes")) {
-				Node nodeR = new Node(i);
-				nodeR.perrent = this;
-				child.add(nodeR);
+			for(var i : node.getAJ("Nodes")) {
+				child.add(new Node(i,this));
 			}
 		}
 		/**
 		 * Создаёт новый узел в дереве эволюции в определённый момент времени
+		 * @param cell - клетка, которая создала новый узел
 		 * @param time - текущее время, когда произошла мутация
 		 * @return новый узел
 		 */
@@ -73,8 +75,8 @@ public class EvolutionTree {
 			node.countAliveCell.set(1);
 			node.isSelected = isSelected();
 			node.time = time;
-			node.setChild(cell);
 			
+			node.setChild(cell);
 			node.perrent = this;
 			child.add(node);
 			remove(); //Мы больше не служим нашему родителю!
@@ -82,11 +84,12 @@ public class EvolutionTree {
 		}
 
 		private void setChild(AliveCell cell) {
-			DNA = cell.getDna().mind;
+			DNA_mind = cell.getDna().mind;
 			phenotype = new Color(cell.phenotype.getRGB());
 			poisonType = cell.getPosionType();
 		}
 		/**Не создаёт ветки эволюции, просто помечает, что существует ещё один потомок у этой ветки эволюции*/
+		@Override
 		public Node clone() {
 			countAliveCell.incrementAndGet();
 			return this;
@@ -98,9 +101,9 @@ public class EvolutionTree {
 		}
 		/**Наш ребёнок сказал нам, что умер. Если это был последний наш ребёнок, то всё - сворачиваем лавочку*/
 		private void remove(Node node) {
-			getChild().remove(node);
-			node.removeChild();
-			if(countAliveCell.get() == 0 && child.size() == 0)
+			child.remove(node);
+			node.child = null;
+			if(countAliveCell.get() == 0 && child.isEmpty())
 				perrent.remove(this);
 			else if(countAliveCell.get() == 0 && child.size() == 1)
 				merge();
@@ -135,10 +138,7 @@ public class EvolutionTree {
 			}
 		}
 		
-		private void removeChild() {
-			child = null;
-		}
-		
+		@Override
 		public String toString() {
 			String ret = "Поколение " + getGeneration() + " мутация произошла в " + time + " от рожденства Адама. ";
 			if(child != null)
@@ -154,7 +154,7 @@ public class EvolutionTree {
 			make.add("countAliveCell", countAliveCell.get());
 			make.add("branch", getBranch());
 			make.add("phenotype",Integer.toHexString(phenotype.getRGB()));
-			make.add("DNA", DNA);
+			make.add("DNA", DNA_mind);
 			make.add("poisonType", poisonType.ordinal());
 			
 			JSON[] nodes = new JSON[getChild().size()];
@@ -189,7 +189,7 @@ public class EvolutionTree {
 		/**
 		 * @return the child
 		 */
-		public Vector<Node> getChild() {
+		public List<Node> getChild() {
 			return child;
 		}
 
@@ -199,7 +199,7 @@ public class EvolutionTree {
 		 */
 		public List<Node> getEndNode() {
 			List<Node> ret = new ArrayList<>();
-			if(child.size() == 0) {
+			if(child.isEmpty()) {
 				ret.add(this);
 			} else {
 				for (Node node : child) {
@@ -218,7 +218,7 @@ public class EvolutionTree {
 		 */
 		public void setSelected(boolean isSelected) {
 			this.isSelected = isSelected;
-			for (Node node : child)
+			for (var node : child)
 				node.setSelected(this.isSelected());
 		}
 
@@ -229,7 +229,10 @@ public class EvolutionTree {
 			return isSelected;
 		}
 
-		/**Возвращает количество живых потомков*/
+		/**
+		 * Возвращает количество живых потомков
+		 * @return чило от 0 до бесконечности
+		 */
 		public int countAliveCell() {
 			return countAliveCell.get();
 		}
@@ -238,13 +241,14 @@ public class EvolutionTree {
 	/**Корень эволюционного дерева, адам*/
 	public static Node root = new Node();
 	/***/
-	private static Vector<Node> removeNode = new Vector<>();
+	private static Set<Node> removeNode = new java.util.concurrent.CopyOnWriteArraySet <>();
 	
 	public EvolutionTree() {};
 	public EvolutionTree(JSON json) {
-		root = new Node(json.getJ("Node"));
+		root = new Node(json.getJ("Node"), null);
 	}
 
+	@Override
 	public String toString() {
 		return root.toString();
 	}
@@ -279,14 +283,16 @@ public class EvolutionTree {
 				node.remove();
 		}
 	}
+	@SuppressWarnings("UnnecessaryContinue")
 	public void step() {
-		if(removeNode.size() > 0) {
-			for(Node node :removeNode) {
-				if(node.getChild() == null)
+		if(!removeNode.isEmpty()) {
+			for(var node :removeNode) {
+				var child = node.getChild();
+				if(child == null)
 					continue;
-				else if (node.getChild().size() == 0)// У нас нет детей, всё, удаляем у родителя
+				else if (child.isEmpty())// У нас нет детей, всё, удаляем у родителя
 					node.perrent.remove(node); 
-				else if(node.getChild().size() == 1) 
+				else if(child.size() == 1) 
 					node.merge();
 			}
 			removeNode.clear();
