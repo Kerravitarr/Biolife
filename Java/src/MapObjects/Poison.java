@@ -95,11 +95,11 @@ public class Poison extends CellObject {
 		return (int) Math.round(getAge() + Configurations.POISON_STREAM * (2 - energy / MAX_TOXIC));
 	}
 
-	public boolean moveA(DIRECTION direction) {
+	public boolean move(DIRECTION direction) {
 		switch (see(direction)) {
 			case WALL :
 			case CLEAN : 
-				return super.moveA(direction);
+				return super.move(direction);
 			case POISON :
 			case NOT_POISON :{
 				Point point = getPos().next(direction);
