@@ -28,6 +28,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import Utils.JSON;
 import Utils.JSON.ParseException;
+import Utils.JsonSave;
 import main.Configurations;
 import main.World;
 
@@ -62,9 +63,9 @@ public class Settings extends JPanel{
 		}
 
 		public void setValue(int val) {
-			setToolTipText("Значение: "  + String.valueOf(val));
 			if(isBack)
-				val = getMaximum() - val;
+				val = getMaximum() - val + scroll.getMinimum();
+			setToolTipText("Значение: "  + String.valueOf(100*(val-scroll.getMinimum())/(scroll.getMaximum()-scroll.getMinimum()))+"%");
 			scroll.setValue(val);
 		}
 		public void setValue(double val) {
@@ -85,12 +86,13 @@ public class Settings extends JPanel{
 
 		public void addAdjustmentListener(AdjustmentListener listener) {
 			scroll.addAdjustmentListener(e->{
+				setToolTipText("Значение: "  + String.valueOf(100*(e.getValue()-scroll.getMinimum())/(scroll.getMaximum()-scroll.getMinimum()))+"%");
 				if(isBack)
 					e = new AdjustmentEvent((Adjustable) e.getSource(),e.getID(),e.getAdjustmentType(),(getMaximum() - e.getValue())+scroll.getMinimum());
-				setToolTipText("Значение: "  + String.valueOf(e.getValue()));
 				listener.adjustmentValueChanged(e);
 			});
 		}
+		@Override
 		 public void setToolTipText(String text) {
 			 super.setToolTipText(text);
 			 label.setToolTipText(text);
@@ -153,9 +155,11 @@ public class Settings extends JPanel{
 		PoisonStreem.setValue((int) Math.round(Math.log(Configurations.POISON_STREAM)));
 		
 		play = new JButton();
+		play.setToolTipText("Для простоты можно нажать пробел на клавиатуре");
 		saveButton = new JButton("Сохранить мир");
 		load_button = new JButton("Загрузить мир");
 		step_button = new JButton("Шаг");
+		step_button.setToolTipText("Для простоты можно нажать S на клавиатуре");
 		step_button.addActionListener(e-> Configurations.world.step());
 		
 		GroupLayout gl_panel = new GroupLayout(panel);
@@ -309,34 +313,22 @@ public class Settings extends JPanel{
 
 	public void load() {
 		isActiv = false;
-		String pathToRoot = System.getProperty("user.dir");
-		JFileChooser fileopen = new JFileChooser(pathToRoot);
-		fileopen.setFileFilter(new FileNameExtensionFilter("JSON", "json"));
-		int ret = fileopen.showDialog(null, "Выбрать файл");
-		if (ret == JFileChooser.APPROVE_OPTION) {
-			try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
-				Configurations.world.update(new JSON(reader));
-			} catch (IOException | java.lang.RuntimeException | ParseException e1) {
-				e1.printStackTrace();
-				JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
-			} 
-		}
+		var js = new JsonSave("BioLife", "map");
+		var obj = new JSON();
+		js.load(obj);
+		try{
+			Configurations.world.update(obj);
+		} catch (java.lang.RuntimeException e1) {
+			e1.printStackTrace();
+			JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
+		} 
 	}
 	
 	public void save() {
 		boolean oldStateWorld = isActiv;				
 		isActiv = false;
-		Date date = new Date();
-		SimpleDateFormat formater = new SimpleDateFormat("yyyy_MM_dd HHч mmм ssс");
-		String name = "World_" + formater.format(date) + ".json";
-		try(FileWriter writer = new FileWriter(name, true)){
-			Configurations.world.serelization().toBeautifulJSONString(writer);
-			writer.flush();
-			JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	"BioLife", JOptionPane.INFORMATION_MESSAGE);
-		} catch (IOException | java.lang.RuntimeException e1) {
-			e1.printStackTrace();
-			JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
-		}
+		var js = new JsonSave("BioLife", "map");
+		js.save(Configurations.world.serelization(), true);
 		isActiv = oldStateWorld;
 	}
 
