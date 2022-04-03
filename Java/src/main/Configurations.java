@@ -20,13 +20,14 @@ import panels.Settings;
 public class Configurations {
 	//Карта
 	/**Количиство ячеек карты*/
+	//public static Dimension MAP_CELLS = new Dimension(500/4,200/4);
 	public static Dimension MAP_CELLS = new Dimension(500,200);
 	/**Сам мир*/
 	public static CellObject [][] worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 	/**Базовая освещённость карты, то есть сколько света падает постоянно*/
 	public static int BASE_SUN_POWER = 8;
 	/**Освещённость карты*/
-	public static int ADD_SUN_POWER = 4;
+	public static int ADD_SUN_POWER = 8;
 	//Скорость движения солнца в тиках мира
 	public static int SUN_SPEED = 15;
 	//Положение солнца в частях экрана
@@ -39,14 +40,14 @@ public class Configurations {
 	public static double DIRTY_WATER = 19;
 	/**Степень мутагенности воды*/
 	public static double AGGRESSIVE_ENVIRONMENT = 0.25;
-	/**Как глубоко лежат минералы*/
-	public static double LEVEL_MINERAL = 0.50;
+	/**Как глубоко лежат минералы. При этом 1.0 - ни где, а 0.0 - везде... Ну да, так получилось :)*/
+	public static double LEVEL_MINERAL = 0.30;
 	/**Концентрация минералов*/
 	public static double CONCENTRATION_MINERAL = 1;
 	//Как долго разлагается органика
 	public static int TIK_TO_EXIT = 2;
 	/**Вязкость яда, как быстро он растекается*/
-	public static int POISON_STREAM = 500;
+	public static int POISON_STREAM = 150;
 	
 	//Отображение карты на экране
 	/**Масштаб*/
@@ -96,8 +97,8 @@ public class Configurations {
 	public static void load(JSON configWorld) {
 		List<Integer> map = configWorld.getA("MAP_CELLS");
 		if(map.get(0) != MAP_CELLS.width || map.get(1) != MAP_CELLS.height) {
-			MAP_CELLS.width = map.get(0).intValue();
-			MAP_CELLS.height = map.get(1).intValue();
+			MAP_CELLS.width = map.get(0);
+			MAP_CELLS.height = map.get(1);
 			worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 		}
 		DIRTY_WATER = configWorld.get("DIRTY_WATER");
