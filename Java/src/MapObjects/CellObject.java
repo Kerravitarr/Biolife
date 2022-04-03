@@ -18,7 +18,7 @@ public abstract class CellObject {
 	/**Статус*/
 	public enum LV_STATUS {LV_ALIVE,LV_ORGANIC,LV_POISON,GHOST};
     /**Состояние объекта*/
-    public LV_STATUS alive;
+    protected LV_STATUS alive;
 	/**Статус*/
 	public enum OBJECT {
 		WALL(1),
@@ -129,7 +129,7 @@ public abstract class CellObject {
 	 * @return
 	 */
 	public boolean aliveStatus(LV_STATUS lvAlive) {
-		return alive == lvAlive;
+		return getAlive() == lvAlive;
 	}
 	/**
 	 * Возвращает позицию объекта
@@ -145,7 +145,7 @@ public abstract class CellObject {
 	public JSON toJSON() {
 		JSON make = new JSON();
 		make.add("pos", getPos().toJSON());
-		make.add("alive",alive.ordinal());
+		make.add("alive",getAlive().ordinal());
 		make.add("stepCount",getStepCount());
 		make.add("years",years);
 		return toJSON(make);
@@ -164,6 +164,7 @@ public abstract class CellObject {
 	abstract void setHealth(double h);
 	/**
 	 * Добавляет энергию к существующей
+	 * @param h сколько энергии прибавить. Равносильно setHealth(getHealth() + h);
 	 */
 	public void addHealth(double h) {
 		setHealth(getHealth() + h);
@@ -190,30 +191,31 @@ public abstract class CellObject {
 	 * @param direction
 	 * @return
 	 */
-	public boolean moveA(DIRECTION direction) {
+	public boolean move(DIRECTION direction) {
 		switch (see(direction)) {
-			case FRIEND:
-			case ENEMY:
-			case ORGANIC:
-			case WALL : return false;
-			case CLEAN : {
-				Point point = getPos().next(direction);
-				Configurations.world.move(this,point);
-			} return true;
-			case POISON:
-			case NOT_POISON:{
-				Point point = getPos().next(direction);
-				Poison poison = (Poison) Configurations.world.get(point);
-				if(toxinDamage(poison.type, (int) poison.getHealth())) {
-					poison.addHealth(Math.abs(getHealth()));
-					destroy();// Не важно что мы вернём - мы мертвы
-				} else {
-					poison.remove_NE(); // Удаляем яд, который мы заменили
-					Configurations.world.move(this, point);
-				}
-			}return true;
-			default :
-				throw new IllegalArgumentException("Unexpected value: " + see(direction));
+			case FRIEND, ENEMY, ORGANIC, WALL -> {
+				return false;
+			}
+			case CLEAN -> {
+				{
+					Point point = getPos().next(direction);
+					Configurations.world.move(this,point);
+				} return true;
+			}
+			case POISON, NOT_POISON -> {
+				{
+					Point point = getPos().next(direction);
+					Poison poison = (Poison) Configurations.world.get(point);
+					if(toxinDamage(poison.type, (int) poison.getHealth())) {
+						poison.addHealth(Math.abs(getHealth()));
+						destroy();// Не важно что мы вернём - мы мертвы
+					} else {
+						poison.remove_NE(); // Удаляем яд, который мы заменили
+						Configurations.world.move(this, point);
+					}
+				}return true;
+			}
+			default -> throw new IllegalArgumentException("Unexpected value: " + see(direction));
 		}
 	}
 	/**
@@ -223,18 +225,18 @@ public abstract class CellObject {
 	 * @return true, если движение удалось
 	 */
 	public boolean moveD(DIRECTION direction) {
-		if (moveA(direction))
+		if (move(direction))
 			return true;
 
-		if (Configurations.rnd.nextBoolean()) {
-			if (moveA(direction.next()))
+		if (getAge() % 2 == 0) {
+			if (move(direction.next()))
 				return true;
-			if (moveA(direction.prev()))
+			if (move(direction.prev()))
 				return true;
 		} else {
-			if (moveA(direction.prev()))
+			if (move(direction.prev()))
 				return true;
-			if (moveA(direction.next()))
+			if (move(direction.next()))
 				return true;
 		}
 
@@ -267,8 +269,8 @@ public abstract class CellObject {
 	/**
 	 * Родственные-ли боты?
 	 * Определеяет родственников по фенотипу, по тому как они выглядят
-	 * @param cell
-	 * @param cell2
+	 * @param bot0 - первый бот в сравнении
+	 * @param bot1 - второй бот в сравнеии
 	 * @return
 	 */
 	protected boolean isRelative(CellObject bot0, CellObject bot1) {
@@ -315,12 +317,13 @@ public abstract class CellObject {
 	/**
 	 * @param pos the pos to set
 	 */
-	public void setPos(Point pos) {
+	public final void setPos(Point pos) {
 		this.pos.update(pos);
 	}
 	
+	@Override
 	public String toString() {
-		return "Cell " + Integer.toHexString(hashCode()) + " in " + pos + " type " + alive;
+		return "Cell " + Integer.toHexString(hashCode()) + " in " + pos + " type " + getAlive();
 	}
 	/**
 	 * Что с нами сделал токсин.
@@ -331,5 +334,12 @@ public abstract class CellObject {
 	public abstract boolean toxinDamage(TYPE type, int damag);
 	public long getStepCount() {
 		return stepCount;
+	}
+
+	/**
+	 * @return the alive
+	 */
+	public LV_STATUS getAlive() {
+		return alive;
 	}
 }
