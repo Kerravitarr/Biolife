@@ -18,5 +18,6 @@ public class SeeA extends CommandExplore {
 	protected int explore(AliveCell cell) {
 		return cell.see(DIRECTION.toEnum(param(cell,0, DIRECTION.size()))).nextCMD;
 	}
-	public String getParam(AliveCell cellObject, int numParam, int value) {return absoluteDirection(value);};
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));}
 }

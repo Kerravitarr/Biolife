@@ -1,5 +1,7 @@
 package MapObjects.dna;
 
+import MapObjects.AliveCell;
+
 /**
  * Специальный класс, по фатку представляющий доступ к массиву со всеми возможными функциями из ДНК
  * Ну и связь их с индексом, разумеется
@@ -11,22 +13,44 @@ public class CommandList {
 	public static final int COUNT_COMAND = 11*8; // 8 - DIRECTION.size()
 	/*Команды разделены на ранвые блоки*/
 	/**Команды общего назначения*/
-	public static final int block1 = COUNT_COMAND * 1 / 7;
+	public static final int BLOCK_1 = COUNT_COMAND * 1 / 8;
 	/**Команды движения*/
-    public static final int block2 = COUNT_COMAND * 2 / 7;
+    public static final int BLOCK_2 = COUNT_COMAND * 2 / 8;
 	/**Команды исследования*/
-    public static final int block3 = COUNT_COMAND * 3 / 7;
+    public static final int BLOCK_3_1 = COUNT_COMAND * 3 / 8;
+	/**Команды исследования*/
+    public static final int BLOCK_3_2 = COUNT_COMAND * 4 / 8;
 	/**Команды взимодействия*/
-    public static final int block4 = COUNT_COMAND * 4 / 7;
+    public static final int BLOCK_4 = COUNT_COMAND * 5 / 8;
 	/**Команды программирования*/
-    public static final int block5 = COUNT_COMAND * 5 / 7;
+    public static final int BLOCK_5 = COUNT_COMAND * 6 / 8;
 	/**Команды многоклеточности*/
-    public static final int block6 = COUNT_COMAND * 6 / 7;
+    public static final int BLOCK_6 = COUNT_COMAND * 7 / 8;
     
     public static final CommandDNA[] list = new CommandDNA[COUNT_COMAND+1];
 	static {
 		for(var i = 0 ; i < list.length ; i++)
 			list[i] = get(i);
+		
+		//Небольшие тестики, после создания новой функции
+		//Они не влияют на логику, но нужны для отоброжения
+		var adam = new AliveCell();
+		for (CommandDNA cmd : list) {
+			try{
+				if(cmd.isInterrupt())
+					cmd.getInterrupt(adam, adam.getDna());
+				String param = null;
+				for (int j = 0; j < cmd.getCountParams(); j++) {
+					String param2 = cmd.getParam(adam, j, adam.getDna());
+					if(param2.equals(param))
+						throw new RuntimeException("Параметры совпали для " + cmd);
+					param = param2;
+				}
+			}catch(RuntimeException e){
+				System.out.println(e);
+			}
+		}
+		
 	}
 	/**
 	 * Функция преобразует порядковый номер команды в объект.
@@ -36,64 +60,73 @@ public class CommandList {
 	 * @return
 	 */
 	private static CommandDNA get(int key) {
-		switch (key) {
-		case block1: return new Photosynthesis();
-		case block1+1: return new Minerals2Energy();
-		case block1+2: return new Birth();
-		case block1+3: return new Destroy();
-		case block1+4: return new CreatePoisonR();
-		case block1+5: return new CreatePoisonA();
-		case block1+6: return new Sleep();
-		case block1+7: return new Buoyancy_UP();
-		case block1+8: return new Buoyancy_DOWN();
-
-		case block2: return new TurnAroundA();
-		case block2+1: return new TurnAroundR();
-		case block2+2: return new StepA();
-		case block2+3: return new StepR();
-		case block2+4: return new Align_UP();
-		case block2+5: return new Reversal();
-		
-		case block3: return new SeeA();
-		case block3+1: return new SeeR();
-		case block3+2: return new HowHigh();
-		case block3+3: return new HowMuchHP();
-		case block3+4: return new HowMuchMP();
-		case block3+5: return new IAmSurrounded();
-		case block3+6: return new HowMuchSun();
-		case block3+7: return new HowMuchMinerals();
-		case block3+8: return new HowMuchHPTarget();
-		case block3+9: return new HowMuchMPTarget();
-		case block3+10: return new IAmMulticellular();
-		case block3+11: return new HowOldIAm();
-		case block3+12: return new HowMuchDW();
-		//TODO Проверить - кто вокруг меня? Друзья, враги, кто?
-		
-		case block4: return new EatA();
-		case block4+1: return new EatR();
-		case block4+2: return new BiteA();
-		case block4+3: return new BiteR();
-		case block4+4: return new CareA();
-		case block4+5: return new CareR();
-		case block4+6: return new GiveA();
-		case block4+7: return new GiveR();
-		case block4+8: return new PullA();
-		case block4+9: return new PullR();
-		
-		case block5: return new DNABreakNext();
-		case block5+1: return new DNABreakNow();
-		case block5+2: return new DNAInsert();
-		case block5+3: return new DNACopy();
-		case block5+4: return new DNAStrengthen();
-		case block5+5: return new DNAWallBreak();
-		case block5+6: return new DNALoop();
-		
-		case block6: return new ClingA();
-		case block6+1: return new ClingR();
-		case block6+2: return new CloneA();
-		case block6+3: return new CloneR();
-		
-		default: return new Jump(); // Все неиспользуемые параметры заполняем пустотой
-		}
+		return switch (key) {
+			case BLOCK_1 -> new Photosynthesis();
+			case BLOCK_1+1 -> new Minerals2Energy();
+			case BLOCK_1+2 -> new Birth();
+			case BLOCK_1+3 -> new Destroy();
+			case BLOCK_1+4 -> new CreatePoisonR();
+			case BLOCK_1+5 -> new CreatePoisonA();
+			case BLOCK_1+6 -> new Sleep();
+			case BLOCK_1+7 -> new Buoyancy_UP();
+			case BLOCK_1+8 -> new Buoyancy_DOWN();
+				
+			case BLOCK_2 -> new TurnAroundA();
+			case BLOCK_2+1 -> new TurnAroundR();
+			case BLOCK_2+2 -> new StepA();
+			case BLOCK_2+3 -> new StepR();
+			case BLOCK_2+4 -> new Align_UP();
+			case BLOCK_2+5 -> new Reversal();
+			case BLOCK_2+6 -> new TurnToEnemy();
+			case BLOCK_2+7 -> new TurnToFriend();
+			case BLOCK_2+8 -> new TurnToPoison();
+			case BLOCK_2+9 -> new TurnToMedicament();
+				
+			case BLOCK_3_1 -> new SeeA();
+			case BLOCK_3_1+1 -> new SeeR();
+			case BLOCK_3_1+2 -> new HowHigh();
+			case BLOCK_3_1+3 -> new HowMuchHP();
+			case BLOCK_3_1+4 -> new HowMuchMP();
+			case BLOCK_3_1+5 -> new IAmSurrounded();
+			case BLOCK_3_1+6 -> new HowMuchSun();
+			case BLOCK_3_1+7 -> new HowMuchMinerals();
+			case BLOCK_3_1+8 -> new HowMuchHPTarget();
+				
+			case BLOCK_3_2+0 -> new HowMuchMPTarget();
+			case BLOCK_3_2+1 -> new IAmMulticellular();
+			case BLOCK_3_2+2 -> new HowOldIAm();
+			case BLOCK_3_2+3 -> new HowMuchDW();
+			case BLOCK_3_2+4 -> new WhoIsNearby();
+			case BLOCK_3_2+5 -> new EnemyNear();
+			case BLOCK_3_2+6 -> new FriendNear();
+			case BLOCK_3_2+7 -> new PosionNear();
+			case BLOCK_3_2+8-> new MedicamentNear();
+			case BLOCK_3_2+9-> new OrganicNear();
+				
+			case BLOCK_4 -> new EatA();
+			case BLOCK_4+1 -> new EatR();
+			case BLOCK_4+2 -> new BiteA();
+			case BLOCK_4+3 -> new BiteR();
+			case BLOCK_4+4 -> new CareA();
+			case BLOCK_4+5 -> new CareR();
+			case BLOCK_4+6 -> new GiveA();
+			case BLOCK_4+7 -> new GiveR();
+			case BLOCK_4+8 -> new PullA();
+			case BLOCK_4+9 -> new PullR();
+				
+			case BLOCK_5 -> new DNABreakNext();
+			case BLOCK_5+1 -> new DNABreakNow();
+			case BLOCK_5+2 -> new DNAInsert();
+			case BLOCK_5+3 -> new DNACopy();
+			case BLOCK_5+4 -> new DNAStrengthen();
+			case BLOCK_5+5 -> new DNAWallBreak();
+			case BLOCK_5+6 -> new Loop();
+				
+			case BLOCK_6 -> new ClingA();
+			case BLOCK_6+1 -> new ClingR();
+			case BLOCK_6+2 -> new CloneA();
+			case BLOCK_6+3 -> new CloneR();
+			default -> new Jump();
+		}; //TODO Проверить - кто вокруг меня? Друзья, враги, кто?
 	}
 }

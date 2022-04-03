@@ -24,5 +24,8 @@ public class HowMuchHPTarget extends CommandExplore {
 			return 2;
 		}
 	}
-	public String getParam(AliveCell cell, int numParam, int value) {return String.valueOf(getParam(value,AliveCell.MAX_HP)) + "HP";};
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		return String.valueOf(param(dna, 0, AliveCell.MAX_HP)) + "хп";
+	}
 }

@@ -12,6 +12,6 @@ public class IAmMulticellular extends CommandExplore {
 
 	@Override
 	protected int explore(AliveCell cell) {
-		return cell.getFriends().size() == 0 ? 0 : 1;
+		return cell.getFriends().isEmpty() ? 0 : 1;
 	}
 }

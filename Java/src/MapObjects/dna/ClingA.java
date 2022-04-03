@@ -1,6 +1,11 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import static MapObjects.CellObject.OBJECT.CLEAN;
+import static MapObjects.CellObject.OBJECT.NOT_POISON;
+import static MapObjects.CellObject.OBJECT.ORGANIC;
+import static MapObjects.CellObject.OBJECT.POISON;
+import static MapObjects.CellObject.OBJECT.WALL;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -29,22 +34,23 @@ public class ClingA extends CommandDo {
 		cell.addHealth(-HP_COST); // бот теряет на этом 1 энергию
 		var see = cell.see(direction);
 		switch (see) {
-			case ENEMY:
-			case FRIEND:{
+			case ENEMY, FRIEND -> {
 				//--------- дошли до сюда, значит впереди живой бот -------------------
 				Point point = nextPoint(cell,direction);
-			    cell.setFriend((AliveCell) Configurations.world.get(point));
-			}break;
-			case ORGANIC:
-			case CLEAN:
-			case NOT_POISON:
-			case POISON:
-			case WALL:
-				cell.getDna().interrupt(cell, see.nextCMD);
-				break;
-			default:
-				throw new IllegalArgumentException("Unexpected value: " + see);
+				cell.setFriend((AliveCell) Configurations.world.get(point));
+			}
+			case ORGANIC, CLEAN, NOT_POISON, POISON, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
+			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
-	public String getParam(AliveCell cellObject, int numParam, int value) {return absoluteDirection(value);};
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));}
+	@Override
+	public int getInterrupt(AliveCell cell, DNA dna){return getInterrupt(cell, dna, true);}
+	protected int getInterrupt(AliveCell cell, DNA dna, boolean isA){
+		if(isA)
+			return getInterruptA(cell, dna, 0,ORGANIC, CLEAN, NOT_POISON, POISON, WALL);
+		else
+			return getInterruptR(cell, dna, 0,ORGANIC, CLEAN, NOT_POISON, POISON, WALL);
+	}
 }

@@ -16,4 +16,8 @@ public class HowMuchHP extends CommandExplore {
 		int param = param(cell, 0, AliveCell.MAX_HP);
 		return cell.getHealth() < param ? 0 : 1;
 	}
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		return String.valueOf(param(dna, 0, AliveCell.MAX_HP)) + "хп";
+	}
 }

@@ -4,6 +4,11 @@ import java.awt.Color;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
+import static MapObjects.CellObject.OBJECT.CLEAN;
+import static MapObjects.CellObject.OBJECT.ORGANIC;
+import static MapObjects.CellObject.OBJECT.POISON;
+import static MapObjects.CellObject.OBJECT.NOT_POISON;
+import static MapObjects.CellObject.OBJECT.WALL;
 import main.Configurations;
 import main.Point;
 import panels.Legend;
@@ -23,8 +28,7 @@ public class DNACopy extends CommandDNA {
 	protected int perform(AliveCell cell) {
 		OBJECT see = cell.see(cell.direction);
 		switch (see) {
-			case ENEMY:
-			case FRIEND:
+			case ENEMY, FRIEND -> {
 				cell.addHealth(-HP_COST); // бот теряет на этом 2 энергии в независимости от результата
 				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
@@ -38,17 +42,23 @@ public class DNACopy extends CommandDNA {
 					cell.color_DO = Color.GRAY;
 				// Смены команды не будет, ведь мы эту команду перезаписали уже на нужную. Поэтому двигаем PC на шаг назад
 				return -1;
-			case NOT_POISON:
-			case ORGANIC:
-			case POISON:
-			case WALL:
-			case CLEAN:
+			}
+			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN -> {
 				cell.getDna().interrupt(cell, see.nextCMD);
 				return 0;
-			default:
-				throw new IllegalArgumentException("Unexpected value: " + see);
+			}
+			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
 	
 	public boolean isDoing() {return true;};
+	
+	@Override
+	public int getInterrupt(AliveCell cell, DNA dna){
+		var see = cell.see(cell.direction);
+		if (see == NOT_POISON || see == ORGANIC || see == POISON || see == POISON || see == WALL || see == CLEAN)
+			return see.nextCMD;
+		else
+			return -1;
+	}
 }

@@ -17,4 +17,8 @@ public class HowHigh extends CommandExplore {
 		int param = param(cell, 0, Configurations.MAP_CELLS.height);
 		return cell.getPos().getY() < param ? 0 : 1;
 	}
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		return String.valueOf(param(cell, 0, Configurations.MAP_CELLS.height) + "y");
+	}
 }

@@ -17,5 +17,9 @@ public class StepR extends StepA {
 		DIRECTION dir = relatively(cell, param(cell,0, DIRECTION.size()));
 		step(cell,dir);
 	}
-	public String getParam(AliveCell cell, int numParam, int value) {return relativeDirection(cell, value);};
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna){return relativeDirection(cell,param(dna,0, DIRECTION.size()));}
+	
+	@Override
+	public int getInterrupt(AliveCell cell, DNA dna){return getInterrupt(cell, dna, relatively(cell,param(dna,0, DIRECTION.size())));}
 }

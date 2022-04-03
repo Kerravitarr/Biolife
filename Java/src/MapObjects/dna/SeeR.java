@@ -15,5 +15,6 @@ public class SeeR extends SeeA {
 	protected int explore(AliveCell cell) {
 		return cell.see(relatively(cell, param(cell,0, DIRECTION.size()))).nextCMD;
 	}
-	public String getParam(AliveCell cell, int numParam, int value) {return relativeDirection(cell, value);};
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna){return relativeDirection(cell,param(dna,0, DIRECTION.size()));}
 }

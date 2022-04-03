@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import MapObjects.CellObject;
 import main.Point.DIRECTION;
 
 /**
@@ -20,11 +21,22 @@ public class StepA extends CommandDo {
 	}
 	
 	protected void step(AliveCell cell,DIRECTION dir) {
-		if (cell.moveA(dir))
+		if (cell.move(dir))
 			cell.addHealth(-HP_COST); // бот теряет на этом 1 энергию
 		else
 			cell.getDna().interrupt(cell,cell.see(dir).nextCMD);
 	}
 
-	public String getParam(AliveCell cellObject, int numParam, int value) {return absoluteDirection(value);};
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));}
+	
+	@Override
+	public int getInterrupt(AliveCell cell, DNA dna){return getInterrupt(cell, dna, DIRECTION.toEnum(param(dna,0, DIRECTION.size())));}
+	public int getInterrupt(AliveCell cell, DNA dna,DIRECTION direction){
+		var see = cell.see(direction);
+		if (see == CellObject.OBJECT.CLEAN || see == CellObject.OBJECT.NOT_POISON || see == CellObject.OBJECT.POISON)
+			return -1; //Только сюда можно ступнуть
+		else
+			return see.nextCMD;
+	}
 }

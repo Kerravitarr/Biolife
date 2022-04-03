@@ -31,8 +31,7 @@ public class PullA extends CommandDo {
 	protected void pull(AliveCell cell,DIRECTION direction) {
 		var see = cell.see(direction);
 		switch (see) {
-			case NOT_POISON:
-			case POISON:{
+			case NOT_POISON, POISON -> {
 				cell.addHealth(-HP_COST); // Но немного потратились на это
 				Point point = nextPoint(cell,direction);
 				CellObject target = Configurations.world.get(point);
@@ -41,10 +40,8 @@ public class PullA extends CommandDo {
 				}catch (CellObjectRemoveException e) {
 					// А она возьми да умри. Вот ржака!
 				}
-			}return;
-			case ORGANIC:
-			case ENEMY:
-			case FRIEND:{
+			}
+			case ORGANIC, ENEMY, FRIEND -> {
 				cell.addHealth(-HP_COST); // Но немного потратились на это
 				Point point = nextPoint(cell,direction);
 				CellObject target = Configurations.world.get(point);
@@ -56,14 +53,26 @@ public class PullA extends CommandDo {
 				}
 				if(!targetStep)
 					cell.moveD(direction.inversion()); //Мы не смогли толкнуть цель, поэтому отлетаем сами
-			}return;
-			case WALL:
-			case CLEAN:
-				cell.getDna().interrupt(cell, see.nextCMD);
-			return;
-			default:
-				throw new IllegalArgumentException("Unexpected value: " + see);
+			}
+			case WALL, CLEAN -> cell.getDna().interrupt(cell, see.nextCMD);
+			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
-	public String getParam(AliveCell cellObject, int numParam, int value) {return absoluteDirection(value);};
+	
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));}
+	
+	
+	@Override
+	public int getInterrupt(AliveCell cell, DNA dna){
+		DIRECTION direction = DIRECTION.toEnum(param(dna,0, DIRECTION.size()));
+		return getInterrupt(cell, dna, direction);
+	}
+	public int getInterrupt(AliveCell cell, DNA dna,DIRECTION direction){
+		var see = cell.see(direction);
+		if(see == CellObject.OBJECT.WALL || see == CellObject.OBJECT.CLEAN)
+			return see.nextCMD;
+		else
+			return -1;
+	}
 }

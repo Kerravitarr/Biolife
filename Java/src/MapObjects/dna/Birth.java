@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.Poison;
+import static MapObjects.dna.CommandDNA.param;
 import main.Configurations;
 import main.Point;
 
@@ -69,5 +70,6 @@ public class Birth extends CommandDo {
 	}
 	
 
-	public String getParam(AliveCell cell, int numParam, int value){return String.valueOf(value);};
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna){return String.valueOf(param(cell,0)+1+1);}
 }

@@ -15,4 +15,7 @@ public class HowMuchDW extends CommandExplore {
 		int param = param(cell, 0);
 		return cell.getDNA_wall() < param ? 0 : 1;
 	}
+	
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna){return String.valueOf(param(dna, 0));}
 }

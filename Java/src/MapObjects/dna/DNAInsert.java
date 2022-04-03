@@ -4,6 +4,11 @@ import java.awt.Color;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
+import static MapObjects.CellObject.OBJECT.CLEAN;
+import static MapObjects.CellObject.OBJECT.NOT_POISON;
+import static MapObjects.CellObject.OBJECT.ORGANIC;
+import static MapObjects.CellObject.OBJECT.POISON;
+import static MapObjects.CellObject.OBJECT.WALL;
 import main.Configurations;
 import main.Point;
 import panels.Legend;
@@ -26,8 +31,7 @@ public class DNAInsert extends CommandDNA {
 		OBJECT see = cell.see(cell.direction);
 		int length_DNA = param(cell,0, cell.getDna().size);
 		switch (see) {
-			case ENEMY:
-			case FRIEND:
+			case ENEMY, FRIEND -> {
 				cell.addHealth(-HP_COST);
 				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
@@ -38,26 +42,39 @@ public class DNAInsert extends CommandDNA {
 					// Мы не можем встроить команду на встраивание. Вот главная особенность!
 					var dna = cell.getDna();
 					var PC = dna.getIndex();
-					for (int i = 0; i < length_DNA && (dna.get(PC,2 + i)) != (CommandList.block5 + 2); i++)
+					for (int i = 0; i < length_DNA && (dna.get(PC,2 + i)) != (CommandList.BLOCK_5 + 2); i++)
 						bot.DNAupdate(i, dna.get(PC,2 + i));
 					bot.setGeneration(bot.getGeneration() + 1);
 					bot.evolutionNode = bot.evolutionNode.newNode(bot, cell.getStepCount());
 				}
 				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 					cell.color_DO = Color.BLACK;
-				break;
-			case NOT_POISON:
-			case ORGANIC:
-			case POISON:
-			case WALL:
-			case CLEAN:
-				cell.getDna().interrupt(cell, see.nextCMD);
-				break;
-			default:
-				throw new IllegalArgumentException("Unexpected value: " + see);
+			}
+			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN -> cell.getDna().interrupt(cell, see.nextCMD);
+			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 		return length_DNA; // Но этот код не наш, мы его не выполняем!
 	}
 	
 	public boolean isDoing() {return true;};
+	
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna){
+		StringBuilder sb = new StringBuilder();
+		sb.append(" PC+=");
+		var value = param(dna,0, dna.size);
+		sb.append(value);
+		sb.append(" (");
+		sb.append((value+dna.getIndex())%dna.size);
+		sb.append(")");
+		return sb.toString();
+	};
+	@Override
+	public int getInterrupt(AliveCell cell, DNA dna){
+		var see = cell.see(cell.direction);
+		if (see == NOT_POISON || see == ORGANIC || see == POISON || see == POISON || see == WALL || see == CLEAN)
+			return see.nextCMD;
+		else
+			return -1;
+	}
 }

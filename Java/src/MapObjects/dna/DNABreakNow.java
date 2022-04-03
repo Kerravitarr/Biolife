@@ -4,6 +4,12 @@ import java.awt.Color;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
+import static MapObjects.CellObject.OBJECT.CLEAN;
+import static MapObjects.CellObject.OBJECT.NOT_POISON;
+import static MapObjects.CellObject.OBJECT.ORGANIC;
+import static MapObjects.CellObject.OBJECT.POISON;
+import static MapObjects.CellObject.OBJECT.WALL;
+import static MapObjects.dna.CommandDNA.param;
 import main.Configurations;
 import main.Point;
 import panels.Legend;
@@ -25,8 +31,7 @@ public class DNABreakNow extends CommandDo {
 	protected void doing(AliveCell cell) {
 		OBJECT see = cell.see(cell.direction);
 		switch (see) {
-			case ENEMY:
-			case FRIEND:
+			case ENEMY, FRIEND -> {
 				cell.addHealth(-HP_COST); // бот теряет на этом 2 энергии в независимости от результата
 				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
@@ -40,16 +45,28 @@ public class DNABreakNow extends CommandDo {
 				}
 				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 					cell.color_DO = Color.BLACK;
-				break;
-			case CLEAN:
-			case NOT_POISON:
-			case ORGANIC:
-			case POISON:
-			case WALL:
-				cell.getDna().interrupt(cell, see.nextCMD);
-				break;
-			default:
-				throw new IllegalArgumentException("Unexpected value: " + see);
+			}
+			case CLEAN, NOT_POISON, ORGANIC, POISON, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
+			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
+	}
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		StringBuilder sb = new StringBuilder();
+		var param = param(dna,0);
+		sb.append(param);
+		sb.append(" (");
+		sb.append(CommandList.list[param]);
+		sb.append(")");
+		return sb.toString();
+	}
+	
+	@Override
+	public int getInterrupt(AliveCell cell, DNA dna){
+		var see = cell.see(cell.direction);
+		if (see == CLEAN || see == NOT_POISON || see == ORGANIC || see == POISON || see == WALL)
+			return see.nextCMD;
+		else
+			return -1;
 	}
 }

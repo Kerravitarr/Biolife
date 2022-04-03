@@ -1,7 +1,6 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import MapObjects.CellObject.LV_STATUS;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -15,13 +14,13 @@ public abstract class CommandDNA {
 	/**Возможность функции уйти в прерывание*/
 	protected boolean isInterrupt = false;
 	/**Количество параметров у клетки*/
-	private int countParams;
+	private final int countParams;
 	/**Количество переходов у клетки*/
-	private int countBranch;
+	private final int countBranch;
 	/**Короткое имя*/
-	private String shotName;
+	private final String shotName;
 	/**Полное имя*/
-	private String longName;
+	private final String longName;
 	/**Показывает, что мы должны отображать всё в кратком виде*/
 	private static boolean isFullMod = false;
 	/**
@@ -38,7 +37,11 @@ public abstract class CommandDNA {
 		this.longName = longName;
 	}
 
-	/**Выполняет действие над клеткой и возвращает truе, если это полное действие*/
+	/**
+	 * Выполняет действие над клеткой
+	 * @param cell - кто именно будет выполнять действие
+	 * @return true, если это полное действие - то есть действие, которое будет последним
+	 */
 	public boolean execute(AliveCell cell) {
 		/**Указывает какую ветвь выполнять функции*/
 		int branch = perform(cell);
@@ -60,30 +63,62 @@ public abstract class CommandDNA {
 	 */
 	protected abstract int perform(AliveCell cell);
 	
-	/**Возвращает true, если команда выполняет действие (конечная)*/
+	/**
+	 * Проверяет, эта команда что-то делает с клеткой или только исследует окружающий мир
+	 * @return true, если команда выполняет действие (конечная)
+	 */
 	public abstract boolean isDoing();
-	/**Возвращает true, если команда может вызвать прерывание*/
+	/**
+	 * Проверяет, имеет-ли команда прерывание
+	 * @return true, если команда может вызвать прерывание
+	 */
 	public boolean isInterrupt() {return isInterrupt;};	
 	
 	
-	/**Возвращает параметр ДНК*/
+	/**
+	 * Возвращает параметр ДНК
+	 * @param cell - клетка, параметр который возвращаем
+	 * @param numParam - номер параметра
+	 * @return значение параметра, от 0 до CommandList.COUNT_COMAND, включетльно
+	 */
 	protected static int param(AliveCell cell, int numParam) {
 		return param(cell.getDna(),numParam);
 	}
-	/**Возвращает параметр ДНК*/
+	/**
+	 * Возвращает параметр ДНК
+	 * @param dna - днк, параметр который возвращаем
+	 * @param numParam - номер параметра
+	 * @return значение параметра, от 0 до CommandList.COUNT_COMAND, включетльно
+	 */
 	protected static int param(DNA dna, int numParam) {
 		return dna.get(dna.getIndex(),  1 +numParam);
 	}
-	/**Возвращает параметр ДНК ограниченный максимальным значением*/
+	/**
+	 * Возвращает параметр ДНК
+	 * @param cell - клетка, параметр который возвращаем
+	 * @param index - номер параметра
+	 * @param maxVal - максимальное значение, которым ограничивается параметр
+	 * @return значение параметра, от 0 до maxVal, включетльно
+	 */
 	protected static int param(AliveCell cell, int index, double maxVal) {
 		return param(cell.getDna(),index,maxVal);
 	}
-	/**Возвращает параметр ДНК ограниченный максимальным значением*/
+	/**
+	 * Возвращает параметр ДНК
+	 * @param dna - днк, параметр который возвращаем
+	 * @param index - номер параметра
+	 * @param maxVal - максимальное значение, которым ограничивается параметр
+	 * @return значение параметра, от 0 до maxVal, включетльно
+	 */
 	protected static int param(DNA dna, int index, double maxVal) {
 		return (int) Math.round(maxVal * param(dna,index) / CommandList.COUNT_COMAND);
 	}
 
-	/**Ищет пустое направление вокруг клетки*/
+	/**
+	 * Ищет пустое направление вокруг клетки
+	 * @param cell - клетка
+	 * @return ближайшая пустая точка или null
+	 */
 	protected static Point findEmptyDirection(AliveCell cell) {
 		for (int i = 0; i < DIRECTION.size()/2+1; i++) {
 	    	if(i == 0 || i == 4) {
@@ -103,15 +138,30 @@ public abstract class CommandDNA {
 	    }
 	    return null;
 	}
-	/**Возвращает точку в заданном направлении*/
+	/**
+	 * Возвращает точку в заданном направлении
+	 * @param cell - клетка, которая задаёт точку начала
+	 * @param direction - напаравление, в котором нам нужна клетка
+	 * @return 
+	 */
 	protected static Point nextPoint(AliveCell cell,DIRECTION direction) {
 	    return cell.getPos().next(direction);
 	}
-	/**Превращает относительное направление в абсолютное*/
+	/**
+	 * Превращает относительное направление в абсолютное
+	 * @param cell - клетка, с её напралвлением смотерния
+	 * @param direction - направление, на которое нужно сдвинуть гляделку
+	 * @return 
+	 */
 	protected static DIRECTION relatively(AliveCell cell,DIRECTION direction) {
-		return direction.next(cell.direction);
+		return cell.direction.next(direction);
 	}
-	/**Превращает относительное направление в абсолютное*/
+	/**
+	 * Превращает относительное направление в абсолютное
+	 * @param cell - клетка, с её напралвлением смотерния
+	 * @param direction - направление, на которое нужно сдвинуть гляделку
+	 * @return 
+	 */
 	protected static DIRECTION relatively(AliveCell cell,int direction) {
 		return cell.direction.next(direction);
 	}
@@ -132,53 +182,75 @@ public abstract class CommandDNA {
 		return countBranch;
 	}
 
+	@Override
 	public String toString() {
 		if (isFullMod)
 			return getLongName();
 		else
 			return getShotName();
 	}
-	public String toString(AliveCell cell) {
+	/**
+	 * Выдаёт имя функции
+	 * @param cell - клетка, функция которой исследуется
+	 * @param dna - "локальная" копия ДНК, именно она решает как будет выглядеть результат
+	 * @return Строковое описание функции
+	 */
+	public String toString(AliveCell cell, DNA dna) {
 		return toString();
 	}
 	/**
 	 * Возвращает описание параметра по переданному значению
-	 * @param cellObject - клетка, параметр который нам важен
+	 * @param cell - клетка, параметр который нам важен
 	 * @param numParam - номер этого параметра, считая от 0
-	 * @param value  - значение этого параметра
+	 * @param dna - "локальная" копия ДНК, в которой и хранится параметр
 	 * @return текстовое описание параметра
 	 */
-	public String getParam(AliveCell cell, int numParam, int value){return nonParam();};
-	/**Функция без параметров*/
+	public String getParam(AliveCell cell, int numParam, DNA dna){
+		if(countParams != 0)
+			throw new UnsupportedOperationException("Забыл подписать параметр для " + toString() + " " + this.getClass());
+		else
+			return nonParam();
+	};
+	/**
+	 * Заглушка для функции без параметров
+	 * @return ""
+	 */
 	protected String nonParam() {return "";};
-	/** Абсолютное направление */
+	/**
+	 * Переводит значение в абсолютное направление
+	 * @param value - значение параметра
+	 * @return Текстовое описание направления
+	 */
 	protected String absoluteDirection(int value) {
-		value = getParam(value,DIRECTION.size());
 		if (isFullMod)
 			return DIRECTION.toEnum(value).name();
 		else
 			return DIRECTION.toEnum(value).toString();
 	};
 
-	/** Относительное направление */
-	protected String relativeDirection(AliveCell cell, int value) {
-		value = DIRECTION.toNum(cell.direction) + getParam(value,DIRECTION.size());
-		if (isFullMod)
-			return DIRECTION.toEnum(value).name();
-		else
-			return DIRECTION.toEnum(value).toString();
-	};
 	/**
-	 * Возвращает параметр нормализованный от 0 до максимального значения
-	 * @param val
-	 * @param maxVal
-	 * @return
+	 * Переводит значение в относительное направление
+	 * @param cell - клетка. Ну направление-же относительное, поэтомуо относительно того, куда глядит клетка
+	 * @param value - значение параметра
+	 * @return Текстовое описание направления
 	 */
-	protected int getParam(int val,int maxVal) {
-		return Math.round(maxVal * val / CommandList.COUNT_COMAND);
-	}
+	protected String relativeDirection(AliveCell cell, int value) {
+		if (isFullMod)
+			return cell.direction.next(value).name();
+		else
+			return cell.direction.next(value).toString();
+	};
 
 	public static void setFullMod(boolean isFullMod) {
 		CommandDNA.isFullMod = isFullMod;
+	}
+	/**
+	 * Возвращает номер сработавшего прерывания
+	 * @param cell - клетка, у которой срабатывает прерывание
+	 * @param dna - "локальная" копия ДНК, в которой и хранится параметр
+	 * @return номер прерывания или -1
+	 */
+	public int getInterrupt(AliveCell cell, DNA dna) {
+		throw new UnsupportedOperationException("Если у вас есть прерывание - будьте любезны его реализовать для " + toString() + " " + this.getClass());
 	}
 }

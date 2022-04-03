@@ -10,7 +10,7 @@ import MapObjects.AliveCell;
  */
 public class Reversal extends CommandDo {
 
-	protected Reversal() {super("↟","Ориентация вверх");}
+	protected Reversal() {super("↕","Размернуться");}
 
 	@Override
 	protected void doing(AliveCell cell) {

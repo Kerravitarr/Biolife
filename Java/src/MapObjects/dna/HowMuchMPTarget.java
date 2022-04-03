@@ -24,4 +24,8 @@ public class HowMuchMPTarget extends CommandExplore {
 			return 2;
 		}
 	}
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		return String.valueOf(param(dna, 0, AliveCell.MAX_MP)) + "мп";
+	}
 }

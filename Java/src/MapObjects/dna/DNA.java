@@ -28,7 +28,7 @@ public class DNA {
 		this.size=size;
 		mind = new int[this.size];
 		for (int i = 0; i < mind.length; i++) {
-			mind[i] = CommandList.block1; // У клетки по базе только одна функция - фотосинтез
+			mind[i] = CommandList.BLOCK_1; // У клетки по базе только одна функция - фотосинтез
 		}
 		instruction = 0;
 		for (int i = 0; i < interrupts.length; i++)
@@ -163,11 +163,11 @@ public class DNA {
 		return mind[pos];
 	}
 	
+	@Override
 	public boolean equals(Object obj) {
 		if(this == obj) {
 			return true;
-		} else if (obj instanceof DNA) {
-			DNA dna = (DNA) obj;
+		} else if (obj instanceof DNA dna) {
 			if(this.mind == dna.mind) //Они ссылаются на один финальный массив - они полностью равны
 				return true;
 			if(this.size != dna.size) //У них разная длинна, это априорно даст разные ДНК
@@ -177,7 +177,7 @@ public class DNA {
 				if(dna.mind[i] != dna.mind[i])
 					dif++;
 			}
-			return dif >= 2;
+			return dif <= 2;
 		} else {
 			return false;
 		}
