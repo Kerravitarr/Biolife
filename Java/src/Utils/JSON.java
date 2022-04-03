@@ -2,6 +2,7 @@ package Utils;
 
 
 
+import Utils.JsonSave.Serialization;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -18,7 +19,7 @@ import java.util.Map.Entry;
  * @author Илья
  *
  */
-public class JSON {
+public class JSON implements Serialization{
 	/**Перечисление разных состояний парсинга файла*/
 	private enum JSON_TOKEN{
 		BEGIN_OBJECT("{"), END_OBJECT("}"), BEGIN_ARRAY("["), END_ARRAY("]"), NULL("null"), NUMBER("number"),
@@ -42,6 +43,7 @@ public class JSON {
 		}
 		public JSON_TOKEN type;
 		public Object value;
+		@Override
 		public String toString() {return type + " " + value;}
 	}
 	
@@ -67,36 +69,23 @@ public class JSON {
 		public JSON.Token next() throws IOException, JSON.ParseException {
 			char ch;
 			do {
-	            if (!stream.ready())
-	                return new Token(JSON_TOKEN.END_DOCUMENT, null);
-	            ch = read();
-	        }while(isWhiteSpace(ch));
-			switch (ch) { // Не пробел, а что?
-			case '{':
-				return new JSON.Token(JSON_TOKEN.BEGIN_OBJECT, null);
-			case '}':
-				return new Token(JSON_TOKEN.END_OBJECT, null);
-			case '[':
-				return new Token(JSON_TOKEN.BEGIN_ARRAY, null);
-			case ']':
-				return new Token(JSON_TOKEN.END_ARRAY, null);
-			case ',':
-				return new Token(JSON_TOKEN.SEP_COMMA, null);
-			case ':':
-				return new Token(JSON_TOKEN.SEP_COLON, null);
-			case 'n':
-				return readNull();
-			case 't':
-			case 'f':
-				return readBoolean(ch);
-			case '"':
-				return readString();
-			case '-':
-				return readNumber(ch);
-			}
-	        if (isDigit(ch))
-	            return readNumber(ch);
-	        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
+				if (!stream.ready())
+					return new Token(JSON_TOKEN.END_DOCUMENT, null);
+				ch = read();
+			} while (isWhiteSpace(ch));
+			return switch (ch) { // Не пробел, а что?
+				case '{' ->	new JSON.Token(JSON_TOKEN.BEGIN_OBJECT, null);
+				case '}' -> new Token(JSON_TOKEN.END_OBJECT, null);
+				case '[' -> new Token(JSON_TOKEN.BEGIN_ARRAY, null);
+				case ']' -> new Token(JSON_TOKEN.END_ARRAY, null);
+				case ',' -> new Token(JSON_TOKEN.SEP_COMMA, null);
+				case ':' -> new Token(JSON_TOKEN.SEP_COLON, null);
+				case 'n' -> readNull();
+				case 't', 'f' -> readBoolean(ch);
+				case '"' -> readString();
+				//case '-' -> readNumber(ch); - входит в def
+				default -> readNumber(ch);
+			};
 		}
 		/**
 		 * Читает число из входного потока
@@ -206,27 +195,26 @@ public class JSON {
 			StringBuilder sb = new StringBuilder();
 			while (true) {
 				char ch = read();
-				if (ch == '\\') {
-					char escapeCh = read();
-					if (!isEscape(escapeCh))
-				        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
-					sb.append('\\');
-					sb.append(ch);
-					if (ch == 'u') {
-						for (int i = 0; i < 4; i++) {
-							ch = read();
-							if (isHex(ch))
-								sb.append(ch);
-							else
-						        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
+				switch (ch) {
+					case '\\' -> {
+						char escapeCh = read();
+						if (!isEscape(escapeCh))
+							throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
+						sb.append('\\');
+						sb.append(ch);
+						if (ch == 'u') {
+							for (int i = 0; i < 4; i++) {
+								ch = read();
+								if (isHex(ch))
+									sb.append(ch);
+								else
+									throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
+							}
 						}
 					}
-				} else if (ch == '"') {
-					return new Token(JSON_TOKEN.STRING, sb.toString());
-				} else if (ch == '\r' || ch == '\n') {
-			        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
-				} else {
-					sb.append(ch);
+					case '"' -> {return new Token(JSON_TOKEN.STRING, sb.toString());}
+					case '\r', '\n' -> throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch); //Не может быть тут таких символов
+					default -> sb.append(ch);
 				}
 			}
 		}
@@ -336,7 +324,7 @@ public class JSON {
 	 * Разные ошибки, возникающие при парсинге файла
 	 *
 	 */
-	public class ParseException extends Exception {
+	public class ParseException extends RuntimeException {
 		private ERROR errorType;
 		private Object unexpectedObject;
 		private long position;
@@ -373,27 +361,15 @@ public class JSON {
 			return unexpectedObject;
 		}
 
+		@Override
 		public String getMessage() {
-			StringBuffer sb = new StringBuffer();
-
+			StringBuilder sb = new StringBuilder();
 			switch (errorType) {
-			case UNEXPECTED_CHAR:
-				sb.append("Неожиданный символ '").append(unexpectedObject).append("' в позиции ").append(position)
-						.append(".");
-				break;
-			case UNEXPECTED_TOKEN:
-				sb.append("Неожиданный токен '").append(unexpectedObject).append("' в позиции ").append(position)
-						.append(".");
-				break;
-			case UNEXPECTED_EXCEPTION:
-				sb.append("Unexpected exception at position ").append(position).append(": ").append(unexpectedObject);
-				break;
-			case UNEXPECTED_VALUE:
-				sb.append("Неожиданное значение в позиции ").append(position).append(": ").append(unexpectedObject);
-				break;
-			default:
-				sb.append("Неизвестная ошибка в позиции ").append(position).append(".");
-				break;
+				case UNEXPECTED_CHAR -> sb.append("Неожиданный символ '").append(unexpectedObject).append("' в позиции ").append(position).append(".");
+				case UNEXPECTED_TOKEN -> sb.append("Неожиданный токен '").append(unexpectedObject).append("' в позиции ").append(position).append(".");
+				case UNEXPECTED_EXCEPTION -> sb.append("Unexpected exception at position ").append(position).append(": ").append(unexpectedObject);
+				case UNEXPECTED_VALUE -> sb.append("Неожиданное значение в позиции ").append(position).append(": ").append(unexpectedObject);
+				default -> sb.append("Неизвестная ошибка в позиции ").append(position).append(".");
 			}
 			return sb.toString();
 		}
@@ -561,24 +537,23 @@ public class JSON {
 	 * @throws JSON.ParseException 
 	 * @throws IOException */
 	public JSON(Reader parseStr) throws JSON.ParseException, IOException {
-		parametrs = parse(parseStr).parametrs;
+		parse(parseStr);
 	}
 	
 	/**
 	 * Разбирает поток в формат JSON
 	 * @param in
-	 * @return
 	 * @throws JSON.ParseException 
 	 * @throws IOException 
 	 */
-	public JSON parse(Reader in) throws IOException, JSON.ParseException{
+	public void parse(Reader in) throws IOException, JSON.ParseException{
 		TokenReader reader = new TokenReader(in);
 		if(!reader.hasNext()) { // Пустой файл
-			return new JSON();
+			parametrs.clear();
 		}else {
 			Token token = reader.next();
 			if(token.type == JSON_TOKEN.BEGIN_OBJECT)
-				return parseO(reader);
+				parametrs = parseO(reader).parametrs;
 			else
 				throw new ParseException(reader.pos, ERROR.UNEXPECTED_TOKEN, token.value);
 		}
@@ -601,37 +576,33 @@ public class JSON {
 			if ((expectToken & token.type.value) == 0)
 				throw new ParseException(reader.pos, ERROR.UNEXPECTED_TOKEN, token.type);
 			switch (token.type) {
-				case BEGIN_ARRAY:
+				case BEGIN_ARRAY -> {
 					json.add(key, parseA(reader));
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_OBJECT.value; // Или следующий объект или мы всё
-					break;
-				case BEGIN_OBJECT:
+				}
+				case BEGIN_OBJECT -> {
 					json.add(key, parseO(reader));
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_OBJECT.value; // Или следующий объект или мы всё
-					break;
-				case END_ARRAY:
-					break;
-				case END_DOCUMENT: // Этого мы ни когда не ждём!
+				}
+				case END_ARRAY -> {
+				}
+				case END_DOCUMENT -> // Этого мы ни когда не ждём!
 					throw new ParseException(reader.pos, ERROR.UNEXPECTED_EXCEPTION, "Неожиданный конец документа");
-				case END_OBJECT:
+				case END_OBJECT -> {
 					return json; //Мы всё!
-				case NULL:
+				}
+				case NULL -> {
 					json.add(key, (Object) null);
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_OBJECT.value; // Или следующий объект или мы всё
-					break;
-				case BOOLEAN:
-				case NUMBER:
+				}
+				case BOOLEAN, NUMBER -> {
 					json.add(key, token.value);
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_OBJECT.value; // Или следующий объект или мы всё
-					break;
-				case SEP_COLON:
-					expectToken = JSON_TOKEN.NULL.value | JSON_TOKEN.NUMBER.value | JSON_TOKEN.BOOLEAN.value
-							| JSON_TOKEN.STRING.value | JSON_TOKEN.BEGIN_OBJECT.value | JSON_TOKEN.BEGIN_ARRAY.value; // А дальше значение ждём!
-					break;
-				case SEP_COMMA:
-					expectToken = JSON_TOKEN.STRING.value; // Теперь снова ключ
-					break;
-				case STRING:
+				}
+				case SEP_COLON -> expectToken = JSON_TOKEN.NULL.value | JSON_TOKEN.NUMBER.value | JSON_TOKEN.BOOLEAN.value
+						| JSON_TOKEN.STRING.value | JSON_TOKEN.BEGIN_OBJECT.value | JSON_TOKEN.BEGIN_ARRAY.value; // А дальше значение ждём!
+				case SEP_COMMA -> expectToken = JSON_TOKEN.STRING.value; // Теперь снова ключ
+				case STRING -> {
 					if(lastToken == JSON_TOKEN.SEP_COLON) { // Если у нас было :, то мы просто значение 
 						json.add(key, token.value);
 						expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_OBJECT.value; // Или следующий объект или мы всё
@@ -639,7 +610,7 @@ public class JSON {
 						key = (String) token.value;
 						expectToken = JSON_TOKEN.SEP_COLON.value; // А дальше значение ждём!
 					}
-					break;
+				}
 			}
 			lastToken = token.type;
 		}
@@ -663,7 +634,7 @@ public class JSON {
 			if ((expectToken & token.type.value) == 0)
 				throw new ParseException(reader.pos, ERROR.UNEXPECTED_TOKEN, token.value);
 			switch (token.type) {
-				case BEGIN_ARRAY:
+				case BEGIN_ARRAY -> {
 					if(sample == null || sample instanceof List) {
 						sample = parseA(reader);
 						array.add(sample);
@@ -671,8 +642,8 @@ public class JSON {
 						throw new ParseException(reader.pos, ERROR.UNKNOW, "Массив содержит значения разных типов");
 					}
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_ARRAY.value; // Или следующий объект или мы всё
-					break;
-				case BEGIN_OBJECT:
+				}
+				case BEGIN_OBJECT -> {
 					if(sample == null || sample instanceof JSON) {
 						sample = parseO(reader);
 						array.add(sample);
@@ -680,20 +651,17 @@ public class JSON {
 						throw new ParseException(reader.pos, ERROR.UNKNOW, "Массив содержит значения разных типов");
 					}
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_ARRAY.value; // Или следующий объект или мы всё
-					break;
-				case END_ARRAY:
+				}
+				case END_ARRAY -> {
 					return array;
-				case END_OBJECT:
-				case SEP_COLON:
-				case END_DOCUMENT: // Этого мы ни когда не ждём!
+				}
+				case END_OBJECT, SEP_COLON, END_DOCUMENT -> // Этого мы ни когда не ждём!
 					throw new ParseException(reader.pos, ERROR.UNKNOW, "Ошибка библиотеки");
-				case NULL:
-					array.add((Object)null);
+				case NULL -> {
+					array.add(null);
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_ARRAY.value; // Или следующий объект или мы всё
-					break;
-				case BOOLEAN:
-				case NUMBER:
-				case STRING:
+				}
+				case BOOLEAN, NUMBER, STRING -> {
 					if(sample == null || sample.getClass() == token.value.getClass()) {
 						sample = token.value;
 						array.add(sample);
@@ -701,11 +669,9 @@ public class JSON {
 						throw new ParseException(reader.pos, ERROR.UNKNOW, "Массив содержит значения разных типов");
 					}
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_ARRAY.value; // Или следующий объект или мы всё
-					break;
-				case SEP_COMMA:
-					expectToken = JSON_TOKEN.NULL.value | JSON_TOKEN.NUMBER.value | JSON_TOKEN.BOOLEAN.value
-					| JSON_TOKEN.STRING.value | JSON_TOKEN.BEGIN_OBJECT.value | JSON_TOKEN.BEGIN_ARRAY.value; // А дальше значение ждём!
-					break;
+				}
+				case SEP_COMMA -> expectToken = JSON_TOKEN.NULL.value | JSON_TOKEN.NUMBER.value | JSON_TOKEN.BOOLEAN.value
+						| JSON_TOKEN.STRING.value | JSON_TOKEN.BEGIN_OBJECT.value | JSON_TOKEN.BEGIN_ARRAY.value; // А дальше значение ждём!
 			}
 		}
 		throw new ParseException(reader.pos, ERROR.UNEXPECTED_EXCEPTION, "Неожиданный конец документа");
@@ -719,9 +685,9 @@ public class JSON {
 	 */
 	public <T> void add(String key, T value) {
 		if(value.getClass().isArray()) // Массивы
-			parametrs.put(key, new JSON_A<T>(value));
+			parametrs.put(key, new JSON_A<>(value));
 		else
-			parametrs.put(key, new JSON_O<T>(value));
+			parametrs.put(key, new JSON_O<>(value));
 	}
 	/**
 	 * Добавить новую пару ключ-значение в объект
@@ -729,7 +695,7 @@ public class JSON {
 	 * @param value - значение
 	 */
 	public <T> void add(String key, T[] value) {
-		parametrs.put(key, new JSON_A<T>(value));
+		parametrs.put(key, new JSON_A<>(value));
 	}
 	/**
 	 * Добавить новую пару ключ-значение в объект
@@ -737,7 +703,7 @@ public class JSON {
 	 * @param value - значение
 	 */
 	public <T> void add(String key, List<T> value) {
-		parametrs.put(key, new JSON_A<T>(value));
+		parametrs.put(key, new JSON_A<>(value));
 	}
 	/**
 	 * Получает любые векторные значения по ключу
@@ -777,13 +743,7 @@ public class JSON {
 	public Integer getI(String key) {
 		Number val = get(key);
 		if(val == null) return null;
-		if (val instanceof Integer) {
-			return (Integer) val;
-		}else if (val instanceof Long) {
-			return ((Long) val).intValue();
-		}else {
-			return null;
-		}
+		return val.intValue();
 	}
 	/**
 	 * Получает значение по ключу. Заглушка, потому что во
@@ -794,13 +754,7 @@ public class JSON {
 	public Long getL(String key) {
 		Number val = get(key);
 		if(val == null) return null;
-		if (val instanceof Long) {
-			return (Long) val;
-		}else if (val instanceof Integer) {
-			return ((Integer) val).longValue();
-		}else {
-			return null;
-		}
+		return val.longValue();
 	}
 	/**
 	 * Получает значение по ключу

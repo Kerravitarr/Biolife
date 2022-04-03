@@ -3,53 +3,68 @@ package Utils;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
-import Utils.JSON.ParseException;
-
 /**
- * Класс для сохранения и загрузки объекта в файл в JSON
+ * Класс для сохранения и загрузки объекта в файл в виде текстовой информации
  * Главной папкой по умолчанию считается папка где запущен файл
- * @author rjhjk
+ * @author Keravitarr
  *
  */
 public class JsonSave {
+	/**
+	 * Интерфейс серелизации
+	 */
+	public interface Serialization{
+		/**Функция записывает в поток строку в красивом исполнении*/
+		public void toBeautifulJSONString(Writer writer) throws IOException;
+		/** Функция записывает в поток информацию в виде одной строки */
+		public void toJSONString(Writer writer) throws IOException;
+		/** Разбирает объект из потока */
+		public void parse(Reader reader) throws IOException;
+		
+	}
 	
-	private String path;
+	private final String path;
 	/**Название проекта/окна*/
-	private String projectName;
+	private final String projectName;
+	/**Название проекта/окна*/
+	private final String extension;
 	
-	public JsonSave(String projectName){
+	public JsonSave(String projectName,String extension){
 		path = System.getProperty("user.dir");
 		this.projectName=projectName;
+		this.extension=extension;
 	}
 
 	/**
 	 * Создаёт диалоговое окно и сохраняет файл
-	 * @param json объект, который надо сохранить
+	 * @param obj объект, который надо сохранить
 	 * @param isBeautiful красивое сохранине или в одну строчку
 	 * @return true, если файл сохранён
 	 */
-	public boolean save(JSON json, boolean isBeautiful) {
+	public boolean save(Serialization obj, boolean isBeautiful) {
 		JFileChooser fileopen = new JFileChooser(path);
-		fileopen.setFileFilter(new FileNameExtensionFilter("JSON", "json"));
+		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
 		int ret = fileopen.showDialog(null, "Сохранить файл");
 		if (ret != JFileChooser.APPROVE_OPTION) return false;
 		String fileName = fileopen.getSelectedFile().getPath();
 		if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
-			if(!fileName.substring(fileName.lastIndexOf(".")+1).equals("json"))
-				fileName += ".json";
+			if(!fileName.substring(fileName.lastIndexOf(".")+1).equals(extension))
+				fileName += "."+extension;
 		} else {
-			fileName += ".json";
+			fileName += "."+extension;
 		}
 		try(FileWriter writer = new FileWriter(fileName, true)){
 			if(isBeautiful)
-				json.toBeautifulJSONString(writer);
+				obj.toBeautifulJSONString(writer);
 			else
-				json.toJSONString(writer);
+				obj.toJSONString(writer);
 			writer.flush();
 			JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	projectName, JOptionPane.INFORMATION_MESSAGE);
 			return true;
@@ -61,20 +76,19 @@ public class JsonSave {
 	}
 	/**
 	 * Создаёт окно выбора JSON объекта и загружает объект
-	 * @return
+	 * @param obj - объект, который уже создан и осталось только парсировать файл
 	 */
-	public JSON load() {
+	public void load(Serialization obj) {
 		JFileChooser fileopen = new JFileChooser(path);
-		fileopen.setFileFilter(new FileNameExtensionFilter("JSON", "json"));
+		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
 		int ret = fileopen.showDialog(null, "Выбрать файл");
 		if (ret == JFileChooser.APPROVE_OPTION) {
 			try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
-				return new JSON(reader);
-			} catch (IOException | java.lang.RuntimeException | ParseException e1) {
+				obj.parse(reader);
+			} catch (Exception e1) {
 				e1.printStackTrace();
 				JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage(),	projectName, JOptionPane.ERROR_MESSAGE);
 			} 
 		}
-		return null;
 	}
 }
