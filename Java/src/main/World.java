@@ -28,9 +28,12 @@ import MapObjects.Sun;
 import Utils.FPScounter;
 import Utils.JSON;
 import Utils.Utils;
+import java.awt.HeadlessException;
+import java.awt.event.ComponentListener;
+import java.awt.event.MouseListener;
 import main.Point.DIRECTION;
 
-public class World extends JPanel {	
+public class World extends JPanel implements Runnable,ComponentListener,MouseListener{	
 	/**Симуляция запущена?*/
 	public static boolean isActiv = true;
 	/**Произошла авария?*/
@@ -54,13 +57,13 @@ public class World extends JPanel {
 		
 		WorkThread first;
 		WorkThread second;
-		WorkThread activ = null;
 		WorldTask(Point [] cellsFirst, Point[] cellsSecond){
 			first = new WorkThread(cellsFirst);
 			second = new WorkThread(cellsSecond);
 		}
+		@Override
 		public Boolean call(){
-			activ = isFirst ? first : second;
+			WorkThread activ = isFirst ? first : second;
 			Thread.currentThread().setName("Row: " + activ.startX);
 			Point[] points = activ.points;
 			for (int i = points.length - 1; i > 0 && !isError; i--) {
@@ -69,24 +72,28 @@ public class World extends JPanel {
 				int j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
 				points[i] = points[j];
 				points[j] = t;
-				CellObject cell = get(points[i]);
-				if(cell != null && cell.canStep(step)) {
-					try {
-						cell.step(step);
-					} catch (Exception e) {
-						isError = true;
-						isActiv = false;
-						e.printStackTrace();
-						System.out.println(cell);
-						JOptionPane.showMessageDialog(null,	"<html>Критическая ошибка!!!<br>"
-								+ "Вызвала клетка "+cell+" с координат" + points[i] + "<br>"
-								+ "Описание: " + e.getMessage() + "<br>"
-								+ "К сожалению дальнейшее моделирование невозможно. <br>"
-								+ "Вы можете сохранить мир и перезагрузить программу.",	"BioLife", JOptionPane.ERROR_MESSAGE);
-					}
-				}
+				action(points[i]);
 			}
 			return null;
+		}
+
+		private void action(Point point) throws HeadlessException {
+			CellObject cell = get(point);
+			if(cell != null && cell.canStep(step)) {
+				try {
+					cell.step(step);
+				} catch (Exception e) {
+					isError = true;
+					isActiv = false;
+					e.printStackTrace();
+					System.out.println(cell);
+					JOptionPane.showMessageDialog(null,	"<html>Критическая ошибка!!!\n"
+							+ "Вызвала клетка " + cell + " с координат" + point + "\n"
+							+ "Описание: " + e.getMessage() + "\n"
+							+ "К сожалению дальнейшее моделирование невозможно. \n"
+							+ "Вы можете сохранить мир и перезагрузить программу.",	"BioLife", JOptionPane.ERROR_MESSAGE);
+				}
+			}
 		}
 	}
 	
@@ -112,6 +119,10 @@ public class World extends JPanel {
 	public int countPoison = 0;
 	/**Все цвета, которые мы должны отобразить на поле*/
 	Color [] colors;
+	/**Это мы, наш поток, в нём мы рисуем всё и всяк*/
+	private final AutostartThread worldThread;
+	/**Мы живы. Наш поток жив, мы выполняем расчёт*/
+	public boolean isStart = true;
 	/**
 	 * Create the panel.
 	 */
@@ -130,52 +141,22 @@ public class World extends JPanel {
 		
 		setBackground(new Color(255, 255, 255, 255));
 
-		addComponentListener(new ComponentAdapter() {
-			public void componentResized(ComponentEvent e) {
-				double hDel = 1.0 * getHeight() * (1 - (Configurations.UP_border + Configurations.DOWN_border)) / (Configurations.MAP_CELLS.height);
-				double wDel = 1.0 * getWidth() / (Configurations.MAP_CELLS.width);
-				Configurations.scale = Math.min(hDel, wDel);
-				Configurations.border.width = (int) Math.round((getWidth() -Configurations.MAP_CELLS.width*Configurations.scale)/2);
-				Configurations.border.height = (int) Math.round((getHeight() - Configurations.MAP_CELLS.height*Configurations.scale)/2);
-				Point.update();
-				for(Geyser gz : Configurations.geysers)
-					gz.updateScreen(getWidth(),getHeight());
-				Configurations.sun.resize(getWidth(),getHeight());
-			}
-		});
-		
-		addMouseListener(new MouseAdapter() {
-		    public void mouseClicked(MouseEvent e) {
-		    	if(Configurations.info.isVisible()) {
-		    		int realX = e.getX();
-		    		if(realX < Configurations.border.width || realX > getWidth() - Configurations.border.width)
-		    			return;
-		    		int realY = e.getY();
-		    		if(realY < Configurations.border.height || realY > getHeight() - Configurations.border.height)
-		    			return;
-		    		realX -= Configurations.border.width;
-		    		realY -= Configurations.border.height;
-		    		realX = (int) Math.round(realX/Configurations.scale-0.5);
-		    		realY = (int) Math.round(realY/Configurations.scale-0.5);
-		    		Point point = new Point(realX,realY);
-		    		Configurations.info.setCell(get(point));
-		    	}
-		    }
-		});
-		
-		new AutostartThread(new Runnable() {
-			public void run() {
-				Thread.currentThread().setName("World thread");
-				while(true) {
-					Thread.yield();
-					if(isActiv && msTimeout == 0)
-						step();
-					else
-						Utils.pause(1);
-				}
-			}
-		});
-		
+		addComponentListener(this);
+		addMouseListener(this);
+		worldThread = new AutostartThread(this);
+	}
+	public void stop(){
+		isStart = false;
+	}
+	@Override
+	public void run() {
+		Thread.currentThread().setName("World thread");
+		while (isStart) {
+			if (isActiv && msTimeout == 0)
+				step();
+			else
+				Utils.pause(1);
+		}
 	}
 	
 	public void worldGenerate() {
@@ -228,7 +209,12 @@ public class World extends JPanel {
 
 		Configurations.settings.updateScrols();
 	}
-
+	/**
+	 * Один маленький шажок для мира и один огронмый шаг для клеток
+	 * Метод синхронизирован, так что за раз сможет походить только один поток
+	 * В этом потоке обсчитываются все переменые и прочие нужные вещи, так что
+	 * достаточно просто его вызывать и быть уверенным, что походят все и всяк
+	 */
 	public synchronized void step() {
 		try {
 			isFirst = Configurations.rnd.nextBoolean();
@@ -245,7 +231,7 @@ public class World extends JPanel {
 		sps.interapt();
 	}
 
-        @Override
+    @Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
 		
@@ -338,7 +324,7 @@ public class World extends JPanel {
 	
 	public void add(CellObject cell) {
 		if(get(cell.getPos()) != null) {
-			throw new RuntimeException("Объект " + cell + " решил вступть на " + cell.getPos() + ", но тут занято " + get(cell.getPos()) + "!!!");
+			throw new RuntimeException("Объект " + cell + " решил вступть на " + cell.getPos() + ",\nно тут занято " + get(cell.getPos()) + "!!!");
 		} else if(cell.aliveStatus(LV_STATUS.GHOST)) {
 			throw new RuntimeException("Требуется добавить " + cell + " только вот он уже мёртв!!! ");
 		} else {
@@ -448,4 +434,53 @@ public class World extends JPanel {
 		Configurations.settings.updateScrols();
 		System.out.println("Настройки обновлены");
 	}
+	
+	
+	
+
+	@Override
+	public void componentMoved(ComponentEvent e) {}
+	@Override
+	public void componentShown(ComponentEvent e) {}
+	@Override
+	public void componentHidden(ComponentEvent e) {}
+	@Override
+	public void componentResized(ComponentEvent e) {
+		double hDel = 1.0 * getHeight() * (1 - (Configurations.UP_border + Configurations.DOWN_border)) / (Configurations.MAP_CELLS.height);
+		double wDel = 1.0 * getWidth() / (Configurations.MAP_CELLS.width);
+		Configurations.scale = Math.min(hDel, wDel);
+		Configurations.border.width = (int) Math.round((getWidth() -Configurations.MAP_CELLS.width*Configurations.scale)/2);
+		Configurations.border.height = (int) Math.round((getHeight() - Configurations.MAP_CELLS.height*Configurations.scale)/2);
+		Point.update();
+		for(Geyser gz : Configurations.geysers)
+			gz.updateScreen(getWidth(),getHeight());
+		Configurations.sun.resize(getWidth(),getHeight());
+	}
+	
+	@Override
+	public void mousePressed(MouseEvent e) {}
+	@Override
+	public void mouseReleased(MouseEvent e) {}
+	@Override
+	public void mouseEntered(MouseEvent e) {}
+	@Override
+	public void mouseExited(MouseEvent e) {}
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		if(Configurations.info.isVisible()) {
+			int realX = e.getX();
+			if(realX < Configurations.border.width || realX > getWidth() - Configurations.border.width)
+				return;
+			int realY = e.getY();
+			if(realY < Configurations.border.height || realY > getHeight() - Configurations.border.height)
+				return;
+			realX -= Configurations.border.width;
+			realY -= Configurations.border.height;
+			realX = (int) Math.round(realX/Configurations.scale-0.5);
+			realY = (int) Math.round(realY/Configurations.scale-0.5);
+			Point point = new Point(realX,realY);
+			Configurations.info.setCell(get(point));
+		}
+	}
+
 }
