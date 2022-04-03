@@ -142,10 +142,8 @@ public class AliveCell extends CellObject{
 	    if (Math.random() < Configurations.AGGRESSIVE_ENVIRONMENT) 
 	        mutation();
 	}    
-    /**
-     * Один шаг из жизни бота
-     * @param step
-     */
+	
+	@Override
 	public void step() {
 		for (int cyc = 0; (cyc < 15); cyc++)
 			if(dna.get().execute(this))
@@ -155,55 +153,16 @@ public class AliveCell extends CellObject{
 		else if(getBuoyancy() > 0 && getAge() % (11-getBuoyancy()) == 0)
 			moveD(DIRECTION.UP);
         
-      //###########################################################################
-        //.......  входит ли бот в        ........
-        //.......  многоклеточную цепочку и если да, то нужно распределить  ........
-        //.......  энергию и минералы с соседями                            ........
-        //.......  также проверить, количество накопленой энергии, возможно ........
-        //.......  пришло время подохнуть или породить потомка              ........
 		if(isSleep) {
 			setSleep(false);
-	        addHealth(-1); //Спать куда эффективнее
+	        addHealth(-1);          //Спать куда эффективнее
 		} else {
 	        addHealth(- HP_PER_STEP); //Пожили - устали
 		}
         if (this.getHealth() > MAX_HP)
         	Birth.birth(this);
-    	if(getFriends().size() != 0) { // Колония безвозмездно делится всем, что имеет
-    		double allHp = getHealth();
-    		long allMin = getMineral();
-    		int allDNA_wall = DNA_wall;
-    		int friend = getFriends().size() + 1;
-    		int maxToxic = poisonPower;
-    		Point delP = null;
-			synchronized (getFriends()) {
-				for (Entry<Point, AliveCell> cell_e : getFriends().entrySet()) {
-					AliveCell cell = cell_e.getValue();
-					allHp+=cell.getHealth();
-					allMin+=cell.getMineral();
-					allDNA_wall+=cell.DNA_wall;
-					if(cell.poisonType == poisonType)
-						maxToxic = Math.max(maxToxic, cell.poisonPower);
-					if(!cell.aliveStatus(LV_STATUS.LV_ALIVE))
-						delP = cell_e.getKey();
-				}
-	    		if(delP != null)
-	    			getFriends().remove(delP);
-			}
-    		allHp /= friend;
-    		allMin /= friend;
-    		allDNA_wall /= friend;
-    		setHealth(allHp);
-    		setMineral(allMin);
-    		DNA_wall = allDNA_wall;
-    		for (AliveCell cell : getFriends().values()) {
-				cell.setHealth(allHp);
-				cell.setMineral(allMin);
-				cell.DNA_wall = allDNA_wall;
-				if(cell.poisonType == poisonType)
-					cell.poisonPower += cell.poisonPower < maxToxic ? 1 : 0;
-			}
-    	}
+    	if(!getFriends().isEmpty())
+			clingFriends();
         // если бот находится на глубине ниже половины
         // то он автоматом накапливает минералы, но не более 999
         if (this.getPos().getY() >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL)) {
@@ -213,6 +172,42 @@ public class AliveCell extends CellObject{
         }
 	}
 
+	/**Поделиться с друзьями всем, что имеем*/
+	private void clingFriends() {
+		// Колония безвозмездно делится всем, что имеет
+		double allHp = getHealth();
+		long allMin = getMineral();
+		int allDNA_wall = DNA_wall;
+		int friend = getFriends().size() + 1;
+		int maxToxic = poisonPower;
+		Point delP = null;
+		for (Entry<Point, AliveCell> cell_e : getFriends().entrySet()) {
+			AliveCell cell = cell_e.getValue();
+			allHp+=cell.getHealth();
+			allMin+=cell.getMineral();
+			allDNA_wall+=cell.DNA_wall;
+			if(cell.poisonType == poisonType)
+				maxToxic = Math.max(maxToxic, cell.poisonPower);
+			if(!cell.aliveStatus(LV_STATUS.LV_ALIVE))
+				delP = cell_e.getKey();
+		}
+		if(delP != null)
+			getFriends().remove(delP);
+		allHp /= friend;
+		allMin /= friend;
+		allDNA_wall /= friend;
+		setHealth(allHp);
+		setMineral(allMin);
+		DNA_wall = allDNA_wall;
+		for (AliveCell cell : getFriends().values()) {
+			cell.setHealth(allHp);
+			cell.setMineral(allMin);
+			cell.DNA_wall = allDNA_wall;
+			if(cell.poisonType == poisonType)
+				cell.poisonPower += cell.poisonPower < maxToxic ? 1 : 0;
+		}
+	}
+
     
 	/**
 	 * Убирает бота с карты и проводит все необходимые процедуры при этом
@@ -220,11 +215,6 @@ public class AliveCell extends CellObject{
     @Override
     public void destroy() {
 		evolutionNode.remove();
-		synchronized (getFriends()) {
-	    	for (AliveCell cell : getFriends().values() ) 
-				cell.getFriends().remove(this.getPos());
-	    	getFriends().clear();
-		}
 		super.destroy();
     }
 
@@ -233,13 +223,10 @@ public class AliveCell extends CellObject{
 	 * @param direction
 	 * @return
 	 */
-	public boolean moveA(DIRECTION direction) {
-		if(getFriends().size() == 0) {
-			if(super.moveA(direction)) {
-		        return true;
-			} else {
-				return false;
-			}
+	@Override
+	public boolean move(DIRECTION direction) {
+		if(getFriends().isEmpty()) {
+			return super.move(direction);
 		} else {
 			//Многоклеточный. Тут логика куда интереснее!
 			OBJECT see = super.see(direction);
@@ -262,7 +249,7 @@ public class AliveCell extends CellObject{
 		    			return false;
 		    	}
 		    	//Все условия проверены, можно выдвигаться!
-				return super.moveA(direction);
+				return super.move(direction);
 			}
 			return false;
 		}
@@ -270,56 +257,58 @@ public class AliveCell extends CellObject{
 	/**
 	 * Создаёт одну из мутаций
 	 */
-	private void mutation() {
+	protected void mutation() {
 		setGeneration(getGeneration() + 1);
 		/**Дельта, гуляет от -1 до 1*/
 		double del = (0.5 - Math.random())*2;
         switch (Utils.random(2, 10)) { // К сожалению 0 и 1 вырезаны.
-            case 2: //Мутирует эффективность фотосинтеза
+            case 2 -> //Мутирует эффективность фотосинтеза
                 this.photosynthesisEffect = Math.max(0, Math.min(this.photosynthesisEffect * (1+del*0.1), 4));
-                break;
-            case 3:{ //Мутирует геном
+            case 3 -> { //Мутирует геном
                 int ma = Utils.random(0, dna.size-1); //Индекс гена
                 int mc = Utils.random(0, CommandList.COUNT_COMAND); //Его значение
                 dna = dna.update(ma, mc);
-            	}break;
-            case 4: //Мутирует красный цвет
-        		int red = phenotype.getRed();
-        		red = (int) Math.max(0, Math.min(red + del * 10, 255));
-        		phenotype = new Color(red,phenotype.getGreen(), phenotype.getBlue(), phenotype.getAlpha());
-                break;
-            case 5: //Мутирует зелёный цвет
-        		int green = phenotype.getGreen();
-        		green = (int) Math.max(0, Math.min(green + del * 10, 255));
-        		phenotype = new Color(phenotype.getRed(),green, phenotype.getBlue(), phenotype.getAlpha());
-                break;
-            case 6: //Мутирует синий цвет
-        		int blue = phenotype.getGreen();
-        		blue = (int) Math.max(0, Math.min(blue + del * 10, 255));
-        		phenotype = new Color(phenotype.getRed(),phenotype.getGreen(), blue, phenotype.getAlpha());
-                break;
-            case 7:{ //Геном удлиняется
+            	}
+            case 4 -> {
+				//Мутирует красный цвет
+				int red = phenotype.getRed();
+				red = (int) Math.max(0, Math.min(red + del * 10, 255));
+				phenotype = new Color(red,phenotype.getGreen(), phenotype.getBlue(), phenotype.getAlpha());
+			}
+            case 5 -> {
+				//Мутирует зелёный цвет
+				int green = phenotype.getGreen();
+				green = (int) Math.max(0, Math.min(green + del * 10, 255));
+				phenotype = new Color(phenotype.getRed(),green, phenotype.getBlue(), phenotype.getAlpha());
+			}
+            case 6 -> {
+				//Мутирует синий цвет
+				int blue = phenotype.getGreen();
+				blue = (int) Math.max(0, Math.min(blue + del * 10, 255));
+				phenotype = new Color(phenotype.getRed(),phenotype.getGreen(), blue, phenotype.getAlpha());
+			}
+            case 7 -> { //Геном удлиняется
             	if(dna.size + 1 <= MAX_MINDE_SIZE) {
                 	int mc = Utils.random(0, dna.size - 1); //Ген, который будет дублироваться
             		dna = dna.doubling(mc);
             	}
-            } break;
-            case 8:{ //Геном укорачивается на последний ген
+            }
+            case 8 -> { //Геном укорачивается на последний ген
             	int mc = Utils.random(0, dna.size - 1); //Ген, который будет удалён
             	dna = dna.compression(mc);
-            } break;
-            case 9:{ // Смена типа яда на который мы отзываемся
+            }
+            case 9 -> { // Смена типа яда на который мы отзываемся
             	poisonType = TYPE.toEnum(Utils.random(0, TYPE.size()));
             	if(poisonType != TYPE.НЕТ)
             		poisonPower = Utils.random(1, (int) (CreatePoisonA.HP_FOR_POISON * 2 / 3));
             	else
             		poisonPower = 0; //К этому у нас защищённости ни какой
-            }break;
-            case 10:{ //Мутирует вектор прерываний
+            }
+            case 10 -> { //Мутирует вектор прерываний
                 int ma = Utils.random(0, dna.interrupts.length-1); //Индекс в векторе
                 int mc = Utils.random(0, dna.size-1); //Его значение
                 dna.interrupts[ma] = mc;
-            }break;
+            }
         }
 		evolutionNode = evolutionNode.newNode(this,getStepCount());
 	}
@@ -338,10 +327,10 @@ public class AliveCell extends CellObject{
 
 	/**
 	 * Подглядывает за бота в абсолютном направлении
-	 * @param {*} bot - бот 
-	 * @param {*} direction направление, DIRECTION
+	 * @param direction направление, DIRECTION
 	 * @returns параметры OBJECT
 	 */
+	@Override
 	public OBJECT see(DIRECTION direction) {
 		OBJECT see = super.see(direction);
 		if(see == OBJECT.POISON){
@@ -378,19 +367,19 @@ public class AliveCell extends CellObject{
 	/**
 	 * Родственные-ли боты?
 	 * Определеяет родственников по генотипу, по тому различаются их ДНК на 2 и более признака
-	 * @param cell
-	 * @param cell2
+	 * @param cell0 - клетка, с коротой сравнивается
 	 * @return
 	 */
+	@Override
 	protected boolean isRelative(CellObject cell0) {
-		if (cell0 instanceof AliveCell) {
-			AliveCell bot0 = (AliveCell) cell0;
+		if (cell0 instanceof AliveCell bot0) {
 			return bot0.dna.equals(this.dna);
 		} else {
 			return false;
 		}
 	}
 
+	@Override
 	public boolean toxinDamage(TYPE type,int damag) {
 		if(type == getPosionType() && getPosionPower() >= damag) {
 			if(getPosionPower() >= damag) {
@@ -401,41 +390,6 @@ public class AliveCell extends CellObject{
 			}
 		}
 		return true;
-	}
-	/**
-	 *  * Ищет свободные ячейки вокруг бота.
-	 * Сначала прямо, потом лево право, потом зад лево/право и наконец назад
-	 * @param bot
-	 * @return Найденые координаты
- 	 */
-	public Point findEmptyDirection() {
-	    for (int i = 0; i < DIRECTION.size()/2+1; i++) {
-	    	if(i == 0 || i == 4) {
-		        Point point = fromVektorR(DIRECTION.toEnum(i));
-		        if (Configurations.world.test(point).isEmptyPlase)
-		            return point;
-	    	} else {
-	    		int dir = getAge() % 2 == 0 ? i : -i; //Хоть какой-то фактр рандомности появления потомка
-	    		Point point = fromVektorR(DIRECTION.toEnum(dir));
-		        if (Configurations.world.test(point).isEmptyPlase)
-		            return point;
-		        dir = -dir;
-	    		point = fromVektorR(DIRECTION.toEnum(dir));
-		        if (Configurations.world.test(point).isEmptyPlase)
-		            return point;
-	    	}
-	    }
-	    return null;
-	}
-	/**
-	 * Отдаёт следующие координаты относительно текущего смотра бота
-	 * @param {*} bot - кто в центре
-	 * @param {*} n - на сколько повернуть голову (+ по часовой)
-	 * @return 
-	 * @returns Координаты следующей точки в этом направлении
-	 */
-	public Point fromVektorR(DIRECTION direction) {
-		return getPos().next(DIRECTION.toEnum(DIRECTION.toNum(this.direction) + DIRECTION.toNum(direction)));
 	}
 
 	/**
@@ -520,13 +474,14 @@ public class AliveCell extends CellObject{
         color_DO = new Color(red, green, blue , color_DO.getAlpha());
 	}
 	
+	@Override
 	public void paint(Graphics g) {
 		g.setColor(color_DO);
 		
 		int r = getPos().getRr();
 		int rx = getPos().getRx();
 		int ry = getPos().getRy();
-		if(getFriends().size() == 0)
+		if(getFriends().isEmpty())
 			Utils.fillCircle(g,rx,ry,r);
 		else if(r < 5) 
 			Utils.fillSquare(g,rx,ry,r);
@@ -579,10 +534,12 @@ public class AliveCell extends CellObject{
 	/**
 	 * @return the health
 	 */
+	@Override
 	public double getHealth() {
 		return health;
 	}
 	
+	@Override
 	public void setHealth(double health) {
 		this.health=health;
 		if(this.health < 0)
@@ -627,13 +584,13 @@ public class AliveCell extends CellObject{
 	 * @param mineral the mineral to set
 	 */
 	public void setMineral(long mineral) {
-		mineral = (long) Math.min(mineral, MAX_MP);
+		mineral = Math.min(mineral, MAX_MP);
 		this.mineral = mineral;
-		if(mineral < 0) mineral = 0;
 		if((Legend.Graph.getMode() == Legend.Graph.MODE.MINERALS))
 			repaint();
 	}
 	
+	@Override
 	public void repaint() {
 		switch (Legend.Graph.getMode()) {
 			case MINERALS -> color_DO = new Color(0,0,(int) Utils.betwin(0, (255.0*mineral/MAX_MP),255),evolutionNode.getAlpha());
@@ -661,6 +618,7 @@ public class AliveCell extends CellObject{
 		}
 	}
 
+	@Override
 	public JSON toJSON(JSON make) {
 		make.add("DNA",dna.toJSON());
 		make.add("health",health);
