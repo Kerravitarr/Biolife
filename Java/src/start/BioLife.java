@@ -39,6 +39,20 @@ import panels.Legend;
 import panels.Settings;
 
 public class BioLife extends JFrame {
+	private static class AsynCall extends Thread{
+		public abstract interface Run{
+			public abstract void call();
+		}
+		private final Run run;
+		public AsynCall(Run run){
+			this.run = run;
+			start();
+		}
+		@Override
+		public void run(){
+			run.call();
+		}
+	}
 
 	private JPanel contentPane;
 	BotInfo botInfo = null;
@@ -53,40 +67,38 @@ public class BioLife extends JFrame {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					BioLife frame = new BioLife();
-					frame.setVisible(true);
-					
-					new Timer().schedule(new TimerTask() { // Определяем задачу
-					    DecimalFormat df = new DecimalFormat( "###,###" );
-					    public void run() {
-					    	frame.setTitle("ФПС" + frame.world.fps.FPS()+" кадров/секунду. "
-					    			+ "Шёл " + df.format(frame.world.step) + " цикл эволюции (" + frame.world.sps.FPS() + " шаг/сек) "
-					    			+ "Живых: " + df.format(frame.world.countLife) + ", "
-					    			+ "плоти: " + df.format(frame.world.countOrganic)
-					    			+ "яда: " + df.format(frame.world.countPoison) + " капель");
-					    	if(frame.dialog.isVisible())
-					    		frame.dialog.repaint();
-					    	frame.world.repaint();
-					    	if(frame.gifs != null) {
-								try {
-									frame.gifs.nextFrame(g->Configurations.world.paintComponent(g));
-								} catch (IOException e) {
-									World.isActiv = false;
-									e.printStackTrace();
-									JOptionPane.showMessageDialog(null,	"<html>Запись видео оборвалась по причине<br>"
-									+ e.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
-									frame.gifs = null;
-									frame.startRecord.setText("Начать запись");
-								}
-					    	}
-					    } 
-					}, 1000, 1000);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+		EventQueue.invokeLater(() -> {
+			try {
+				BioLife frame = new BioLife();
+				frame.setVisible(true);
+				
+				new Timer().schedule(new TimerTask() { // Определяем задачу
+					DecimalFormat df = new DecimalFormat( "###,###" );
+					public void run() {
+						frame.setTitle("ФПС" + frame.world.fps.FPS()+" кадров/секунду. "
+								+ "Шёл " + df.format(frame.world.step) + " цикл эволюции (" + frame.world.sps.FPS() + " шаг/сек) "
+										+ "Живых: " + df.format(frame.world.countLife) + ", "
+												+ "плоти: " + df.format(frame.world.countOrganic)
+								+ "яда: " + df.format(frame.world.countPoison) + " капель");
+						if(frame.dialog.isVisible())
+							frame.dialog.repaint();
+						frame.world.repaint();
+						if(frame.gifs != null) {
+							try {
+								frame.gifs.nextFrame(g->Configurations.world.paintComponent(g));
+							} catch (IOException e) {
+								World.isActiv = false;
+								e.printStackTrace();
+								JOptionPane.showMessageDialog(null,	"<html>Запись видео оборвалась по причине<br>"
+										+ e.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
+								frame.gifs = null;
+								frame.startRecord.setText("Начать запись");
+							}
+						}
+					}
+				}, 1000, 1000);
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		});
 	}
@@ -269,29 +281,32 @@ public class BioLife extends JFrame {
 		});
 		Menu.add(startRecord);
 		this.addKeyListener(new KeyAdapter() {
+			@Override
 			public void keyPressed(KeyEvent e) {
 				//System.out.println(e);
 				switch (e.getKeyCode()) {
-					case KeyEvent.VK_SPACE ->{
+					case KeyEvent.VK_SPACE -> {
 						World.isActiv = !World.isActiv;
 						settings.updateScrols();
 					}
 					case KeyEvent.VK_S ->{
-						new Thread() {
-				            public void run() {
-								world.step();
-				            }
-				        }.start();
+						if((e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0)
+							Configurations.settings.save();
+						else
+							new AsynCall(() -> world.step());
 					}
-					case KeyEvent.VK_W ->{
-						new Thread() {
-				            public void run() {
-				        		CellObject cell = botInfo.getCell();
-				            	if(cell != null)
-				            		cell.step(Math.round(Math.random() * 1000));
-				            }
-				        }.start();
-					}
+					case KeyEvent.VK_W ->
+						new AsynCall(() -> {
+							CellObject cell = botInfo.getCell();
+							if (cell != null)
+								cell.step(Math.round(Math.random() * 1000));
+						});
+					case KeyEvent.VK_E ->
+						new AsynCall(() -> {
+							CellObject cell = botInfo.getCell();
+							if (cell != null)
+								botInfo.step();
+						});
 				}
 			}
 		});
