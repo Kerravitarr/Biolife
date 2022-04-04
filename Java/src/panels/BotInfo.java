@@ -5,14 +5,13 @@ import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Poison;
 import MapObjects.dna.CommandDNA;
-import MapObjects.dna.CommandList;
 import MapObjects.dna.DNA;
-import Utils.Utils;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.concurrent.TimeUnit;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
@@ -28,7 +27,6 @@ import javax.swing.SwingConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import main.Configurations;
-import main.Point;
 
 public class BotInfo extends JPanel {
 	
@@ -182,33 +180,26 @@ public class BotInfo extends JPanel {
 	class WorkTask implements Runnable{
 		@Override
 		public void run() {
-                    Thread.currentThread().setName("BotInfo");
-			while(true) {
-				if(isVisible() && getCell() != null && !getCell().aliveStatus(AliveCell.LV_STATUS.GHOST)) {
-					setDinamicHaracteristiks();
-					if(getCell() instanceof AliveCell lcell) {
-						/**Индекс с которого идёт пеерсчёт*/
-						long age = lcell.getAge();
-						if(age != oldYear || oldIndex != lcell.getDna().getIndex()) {
-							oldYear = age;
-							oldIndex = lcell.getDna().getIndex();
-							testCell = null;
-							printDNA(lcell); 
-						}
+			if(isVisible() && getCell() != null && !getCell().aliveStatus(AliveCell.LV_STATUS.GHOST)) {
+				setDinamicHaracteristiks();
+				if(getCell() instanceof AliveCell lcell) {
+					/**Индекс с которого идёт пеерсчёт*/
+					long age = lcell.getAge();
+					if(age != oldYear || oldIndex != lcell.getDna().getIndex()) {
+						oldYear = age;
+						oldIndex = lcell.getDna().getIndex();
+						testCell = null;
+						printDNA(lcell); 
 					}
-					Utils.pause_ms(100);
-				} else {
-					if(cell != null) {
-						cell = null;
-						clearText();
-
-						listDNA.setModel(new DefaultListModel<> ());
-					}
-					Utils.pause(1);
+				}
+			} else {
+				if(cell != null) {
+					cell = null;
+					clearText();
+					listDNA.setModel(new DefaultListModel<> ());
 				}
 			}
 		}
-
 	}
 
 	/**
@@ -392,7 +383,7 @@ public class BotInfo extends JPanel {
 		listDNA.setSelectedIndex(0);
 		panel.setLayout(gl_panel);
 		
-		new Thread(new WorkTask()).start();
+		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new WorkTask(), 100, 100, TimeUnit.MILLISECONDS);
 	}
 	
 	

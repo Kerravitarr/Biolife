@@ -15,12 +15,93 @@ import javax.swing.border.BevelBorder;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
+import java.lang.management.RuntimeMXBean;
+import java.util.concurrent.TimeUnit;
 import main.Configurations;
 import main.Point;
+import start.BioLife;
 
 public class Legend extends JPanel{
-	
-	public static class Graph extends JPanel{
+	public static class Graph extends JPanel {
+		private class UpdateScrinTask implements Runnable {
+			@Override
+			public void run() {
+				if (!isVisible()) return;
+				switch (getMode()) {
+					case DOING -> {
+						values = new Graph.Value[6];
+						values[0] = new Graph.Value(1.0 / values.length, 1.0 / values.length, "Фотосинтез", Color.GREEN);
+						values[1] = new Graph.Value(2.0 / values.length, 1.0 / values.length, "Охота", Color.RED);
+						values[2] = new Graph.Value(3.0 / values.length, 1.0 / values.length, "ДНК атака", Color.BLACK);
+						values[3] = new Graph.Value(4.0 / values.length, 1.0 / values.length, "Минерализация", Color.BLUE);
+						values[4] = new Graph.Value(5.0 / values.length, 1.0 / values.length, "Мёртвый", new Color(139, 69, 19, 100));
+						values[5] = new Graph.Value(6.0 / values.length, 1.0 / values.length, "Новорождённый", Color.WHITE);
+					}
+					case HP -> {
+						values = new Graph.Value[10];
+						for (int i = 0; i < values.length; i++) {
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * AliveCell.MAX_HP / values.length) + "", new Color((int) (255.0 * i / values.length), 0, 0));
+						}
+					}
+					case YEAR -> {
+						maxAge = 0;
+						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+								CellObject cell = Configurations.world.get(new Point(x, y));
+								if (cell != null && cell instanceof AliveCell)
+									maxAge = Math.max(maxAge, ((AliveCell) cell).getAge());
+							}
+						}
+						values = new Graph.Value[10];
+						for (int i = 0; i < values.length; i++) {
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * maxAge / values.length) + "", Color.getHSBColor((float) (1.0 * i / values.length), (float) 0.9, (float) 0.9));
+						}
+					}
+					case PHEN -> values = new Graph.Value[0];
+					case GENER -> {
+						maxGenDef = 0;
+						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+								CellObject cell = Configurations.world.get(new Point(x, y));
+								if (cell != null && cell instanceof AliveCell)
+									maxGenDef = Math.max(maxGenDef, ((AliveCell) cell).getGeneration());
+							}
+						}
+						values = new Graph.Value[10];
+						for (int i = 0; i < values.length; i++) {
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * maxGenDef / values.length) + "", Color.getHSBColor((float) (1.0 * i / values.length), (float) 0.9, (float) 0.9));
+						}
+					}
+					case MINERALS -> {
+						long maxMP = 0;
+						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+								CellObject cell = Configurations.world.get(new Point(x, y));
+								if (cell != null && cell instanceof AliveCell)
+									maxMP = Math.max(maxMP, ((AliveCell) cell).getMineral());
+							}
+						}
+						values = new Graph.Value[10];
+						for (int i = 0; i < values.length; i++) {
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * maxMP / values.length) + "", new Color(0, 0, (int) (255.0 * i / values.length)));
+						}
+					}
+				}
+				if (isNedUpdate) {
+					isNedUpdate = false;
+					for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+						for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+							CellObject cell = Configurations.world.get(new Point(x, y));
+							if (cell != null)
+								cell.repaint();
+						}
+					}
+				}
+				Graph.this.repaint(1);
+			}
+		}
+
+		
 		static final int HEIGHT = 40;
 		static final int BORDER = 50;
 		
@@ -51,84 +132,7 @@ public class Legend extends JPanel{
 		Value[] values = new Value[0];
 		
 		Graph(){
-			new Timer().schedule(new TimerTask() { // Определяем задачу
-			    @Override
-			    public void run() {
-			    	if(!isVisible()) return;
-	
-			    	switch (getMode()) {
-						case DOING -> {
-							values = new Value[6];
-							values[0] = new Value(1.0/values.length,1.0/values.length,"Фотосинтез",Color.GREEN);
-							values[1] = new Value(2.0/values.length,1.0/values.length,"Охота",Color.RED);
-							values[2] = new Value(3.0/values.length,1.0/values.length,"ДНК атака",Color.BLACK);
-							values[3] = new Value(4.0/values.length,1.0/values.length,"Минерализация",Color.BLUE);
-							values[4] = new Value(5.0/values.length,1.0/values.length,"Мёртвый",new Color(139,69,19,100));
-							values[5] = new Value(6.0/values.length,1.0/values.length,"Новорождённый",Color.WHITE);
-						}
-						case HP ->{
-							values = new Value[10];
-							for (int i = 0; i < values.length; i++) {
-								values[i] = new Value(1.0 * (i+1) / values.length,1.0/values.length,(i*AliveCell.MAX_HP/values.length)+"",new Color((int) (255.0*i/values.length),0,0));
-							}
-						}
-						case YEAR ->{
-							maxAge = 0;
-							for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-								for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-									CellObject cell = Configurations.world.get(new Point(x,y));
-									if(cell != null && cell instanceof AliveCell)
-										maxAge = Math.max(maxAge, ((AliveCell) cell).getAge());
-								}
-							}
-							values = new Value[10];
-							for (int i = 0; i < values.length; i++) {
-								values[i] = new Value(1.0 * (i+1) / values.length,1.0/values.length,(i*maxAge/values.length)+"",Color.getHSBColor((float)(1.0*i/values.length), (float)0.9, (float)0.9));
-							}
-						}
-						case PHEN -> {values = new Value[0];}
-						case GENER ->{
-							maxGenDef = 0;
-							for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-								for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-									CellObject cell = Configurations.world.get(new Point(x,y));
-									if(cell != null && cell instanceof AliveCell)
-										maxGenDef = Math.max(maxGenDef, ((AliveCell) cell).getGeneration());
-								}
-							}
-							values = new Value[10];
-							for (int i = 0; i < values.length; i++) {
-								values[i] = new Value(1.0 * (i+1) / values.length,1.0/values.length,(i*maxGenDef/values.length)+"",Color.getHSBColor((float)(1.0*i/values.length), (float)0.9, (float)0.9));
-							}
-						}
-						case MINERALS ->{
-							long maxMP = 0;
-							for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-								for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-									CellObject cell = Configurations.world.get(new Point(x,y));
-									if(cell != null && cell instanceof AliveCell)
-										maxMP = Math.max(maxMP, ((AliveCell) cell).getMineral());
-								}
-							}
-							values = new Value[10];
-							for (int i = 0; i < values.length; i++) {
-								values[i] = new Value(1.0 * (i+1) / values.length,1.0/values.length,(i*maxMP/values.length)+"",new Color(0,0,(int) (255.0*i/values.length)));
-							}
-						}
-					}
-			    	if(isNedUpdate) {
-			    		isNedUpdate = false;
-				    	for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-								CellObject cell = Configurations.world.get(new Point(x,y));
-								if(cell != null)
-									cell.repaint();
-							}
-						}
-			    	}
-			    	Graph.this.repaint(1);
-			    }
-			}, 0L, 5000);
+			Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
 		}
 		
 		public void paintComponent(Graphics g) {

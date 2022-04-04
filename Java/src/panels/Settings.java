@@ -1,45 +1,34 @@
 package panels;
 
-import static main.World.isActiv;
-
+import Utils.JSON;
+import Utils.JsonSave;
 import java.awt.Adjustable;
 import java.awt.BorderLayout;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.awt.event.ComponentEvent;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
-import javax.swing.filechooser.FileNameExtensionFilter;
-
-import Utils.JSON;
-import Utils.JSON.ParseException;
-import Utils.JsonSave;
 import main.Configurations;
 import main.World;
+import static main.World.isActiv;
 
 public class Settings extends JPanel{
 	public static class ScrollPanel extends JPanel {
 		/**Описание ползунка*/
-		private JLabel label;
+		private final JLabel label;
 		/**Скролик*/
-		private JScrollBar scroll;
+		private final JScrollBar scroll;
 		/**Показывает, что отсчёт ведётся в обратную сторону*/
-		private boolean isBack;
+		private final boolean isBack;
 		
 		public ScrollPanel(String text, int min, int max){
 			setLayout(new BorderLayout(0, 0));
@@ -104,23 +93,23 @@ public class Settings extends JPanel{
 		}
 	}
 	
-	private ScrollPanel scrollBar_7;
-	private ScrollPanel scrollBar_6;
-	private ScrollPanel scrollBar_5;
-	private ScrollPanel scrollBar_4;
-	private ScrollPanel scrollBar_2;
-	private ScrollPanel scrollBar_1;
-	private ScrollPanel const_SP;
+	private final ScrollPanel scrollBar_7;
+	private final ScrollPanel scrollBar_6;
+	private final ScrollPanel scrollBar_5;
+	private final ScrollPanel scrollBar_4;
+	private final ScrollPanel scrollBar_2;
+	private final ScrollPanel scrollBar_1;
+	private final ScrollPanel const_SP;
 	public ScrollPanel scale;
 	JComponent listener = null;
-	private JButton play;
-	private ScrollPanel sun_speed;
-	private ScrollPanel scroll_SP;
-	private JButton load_button;
-	private JButton saveButton;
-	private JButton step_button;
-	private ScrollPanel sun_size;
-	private ScrollPanel PoisonStreem;
+	private final JButton play;
+	private final ScrollPanel sun_speed;
+	private final ScrollPanel scroll_SP;
+	private final JButton load_button;
+	private final JButton saveButton;
+	private final JButton step_button;
+	private final ScrollPanel sun_size;
+	private final ScrollPanel PoisonStreem;
 	
 	/**
 	 * Create the panel.
@@ -248,7 +237,7 @@ public class Settings extends JPanel{
 		const_SP.setValue(Configurations.BASE_SUN_POWER);
 	}
 	
-	public void setListeners() {
+	public final void setListeners() {
 
 		PoisonStreem.addAdjustmentListener(e->{
 			Configurations.POISON_STREAM =  (int) Math.round(Math.exp(e.getValue()));
@@ -300,11 +289,7 @@ public class Settings extends JPanel{
 			}
 		});
 		play.addActionListener(e->{
-			if(play.getText().equals("Пауза")) {
-				isActiv = false;
-			} else {
-				isActiv = true;
-			}
+			isActiv = !play.getText().equals("Пауза");
 			updateScrols();
 		});
 		load_button.addActionListener(e->load());

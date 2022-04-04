@@ -11,13 +11,12 @@ public class FPScounter {
 	private double FPS = 0;	
 	private static List<FPScounter> listeners = new ArrayList<>();
 	
-	private static Timer timer = new Timer("FPScounter");
+	private static final Timer timer = new Timer("FPScounter");
 	static {
 		timer.schedule(new TimerTask() {
+			@Override
 			public void run() {
-				listeners.forEach(counter -> {
-					counter.updateDPS();
-				});
+				listeners.forEach(counter -> counter.updateDPS());
 			}
 		}, 0L, 1000);
 	}

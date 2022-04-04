@@ -290,7 +290,7 @@ public abstract class CellObject {
 	 * Убирает бота с карты и проводит все необходимые процедуры при этом
 	 */
 	public void destroy() {
-		Configurations.world.clean(getPos());
+		Configurations.world.clean(this);
 		alive = LV_STATUS.GHOST;
 		throw new CellObjectRemoveException();
 	}
