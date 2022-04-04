@@ -1,22 +1,4 @@
 package main;
-import static main.Configurations.geysers;
-
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Vector;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.LV_STATUS;
@@ -28,9 +10,24 @@ import MapObjects.Sun;
 import Utils.FPScounter;
 import Utils.JSON;
 import Utils.Utils;
+import java.awt.Color;
+import java.awt.Graphics;
 import java.awt.HeadlessException;
+import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
+import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
+import java.util.concurrent.ForkJoinWorkerThread;
+import java.util.concurrent.atomic.AtomicInteger;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import static main.Configurations.geysers;
 import main.Point.DIRECTION;
 
 public class World extends JPanel implements Runnable,ComponentListener,MouseListener{	
@@ -40,8 +37,16 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public static boolean isError = false;
 	/**Сколько милисекунд делать перед ходами*/
 	public static int msTimeout = 0;
-	
 	class AutostartThread extends Thread{AutostartThread(Runnable target){super(target);start();}}
+	final ForkJoinWorkerThreadFactory factory = new ForkJoinWorkerThreadFactory() {
+		private final AtomicInteger branshCount = new AtomicInteger(0);
+		@Override
+		public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+			final ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+			worker.setName("World map thread " + branshCount.incrementAndGet());
+			return worker;
+		}
+	};
 	
 	class WorldTask implements Callable<Boolean>{
 		class WorkThread{
@@ -64,7 +69,6 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		@Override
 		public Boolean call(){
 			WorkThread activ = isFirst ? first : second;
-			Thread.currentThread().setName("Row: " + activ.startX);
 			Point[] points = activ.points;
 			for (int i = points.length - 1; i > 0 && !isError; i--) {
 				Point t = points[i];
@@ -129,7 +133,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public World() {
 		super();
 		Configurations.world = this;
-		executor = Executors.newWorkStealingPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1)); // Один поток нужен системе для отрисовки
+		executor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1), factory, null, true); // Один поток нужен системе для отрисовки
 		
 		worldGenerate();
 		
@@ -208,6 +212,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		recalculate();
 
 		Configurations.settings.updateScrols();
+		executor.submit(this);
 	}
 	/**
 	 * Один маленький шажок для мира и один огронмый шаг для клеток
@@ -331,14 +336,17 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			Configurations.worldMap[cell.getPos().getX()][cell.getPos().getY()] = cell;	
 		}
 	}
-	public void clean(Point point) {
-		if(get(point) == null) {
-			throw new RuntimeException("Объект нужно удалить с " + point + ", да тут свободо, вот в чём проблема!!!");
+	public void clean(CellObject cell) {
+		if(get(cell.getPos()) == null) {
+			throw new RuntimeException("Объект нужно удалить с " + cell.getPos() + ", да тут свободо, вот в чём проблема!!!");
+		}else if(cell.aliveStatus(LV_STATUS.GHOST)){
+			throw new RuntimeException("Объект нужно удалить, но " + cell + " уже мёртв!!!");
+		}else {
+			Configurations.worldMap[cell.getPos().getX()][cell.getPos().getY()] = null;
 		}
-		Configurations.worldMap[point.getX()][point.getY()] = null;
 	}
 	public void move(CellObject cell,Point target) {
-		clean(cell.getPos());
+		clean(cell);
 		cell.setPos(target);
 		add(cell);
 	}
@@ -354,6 +362,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 
 	public synchronized JSON serelization() {
 		JSON make = new JSON();
+		make.add("VERSION", Configurations.VERSION);
 
 		JSON configWorld = Configurations.toJSON();
 		configWorld.add("step", step);
@@ -363,7 +372,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		make.add("EvoTree", Configurations.tree.toJSON());
 		System.out.println("Дерево эволюции - готово");
 		
-		Vector<CellObject> cells = new Vector<>();
+		var cells = new ArrayList<CellObject>();
 		for (CellObject[] cell : Configurations.worldMap) {
 			for (CellObject cell2 : cell) {
 				if(cell2 != null)
@@ -379,16 +388,16 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		return make;
 	}
 
-	public synchronized void update(JSON JSON) {
-		JSON configWorld = JSON.getJ("configWorld");
+	public synchronized void update(JSON json) {
+		JSON configWorld = json.getJ("configWorld");
 		Configurations.load(configWorld);
 		step = configWorld.getL("step");
-		System.out.println("Конфигурация мира - готово");
+		System.out.println("Конфигурация мира - загружено");
 		
-		Configurations.tree = new EvolutionTree(JSON.getJ("EvoTree"));
-		System.out.println("Дерево эволюции - готово");
+		Configurations.tree = new EvolutionTree(json.getJ("EvoTree"));
+		System.out.println("Дерево эволюции - загружено");
 		
-		List<JSON> cells = JSON.getAJ("Cells");		
+		List<JSON> cells = json.getAJ("Cells");		
 		Configurations.worldMap = new CellObject[Configurations.MAP_CELLS.width][Configurations.MAP_CELLS.height];
 		for (JSON cell : cells) {
 			switch (LV_STATUS.values()[(int)cell.get("alive")]) {
@@ -409,7 +418,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			
 			
 		}
-		System.out.println("Объекты на поле - готовы");
+		System.out.println("Объекты на поле - загружено");
 		
 		//Когда все сохранены, обновялем список друзей
 		for (JSON cell : cells) {
@@ -426,13 +435,13 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		    		new_name.setFriend((AliveCell)get(pos));
 			}
 		}
-		System.out.println("Друзья - готовы");
+		System.out.println("Друзья - загружено");
 		
 		Configurations.tree.updatre();
 		System.out.println("Эволюционное дерево перестроено");
 		
 		Configurations.settings.updateScrols();
-		System.out.println("Настройки обновлены");
+		System.out.println("Настройки обновлены\nЗагрузка заверешена");
 	}
 	
 	

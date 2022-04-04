@@ -8,6 +8,11 @@ import MapObjects.CellObject;
 import MapObjects.Geyser;
 import MapObjects.Sun;
 import Utils.JSON;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 import panels.BotInfo;
 import panels.Settings;
 
@@ -18,6 +23,9 @@ import panels.Settings;
  *
  */
 public class Configurations {
+	/**Версия приложения. Нужна на тот случай, если вдруг будет загружаться старое приложение*/
+	public static final String VERSION = "1.0";
+	
 	//Карта
 	/**Количиство ячеек карты*/
 	//public static Dimension MAP_CELLS = new Dimension(500/4,200/4);
@@ -75,6 +83,11 @@ public class Configurations {
 	public static Settings settings = null;
 	/**ГСЧ для симуляции*/
 	public static SplittableRandom rnd = new SplittableRandom();
+	/**Основной потоковый пулл для всяких задач которым нужно выполняться периодически*/
+	public static final ScheduledThreadPoolExecutor  TIME_OUT_POOL = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,new ThreadFactory(){
+		@Override
+		public Thread newThread(Runnable task) {return new Thread(task, "TIME_OUT_TASK");}
+	});
 	
 	/**Сохраняет конфигурацию мира*/
 	public static JSON toJSON() {
