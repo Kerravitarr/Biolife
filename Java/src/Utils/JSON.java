@@ -66,26 +66,26 @@ public class JSON implements Serialization{
 		 * @throws IOException
 		 * @throws JSON.ParseException
 		 */
-		public JSON.Token next() throws IOException, JSON.ParseException {
+		public Token next() throws IOException, JSON.ParseException {
 			char ch;
 			do {
 				if (!stream.ready())
 					return new Token(JSON_TOKEN.END_DOCUMENT, null);
 				ch = read();
 			} while (isWhiteSpace(ch));
-			return switch (ch) { // Не пробел, а что?
-				case '{' ->	new JSON.Token(JSON_TOKEN.BEGIN_OBJECT, null);
-				case '}' -> new Token(JSON_TOKEN.END_OBJECT, null);
-				case '[' -> new Token(JSON_TOKEN.BEGIN_ARRAY, null);
-				case ']' -> new Token(JSON_TOKEN.END_ARRAY, null);
-				case ',' -> new Token(JSON_TOKEN.SEP_COMMA, null);
-				case ':' -> new Token(JSON_TOKEN.SEP_COLON, null);
-				case 'n' -> readNull();
-				case 't', 'f' -> readBoolean(ch);
-				case '"' -> readString();
-				//case '-' -> readNumber(ch); - входит в def
-				default -> readNumber(ch);
-			};
+			switch (ch) { // Не пробел, а что?
+				case '{' -> {return new Token(JSON_TOKEN.BEGIN_OBJECT, null);}
+				case '}' -> {return new Token(JSON_TOKEN.END_OBJECT, null);}
+				case '[' -> {return new Token(JSON_TOKEN.BEGIN_ARRAY, null);}
+				case ']' -> {return new Token(JSON_TOKEN.END_ARRAY, null);}
+				case ',' -> {return new Token(JSON_TOKEN.SEP_COMMA, null);}
+				case ':' -> {return new Token(JSON_TOKEN.SEP_COLON, null);}
+				case 'n' -> {return readNull();}
+				case 't', 'f' -> {return readBoolean(ch);}
+				case '"' -> {return readString();}
+				//case '-' -> {return readNumber(ch);} - входит в def
+				default -> {return readNumber(ch);}
+			}
 		}
 		/**
 		 * Читает число из входного потока
@@ -94,7 +94,7 @@ public class JSON implements Serialization{
 		 * @throws IOException
 		 * @throws JSON.ParseException
 		 */
-		private JSON.Token readNumber(char ch) throws IOException, JSON.ParseException{
+		private Token readNumber(char ch) throws IOException, JSON.ParseException{
 			boolean isNegativ = ch == '-';
 			if(isNegativ) ch = read();
 			StringBuilder sb = new StringBuilder();
@@ -191,7 +191,7 @@ public class JSON implements Serialization{
 		 * @throws IOException
 		 * @throws JSON.ParseException
 		 */
-		private JSON.Token readString() throws IOException, JSON.ParseException {
+		private Token readString() throws IOException, JSON.ParseException {
 			StringBuilder sb = new StringBuilder();
 			while (true) {
 				char ch = read();
@@ -225,7 +225,7 @@ public class JSON implements Serialization{
 		 * @throws IOException
 		 * @throws JSON.ParseException
 		 */
-		private JSON.Token readBoolean(char ch) throws IOException, JSON.ParseException {
+		private Token readBoolean(char ch) throws IOException, JSON.ParseException {
 			if (ch == 't') {
 				char[] buf = new char[3];
 				pos += stream.read(buf);
@@ -248,7 +248,7 @@ public class JSON implements Serialization{
 		 * @throws IOException
 		 * @throws JSON.ParseException
 		 */
-		private JSON.Token readNull() throws IOException, JSON.ParseException {
+		private Token readNull() throws IOException, JSON.ParseException {
 			char[] buf = new char[3];
 			pos += stream.read(buf);
 			if (!(buf[0] == 'u' && buf[1] == 'l' && buf[2] == 'l'))
