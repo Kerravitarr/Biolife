@@ -12,6 +12,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.text.DecimalFormat;
+import java.text.MessageFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -48,11 +49,9 @@ public class BioLife extends JFrame {
 
 		@Override
 		public void run() {
-			setTitle("ФПС" + world.fps.FPS() + " кадров/секунду. "
-					+ "Шёл " + df.format(world.step) + " цикл эволюции (" + world.sps.FPS() + " шаг/сек) "
-					+ "Живых: " + df.format(world.countLife)
-					+ ", плоти: " + df.format(world.countOrganic)
-					+ ", яда: " + df.format(world.countPoison));
+			String title = MessageFormat.format(Configurations.bundle.getString("BioLife.title"), world.fps.FPS(), df.format(world.step),
+					world.sps.FPS(), df.format(world.countLife), df.format(world.countOrganic), df.format(world.countPoison));
+			setTitle(title);
 			if (dialog.isVisible())
 				dialog.repaint();
 			world.repaint();
