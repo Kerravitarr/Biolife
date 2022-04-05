@@ -15,12 +15,16 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class ClingA extends CommandDo {
+public class ClingA extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 1;
 
-	public ClingA() {this("□∪□ A","Присосаться A");};
-	protected ClingA(String shotName, String longName) {super(1,shotName, longName); isInterrupt = true;}
+	public ClingA() {this("□∪□ A","Присосаться A",true);};
+
+	protected ClingA(String shotName, String longName, boolean isAbsolute) {
+		super(1, shotName, longName);
+		setInterrupt(isAbsolute, ORGANIC, CLEAN, NOT_POISON, POISON, WALL);
+	}
 	@Override
 	protected void doing(AliveCell cell) {
 		cling(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
@@ -45,12 +49,4 @@ public class ClingA extends CommandDo {
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));}
-	@Override
-	public int getInterrupt(AliveCell cell, DNA dna){return getInterrupt(cell, dna, true);}
-	protected int getInterrupt(AliveCell cell, DNA dna, boolean isA){
-		if(isA)
-			return getInterruptA(cell, dna, 0,ORGANIC, CLEAN, NOT_POISON, POISON, WALL);
-		else
-			return getInterruptR(cell, dna, 0,ORGANIC, CLEAN, NOT_POISON, POISON, WALL);
-	}
 }

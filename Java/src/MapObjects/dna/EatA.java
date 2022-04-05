@@ -1,5 +1,11 @@
 package MapObjects.dna;
 
+import static MapObjects.CellObject.OBJECT.CLEAN;
+import static MapObjects.CellObject.OBJECT.NOT_POISON;
+import static MapObjects.CellObject.OBJECT.ORGANIC;
+import static MapObjects.CellObject.OBJECT.POISON;
+import static MapObjects.CellObject.OBJECT.WALL;
+
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import main.Configurations;
@@ -11,12 +17,16 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class EatA extends CommandDo {
+public class EatA extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 4;
 
-	public EatA() {this("🍴 А","Съесть А");};
-	protected EatA(String shotName, String longName) {super(1,shotName, longName); isInterrupt = true;}
+	public EatA() {this("🍴 А","Съесть А",true);};
+
+	protected EatA(String shotName, String longName, boolean isAbsolute) {
+		super(1, shotName, longName);
+		setInterrupt(isAbsolute, CLEAN, NOT_POISON, POISON, WALL);
+	}
 	
 	@Override
 	protected void doing(AliveCell cell) {
@@ -82,18 +92,4 @@ public class EatA extends CommandDo {
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));};
-	
-	
-	@Override
-	public int getInterrupt(AliveCell cell, DNA dna){
-		DIRECTION direction = DIRECTION.toEnum(param(dna,0, DIRECTION.size()));
-		return getInterrupt(cell, dna, direction);
-	}
-	public int getInterrupt(AliveCell cell, DNA dna,DIRECTION direction){
-		var see = cell.see(direction);
-		if (see == CellObject.OBJECT.CLEAN || see == CellObject.OBJECT.NOT_POISON || see == CellObject.OBJECT.POISON || see == CellObject.OBJECT.WALL)
-			return see.nextCMD;
-		else
-			return -1;
-	}
 }

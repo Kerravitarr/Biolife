@@ -17,10 +17,14 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class CareA extends CommandDo {
+public class CareA extends CommandDoInterupted {
 	
-	public CareA() {this("↹ A","Поделиться A");};
-	protected CareA(String shotName, String longName) {super(1,shotName, longName);isInterrupt = true;}
+	public CareA() {this("↹ A", "Поделиться A",true);};
+
+	protected CareA(String shotName, String longName,boolean isAbsolute) {
+		super(1, shotName, longName);
+		setInterrupt(isAbsolute, NOT_POISON, ORGANIC, POISON, WALL, CLEAN);
+	}
 	
 	@Override
 	protected void doing(AliveCell cell) {
@@ -58,13 +62,4 @@ public class CareA extends CommandDo {
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));};
-	
-	@Override
-	public int getInterrupt(AliveCell cell, DNA dna){return getInterrupt(cell, dna, true);}
-	protected int getInterrupt(AliveCell cell, DNA dna, boolean isA){
-		if(isA)
-			return getInterruptA(cell, dna, 0,NOT_POISON, ORGANIC, POISON, WALL, CLEAN);
-		else
-			return getInterruptR(cell, dna, 0,NOT_POISON, ORGANIC, POISON, WALL, CLEAN);
-	}
 }

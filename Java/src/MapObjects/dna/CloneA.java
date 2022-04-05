@@ -20,6 +20,7 @@ import main.Point.DIRECTION;
 public class CloneA extends Birth {
 
 	public CloneA() {this("♡∪□ А","Клон и присос А");};
+
 	protected CloneA(String shotName,String longName) {super(2,shotName,longName); isInterrupt = true;};
 	@Override
 	protected void doing(AliveCell cell) {

@@ -15,13 +15,11 @@ import main.Point.DIRECTION;
  */
 public class GiveR extends GiveA {
 
-	public GiveR() {super("➚ O","Отдать O");};
+	public GiveR() {super("➚ O","Отдать O",false);};
 	@Override
 	protected void doing(AliveCell cell) {
 		give(cell,relatively(cell, param(cell,0, DIRECTION.size())));
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){return relativeDirection(cell,param(dna,0, DIRECTION.size()));}
-	@Override
-	public int getInterrupt(AliveCell cell, DNA dna){return getInterrupt(cell, dna, false);}
 }

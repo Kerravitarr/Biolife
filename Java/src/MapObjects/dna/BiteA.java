@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
+import MapObjects.CellObject.OBJECT;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -12,12 +13,22 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class BiteA extends CommandDo {
+public class BiteA extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
 
-	public BiteA() {this("🍗 A","Кусить A");};
-	protected BiteA(String shotName, String longName) {	super(1,shotName, longName); isInterrupt = true;}
+	public BiteA() {this("🍗 A", "Кусить A",true);};
+
+	/**
+	 * Инициализирует функцию куся
+	 * @param shotName короткое имя функции
+	 * @param longName полное имя функции
+	 * @param isAbsolute абсолютная или относительная функция
+	 */
+	protected BiteA(String shotName, String longName,boolean isAbsolute) {
+		super(1, shotName, longName);
+		setInterrupt(isAbsolute, OBJECT.CLEAN, OBJECT.NOT_POISON, OBJECT.POISON, OBJECT.WALL);
+	}
 	
 	@Override
 	protected void doing(AliveCell cell) {
@@ -68,14 +79,4 @@ public class BiteA extends CommandDo {
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));};
-	
-	@Override
-	public int getInterrupt(AliveCell cell, DNA dna){return getInterrupt(cell,dna,DIRECTION.toEnum(param(dna,0, DIRECTION.size())));}
-	public int getInterrupt(AliveCell cell, DNA dna,DIRECTION direction){
-		var see = cell.see(direction);
-		if (see == CellObject.OBJECT.CLEAN || see == CellObject.OBJECT.NOT_POISON || see == CellObject.OBJECT.POISON || see == CellObject.OBJECT.WALL)
-			return see.nextCMD;
-		else
-			return -1;
-	}
 }

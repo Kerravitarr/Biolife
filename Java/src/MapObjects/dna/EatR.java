@@ -11,7 +11,7 @@ import main.Point.DIRECTION;
  */
 public class EatR extends EatA {
 	
-	public EatR() {super("🍴 O","Съесть O");};
+	public EatR() {super("🍴 O","Съесть O",false);};
 	@Override
 	protected void doing(AliveCell cell) {
 		eat(cell,relatively(cell, param(cell,0, DIRECTION.size())));
@@ -19,11 +19,4 @@ public class EatR extends EatA {
 
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){return relativeDirection(cell,param(dna,0, DIRECTION.size()));}
-	
-	
-	@Override
-	public int getInterrupt(AliveCell cell, DNA dna){
-		DIRECTION direction = relatively(cell,param(dna,0, DIRECTION.size()));
-		return getInterrupt(cell, dna, direction);
-	}
 }

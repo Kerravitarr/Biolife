@@ -11,18 +11,11 @@ import main.Point.DIRECTION;
  *
  */
 public class PullR extends PullA {
-	public PullR() {super("↭ O","Толкнуть О");};
+	public PullR() {super("↭ O","Толкнуть О",false);};
 	@Override
 	protected void doing(AliveCell cell) {
 		pull(cell,relatively(cell, param(cell,0, DIRECTION.size())));
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){return relativeDirection(cell,param(dna,0, DIRECTION.size()));}
-	
-	
-	@Override
-	public int getInterrupt(AliveCell cell, DNA dna){
-		DIRECTION direction = relatively(cell, param(dna,0, DIRECTION.size()));
-		return getInterrupt(cell, dna, direction);
-	}
 }
