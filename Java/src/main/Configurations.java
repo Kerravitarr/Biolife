@@ -2,17 +2,17 @@ package main;
 
 import java.awt.Dimension;
 import java.util.List;
+import java.util.Locale;
+import java.util.ResourceBundle;
 import java.util.SplittableRandom;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadFactory;
 
 import MapObjects.CellObject;
 import MapObjects.Geyser;
 import MapObjects.Sun;
 import Utils.JSON;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 import panels.BotInfo;
 import panels.Settings;
 
@@ -28,8 +28,8 @@ public class Configurations {
 	
 	//Карта
 	/**Количиство ячеек карты*/
-	//public static Dimension MAP_CELLS = new Dimension(500/4,200/4);
-	public static Dimension MAP_CELLS = new Dimension(500,200);
+	public static Dimension MAP_CELLS = new Dimension(500/4,200/4);
+	//public static Dimension MAP_CELLS = new Dimension(500,200);
 	/**Сам мир*/
 	public static CellObject [][] worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 	/**Базовая освещённость карты, то есть сколько света падает постоянно*/
@@ -77,17 +77,23 @@ public class Configurations {
 	/**Эволюция ботов нашего мира*/
 	public static EvolutionTree tree = new EvolutionTree();
 
+	//Вспомогательные панели
 	/**Сюда отправляем бота, для его изучения*/
 	public static BotInfo info = null;
 	/**Настройки мира*/
 	public static Settings settings = null;
+	
+	//Общие классы для программы
 	/**ГСЧ для симуляции*/
 	public static SplittableRandom rnd = new SplittableRandom();
 	/**Основной потоковый пулл для всяких задач которым нужно выполняться периодически*/
-	public static final ScheduledThreadPoolExecutor  TIME_OUT_POOL = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,new ThreadFactory(){
+	public static final ScheduledThreadPoolExecutor TIME_OUT_POOL = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,new ThreadFactory(){
 		@Override
 		public Thread newThread(Runnable task) {return new Thread(task, "TIME_OUT_TASK");}
 	});
+	/**Переводчик для всех названий. В теории*/
+	public static ResourceBundle bundle = ResourceBundle.getBundle("locales.locale", Locale.getDefault());
+	
 	
 	/**Сохраняет конфигурацию мира*/
 	public static JSON toJSON() {
