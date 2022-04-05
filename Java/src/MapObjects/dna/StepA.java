@@ -1,9 +1,9 @@
 package MapObjects.dna;
 
 import static MapObjects.CellObject.OBJECT.CLEAN;
-import static MapObjects.CellObject.OBJECT.NOT_POISON;
+import static MapObjects.CellObject.OBJECT.FRIEND;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
-import static MapObjects.CellObject.OBJECT.POISON;
+import static MapObjects.CellObject.OBJECT.ENEMY;
 import static MapObjects.CellObject.OBJECT.WALL;
 
 import MapObjects.AliveCell;
@@ -23,7 +23,7 @@ public class StepA extends CommandDoInterupted {
 
 	protected StepA(String shotName, String longName, boolean isAbsolute) {
 		super(1, shotName, longName);
-		setInterrupt(isAbsolute, NOT_POISON, POISON, CLEAN);
+		setInterrupt(isAbsolute, WALL,ORGANIC,FRIEND,ENEMY);
 	}
 
 	@Override
