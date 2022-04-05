@@ -18,6 +18,8 @@ import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -91,6 +93,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 					isActiv = false;
 					e.printStackTrace();
 					System.out.println(cell);
+					System.out.println(point);
 					JOptionPane.showMessageDialog(null,	"<html>Критическая ошибка!!!\n"
 							+ "Вызвала клетка " + cell + " с координат" + point + "\n"
 							+ "Описание: " + e.getMessage() + "\n"
@@ -164,55 +167,45 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	}
 	
 	public void worldGenerate() {
+		var vaxX = Configurations.MAP_CELLS.width;
 		geysers = new Geyser[2];
-		geysers[0]  = new Geyser(Configurations.MAP_CELLS.width * 10 / 40,Configurations.MAP_CELLS.width * 13 / 40,getWidth(),getHeight(),DIRECTION.DOWN,10);
-		geysers[1]  = new Geyser(Configurations.MAP_CELLS.width * 30 / 40,Configurations.MAP_CELLS.width * 33 / 40,getWidth(),getHeight(),DIRECTION.UP,10);
+		geysers[0]  = new Geyser(vaxX * 10 / 40,vaxX * 13 / 40,getWidth(),getHeight(),DIRECTION.DOWN,10);
+		geysers[1]  = new Geyser(vaxX * 30 / 40,vaxX * 33 / 40,getWidth(),getHeight(),DIRECTION.UP,10);
 		Configurations.sun = new Sun(getWidth(),getHeight());
 		Point.update();
+		
 
-		/**Сколько рядов уместится в одном процессоре*/
-		int lenghtX = 8;
-		int countColumn = Configurations.MAP_CELLS.width / lenghtX;
-		/**Сколько рядов придётся ещё добавить*/
-		int addX = Configurations.MAP_CELLS.width - lenghtX*countColumn;
-		
-		Point [][] cellsFirst = new Point[countColumn][(lenghtX/2) * Configurations.MAP_CELLS.height];
-		Point [][] cellsSecond = new Point[countColumn][(lenghtX/2) * Configurations.MAP_CELLS.height];
-		Point [] cellsAdd = new Point[addX * Configurations.MAP_CELLS.height];
-		
-		for (int proc = 0; proc < countColumn; proc++) {
-			for (int x = 0; x < lenghtX; x++) {
-				for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-					Point point = new Point(x + proc * lenghtX,y);
-					if(x >= lenghtX/2 ) {
-						cellsSecond[proc][(x - lenghtX/2)*Configurations.MAP_CELLS.height+y] = point;
-					} else {
-						cellsFirst[proc][x*Configurations.MAP_CELLS.height+y] = point;
-					}
-				}
+		//Сколько рядов уместится в одной половине поля потока
+		//Это гарантированное расстояние, которое по оси Х клетка не может пройти ни при каких условиях.
+		//То есть выйдя с границы своей области, клетка не дойдёт до следующей. Иначе может быть гонка процессов!
+		int columnPerPc_2 = 5;
+		//Сколько нужно дать каждой клетке, чтобы сойтись по итогу
+		double insert = 1.0*(vaxX - (vaxX/(columnPerPc_2*2))*(columnPerPc_2*2)) / vaxX;
+		List<WorldTask> cellsTask_l = new ArrayList<>(vaxX / (columnPerPc_2*2)+columnPerPc_2);
+		//Собственно сами точки для клетки
+		ArrayList<Point> firstList = new ArrayList<>();
+		List<Point> secondList = new ArrayList<>();
+		for (int x = 0; x < vaxX; x++) {
+			var difX = Math.round(x  - insert*x);
+			if(x != 0 && difX % (2 * columnPerPc_2) == 0 && secondList.size() != 0) {
+				cellsTask_l.add(new WorldTask(firstList.toArray(new Point[0]),secondList.toArray(new Point[0])));
+				firstList.clear();
+				secondList.clear();
 			}
-		}
-		
-		for (int i = 0; i < addX; i++) {
+			boolean isFirst = difX % (2 * columnPerPc_2) < columnPerPc_2;
 			for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-				cellsAdd[i*Configurations.MAP_CELLS.height+y] = new Point(countColumn * lenghtX + i,y);
+				Point point = new Point(x,y);
+				if (isFirst) firstList.add(point);
+				else 		 secondList.add(point);
 			}
 		}
+		cellsTask_l.add(new WorldTask(firstList.toArray(new Point[0]),secondList.toArray(new Point[0])));
 		
-		
-		List<WorldTask> cellsTask_l = new ArrayList<>(cellsFirst.length);
-		for (int i = 0; i < cellsFirst.length; i++)
-			cellsTask_l.add(new WorldTask(cellsFirst[i],cellsSecond[i]));
-		if(cellsAdd.length != 0)
-			cellsTask_l.get(cellsTask_l.size()-1).second.points = Utils.concat(cellsTask_l.get(cellsTask_l.size()-1).second.points, cellsAdd);
-		
-		//threads = new Thread[cellsTask_l.length];
 		cellsTask=cellsTask_l;
 		
 		recalculate();
 
 		Configurations.settings.updateScrols();
-		executor.submit(this);
 	}
 	/**
 	 * Один маленький шажок для мира и один огронмый шаг для клеток
@@ -293,8 +286,27 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		g.setColor(colors[1+2]);
 		g.fillRect(Configurations.border.width, getHeight()-Configurations.border.height, getWidth()-Configurations.border.width*2, Configurations.border.height);
 		//paintLine(g);
+		//paintProc(g);
 	}
 
+	@SuppressWarnings("unused")
+	private void paintProc(Graphics g) {
+		for (int y = 0; y < cellsTask.size(); y++) {
+			var ct = cellsTask.get(y);
+			var color = Utils.getHSBColor(1.0*ct.first.startX / Configurations.MAP_CELLS.width, 1, 1, 0.5);
+			g.setColor(color);
+			for (var point : ct.first.points) {
+				if(point.getY() == 10 - y%2)
+					Utils.fillSquare(g, point.getRx(), point.getRy(), point.getRr());
+			}
+			color = Utils.getHSBColor(1.0*ct.second.startX / Configurations.MAP_CELLS.width, 1, 1, 0.5);
+			g.setColor(color);
+			for (var point : ct.second.points) {
+				if(point.getY() == 20 + y%2)
+					Utils.fillSquare(g, point.getRx(), point.getRy(), point.getRr());
+			}
+		}
+	}
 	@SuppressWarnings("unused")
 	private void paintLine(Graphics g) {
 		for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
