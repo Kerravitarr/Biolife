@@ -241,7 +241,6 @@ public class Settings extends JPanel{
 
 		PoisonStreem.addAdjustmentListener(e->{
 			Configurations.POISON_STREAM =  (int) Math.round(Math.exp(e.getValue()));
-			System.out.println(Configurations.POISON_STREAM);
 		});
 		scroll_SP.addAdjustmentListener(e->{
 			Configurations.ADD_SUN_POWER =  e.getValue();
