@@ -136,7 +136,7 @@ public class Settings extends JPanel{
 		scrollBar_7.setBlockIncrement(20);
 		scale = new ScrollPanel("Масштаб",10,100);
 		scale.setValue(10);
-		sun_speed = new ScrollPanel("Скорость солнца",100,1);
+		sun_speed = new ScrollPanel("Скорость солнца",200,1);
 		sun_speed.setValue(Configurations.SUN_SPEED);
 		sun_size = new ScrollPanel("Размер солнца",1,Configurations.SUN_PARTS*2);
 		PoisonStreem = new ScrollPanel("Вязкость яда",1,16);
