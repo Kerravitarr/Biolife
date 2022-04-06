@@ -74,7 +74,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			Point[] points = activ.points;
 			for (int i = points.length - 1; i > 0 && !isError; i--) {
 				Point t = points[i];
-				if(t == null) continue; //Чего мы будем пустые клетки мешать?
+				if(get(t) == null) continue; //Чего мы будем пустые клетки мешать?
 				int j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
 				points[i] = points[j];
 				points[j] = t;
@@ -178,7 +178,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		//Сколько рядов уместится в одной половине поля потока
 		//Это гарантированное расстояние, которое по оси Х клетка не может пройти ни при каких условиях.
 		//То есть выйдя с границы своей области, клетка не дойдёт до следующей. Иначе может быть гонка процессов!
-		int columnPerPc_2 = 5;
+		int columnPerPc_2 = Math.max(5, vaxX/100);
 		//Сколько нужно дать каждой клетке, чтобы сойтись по итогу
 		double insert = 1.0*(vaxX - (vaxX/(columnPerPc_2*2))*(columnPerPc_2*2)) / vaxX;
 		List<WorldTask> cellsTask_l = new ArrayList<>(vaxX / (columnPerPc_2*2)+columnPerPc_2);
