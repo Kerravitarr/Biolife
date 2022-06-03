@@ -38,8 +38,12 @@ public class FPScounter {
 		FPS += (counterFrame - FPS) * k;
 		counterFrame = 0;
 	}
-	
+	/**Сколько действий в секунду*/
 	public long FPS() {
 		return Math.round(FPS);
+	}
+	/**Сколько действий в минуту*/
+	public long FPM() {
+		return Math.round(FPS*60);
 	}
 }

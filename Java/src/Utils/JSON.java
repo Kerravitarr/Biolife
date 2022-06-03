@@ -842,4 +842,9 @@ public class JSON implements Serialization{
 	public boolean containsKey(String key) {
 		return parametrs.containsKey(key);
 	}
+
+	/**Очищает все элементы объекта*/
+	public void clear() {
+		parametrs.clear();
+	}
 }

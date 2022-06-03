@@ -21,6 +21,7 @@ public class ColorRec{
 		g.fillRect(x,y,width,height);
 	}
 	
+	@Override
 	public String toString() {
 		return "x0: " + x + " y0: " + y + " w: " + width + " h: " + height + " c: " + color;
 	}
@@ -28,7 +29,7 @@ public class ColorRec{
 	/**
 	 * @param color the color to set
 	 */
-	public void setColor(Color color) {
+	public final void setColor(Color color) {
 		this.color = color;
 	}
 }
