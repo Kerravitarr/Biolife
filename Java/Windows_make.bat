@@ -5,6 +5,11 @@
 @if %errorlevel%==2 Goto clean
 
 :make
+
+rd /s /q .\build\
+rd /s /q .\docs\
+rd /s /q .\bin\
+
 @echo =======================================
 @echo STEP 1. Compiling files to bytecode.
 @echo =======================================
@@ -20,7 +25,7 @@ xcopy .\src\locales .\bin\locales /e
 @echo STEP 2. Creation of program documentation
 @echo =======================================
 javadoc -encoding utf8  -d docs -sourcepath src\start\*.java src\main\*.java src\start\*.java src\MapObjects\*.java src\panels\*.java src\Utils\*.java src\MapObjects\dna\*.java
-if errorlevel 1 Goto error - Ой, да кому нужны документы? Что-то да соберётся
+rem if errorlevel 1 Goto error - Ой, да кому нужны документы? Что-то да соберётся
 @CLS
 @echo =======================================
 @echo Step 2 - OK
@@ -31,6 +36,12 @@ if errorlevel 1 Goto error - Ой, да кому нужны документы? 
 jar -cvef start.BioLife BioLife.jar -C bin .
 @if errorlevel 1 Goto error
 @CLS
+@echo =======================================
+@echo Step 1 - OK
+@echo =======================================
+@echo =======================================
+@echo Step 2 - OK
+@echo =======================================
 @echo =======================================
 @echo Step 3 - OK
 @echo =======================================
