@@ -299,7 +299,7 @@ public class Settings extends JPanel{
 		isActiv = false;
 		var js = new JsonSave("BioLife", "map");
 		var obj = new JSON();
-		js.load(obj);
+		if(!js.load(obj)) return;
 		try{
 			Configurations.world.update(obj);
 		} catch (java.lang.RuntimeException e1) {
