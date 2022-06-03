@@ -32,6 +32,7 @@ public class Sun {
 			for (ColorRec colorRec : rows)
 				colorRec.paint(g);
 		}
+		@Override
 		public String toString() {
 			return "x0: " + startX + " endx: " + endX + " pw: " + power;
 		}

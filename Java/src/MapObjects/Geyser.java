@@ -37,6 +37,7 @@ public class Geyser {
 		int endX;
 		/**Сила действия*/
 		int power;
+		@Override
 		public String toString() {
 			return "sx: " + startX + " ex: " + endX + " p: " + power + super.toString();
 		}

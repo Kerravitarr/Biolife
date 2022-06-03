@@ -72,7 +72,7 @@ public class AliveCell extends CellObject{
     public Node evolutionNode = null;
     
     //===============Параметры братства, многоклеточность=======
-    private Map<Point,AliveCell> friends = new HashMap<>();
+    private final Map<Point,AliveCell> friends = new HashMap<>(DIRECTION.size());
     
     /**
      * Создание клетки без рода и племени
@@ -610,12 +610,10 @@ public class AliveCell extends CellObject{
 	}
 
 	public void setFriend(AliveCell friend) {
-		synchronized (getFriends()) {
-			if (friend == null || getFriends().get(friend.getPos()) != null)
-				return;
-			getFriends().put(friend.getPos(), friend);
-			friend.getFriends().put(getPos(), this);
-		}
+		if (friend == null || getFriends().get(friend.getPos()) != null)
+			return;
+		getFriends().put(friend.getPos(), friend);
+		friend.getFriends().put(getPos(), this);
 	}
 
 	@Override
