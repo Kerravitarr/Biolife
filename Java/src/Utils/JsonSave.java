@@ -77,18 +77,23 @@ public class JsonSave {
 	/**
 	 * Создаёт окно выбора JSON объекта и загружает объект
 	 * @param obj - объект, который уже создан и осталось только парсировать файл
+	 * @return true есди загрузка удалась
 	 */
-	public void load(Serialization obj) {
+	public boolean load(Serialization obj) {
 		JFileChooser fileopen = new JFileChooser(path);
 		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
 		int ret = fileopen.showDialog(null, "Выбрать файл");
 		if (ret == JFileChooser.APPROVE_OPTION) {
-			try(FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())){
+			try ( FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())) {
 				obj.parse(reader);
+				return true;
 			} catch (Exception e1) {
 				e1.printStackTrace();
-				JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage(),	projectName, JOptionPane.ERROR_MESSAGE);
-			} 
+				JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
+				return false;
+			}
+		} else {
+			return false;
 		}
 	}
 }
