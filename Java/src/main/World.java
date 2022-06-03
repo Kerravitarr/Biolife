@@ -7,8 +7,10 @@ import MapObjects.Geyser;
 import MapObjects.Organic;
 import MapObjects.Poison;
 import MapObjects.Sun;
+import Utils.ColorRec;
 import Utils.FPScounter;
 import Utils.JSON;
+import Utils.StreamProgressBar;
 import Utils.Utils;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -72,7 +74,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		public Boolean call(){
 			WorkThread activ = isFirst ? first : second;
 			Point[] points = activ.points;
-			for (int i = points.length - 1; i > 0 && !isError; i--) {
+			for (int i = points.length - 1; i >= 0 && !isError; i--) {
 				Point t = points[i];
 				if(get(t) == null) continue; //Чего мы будем пустые клетки мешать?
 				int j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
@@ -125,7 +127,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	/**Счётчик капель яда*/
 	public int countPoison = 0;
 	/**Все цвета, которые мы должны отобразить на поле*/
-	Color [] colors;
+	ColorRec [] colors;
 	/**Это мы, наш поток, в нём мы рисуем всё и всяк*/
 	private final AutostartThread worldThread;
 	/**Мы живы. Наш поток жив, мы выполняем расчёт*/
@@ -181,14 +183,14 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		int columnPerPc_2 = Math.max(5, vaxX/100);
 		//Сколько нужно дать каждой клетке, чтобы сойтись по итогу
 		double insert = 1.0*(vaxX - (vaxX/(columnPerPc_2*2))*(columnPerPc_2*2)) / vaxX;
-		List<WorldTask> cellsTask_l = new ArrayList<>(vaxX / (columnPerPc_2*2)+columnPerPc_2);
+		cellsTask = new ArrayList<>(vaxX / (columnPerPc_2*2)+columnPerPc_2);
 		//Собственно сами точки для клетки
 		ArrayList<Point> firstList = new ArrayList<>();
 		List<Point> secondList = new ArrayList<>();
 		for (int x = 0; x < vaxX; x++) {
 			var difX = Math.round(x  - insert*x);
-			if(x != 0 && difX % (2 * columnPerPc_2) == 0 && secondList.size() != 0) {
-				cellsTask_l.add(new WorldTask(firstList.toArray(new Point[0]),secondList.toArray(new Point[0])));
+			if(x != 0 && difX % (2 * columnPerPc_2) == 0 && !secondList.isEmpty()) {
+				cellsTask.add(new WorldTask(firstList.toArray(Point[]::new),secondList.toArray(Point[]::new)));
 				firstList.clear();
 				secondList.clear();
 			}
@@ -199,9 +201,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 				else 		 secondList.add(point);
 			}
 		}
-		cellsTask_l.add(new WorldTask(firstList.toArray(new Point[0]),secondList.toArray(new Point[0])));
-		
-		cellsTask=cellsTask_l;
+		cellsTask.add(new WorldTask(firstList.toArray(Point[]::new),secondList.toArray(Point[]::new)));
 		
 		recalculate();
 
@@ -268,23 +268,19 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 
 	private void paintField(Graphics g) {
 		//Небо
-		g.setColor(colors[0]);
-		g.fillRect(Configurations.border.width, 0, getWidth()-Configurations.border.width*2, Configurations.border.height);
+		colors[0].paint(g);
 		//Вода
-		int lenghtY = getHeight()-Configurations.border.height*2;
 		Configurations.sun.paint(g);
         //Минералы
-		g.setColor( colors[1]);
-		g.fillRect(Configurations.border.width, (int) (Configurations.border.height + lenghtY*Configurations.LEVEL_MINERAL), getWidth()-Configurations.border.width*2, (int) (lenghtY*(1-Configurations.LEVEL_MINERAL)/2));
-		g.setColor( colors[1+1]);
-		g.fillRect(Configurations.border.width, (int) (getHeight()-Configurations.border.height-(lenghtY*(1-Configurations.LEVEL_MINERAL)/2)), getWidth()-Configurations.border.width*2,(int) (lenghtY*(1-Configurations.LEVEL_MINERAL)/2));
+		colors[1].paint(g);
+		colors[1+1].paint(g);
 		//Гейзеры
 		for(Geyser gz : Configurations.geysers)
 			gz.paint(g);
 
 		//Земля
-		g.setColor(colors[1+2]);
-		g.fillRect(Configurations.border.width, getHeight()-Configurations.border.height, getWidth()-Configurations.border.width*2, Configurations.border.height);
+		colors[1+2].paint(g);
+		//Вспомогательное построение
 		//paintLine(g);
 		//paintProc(g);
 	}
@@ -296,13 +292,13 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			var color = Utils.getHSBColor(1.0*ct.first.startX / Configurations.MAP_CELLS.width, 1, 1, 0.5);
 			g.setColor(color);
 			for (var point : ct.first.points) {
-				if(point.getY() == 10 - y%2)
+				//if(point.getY() == 10 - y%2)
 					Utils.fillSquare(g, point.getRx(), point.getRy(), point.getRr());
 			}
 			color = Utils.getHSBColor(1.0*ct.second.startX / Configurations.MAP_CELLS.width, 1, 1, 0.5);
 			g.setColor(color);
 			for (var point : ct.second.points) {
-				if(point.getY() == 20 + y%2)
+				//if(point.getY() == 20 + y%2)
 					Utils.fillSquare(g, point.getRx(), point.getRy(), point.getRr());
 			}
 		}
@@ -364,25 +360,45 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	}
 
 	public synchronized void recalculate() {
-		colors = new Color[2 + 2];
-		colors[0] = new Color(224, 255, 255, 255); // небо
-		colors[1] = Utils.getHSBColor(270.0 / 360, 0.5, 1.0, 0.5);
-		colors[1 + 1] = (Utils.getHSBColor(300.0 / 360, 0.5, 1.0, 0.5));
-		colors[1 + 2] = new Color(139, 69, 19, 255);
-		Configurations.sun.resize(getWidth(),getHeight());
+		double hDel = 1.0 * getHeight() * (1 - (Configurations.UP_border + Configurations.DOWN_border)) / (Configurations.MAP_CELLS.height);
+		double wDel = 1.0 * getWidth() / (Configurations.MAP_CELLS.width);
+		Configurations.scale = Math.min(hDel, wDel);
+		Configurations.border.width = (int) Math.round((getWidth() -Configurations.MAP_CELLS.width*Configurations.scale)/2);
+		Configurations.border.height = (int) Math.round((getHeight() - Configurations.MAP_CELLS.height*Configurations.scale)/2);
+		Point.update();
+		for(Geyser gz : Configurations.geysers)
+			gz.updateScreen(getWidth(),getHeight());
+		Configurations.sun.resize(getWidth(), getHeight());
+				
+		colors = new ColorRec[2 + 2];
+		var width = Configurations.border.width;
+		var height = Configurations.border.height;
+		colors[0] = new ColorRec(width, 0, getWidth() - width * 2, height, new Color(224, 255, 255, 255)); // небо
+		int lenghtY = getHeight() - height * 2;
+		colors[1] = new ColorRec(width, (int) (height + lenghtY * Configurations.LEVEL_MINERAL), getWidth() - width * 2, (int) (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2), Utils.getHSBColor(270.0 / 360, 0.5, 1.0, 0.5));
+		colors[1 + 1] = new ColorRec(width, (int) (getHeight() - height - (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2)), getWidth() - width * 2, (int) (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2), Utils.getHSBColor(300.0 / 360, 0.5, 1.0, 0.5));
+		colors[1 + 2] = new ColorRec(width, getHeight() - height, getWidth() - width * 2, height, new Color(139, 69, 19, 255));
+
 	}
 
 	public synchronized JSON serelization() {
+		StreamProgressBar sb = new StreamProgressBar();
+		sb.addEvent("Сохранение началось");
+		sb.addEvent("Конфигурация мира готова");
+		sb.addEvent("Объекты на поле - готовы");
+		sb.addEvent("Сохранение завершено");
+		sb.event();
+		
 		JSON make = new JSON();
 		make.add("VERSION", Configurations.VERSION);
 
 		JSON configWorld = Configurations.toJSON();
 		configWorld.add("step", step);
 		make.add("configWorld", configWorld);
-		System.out.println("Конфигурация мира - готово");
+		sb.event();
 		
 		make.add("EvoTree", Configurations.tree.toJSON());
-		System.out.println("Дерево эволюции - готово");
+		sb.event();
 		
 		var cells = new ArrayList<CellObject>();
 		for (CellObject[] cell : Configurations.worldMap) {
@@ -396,64 +412,75 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			nodes[i] = cells.get(i).toJSON();
 		}
 		make.add("Cells", nodes);
-		System.out.println("Объекты на поле - готовы");
+		sb.event();
+		sb.event();
 		return make;
 	}
 
 	public synchronized void update(JSON json) {
+		StreamProgressBar sb = new StreamProgressBar();
+		sb.addEvent("Загрузка началась");
+		sb.addEvent("Конфигурация мира - загружено");
+		sb.addEvent("Дерево эволюции - загружено");
+		sb.addEvent("Объекты на поле - загружено");
+		sb.addEvent("Друзья - загружено");
+		sb.addEvent("Эволюционное дерево перестроено");
+		sb.addEvent("Настройки обновлены");
+		sb.addEvent("Загрузка заверешена");
+		
+		sb.event();
+		
 		JSON configWorld = json.getJ("configWorld");
 		Configurations.load(configWorld);
 		step = configWorld.getL("step");
-		System.out.println("Конфигурация мира - загружено");
+		sb.event();
 		
 		Configurations.tree = new EvolutionTree(json.getJ("EvoTree"));
-		System.out.println("Дерево эволюции - загружено");
+		sb.event();
 		
 		List<JSON> cells = json.getAJ("Cells");		
 		Configurations.worldMap = new CellObject[Configurations.MAP_CELLS.width][Configurations.MAP_CELLS.height];
 		for (JSON cell : cells) {
 			switch (LV_STATUS.values()[(int)cell.get("alive")]) {
-				case LV_ALIVE : {
+				case LV_ALIVE -> {
 			    	//Point pos = new Point(cell.getJ("pos"));
 					//if(pos.x == MAP_CELLS.width/2 && (pos.y > 100 && pos.y < 120))
 						add(new AliveCell(cell,Configurations.tree));
-				}break;
-				case LV_ORGANIC:
-					add(new Organic(cell));
-					break;
-				case LV_POISON:
-					add(new Poison(cell));
-					break;
-				default:
-					System.err.println(cell);
+				}
+				case LV_ORGANIC -> add(new Organic(cell));
+				case LV_POISON -> add(new Poison(cell));
+				default -> System.err.println(cell);
 			}
-			
-			
 		}
-		System.out.println("Объекты на поле - загружено");
+		sb.event();
 		
 		//Когда все сохранены, обновялем список друзей
 		for (JSON cell : cells) {
+			if(!cell.containsKey("friends")) continue; // Мы не клетка
+			if(cell.getAJ("friends").isEmpty()) continue; // У нас нет друзей
 	    	Point pos = new Point(cell.getJ("pos"));
 	    	CellObject realCell = get(pos);
 	    	if(realCell == null || !(realCell instanceof AliveCell))
 	    		continue;
-
 	    	List<JSON> mindL = cell.getAJ("friends");
 			AliveCell new_name = (AliveCell) realCell;
 	    	for (JSON pointFriend : mindL) {
 	    		pos = new Point(pointFriend);
-	    		if (get(pos) instanceof AliveCell)
-		    		new_name.setFriend((AliveCell)get(pos));
+	    		if (get(pos) instanceof AliveCell aliveCell)
+		    		new_name.setFriend(aliveCell);
 			}
 		}
-		System.out.println("Друзья - загружено");
+		//Очищаем память
+		cells.clear();
+		json.clear();
+		sb.event();
 		
 		Configurations.tree.updatre();
-		System.out.println("Эволюционное дерево перестроено");
+		sb.event();
 		
-		Configurations.settings.updateScrols();
-		System.out.println("Настройки обновлены\nЗагрузка заверешена");
+		worldGenerate();
+		sb.event();
+		sb.event();
 	}
 	
 	
@@ -467,15 +494,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public void componentHidden(ComponentEvent e) {}
 	@Override
 	public void componentResized(ComponentEvent e) {
-		double hDel = 1.0 * getHeight() * (1 - (Configurations.UP_border + Configurations.DOWN_border)) / (Configurations.MAP_CELLS.height);
-		double wDel = 1.0 * getWidth() / (Configurations.MAP_CELLS.width);
-		Configurations.scale = Math.min(hDel, wDel);
-		Configurations.border.width = (int) Math.round((getWidth() -Configurations.MAP_CELLS.width*Configurations.scale)/2);
-		Configurations.border.height = (int) Math.round((getHeight() - Configurations.MAP_CELLS.height*Configurations.scale)/2);
-		Point.update();
-		for(Geyser gz : Configurations.geysers)
-			gz.updateScreen(getWidth(),getHeight());
-		Configurations.sun.resize(getWidth(),getHeight());
+		recalculate();
 	}
 	
 	@Override
