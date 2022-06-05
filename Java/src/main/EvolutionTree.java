@@ -3,6 +3,7 @@ package main;
 import MapObjects.AliveCell;
 import MapObjects.Poison;
 import Utils.JSON;
+
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -93,6 +93,7 @@ public class Configurations {
 	});
 	/**Переводчик для всех названий. В теории*/
 	public static ResourceBundle bundle = ResourceBundle.getBundle("locales.locale", Locale.getDefault());
+	public static ResourceBundle bundle = ResourceBundle.getBundle("locale", Locale.getDefault());
 	
 	
 	/**Сохраняет конфигурацию мира*/

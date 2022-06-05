@@ -2,7 +2,6 @@ package Utils;
 
 
 
-import Utils.JsonSave.Serialization;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -13,6 +12,8 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
+
+import Utils.JsonSave.Serialization;
 
 /**
  * Класс, который отвечает за стиль JSON
