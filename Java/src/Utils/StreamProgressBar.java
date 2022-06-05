@@ -20,22 +20,32 @@ public class StreamProgressBar {
 		events.add(event);
 	}
 	public void event(){
-		var evText = new StringBuilder();
-		evText.append("[");
-		evText.append(eventIndex);
-		evText.append("/");
-		evText.append(events.size());
-		evText.append("] ");
-		evText.append(events.get(eventIndex++));
-		if(prefMc == 0){
-			prefMc = System.currentTimeMillis();
+		if(eventIndex < events.size()) {
+			var evText = new StringBuilder();
+			evText.append("[");
+			evText.append(eventIndex+1);
+			evText.append("/");
+			evText.append(events.size());
+			evText.append("] ");
+			evText.append(events.get(eventIndex++));
+			if(prefMc == 0){
+				prefMc = System.currentTimeMillis();
+			} else {
+				var mc = System.currentTimeMillis();
+				evText.append(". Время выполнения ");
+				evText.append(df.format(mc-prefMc));
+				evText.append("мс");
+				prefMc=mc;
+			}
+			System.out.println(evText.toString());
 		} else {
-			var mc = System.currentTimeMillis();
-			evText.append(". Время выполнения ");
-			evText.append(df.format(mc-prefMc));
-			evText.append("мс");
-			prefMc=mc;
+			var evText = new StringBuilder();
+			evText.append("[");
+			evText.append(eventIndex);
+			evText.append("/");
+			evText.append(events.size());
+			evText.append("] ");
+			System.out.println(evText.toString());
 		}
-		System.out.println(evText.toString());
 	}
 }
