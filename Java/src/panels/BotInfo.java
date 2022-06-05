@@ -118,8 +118,10 @@ public class BotInfo extends JPanel {
 		private TextAL(AliveCell cell) {
 			super(cell,cell.getPos());
 			evolutionNode.remove();//Мы ложные
-			cell.addHealth(getHealth());
-			cell.setMineral(getMineral()*2);//Возвращаем материалы
+			cell.addHealth(getHealth());//Возвращаем здоровье
+			addHealth(getHealth());
+			cell.setMineral(getMineral()*2);
+			setMineral(getMineral()*2);
 			direction = cell.direction; // И направление
 		}
 		
@@ -467,7 +469,7 @@ public class BotInfo extends JPanel {
 	}
 
 	public void step() {
-		if(cell == null || !(cell instanceof AliveCell))
+		if(!(cell instanceof AliveCell))
 			return;
 		if(testCell == null){
 			testCell = new TextAL((AliveCell) getCell());
@@ -503,7 +505,7 @@ public class BotInfo extends JPanel {
 			CommandDNA cmd_o = dna.get();
 			StringBuilder sb = new StringBuilder();
 			if(cmd == interVal)
-				sb.append("Inter");
+				sb.append("**");
 			sb.append(cmd);
 			sb.append("=");
 			sb.append(dna.get(cmd, 0));
@@ -518,7 +520,10 @@ public class BotInfo extends JPanel {
 
 			for (int j = 0; j < cmd_o.getCountParams(); j++) {
 				sb = new StringBuilder();
-				sb.append(cmd + j + 1);
+				var index_cmd = (cmd + j + 1) % dna.size;
+				if(index_cmd == interVal)
+					sb.append("**");
+				sb.append(index_cmd);
 				sb.append("=");
 				sb.append(dna.get(cmd + j + 1, 0));
 				sb.append(" П ");
@@ -527,7 +532,10 @@ public class BotInfo extends JPanel {
 			}
 			for (int j = 0; j < cmd_o.getCountBranch(); j++) {
 				sb = new StringBuilder();
-				sb.append(cmd + cmd_o.getCountParams() + j + 1);
+				var index_cmd = (cmd + cmd_o.getCountParams() + j + 1) % dna.size;
+				if(index_cmd == interVal)
+					sb.append("**");
+				sb.append(index_cmd);
 				sb.append("=");
 				sb.append(dna.get(cmd + j + 1, 0));
 				sb.append(" А");
