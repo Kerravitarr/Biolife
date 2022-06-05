@@ -1,17 +1,6 @@
 package main;
-import MapObjects.AliveCell;
-import MapObjects.CellObject;
-import MapObjects.CellObject.LV_STATUS;
-import MapObjects.CellObject.OBJECT;
-import MapObjects.Geyser;
-import MapObjects.Organic;
-import MapObjects.Poison;
-import MapObjects.Sun;
-import Utils.ColorRec;
-import Utils.FPScounter;
-import Utils.JSON;
-import Utils.StreamProgressBar;
-import Utils.Utils;
+import static main.Configurations.geysers;
+
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.HeadlessException;
@@ -20,8 +9,6 @@ import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -29,9 +16,23 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinPool.ForkJoinWorkerThreadFactory;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import static main.Configurations.geysers;
+
+import MapObjects.AliveCell;
+import MapObjects.CellObject;
+import MapObjects.CellObject.LV_STATUS;
+import MapObjects.CellObject.OBJECT;
+import Utils.ColorRec;
+import Utils.FPScounter;
+import Utils.JSON;
+import Utils.StreamProgressBar;
+import Utils.Utils;
+import MapObjects.Geyser;
+import MapObjects.Organic;
+import MapObjects.Poison;
+import MapObjects.Sun;
 import main.Point.DIRECTION;
 
 public class World extends JPanel implements Runnable,ComponentListener,MouseListener{	
@@ -132,6 +133,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	private final AutostartThread worldThread;
 	/**Мы живы. Наш поток жив, мы выполняем расчёт*/
 	public boolean isStart = true;
+	/**Показывает, что остановка была сделана специально для перерисовки*/
+	private int repaint_stop = 0;
 	/**
 	 * Create the panel.
 	 */
@@ -264,6 +267,12 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		timeoutStep++;
 		fps.interapt();
 		repaint();
+		if(repaint_stop > 1) {
+			repaint_stop--;
+		} else if(repaint_stop == 1) {
+			repaint_stop--;
+			isActiv = true;
+		}
 	}
 
 	private void paintField(Graphics g) {
@@ -360,6 +369,10 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	}
 
 	public synchronized void recalculate() {
+		if(isActiv) {
+			isActiv = false;
+			repaint_stop = 5;
+		}
 		double hDel = 1.0 * getHeight() * (1 - (Configurations.UP_border + Configurations.DOWN_border)) / (Configurations.MAP_CELLS.height);
 		double wDel = 1.0 * getWidth() / (Configurations.MAP_CELLS.width);
 		Configurations.scale = Math.min(hDel, wDel);
@@ -378,13 +391,13 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		colors[1] = new ColorRec(width, (int) (height + lenghtY * Configurations.LEVEL_MINERAL), getWidth() - width * 2, (int) (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2), Utils.getHSBColor(270.0 / 360, 0.5, 1.0, 0.5));
 		colors[1 + 1] = new ColorRec(width, (int) (getHeight() - height - (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2)), getWidth() - width * 2, (int) (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2), Utils.getHSBColor(300.0 / 360, 0.5, 1.0, 0.5));
 		colors[1 + 2] = new ColorRec(width, getHeight() - height, getWidth() - width * 2, height, new Color(139, 69, 19, 255));
-
 	}
 
 	public synchronized JSON serelization() {
 		StreamProgressBar sb = new StreamProgressBar();
 		sb.addEvent("Сохранение началось");
 		sb.addEvent("Конфигурация мира готова");
+		sb.addEvent("Древо эволюции - готово");
 		sb.addEvent("Объекты на поле - готовы");
 		sb.addEvent("Сохранение завершено");
 		sb.event();
