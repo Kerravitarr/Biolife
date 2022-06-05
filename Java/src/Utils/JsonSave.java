@@ -1,5 +1,6 @@
 package Utils;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -51,28 +52,39 @@ public class JsonSave {
 	public boolean save(Serialization obj, boolean isBeautiful) {
 		JFileChooser fileopen = new JFileChooser(path);
 		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
-		int ret = fileopen.showDialog(null, "Сохранить файл");
-		if (ret != JFileChooser.APPROVE_OPTION) return false;
-		String fileName = fileopen.getSelectedFile().getPath();
-		if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
-			if(!fileName.substring(fileName.lastIndexOf(".")+1).equals(extension))
+		while(true) {
+			int ret = fileopen.showDialog(null, "Сохранить файл");
+			if (ret != JFileChooser.APPROVE_OPTION) return false;
+			String fileName = fileopen.getSelectedFile().getPath();
+			if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
+				if(!fileName.substring(fileName.lastIndexOf(".")+1).equals(extension))
+					fileName += "."+extension;
+			} else {
 				fileName += "."+extension;
-		} else {
-			fileName += "."+extension;
+			}
+			var file = new File(fileName);
+			if(file.exists()) {
+				int result = JOptionPane.showConfirmDialog(null,"Файл " + fileName + " существует, перзаписать? ", projectName,JOptionPane.YES_NO_CANCEL_OPTION);
+				switch (result) {
+					case JOptionPane.YES_OPTION-> {file.delete();}
+					case JOptionPane.NO_OPTION-> {continue;}
+					case JOptionPane.CANCEL_OPTION-> {return false;}
+				}
+			}
+			try(FileWriter writer = new FileWriter(fileName, true)){
+				if(isBeautiful)
+					obj.toBeautifulJSONString(writer);
+				else
+					obj.toJSONString(writer);
+				writer.flush();
+				JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	projectName, JOptionPane.INFORMATION_MESSAGE);
+				return true;
+			} catch (IOException | java.lang.RuntimeException e1) {
+				e1.printStackTrace();
+				JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
+			}
+			return false;
 		}
-		try(FileWriter writer = new FileWriter(fileName, true)){
-			if(isBeautiful)
-				obj.toBeautifulJSONString(writer);
-			else
-				obj.toJSONString(writer);
-			writer.flush();
-			JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	projectName, JOptionPane.INFORMATION_MESSAGE);
-			return true;
-		} catch (IOException | java.lang.RuntimeException e1) {
-			e1.printStackTrace();
-			JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
-		}
-		return false;
 	}
 	/**
 	 * Создаёт окно выбора JSON объекта и загружает объект
@@ -82,7 +94,7 @@ public class JsonSave {
 	public boolean load(Serialization obj) {
 		JFileChooser fileopen = new JFileChooser(path);
 		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
-		int ret = fileopen.showDialog(null, "Выбрать файл");
+		int ret = fileopen.showDialog(null, "Загрузить файл");
 		if (ret == JFileChooser.APPROVE_OPTION) {
 			try ( FileReader reader = new FileReader(fileopen.getSelectedFile().getPath())) {
 				obj.parse(reader);
