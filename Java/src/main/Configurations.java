@@ -24,7 +24,7 @@ import panels.Settings;
  */
 public class Configurations {
 	/**Версия приложения. Нужна на тот случай, если вдруг будет загружаться старое приложение*/
-	public static final String VERSION = "1.0";
+	public static final String VERSION = "2.0";
 	
 	//Карта
 	/**Количиство ячеек карты*/
@@ -92,7 +92,6 @@ public class Configurations {
 		public Thread newThread(Runnable task) {return new Thread(task, "TIME_OUT_TASK");}
 	});
 	/**Переводчик для всех названий. В теории*/
-	public static ResourceBundle bundle = ResourceBundle.getBundle("locales.locale", Locale.getDefault());
 	public static ResourceBundle bundle = ResourceBundle.getBundle("locale", Locale.getDefault());
 	
 	
