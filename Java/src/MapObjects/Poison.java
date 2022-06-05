@@ -58,6 +58,8 @@ public class Poison extends CellObject {
 
 	@Override
 	void step() {
+		if(Configurations.POISON_STREAM == 0) //При таком уровне разложения, яд сразу исчезает
+			destroy();
 		if ((getAge()) >= nextDouble) { // Вязкость яда
 			DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
 			switch (see(dir)) {

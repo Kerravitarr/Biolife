@@ -1,7 +1,5 @@
 package panels;
 
-import Utils.JSON;
-import Utils.JsonSave;
 import java.awt.Adjustable;
 import java.awt.BorderLayout;
 import java.awt.event.AdjustmentEvent;
@@ -16,9 +14,14 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
 import javax.swing.LayoutStyle.ComponentPlacement;
+
+import Utils.JSON;
+import Utils.JsonSave;
+
 import javax.swing.SwingConstants;
 import main.Configurations;
 import main.World;
+
 import static main.World.isActiv;
 
 public class Settings extends JPanel{
@@ -139,7 +142,7 @@ public class Settings extends JPanel{
 		sun_speed = new ScrollPanel("Скорость солнца",200,1);
 		sun_speed.setValue(Configurations.SUN_SPEED);
 		sun_size = new ScrollPanel("Размер солнца",1,Configurations.SUN_PARTS*2);
-		PoisonStreem = new ScrollPanel("Вязкость яда",1,16);
+		PoisonStreem = new ScrollPanel("Вязкость яда",0,16);
 		PoisonStreem.setBlockIncrement(3);
 		PoisonStreem.setValue((int) Math.round(Math.log(Configurations.POISON_STREAM)));
 		
@@ -235,12 +238,19 @@ public class Settings extends JPanel{
 		scrollBar_2.setValue(Configurations.AGGRESSIVE_ENVIRONMENT*100);
 		scrollBar_1.setValue(Configurations.DIRTY_WATER);
 		const_SP.setValue(Configurations.BASE_SUN_POWER);
+		if(Configurations.POISON_STREAM == 0)
+			PoisonStreem.setValue(0);
+		else
+			PoisonStreem.setValue(Math.log(Configurations.POISON_STREAM));
 	}
 	
 	public final void setListeners() {
 
 		PoisonStreem.addAdjustmentListener(e->{
-			Configurations.POISON_STREAM =  (int) Math.round(Math.exp(e.getValue()));
+			if(e.getValue() == 0)
+				Configurations.POISON_STREAM =  0;
+			else
+				Configurations.POISON_STREAM =  (int) Math.round(Math.exp(e.getValue()));
 		});
 		scroll_SP.addAdjustmentListener(e->{
 			Configurations.ADD_SUN_POWER =  e.getValue();
