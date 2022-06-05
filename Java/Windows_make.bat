@@ -13,10 +13,10 @@ rd /s /q .\bin\
 @echo =======================================
 @echo STEP 1. Compiling files to bytecode.
 @echo =======================================
-javac -encoding utf8 -d bin src\start\*.java src\main\*.java src\start\*.java src\MapObjects\*.java src\panels\*.java src\Utils\*.java src\MapObjects\dna\*.java
+javac --release 16 -encoding utf8 -d bin src\start\*.java src\main\*.java src\start\*.java src\MapObjects\*.java src\panels\*.java src\Utils\*.java src\MapObjects\dna\*.java
 @if errorlevel 1 Goto error
 mkdir .\bin\locales
-xcopy .\src\locales .\bin\locales /e
+xcopy .\src\locales .\bin /e
 @CLS
 @echo =======================================
 @echo Step 1 - OK
