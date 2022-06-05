@@ -4,17 +4,21 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.HeadlessException;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.MessageFormat;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
@@ -32,10 +36,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import MapObjects.CellObject;
 import Utils.GifSequenceWriter;
-import java.awt.HeadlessException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import main.Configurations;
 import main.World;
 import panels.BotInfo;
@@ -104,6 +104,11 @@ public class BioLife extends JFrame {
 	 */
 	public BioLife() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				Configurations.settings.save();
+			}
+		});
 		setBounds(100, 100, (int) (450*2.5), (int) (300*2.5));
 		
 		JMenuBar menuBar = new JMenuBar();
