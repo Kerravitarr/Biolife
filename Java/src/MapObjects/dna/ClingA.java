@@ -18,7 +18,7 @@ import main.Point.DIRECTION;
 public class ClingA extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 1;
-
+	/**Присасывается к чему-то относительно МСК*/
 	public ClingA() {this("□∪□ A","Присосаться A",true);};
 
 	protected ClingA(String shotName, String longName, boolean isAbsolute) {
@@ -43,7 +43,7 @@ public class ClingA extends CommandDoInterupted {
 				Point point = nextPoint(cell,direction);
 				cell.setFriend((AliveCell) Configurations.world.get(point));
 			}
-			case ORGANIC, CLEAN, NOT_POISON, POISON, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
+			case ORGANIC, CLEAN, NOT_POISON, POISON, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}

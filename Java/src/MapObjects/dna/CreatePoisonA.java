@@ -16,7 +16,7 @@ import main.Point.DIRECTION;
 public class CreatePoisonA extends CommandDo {
 	/**Столько энергии тратит бот на выделение яда, причём 2/3 этого числа идут яду, 1/3 сгорает*/
 	public static final long HP_FOR_POISON = 20;
-
+	/**Создаёт яд в МСК*/
 	public CreatePoisonA() {this("☣ A","Пукнуть A");};
 	protected CreatePoisonA(String shotName,String longName) {super(1,shotName,longName);}
 	@Override
@@ -49,6 +49,7 @@ public class CreatePoisonA extends CommandDo {
 			case ENEMY:
 			case POISON:
 			case NOT_POISON:
+			case OWALL:
 				point = nextPoint(cell,direction);
 				CellObject target = Configurations.world.get(point);
 				if(target.toxinDamage(cell.getPosionType(), (int) Math.min(HP_FOR_POISON * 2/3, cell.getPosionPower())))

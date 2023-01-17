@@ -52,7 +52,7 @@ public class GiveA extends CommandDoInterupted {
 					target.setMineral(target.getMineral() + min);
 				}
 			}
-			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN -> cell.getDna().interrupt(cell, see.nextCMD);
+			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}

@@ -45,7 +45,7 @@ public class CloneA extends Birth {
 				if(birth(cell,point,childCMD))
 					cell.setFriend((AliveCell) Configurations.world.get(point));
 			}
-			case ENEMY, FRIEND, ORGANIC, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
+			case ENEMY, FRIEND, ORGANIC, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}

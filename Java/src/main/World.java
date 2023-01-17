@@ -127,6 +127,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public int countLife = 0;
 	/**Счётчик капель яда*/
 	public int countPoison = 0;
+	/**Счётчик стенок*/
+	public int countWall = 0;
 	/**Все цвета, которые мы должны отобразить на поле*/
 	ColorRec [] colors;
 	/**Это мы, наш поток, в нём мы рисуем всё и всяк*/
@@ -241,7 +243,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		if(isActiv && (msTimeout != 0 && timeoutStep % msTimeout == 0)) {
 			step();
 		}
-		int localCl = 0,localCO = 0,localCP = 0;
+		int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
 		for (CellObject[] cell : Configurations.worldMap) {
 			for (CellObject cell2 : cell) {
 				if(cell2 != null) {
@@ -250,6 +252,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 						localCl++;
 					else if(cell2.aliveStatus(LV_STATUS.LV_POISON))
 						localCP++;
+					else if(cell2.aliveStatus(LV_STATUS.LV_WALL))
+						localCW++;
 					else
 						localCO++;
 				}
@@ -258,6 +262,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		countLife = localCl;
 		countOrganic = localCO;
 		countPoison = localCP;
+		countWall = localCW;
 		if(Configurations.info.getCell() != null) {
 			g.setColor(Color.GRAY);
 			g.drawLine(Configurations.info.getCell().getPos().getRx(), Configurations.border.height, Configurations.info.getCell().getPos().getRx(), getHeight()-Configurations.border.height);
@@ -336,6 +341,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			return OBJECT.ORGANIC;
 		else if(cell.aliveStatus(LV_STATUS.LV_POISON))
 			return OBJECT.POISON;
+		else if(cell.aliveStatus(LV_STATUS.LV_WALL))
+			return OBJECT.OWALL;
 		else
 			return OBJECT.BOT;
 	}

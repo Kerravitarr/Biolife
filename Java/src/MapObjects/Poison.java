@@ -26,7 +26,7 @@ public class Poison extends CellObject {
 			return vals[num];
 		}
 
-		static int size() {
+		public static int size() {
 			return vals.length;
 		}
 	};
@@ -75,6 +75,7 @@ public class Poison extends CellObject {
 				case ENEMY:
 				case FRIEND:
 				case POISON:
+				case OWALL:
 				case NOT_POISON:{
 					energy /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
 					if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
@@ -115,6 +116,7 @@ public class Poison extends CellObject {
 			}return true;
 			case ORGANIC :
 			case ENEMY :
+			case OWALL :
 			case FRIEND :{
 				Point point = getPos().next(direction);
 				CellObject cell = Configurations.world.get(point);

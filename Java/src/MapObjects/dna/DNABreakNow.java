@@ -25,7 +25,7 @@ import panels.Legend;
 public class DNABreakNow extends CommandDo {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
-
+	/**Подменяет команду у того, на кого смотрит на параметр*/
 	public DNABreakNow() {super(1,"ДНК Х","Подменить команду"); isInterrupt = true;};
 	@Override
 	protected void doing(AliveCell cell) {
@@ -46,7 +46,7 @@ public class DNABreakNow extends CommandDo {
 				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 					cell.color_DO = Color.BLACK;
 			}
-			case CLEAN, NOT_POISON, ORGANIC, POISON, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
+			case CLEAN, NOT_POISON, ORGANIC, POISON, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}

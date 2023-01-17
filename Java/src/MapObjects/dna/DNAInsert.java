@@ -50,7 +50,7 @@ public class DNAInsert extends CommandDNA {
 				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
 					cell.color_DO = Color.BLACK;
 			}
-			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN -> cell.getDna().interrupt(cell, see.nextCMD);
+			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 		return length_DNA; // Но этот код не наш, мы его не выполняем!

@@ -11,6 +11,7 @@ import main.Point.DIRECTION;
  *
  */
 public class PullR extends PullA {
+	/**Толкает объект относительно своего местоположения*/
 	public PullR() {super("↭ O","Толкнуть О",false);};
 	@Override
 	protected void doing(AliveCell cell) {

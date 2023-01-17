@@ -18,7 +18,7 @@ import main.Point;
 public class DNAWallBreak extends CommandDo {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 1;
-
+	/**Ломает ДНК того, на кого смотрит*/
 	public DNAWallBreak() {super("ДНК ⊡--","Проломить ДНК"); isInterrupt = true;};
 	@Override
 	protected void doing(AliveCell cell) {
@@ -31,7 +31,7 @@ public class DNAWallBreak extends CommandDo {
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				bot.setDNA_wall(Math.max(0, bot.getDNA_wall() - 2));
 			}
-			case ORGANIC, CLEAN, NOT_POISON, POISON, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
+			case ORGANIC, CLEAN, NOT_POISON, POISON, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}

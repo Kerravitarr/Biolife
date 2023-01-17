@@ -73,7 +73,7 @@ public class BiteA extends CommandDoInterupted {
 
 			}
 		}
-		case CLEAN, NOT_POISON, POISON, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
+		case CLEAN, NOT_POISON, POISON, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 		default -> throw new IllegalArgumentException("Unexpected value: " + see);
 	}
 	}

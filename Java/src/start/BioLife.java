@@ -50,7 +50,7 @@ public class BioLife extends JFrame {
 		@Override
 		public void run() {
 			String title = MessageFormat.format(Configurations.bundle.getString("BioLife.title"), world.fps.FPS(), df.format(world.step),
-					world.sps.FPS(), df.format(world.countLife), df.format(world.countOrganic), df.format(world.countPoison));
+					world.sps.FPS(), df.format(world.countLife), df.format(world.countOrganic), df.format(world.countPoison), df.format(world.countWall));
 			setTitle(title);
 			if (dialog.isVisible())
 				dialog.repaint();

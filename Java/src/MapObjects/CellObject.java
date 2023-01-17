@@ -16,17 +16,25 @@ import main.Point.DIRECTION;
  */
 public abstract class CellObject {
 	/**Статус*/
-	public enum LV_STATUS {LV_ALIVE,LV_ORGANIC,LV_POISON,GHOST};
+	public enum LV_STATUS {LV_ALIVE,LV_ORGANIC,LV_POISON,LV_WALL,GHOST};
     /**Состояние объекта*/
     protected LV_STATUS alive;
 	/**Статус*/
 	public enum OBJECT {
+		/**Крайняя стена*/
 		WALL(1),
+		/**Пустота*/
 		CLEAN(0,true,false,false),
+		/**Органика*/
 		ORGANIC(2),
+		/**Друг или враг*/
 		FRIEND(3,false,false,true),ENEMY(4,false,false,true),
+		/**Яд или не яд для этой клетки*/
 		POISON(5,true,true,false),NOT_POISON(6,true,true,false),
-		BOT(7,false,false,true);
+		/**Оканемевшая клетка*/
+		OWALL(7,false,false,false),
+		/**Какой-то бот*/
+		BOT(8,false,false,true);
 		public static final OBJECT[] myEnumValues = OBJECT.values();
 		/**На сколько нужно сдвинуть счётчик команда дополнительно, типо развилка. Это-же - номер прерывания*/
 		public final int nextCMD;
@@ -193,7 +201,7 @@ public abstract class CellObject {
 	 */
 	public boolean move(DIRECTION direction) {
 		switch (see(direction)) {
-			case FRIEND, ENEMY, ORGANIC, WALL -> {
+			case FRIEND, ENEMY, ORGANIC, WALL, OWALL -> {
 				return false;
 			}
 			case CLEAN -> {

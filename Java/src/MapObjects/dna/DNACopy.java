@@ -22,7 +22,7 @@ import panels.Legend;
 public class DNACopy extends CommandDNA {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 8;
-
+	/**Забирает себе часть ДНК цели*/
 	public DNACopy() {super(0,0,"ДНК ⊡←⊙","Забрать ДНК"); isInterrupt = true;};
 	@Override
 	protected int perform(AliveCell cell) {
@@ -43,7 +43,7 @@ public class DNACopy extends CommandDNA {
 				// Смены команды не будет, ведь мы эту команду перезаписали уже на нужную. Поэтому двигаем PC на шаг назад
 				return -1;
 			}
-			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN -> {
+			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> {
 				cell.getDna().interrupt(cell, see.nextCMD);
 				return 0;
 			}

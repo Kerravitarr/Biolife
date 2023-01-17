@@ -28,8 +28,8 @@ public class Configurations {
 	
 	//Карта
 	/**Количиство ячеек карты*/
-	public static Dimension MAP_CELLS = new Dimension(500/4,200/4);
-	//public static Dimension MAP_CELLS = new Dimension(500,200);
+	//public static Dimension MAP_CELLS = new Dimension(500/4,200/4);
+	public static Dimension MAP_CELLS = new Dimension(500,200);
 	/**Сам мир*/
 	public static CellObject [][] worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 	/**Базовая освещённость карты, то есть сколько света падает постоянно*/
@@ -92,7 +92,7 @@ public class Configurations {
 		public Thread newThread(Runnable task) {return new Thread(task, "TIME_OUT_TASK");}
 	});
 	/**Переводчик для всех названий. В теории*/
-	public static ResourceBundle bundle = ResourceBundle.getBundle("locale", Locale.getDefault());
+	public static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
 	
 	
 	/**Сохраняет конфигурацию мира*/

@@ -22,7 +22,7 @@ import main.Point.DIRECTION;
 public class PullA extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
-	
+	/**Толкает объект относительно МСК*/
 	public PullA() {this("↭ A","Толкнуть A",true);};
 
 	protected PullA(String shotName, String longName, boolean isAbsolute) {
@@ -64,7 +64,7 @@ public class PullA extends CommandDoInterupted {
 				if(!targetStep)
 					cell.moveD(direction.inversion()); //Мы не смогли толкнуть цель, поэтому отлетаем сами
 			}
-			case WALL, CLEAN -> cell.getDna().interrupt(cell, see.nextCMD);
+			case WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}

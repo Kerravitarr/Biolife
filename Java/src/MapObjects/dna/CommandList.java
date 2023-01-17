@@ -70,6 +70,7 @@ public class CommandList {
 			case BLOCK_1+6 -> new Sleep();
 			case BLOCK_1+7 -> new Buoyancy_UP();
 			case BLOCK_1+8 -> new Buoyancy_DOWN();
+			case BLOCK_1+9 -> new ToWall();
 				
 			case BLOCK_2 -> new TurnAroundA();
 			case BLOCK_2+1 -> new TurnAroundR();
@@ -102,6 +103,7 @@ public class CommandList {
 			case BLOCK_3_2+7 -> new PosionNear();
 			case BLOCK_3_2+8-> new MedicamentNear();
 			case BLOCK_3_2+9-> new OrganicNear();
+			case BLOCK_3_2+10-> new WhatMyPosion();
 				
 			case BLOCK_4 -> new EatA();
 			case BLOCK_4+1 -> new EatR();

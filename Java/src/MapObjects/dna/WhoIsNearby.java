@@ -10,6 +10,9 @@ import main.Point.DIRECTION;
  */
 public class WhoIsNearby extends CommandExplore {
 
+	/**
+	 * Ищет первый попавшийся объект по часовой стрелке
+	 */
 	public WhoIsNearby() {super("O_O 🔄","Кто рядом?",OBJECT.size());}
 	
 	@Override

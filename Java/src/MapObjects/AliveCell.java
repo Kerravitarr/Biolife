@@ -324,6 +324,17 @@ public class AliveCell extends CellObject{
 	    	throw e;
 		}
 	}
+	/**
+	 * Превращает бота в стену
+	 */
+	public void bot2Wall() {
+		try {
+			destroy(); // Удаляем себя
+		} catch (CellObjectRemoveException e) {
+	    	Configurations.world.add(new Fossil(this)); //Мы просто заменяем себя
+	    	throw e;
+		}
+	}
 
 	/**
 	 * Подглядывает за бота в абсолютном направлении
