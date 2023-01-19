@@ -40,6 +40,32 @@ public class AliveCell extends CellObject{
 	private static final double DEF_PHOTOSIN = 2;
 	/**Столько здоровья требуется клетке для жизни на ход*/
 	private static final long HP_PER_STEP = 4;
+	/**Для изменения цвета*/
+	public enum ACTION {
+		/**Съесть органику - красный*/
+		EAT_ORG("Есть органику",255,0,0,1), 
+		/**Съесть минералы - синий*/
+		EAT_MIN("Есть минералы",0,0,255,1), 
+		/**Фотосинтез - зелёный*/
+		EAT_SUN("Фотосинтез",0,255,0,1), 
+		/**Поделиться - оливковый, грязно-жёлтый*/
+		GIVE("Отдавать ресурсы",128,128,0,0.5), 
+		/**Принять подачку - морской волны*/
+		RECEIVE("Получать ресурсы",0,128,128,0.5), 
+		/**Сломать мою ДНК - чёрный*/
+		BREAK_DNA("Ломаю ДНК",0,0,0,1), 
+		/**Ничего не делать - серый*/
+		NOTHING("Ничего не делаю",128,128,128,0.04);
+		public static final ACTION[] staticValues = ACTION.values();
+		public static int size() {return staticValues.length;}
+		
+		ACTION(String des, int rc, int gc, int bc, double power) {r=rc;g=gc;b=bc;p=power;description=des;}
+		public final int r;
+		public final int g;
+		public final int b;
+		private final double p;
+		public final String description;
+	};
 	
 	//=================Внутреннее состояние бота
 	/**Мозг*/
@@ -60,9 +86,25 @@ public class AliveCell extends CellObject{
     private int buoyancy = 0;
     /**Специальный флаг, показывает, что бот на этом ходу спит*/
     private boolean isSleep = false;
+    /**Цвет с большим числом значений*/
+    private class DColor{
+    	double r, g, b, a; 
+    	DColor(double r,double g, double b, double a){this.r=r;this.g=g;this.b=b;this.a=a;}
+    	DColor(double r,double g, double b){this(r,g,b,255);}
+    	DColor(){this(255,255,255);}
+    	void addR(double add) {r = Utils.betwin(0.0, r+add, 255.0);}
+    	void addG(double add) {g = Utils.betwin(0.0, g+add, 255.0);}
+    	void addB(double add) {b = Utils.betwin(0.0, b+add, 255.0);}
+    	int getR() {return (int) Utils.betwin(0.0, r, 255.0);}
+    	int getG() {return (int) Utils.betwin(0.0, g, 255.0);}
+    	int getB() {return (int) Utils.betwin(0.0, b, 255.0);}
+    	int getA() {return (int) Utils.betwin(0.0, a, 255.0);}
+		public Color getC() {return new Color(getR(),getG(),getB(),getA());}
+    };
+    private DColor color_cell = new DColor();
     
     //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
-    /**Поколение (мутационное)*/
+    /**Поколение (мутационное). Другими словами - как далеко клетка ушла от изначальной*/
     private int Generation = 0;
     /**Фенотип бота*/
     public Color phenotype = new Color(128,128,128);
@@ -169,11 +211,9 @@ public class AliveCell extends CellObject{
         	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
             this.setMineral(Math.round(this.getMineral() + Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - this.photosynthesisEffect))); //Эффективный фотосинтез мешает нам переваривать пищу
         }
-        if(getAge() % 100 == 0) {
-			goRed(1);
-			goGreen(1);
-			goBlue(1);
-		}
+        if(getAge() % 50 == 0) {
+            color(ACTION.NOTHING, color_cell.r+color_cell.g+color_cell.b);
+        }
 	}
 
 	/**Поделиться с друзьями всем, что имеем*/
@@ -200,13 +240,23 @@ public class AliveCell extends CellObject{
 		allHp /= friendCount;
 		allMin /= friendCount;
 		allDNA_wall /= friendCount;
+		if (allMin > getMineral())
+			color(ACTION.RECEIVE, allMin - getMineral());
+		else
+			color(ACTION.GIVE, getMineral() - allMin);
 		setHealth(allHp);
 		setMineral(allMin);
 		DNA_wall = allDNA_wall;
 		for (AliveCell friendCell : getFriends().values()) {
-			if(getAge() % 100 == 0) {
-				friendCell.goGreen((int) (allHp - friendCell.getHealth()));
-				friendCell.goBlue((int) (allMin - friendCell.getMineral()));
+			if (getAge() % 100 == 0) {
+				if (allHp > friendCell.getHealth())
+					friendCell.color(ACTION.RECEIVE, allHp - friendCell.getHealth());
+				else
+					friendCell.color(ACTION.GIVE, friendCell.getHealth() - allHp);
+				if (allMin > friendCell.getMineral())
+					friendCell.color(ACTION.RECEIVE, allMin - friendCell.getMineral());
+				else
+					friendCell.color(ACTION.GIVE, friendCell.getMineral() - allMin);
 			}
 			friendCell.setHealth(allHp);
 			friendCell.setMineral(allMin);
@@ -407,10 +457,12 @@ public class AliveCell extends CellObject{
 			switch (type) {
 				case PINK-> {return false;}
 				case YELLOW->{
-					var hp = type == getPosionType() ? (getHealth()) : (getHealth() * 2);
-					if (damag < hp)
-						setHealth(hp - damag);
-					return damag >= hp;
+					if(type == getPosionType())	//Родной яд действует слабже
+						damag /= 2;
+					var isLife = damag < getHealth();
+					if (isLife)
+						addHealth(-damag);
+					return !isLife;
 				}
 				case BLACK->{
 					mutation();
@@ -421,87 +473,19 @@ public class AliveCell extends CellObject{
 		}
 		return true;
 	}
-
+	
 	/**
-	 * Зеленение бота
+	 * Раскрашивает бота в зависимости от действия
+	 * @param act
 	 * @param num
 	 */
-	public void goGreen(int num) {
+	public void color(ACTION act, double num) {
 		if(Legend.Graph.getMode() != Legend.Graph.MODE.DOING)
 			return;
-		num = Math.max(0, num);
-		int red = color_DO.getRed();
-		int green = color_DO.getGreen();
-		int blue = color_DO.getBlue();
-		green = Utils.betwin(0,green + num, 255);
-        int nm = Math.max(1, num / 2);
-        // убавляем красноту
-        red = red - nm;
-        if (red < 0) {
-            blue += red;
-        }
-        // убавляем синеву
-        blue = blue - nm;
-        if (blue < 0) {
-            red += blue;
-        }
-        red = Utils.betwin(0,red,255);
-        blue = Utils.betwin(0,blue,255);
-        color_DO = new Color(red, green, blue , color_DO.getAlpha());
-	}
-	/**
-	 * Синение бота
-	 * @param num
-	 */
-	public void goBlue(int num) {
-		if(Legend.Graph.getMode() != Legend.Graph.MODE.DOING)
-			return;
-		num = Math.max(0, num);
-		int red = color_DO.getRed();
-		int green = color_DO.getGreen();
-		int blue = color_DO.getBlue();
-		blue = Utils.betwin(0,blue + num, 255);
-        int nm = Math.max(1, num / 2);
-        // убавляем зелену
-        green = green - nm;
-        if (green < 0) {
-        	red += green;
-        }
-        // убавляем красноту
-        red = red - nm;
-        if (red < 0) {
-        	green += red;
-        }
-        green = Utils.betwin(0,green,255);
-        red = Utils.betwin(0,red,255);
-        color_DO = new Color(red, green, blue , color_DO.getAlpha());
-	}
-	/**
-	 * Краснение бота
-	 * @param num
-	 */
-	public void goRed(int num) {
-		if(Legend.Graph.getMode() != Legend.Graph.MODE.DOING)
-			return;
-		num = Math.max(0, num);
-		int red = color_DO.getRed();
-		int green = color_DO.getGreen();
-		int blue = color_DO.getBlue();
-		red = Utils.betwin(0,red + num,255);
-        int nm = Math.max(1, num / 2);
-        // убавляем зелену
-        green = green - nm;
-        if (green < 0) {
-        	blue += green;
-        }
-        // убавляем
-        blue = blue - nm;
-        if (blue < 0) {
-        	green += blue;
-        }
-        green = Utils.betwin(0,green,255);
-        blue = Utils.betwin(0,blue,255);
-        color_DO = new Color(red, green, blue , color_DO.getAlpha());
+		if(act.p != 1)
+			num *= act.p;
+		color_cell.addR(color_cell.r>act.r?-num:num);color_cell.addG(color_cell.g>act.g?-num:num);color_cell.addB(color_cell.b>act.b?-num:num);
+		color_DO = color_cell.getC();
 	}
 	
 	@Override
@@ -574,8 +558,6 @@ public class AliveCell extends CellObject{
 		this.health=health;
 		if(this.health < 0)
 			bot2Organic();
-		if((Legend.Graph.getMode() == Legend.Graph.MODE.HP))
-			repaint();
 	}
 
 	/**
@@ -583,8 +565,6 @@ public class AliveCell extends CellObject{
 	 */
 	public void setAge(int years) {
 		super.setAge(years);
-		if((Legend.Graph.getMode() == Legend.Graph.MODE.YEAR) && (years % 100 == 0))
-			repaint();
 	}
 
 	/**
@@ -599,8 +579,6 @@ public class AliveCell extends CellObject{
 	 */
 	public void setGeneration(int generation) {
 		Generation = generation;
-		if(Legend.Graph.getMode() == Legend.Graph.MODE.GENER)
-			repaint();
 	}
 
 	/**
@@ -615,16 +593,14 @@ public class AliveCell extends CellObject{
 	 */
 	public void setMineral(long mineral) {
 		this.mineral = Math.min(mineral, MAX_MP);
-		if((Legend.Graph.getMode() == Legend.Graph.MODE.MINERALS))
-			repaint();
 	}
 	
 	@Override
 	public void repaint() {
 		switch (Legend.Graph.getMode()) {
 			case MINERALS -> color_DO = new Color(0,0,(int) Utils.betwin(0, (255.0*mineral/MAX_MP),255),evolutionNode.getAlpha());
-			case GENER -> color_DO = Utils.getHSBColor(Utils.betwin(0, 0.5*Generation/Legend.Graph.getMaxGen(),1), 1, 1,evolutionNode.getAlpha()/255.0);
-			case YEAR -> color_DO = Utils.getHSBColor(Math.max(0, (1.0*getAge()/Legend.Graph.getMaxAge())), 1, 1,evolutionNode.getAlpha()/255.0);
+			case GENER -> color_DO =Legend.Graph.generationToColor(Generation,evolutionNode.getAlpha()/255.0);
+			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge(),evolutionNode.getAlpha()/255.0);
 			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,health)/MAX_HP)),0,0,evolutionNode.getAlpha());
 			case PHEN -> color_DO = new Color(phenotype.getRed(), phenotype.getGreen(), phenotype.getBlue(),evolutionNode.getAlpha());
 			case DOING -> color_DO = new Color(color_DO.getRed(), color_DO.getGreen(), color_DO.getBlue(),evolutionNode.getAlpha());

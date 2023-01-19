@@ -16,14 +16,20 @@ public class Poison extends CellObject {
 	
 	public enum TYPE {
 		/**Без яда, используется для клеток*/
-		UNEQUIPPED,
+		UNEQUIPPED("НЕТ"),
 		/**Химический активный, наносит урон*/
-		YELLOW, 
+		YELLOW("ЯД"), 
 		/**Безвредный для клеток, но может разрушать стены*/
-		PINK, 
+		PINK("РАСТВ"), 
 		/**Безвредный для здоровья, но вызывает мутацию в клетке*/
-		BLACK;
+		BLACK("МУТ");
 		private static TYPE[] vals = values();
+		
+		private String name;
+
+		TYPE(String n) {
+			name = n;
+		}
 
 		public static TYPE toEnum(int num) {
 			while (num >= vals.length)
@@ -36,6 +42,8 @@ public class Poison extends CellObject {
 		public static int size() {
 			return vals.length;
 		}
+		
+		public String toString() {return name;}
 	};
 	/**Сколько у нас энергии*/
 	private double energy = 0;
@@ -97,6 +105,7 @@ public class Poison extends CellObject {
 				case BOT: throw new IllegalArgumentException("Unexpected value: " + see(dir));
 			}
 			nextDouble = getTimeToNextDouble();
+			repaint();
 		}
 	}
 	
@@ -116,7 +125,6 @@ public class Poison extends CellObject {
 				if(cell.toxinDamage(type,(int) getHealth())) {
 					cell.type = type;
 					cell.setHealth(Math.abs(cell.getHealth()));
-					cell.repaint();
 				}
 				destroy(); // Не важно что мы вернём - мы того
 			}return true;

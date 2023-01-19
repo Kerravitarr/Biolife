@@ -22,6 +22,7 @@ public class Fossil extends CellObject {
 	public Fossil(JSON poison) {
 		super(poison);
 		setHealth(Math.round((double)poison.get("energy")));
+		 super.color_DO = COLOR_DO;
 		repaint();
 	}
 
@@ -31,6 +32,7 @@ public class Fossil extends CellObject {
 		setPos(cell.getPos());
 		energy = Math.abs(cell.getHealth()) + AliveCell.MAX_HP/10.0 + cell.getMineral()/10.0; //Превращается в органику всё, что только может
 	    super.color_DO = COLOR_DO;
+		repaint();
 	}
 
 
@@ -97,14 +99,5 @@ public class Fossil extends CellObject {
 	}
 
 	@Override
-	public void repaint() {
-		switch (Legend.Graph.getMode()) {
-			case MINERALS -> super.color_DO = new Color(0,0,0);
-			case GENER -> super.color_DO = new Color(0,0,0);
-			case YEAR -> super.color_DO = Utils.getHSBColor(Math.max(0, (1.0*getAge()/Legend.Graph.getMaxAge())), 1, 1,1);
-			case HP -> super.color_DO = new Color((int) (Utils.betwin(0.0, getHealth()/AliveCell.MAX_HP, 1.0)*255),0,0);
-			case PHEN -> super.color_DO = COLOR_DO;
-			case DOING -> super.color_DO = COLOR_DO;
-		}
-	}
+	public void repaint() {	}
 }
