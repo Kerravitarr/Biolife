@@ -181,6 +181,12 @@ public class JSON implements Serialization{
 				} else {
 			        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
 				}
+			} else if(isDigit(ch)) {
+				do {
+					sb.append(ch);
+					ch = read();
+				} while (isDigit(ch));
+				back(); //Это не число, дальше мы всё
 			} else {
 		        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
 			}
