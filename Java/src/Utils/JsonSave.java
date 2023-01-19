@@ -65,8 +65,8 @@ public class JsonSave {
 			var file = new File(fileName);
 			if(file.exists()) {
 				int result;
-				if(fileName.lastIndexOf("/") != -1)
-					result = JOptionPane.showConfirmDialog(null,"Файл " + fileName.substring(fileName.lastIndexOf("/")+1) + " существует, перзаписать? ", projectName,JOptionPane.YES_NO_CANCEL_OPTION);
+				if(fileName.lastIndexOf("\\") != -1)
+					result = JOptionPane.showConfirmDialog(null,"Файл " + fileName.substring(fileName.lastIndexOf("\\")+1) + " существует, перзаписать? ", projectName,JOptionPane.YES_NO_CANCEL_OPTION);
 				else
 					result = JOptionPane.showConfirmDialog(null,"Файл " + fileName + " существует, перзаписать? ", projectName,JOptionPane.YES_NO_CANCEL_OPTION);
 				switch (result) {
