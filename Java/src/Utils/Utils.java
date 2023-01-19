@@ -86,10 +86,10 @@ public class Utils {
      * format used by the method {@link #getRGB() getRGB}.
      * This integer can be supplied as an argument to the
      * {@code Color} constructor that takes a single integer argument.
-     * @param     h   the hue component of the color - цвет
-     * @param     s   the saturation of the color - насыщенность (бледнее-ярче)
-     * @param     b   the brightness of the color - яркость (от яркого до чёрного)
-     * @param 	  a the alpha component
+     * @param     h   цветовая составляющая цвета
+     * @param     s   насыщенность цвета
+     * @param     b   яркость цвета
+     * @param 	  a   альфа-компонент
      * @return    the RGB value of the color with the indicated hue,
      *                            saturation, and brightness.
      * @see       java.awt.Color#getRGB()
