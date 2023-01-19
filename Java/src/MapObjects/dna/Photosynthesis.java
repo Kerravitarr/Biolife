@@ -21,7 +21,7 @@ public class Photosynthesis extends CommandDo {
         double hlt = Configurations.sun.getEnergy(cell.getPos()) + t;
         if (hlt > 0) {
         	cell.addHealth(Math.round(hlt));   // прибавляем полученную энергия к энергии бота
-        	cell.goGreen((int) Math.round(hlt));                      // бот от этого зеленеет
+        	cell.color(AliveCell.ACTION.EAT_SUN,hlt);
         }
 	}
 }

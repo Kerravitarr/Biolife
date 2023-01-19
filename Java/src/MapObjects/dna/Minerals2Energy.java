@@ -17,9 +17,10 @@ public class Minerals2Energy extends CommandDo {
         	cell.setMineral(Math.round(cell.getMineral() - maxMin));
         	var add_hp = Math.round((4-cell.photosynthesisEffect) * maxMin);
         	cell.addHealth(add_hp); // Максимум 1 минрал преобразуется в 4 хп
-        	cell.goBlue((int)add_hp);  // бот от этого синеет
+        	cell.color(AliveCell.ACTION.EAT_MIN,add_hp);
+        	
         } else {  // если минералов меньше, то все минералы переходят в энергию
-        	cell.goBlue((int) cell.getMineral());
+        	cell.color(AliveCell.ACTION.EAT_MIN,cell.getMineral());
         	cell.addHealth(Math.round((4-cell.photosynthesisEffect) * cell.getMineral()));
         	cell.setMineral(0);
         }
