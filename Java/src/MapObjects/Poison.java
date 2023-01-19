@@ -15,7 +15,14 @@ public class Poison extends CellObject {
 	static final int MAX_TOXIC = 2000;
 	
 	public enum TYPE {
-		НЕТ, ЖЁЛ, РОЗ, ЧЁР;
+		/**Без яда, используется для клеток*/
+		UNEQUIPPED,
+		/**Химический активный, наносит урон*/
+		YELLOW, 
+		/**Безвредный для клеток, но может разрушать стены*/
+		PINK, 
+		/**Безвредный для здоровья, но вызывает мутацию в клетке*/
+		BLACK;
 		private static TYPE[] vals = values();
 
 		public static TYPE toEnum(int num) {
@@ -87,8 +94,7 @@ public class Poison extends CellObject {
 			            Configurations.world.add(newPoison);//Сделали новую каплю
 					} // А иначе мы не создаём просто нашу копию, нас-же переварили
 				}break;
-				default:
-				throw new IllegalArgumentException("Unexpected value: " + see(dir));
+				case BOT: throw new IllegalArgumentException("Unexpected value: " + see(dir));
 			}
 			nextDouble = getTimeToNextDouble();
 		}
@@ -187,10 +193,10 @@ public class Poison extends CellObject {
 			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,getHealth())/MAX_TOXIC)),0,0,255);
 			default -> {
 				switch (type) {
-					case ЖЁЛ -> color_DO = (Color.YELLOW);
-					case РОЗ -> color_DO = (Color.PINK);
-					case ЧЁР -> color_DO = (Color.BLACK);
-					default -> color_DO = (Color.BLACK);
+					case YELLOW -> color_DO = (Color.YELLOW);
+					case PINK -> color_DO = (Color.PINK);
+					case BLACK -> color_DO = (Color.BLACK);
+					case UNEQUIPPED -> throw new IllegalArgumentException("Unexpected value: " + type);
 				}
 			}
 		}

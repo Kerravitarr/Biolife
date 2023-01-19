@@ -53,7 +53,7 @@ public class AliveCell extends CellObject{
     //Защитный покров ДНК, он мешает изменить Нашу ДНК
     private int DNA_wall = 0;
     /**Тип яда к которому клетка устойчива*/
-    private Poison.TYPE poisonType = Poison.TYPE.НЕТ;
+    private Poison.TYPE poisonType = Poison.TYPE.UNEQUIPPED;
     /**Сила устойчивости к яду*/
     private int poisonPower = 0;
     /**Плавучесть. Меняется от -10 до 10 Где -10 - тонуть каждый ход, 10 - всплывать каждый ход, 1 - тонуть каждые 10 ходов*/
@@ -83,7 +83,6 @@ public class AliveCell extends CellObject{
     	dna = new DNA(DEF_MINDE_SIZE);
     	color_DO = new Color(255,255,255);
 		evolutionNode = EvolutionTree.root;
-		
     }
 
     /**
@@ -148,9 +147,9 @@ public class AliveCell extends CellObject{
 		for (int cyc = 0; (cyc < 15); cyc++)
 			if(dna.get().execute(this))
 				break;
-		if(getBuoyancy() < 0 && getAge() % (getBuoyancy()+11) == 0)
+		if(getBuoyancy() < 0 && getAge() % (getBuoyancy()+101) == 0)
 			moveD(DIRECTION.DOWN);
-		else if(getBuoyancy() > 0 && getAge() % (11-getBuoyancy()) == 0)
+		else if(getBuoyancy() > 0 && getAge() % (101-getBuoyancy()) == 0)
 			moveD(DIRECTION.UP);
         
 		if(isSleep) {
@@ -164,12 +163,17 @@ public class AliveCell extends CellObject{
     	if(!getFriends().isEmpty())
 			clingFriends();
         // если бот находится на глубине ниже половины
-        // то он автоматом накапливает минералы, но не более 999
+        // то он автоматом накапливает минералы, но не более MAX_MP
         if (this.getPos().getY() >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL)) {
         	double realLv = this.getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
         	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
             this.setMineral(Math.round(this.getMineral() + Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - this.photosynthesisEffect))); //Эффективный фотосинтез мешает нам переваривать пищу
         }
+        if(getAge() % 100 == 0) {
+			goRed(1);
+			goGreen(1);
+			goBlue(1);
+		}
 	}
 
 	/**Поделиться с друзьями всем, что имеем*/
@@ -178,7 +182,7 @@ public class AliveCell extends CellObject{
 		double allHp = getHealth();
 		long allMin = getMineral();
 		int allDNA_wall = DNA_wall;
-		int friend = getFriends().size() + 1;
+		int friendCount = getFriends().size() + 1;
 		int maxToxic = poisonPower;
 		Point delP = null;
 		for (Entry<Point, AliveCell> cell_e : getFriends().entrySet()) {
@@ -193,18 +197,22 @@ public class AliveCell extends CellObject{
 		}
 		if(delP != null)
 			getFriends().remove(delP);
-		allHp /= friend;
-		allMin /= friend;
-		allDNA_wall /= friend;
+		allHp /= friendCount;
+		allMin /= friendCount;
+		allDNA_wall /= friendCount;
 		setHealth(allHp);
 		setMineral(allMin);
 		DNA_wall = allDNA_wall;
-		for (AliveCell cell : getFriends().values()) {
-			cell.setHealth(allHp);
-			cell.setMineral(allMin);
-			cell.DNA_wall = allDNA_wall;
-			if(cell.poisonType == poisonType)
-				cell.poisonPower += cell.poisonPower < maxToxic ? 1 : 0;
+		for (AliveCell friendCell : getFriends().values()) {
+			if(getAge() % 100 == 0) {
+				friendCell.goGreen((int) (allHp - friendCell.getHealth()));
+				friendCell.goBlue((int) (allMin - friendCell.getMineral()));
+			}
+			friendCell.setHealth(allHp);
+			friendCell.setMineral(allMin);
+			friendCell.DNA_wall = allDNA_wall;
+			if(friendCell.poisonType == poisonType)
+				friendCell.poisonPower += friendCell.poisonPower < maxToxic ? 1 : 0;
 		}
 	}
 
@@ -287,19 +295,19 @@ public class AliveCell extends CellObject{
 				blue = (int) Math.max(0, Math.min(blue + del * 10, 255));
 				phenotype = new Color(phenotype.getRed(),phenotype.getGreen(), blue, phenotype.getAlpha());
 			}
-            case 7 -> { //Геном удлиняется
+            case 7 -> { //Один геном дублируется
             	if(dna.size + 1 <= MAX_MINDE_SIZE) {
                 	int mc = Utils.random(0, dna.size - 1); //Ген, который будет дублироваться
             		dna = dna.doubling(mc);
             	}
             }
-            case 8 -> { //Геном укорачивается на последний ген
+            case 8 -> { //Геном укорачивается на один ген
             	int mc = Utils.random(0, dna.size - 1); //Ген, который будет удалён
             	dna = dna.compression(mc);
             }
             case 9 -> { // Смена типа яда на который мы отзываемся
             	poisonType = TYPE.toEnum(Utils.random(0, TYPE.size()));
-            	if(poisonType != TYPE.НЕТ)
+            	if(poisonType != TYPE.UNEQUIPPED)
             		poisonPower = Utils.random(1, (int) (CreatePoisonA.HP_FOR_POISON * 2 / 3));
             	else
             		poisonPower = 0; //К этому у нас защищённости ни какой
@@ -393,11 +401,22 @@ public class AliveCell extends CellObject{
 	@Override
 	public boolean toxinDamage(TYPE type,int damag) {
 		if(type == getPosionType() && getPosionPower() >= damag) {
-			if(getPosionPower() >= damag) {
-				poisonPower = getPosionPower() + 1;
-				return false;
-			}else if(damag < getHealth() * 2) {
-				setHealth(getHealth()*2 - damag);
+			poisonPower = getPosionPower() + 1;
+			return false;
+		} else {
+			switch (type) {
+				case PINK-> {return false;}
+				case YELLOW->{
+					var hp = type == getPosionType() ? (getHealth()) : (getHealth() * 2);
+					if (damag < hp)
+						setHealth(hp - damag);
+					return damag >= hp;
+				}
+				case BLACK->{
+					mutation();
+					return false;
+				}
+				case UNEQUIPPED -> throw new UnsupportedOperationException("Unimplemented case: " + type);
 			}
 		}
 		return true;
@@ -415,7 +434,7 @@ public class AliveCell extends CellObject{
 		int green = color_DO.getGreen();
 		int blue = color_DO.getBlue();
 		green = Utils.betwin(0,green + num, 255);
-        int nm = num / 2;
+        int nm = Math.max(1, num / 2);
         // убавляем красноту
         red = red - nm;
         if (red < 0) {
@@ -442,7 +461,7 @@ public class AliveCell extends CellObject{
 		int green = color_DO.getGreen();
 		int blue = color_DO.getBlue();
 		blue = Utils.betwin(0,blue + num, 255);
-        int nm = num / 2;
+        int nm = Math.max(1, num / 2);
         // убавляем зелену
         green = green - nm;
         if (green < 0) {
@@ -469,7 +488,7 @@ public class AliveCell extends CellObject{
 		int green = color_DO.getGreen();
 		int blue = color_DO.getBlue();
 		red = Utils.betwin(0,red + num,255);
-        int nm = num / 2;
+        int nm = Math.max(1, num / 2);
         // убавляем зелену
         green = green - nm;
         if (green < 0) {
@@ -595,8 +614,7 @@ public class AliveCell extends CellObject{
 	 * @param mineral the mineral to set
 	 */
 	public void setMineral(long mineral) {
-		mineral = Math.min(mineral, MAX_MP);
-		this.mineral = mineral;
+		this.mineral = Math.min(mineral, MAX_MP);
 		if((Legend.Graph.getMode() == Legend.Graph.MODE.MINERALS))
 			repaint();
 	}
@@ -656,14 +674,14 @@ public class AliveCell extends CellObject{
 	}
 
 	/**
-	 * @return the posionType
+	 * @return тип яда, к которому устойчива клетка
 	 */
 	public Poison.TYPE getPosionType() {
 		return poisonType;
 	}
 
 	/**
-	 * @return the posionPower
+	 * @return на сколько много очков урона клетка может игнорировать
 	 */
 	public int getPosionPower() {
 		return poisonPower;
@@ -687,7 +705,7 @@ public class AliveCell extends CellObject{
 	}
 
 	public void setBuoyancy(int buoyancy) {
-		this.buoyancy = Utils.betwin(-10, buoyancy, 10);
+		this.buoyancy = Utils.betwin(-100, buoyancy, 100);
 	}
 
 	public Map<Point,AliveCell> getFriends() {

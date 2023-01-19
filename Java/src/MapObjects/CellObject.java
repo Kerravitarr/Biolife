@@ -281,7 +281,7 @@ public abstract class CellObject {
 	 * @param bot1 - второй бот в сравнеии
 	 * @return
 	 */
-	protected boolean isRelative(CellObject bot0, CellObject bot1) {
+	public static boolean isRelative(CellObject bot0, CellObject bot1) {
 	    if (!bot0.aliveStatus(bot1.alive))
 	        return false;
 	    else
