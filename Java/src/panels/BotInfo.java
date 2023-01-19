@@ -111,6 +111,14 @@ public class BotInfo extends JPanel {
 				field.setBackground(bg);
 			}
 		}
+
+		public void setToolTipText(String tttext) {
+			super.setToolTipText(tttext);
+			if(text != null && field != null) {
+				text.setToolTipText(tttext);
+				field.setToolTipText(tttext);
+			}
+		}
 	}
 	/**Клетка-затычка*/
 	private class TextAL extends AliveCell{
@@ -168,7 +176,7 @@ public class BotInfo extends JPanel {
 	private final TextPair filogen;
 	private final TextPair pos;
 	private final TextPair toxicFIeld;
-	private final TextPair Buoyancy;
+	private final TextPair buoyancy;
 	private final JPanel panel_variant;
 	/**Панель, на которой написано про ДНК*/
 	private final JPanel panel_DNA;
@@ -212,6 +220,7 @@ public class BotInfo extends JPanel {
 		setLayout(new BorderLayout(0, 0));
 		
 		panel = new JPanel();
+		panel.setToolTipText(getProperty("main"));
 		add(panel, BorderLayout.CENTER);
 		
 		panel_DNA = new JPanel();
@@ -249,22 +258,36 @@ public class BotInfo extends JPanel {
 					.addContainerGap())
 		);
 		
-		JLabel lblNewLabel = new JLabel("Прерывания");
+		JLabel lblNewLabel = new JLabel(getProperty("InterraptLabel"));
 		lblNewLabel.setHorizontalAlignment(SwingConstants.CENTER);
 		scrollPane_inter.setColumnHeaderView(lblNewLabel);
+		lblNewLabel.setToolTipText(getProperty("Interrapt"));
+		scrollPane_inter.setToolTipText(getProperty("Interrapt"));
 		
 		list_inter = new JList<>();
+		list_inter.setToolTipText(getProperty("InterraptToolTipText"));
 		list_inter.setEnabled(false);
 		list_inter.setModel(new DefaultListModel<> ());
+		list_inter.setToolTipText(getProperty("Interrapt"));
 		scrollPane_inter.setViewportView(list_inter);
-		generation = new TextPair("Покаление:");
-		mp = new TextPair("Минералов:");
-		direction = new TextPair("Оринетация:");
-		toxicFIeld = new TextPair("Химзащита:");
-		photos = new TextPair("Хлорофил:");
-		phenotype = new TextPair("Фенотип:");
-		filogen = new TextPair("Филоген:");
-		Buoyancy = new TextPair("Плавучесть:");
+		generation = new TextPair(getProperty("LabelGeneration"));
+		mp = new TextPair(getProperty("LabelMp"));
+		direction = new TextPair(getProperty("LabelDirection"));
+		toxicFIeld = new TextPair(getProperty("LabelToxic"));
+		photos = new TextPair(getProperty("LabelPhotos"));
+		phenotype = new TextPair(getProperty("LabelPhenotype"));
+		filogen = new TextPair(getProperty("LabelFilogen"));
+		buoyancy = new TextPair(getProperty("LabelBuoyancy"));
+		
+		generation.setToolTipText(getProperty("fieldGeneration"));
+		mp.setToolTipText(getProperty("fieldMp"));
+		direction.setToolTipText(getProperty("fieldDirection"));
+		toxicFIeld.setToolTipText(getProperty("fieldToxic"));
+		photos.setToolTipText(getProperty("fieldPhotos"));
+		phenotype.setToolTipText(getProperty("fieldPhenotype"));
+		filogen.setToolTipText(getProperty("fieldFilogen"));
+		buoyancy.setToolTipText(getProperty("fieldBuoyancy"));
+		
 		GroupLayout gl_panel_variant = new GroupLayout(panel_variant);
 		gl_panel_variant.setHorizontalGroup(
 			gl_panel_variant.createParallelGroup(Alignment.LEADING)
@@ -298,7 +321,7 @@ public class BotInfo extends JPanel {
 					.addContainerGap())
 				.addGroup(gl_panel_variant.createSequentialGroup()
 					.addContainerGap()
-					.addComponent(Buoyancy, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
+					.addComponent(buoyancy, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
 					.addContainerGap())
 		);
 		gl_panel_variant.setVerticalGroup(
@@ -318,7 +341,7 @@ public class BotInfo extends JPanel {
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(filogen, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(Buoyancy, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addComponent(buoyancy, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addContainerGap(20, Short.MAX_VALUE))
 		);
 		
@@ -328,7 +351,11 @@ public class BotInfo extends JPanel {
 		hp = new TextPair("Здоровье:");
 		state = new TextPair("Состояние:");
 		age = new TextPair("Возраст:");
-		age.setToolTipText("Через черту показывается степень защищённости ДНК");
+
+		pos.setToolTipText(getProperty("fieldPos"));
+		hp.setToolTipText(getProperty("fieldHp"));
+		state.setToolTipText(getProperty("fieldState"));
+		age.setToolTipText(getProperty("fieldAge"));
 		
 		
 		GroupLayout gl_panel_const = new GroupLayout(panel_const);
@@ -366,6 +393,7 @@ public class BotInfo extends JPanel {
 		panel_DNA.add(scrollPane, BorderLayout.CENTER);
 		
 		listDNA = new JList<>();
+		listDNA.setToolTipText("<HTML>Чтобы спрогнозировать следующий шаг генома - нажмите Е");
 		listDNA.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -423,14 +451,28 @@ public class BotInfo extends JPanel {
 		if (getCell() instanceof AliveCell alive) {
 			if(testCell != null) //Так мы сможем обновлять эту клетку
 				alive = testCell;
-            mp.setText(String.valueOf(alive.getMineral()));
 			direction.setText(alive.direction.name());
-			hp.setText(((int)getCell().getHealth())+"+" + Math.round(Configurations.sun.getEnergy(alive.getPos())+(1+alive.photosynthesisEffect) * alive.getMineral() / AliveCell.MAX_MP)+"\\" + alive.getDNA_wall());
+			var addHP = Math.round(Configurations.sun.getEnergy(alive.getPos())+(1+alive.photosynthesisEffect) * alive.getMineral() / AliveCell.MAX_MP);
+			if (addHP > 0) {
+				if(alive.getDNA_wall() > 0)
+					hp.setText(((int) getCell().getHealth()) + " +" + addHP + " ⊡" + alive.getDNA_wall());
+				else
+					hp.setText(((int) getCell().getHealth()) + " +" + addHP);
+			} else {
+				if(alive.getDNA_wall() > 0)
+					hp.setText(((int) getCell().getHealth()) + " ⊡" + alive.getDNA_wall());
+				else
+					hp.setText(Integer.toString((int)getCell().getHealth()));
+			}
 			double realLv = alive.getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
-        	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
-			mp.setText(alive.getMineral()+"+" + Math.round(Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - alive.photosynthesisEffect)));
+			if(realLv > 0) {
+				double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
+				mp.setText(alive.getMineral()+" +" + Math.round(Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - alive.photosynthesisEffect)));
+			} else {
+				mp.setText(Long.toString(alive.getMineral()));
+			}
 			toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
-			Buoyancy.setText(String.valueOf(alive.getBuoyancy()));
+			buoyancy.setText(String.valueOf(alive.getBuoyancy()));
 		} else if (getCell() instanceof Poison poison) {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 			toxicFIeld.setText(poison.type.name());
@@ -450,7 +492,7 @@ public class BotInfo extends JPanel {
 		filogen.setText("");
 		pos.setText("");
 		toxicFIeld.setText("");
-		Buoyancy.clear();
+		buoyancy.clear();
 		listDNA.setModel(new DefaultListModel<>());
 		panel_variant.setVisible(false);
 		panel_DNA.setVisible(false);
@@ -550,5 +592,9 @@ public class BotInfo extends JPanel {
 		}
 		listDNA.setModel(model);
 		BotInfo.this.revalidate();
+	}
+	
+	private String getProperty(String name) {
+		return "<HTML>" + Configurations.bundle.getString("BotInfo."+name);
 	}
 }
