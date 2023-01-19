@@ -1,13 +1,11 @@
 package MapObjects.dna;
 
-import MapObjects.AliveCell;
-import static MapObjects.CellObject.OBJECT.CLEAN;
 import static MapObjects.CellObject.OBJECT.ENEMY;
 import static MapObjects.CellObject.OBJECT.FRIEND;
-import static MapObjects.CellObject.OBJECT.NOT_POISON;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
-import static MapObjects.CellObject.OBJECT.POISON;
 import static MapObjects.CellObject.OBJECT.WALL;
+
+import MapObjects.AliveCell;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;

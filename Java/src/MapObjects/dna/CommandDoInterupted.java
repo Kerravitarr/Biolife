@@ -1,16 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
-
-import static MapObjects.CellObject.OBJECT.CLEAN;
-import static MapObjects.CellObject.OBJECT.NOT_POISON;
-import static MapObjects.CellObject.OBJECT.ORGANIC;
-import static MapObjects.CellObject.OBJECT.POISON;
-import static MapObjects.CellObject.OBJECT.WALL;
-import static MapObjects.dna.CommandDNA.param;
-import main.Point;
 
 /**
  * Абстрактный класс для всех команд действий c прерываниями

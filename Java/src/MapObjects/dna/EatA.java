@@ -2,12 +2,13 @@ package MapObjects.dna;
 
 import static MapObjects.CellObject.OBJECT.CLEAN;
 import static MapObjects.CellObject.OBJECT.NOT_POISON;
-import static MapObjects.CellObject.OBJECT.ORGANIC;
 import static MapObjects.CellObject.OBJECT.POISON;
 import static MapObjects.CellObject.OBJECT.WALL;
+import static MapObjects.CellObject.OBJECT.OWALL;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
+import MapObjects.Fossil;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -25,7 +26,7 @@ public class EatA extends CommandDoInterupted {
 
 	protected EatA(String shotName, String longName, boolean isAbsolute) {
 		super(1, shotName, longName);
-		setInterrupt(isAbsolute, CLEAN, NOT_POISON, POISON, WALL);
+		setInterrupt(isAbsolute, CLEAN, NOT_POISON, POISON, WALL,OWALL);
 	}
 	
 	@Override
@@ -86,8 +87,17 @@ public class EatA extends CommandDoInterupted {
 					}
 				}
 			}
-			case CLEAN, NOT_POISON, POISON, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
-			default -> throw new IllegalArgumentException("Unexpected value: " + see);
+			case OWALL -> {
+				//Кусь за стену
+				Point point = nextPoint(cell,direction);
+				Fossil target = (Fossil) Configurations.world.get(point);
+				target.addHealth(-cell.getHealth() / 10);	//Стена оооочень крепкая
+				if(target.getHealth() < 0) {
+					target.remove_NE();
+				}
+			}
+			case CLEAN, NOT_POISON, POISON, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
+			case BOT -> throw new UnsupportedOperationException("Unimplemented case: " + see);
 		}
 	}
 	@Override

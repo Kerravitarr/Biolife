@@ -21,7 +21,7 @@ public class CreatePoisonA extends CommandDo {
 	protected CreatePoisonA(String shotName,String longName) {super(1,shotName,longName);}
 	@Override
 	protected void doing(AliveCell cell) {
-		if (cell.getPosionType() != TYPE.НЕТ)
+		if (cell.getPosionType() != TYPE.UNEQUIPPED)
 			addPosion(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
 	}
 	/**

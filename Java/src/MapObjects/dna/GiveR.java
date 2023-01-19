@@ -1,10 +1,6 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import static MapObjects.CellObject.OBJECT.ENEMY;
-import static MapObjects.CellObject.OBJECT.FRIEND;
-import static MapObjects.CellObject.OBJECT.ORGANIC;
-import static MapObjects.CellObject.OBJECT.WALL;
 import main.Point.DIRECTION;
 
 /**

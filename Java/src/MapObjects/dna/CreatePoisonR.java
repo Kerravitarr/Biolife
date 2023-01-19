@@ -13,7 +13,7 @@ public class CreatePoisonR extends CreatePoisonA {
 	public CreatePoisonR() {super("☣ О","Пукнуть О");};
 	@Override
 	protected void doing(AliveCell cell) {
-		if (cell.getPosionType() != TYPE.НЕТ)
+		if (cell.getPosionType() != TYPE.UNEQUIPPED)
 			addPosion(cell,relatively(cell,param(cell,0, DIRECTION.size())));
 	}
 	public String getParam(AliveCell cell, int numParam, int value) {return relativeDirection(cell, value);};

@@ -1,7 +1,6 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import MapObjects.CellObject;
 import static MapObjects.CellObject.OBJECT.CLEAN;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
 import static MapObjects.CellObject.OBJECT.NOT_POISON;

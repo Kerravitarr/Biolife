@@ -78,10 +78,7 @@ public class CommandList {
 			case BLOCK_2+3 -> new StepR();
 			case BLOCK_2+4 -> new Align_UP();
 			case BLOCK_2+5 -> new Reversal();
-			case BLOCK_2+6 -> new TurnToEnemy();
-			case BLOCK_2+7 -> new TurnToFriend();
-			case BLOCK_2+8 -> new TurnToPoison();
-			case BLOCK_2+9 -> new TurnToMedicament();
+			case BLOCK_2+6 -> new TurnTo();
 				
 			case BLOCK_3_1 -> new SeeA();
 			case BLOCK_3_1+1 -> new SeeR();
@@ -98,12 +95,8 @@ public class CommandList {
 			case BLOCK_3_2+2 -> new HowOldIAm();
 			case BLOCK_3_2+3 -> new HowMuchDW();
 			case BLOCK_3_2+4 -> new WhoIsNearby();
-			case BLOCK_3_2+5 -> new EnemyNear();
-			case BLOCK_3_2+6 -> new FriendNear();
-			case BLOCK_3_2+7 -> new PosionNear();
-			case BLOCK_3_2+8-> new MedicamentNear();
-			case BLOCK_3_2+9-> new OrganicNear();
-			case BLOCK_3_2+10-> new WhatMyPosion();
+			case BLOCK_3_2+5 -> new FindNear();
+			case BLOCK_3_2+6-> new WhatMyPosion();
 				
 			case BLOCK_4 -> new EatA();
 			case BLOCK_4+1 -> new EatR();

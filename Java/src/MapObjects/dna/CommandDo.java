@@ -2,7 +2,6 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
-import static MapObjects.dna.CommandDNA.param;
 import main.Point;
 
 /**

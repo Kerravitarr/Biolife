@@ -3,6 +3,7 @@ package MapObjects.dna;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
+import MapObjects.Fossil;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -73,7 +74,16 @@ public class BiteA extends CommandDoInterupted {
 
 			}
 		}
-		case CLEAN, NOT_POISON, POISON, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
+		case OWALL -> {
+			//Кусь за стену
+			Point point = nextPoint(cell,direction);
+			Fossil target = (Fossil) Configurations.world.get(point);
+			target.addHealth(-cell.getHealth() / 10);	//Стена оооочень крепкая
+			if(target.getHealth() < 0) {
+				target.remove_NE();
+			}
+		}
+		case CLEAN, NOT_POISON, POISON, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
 		default -> throw new IllegalArgumentException("Unexpected value: " + see);
 	}
 	}

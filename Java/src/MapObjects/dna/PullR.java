@@ -1,7 +1,6 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import static MapObjects.dna.CommandDNA.param;
 import main.Point.DIRECTION;
 
 /**
