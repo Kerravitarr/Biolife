@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.event.ActionEvent;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -15,10 +16,14 @@ import javax.swing.border.BevelBorder;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
+import Utils.Utils;
+
 import java.lang.management.RuntimeMXBean;
 import java.util.concurrent.TimeUnit;
 import main.Configurations;
 import main.Point;
+import main.World;
+import panels.Legend.Graph.MODE;
 import start.BioLife;
 
 public class Legend extends JPanel{
@@ -29,13 +34,11 @@ public class Legend extends JPanel{
 				if (!isVisible()) return;
 				switch (getMode()) {
 					case DOING -> {
-						values = new Graph.Value[6];
-						values[0] = new Graph.Value(1.0 / values.length, 1.0 / values.length, "Фотосинтез", Color.GREEN);
-						values[1] = new Graph.Value(2.0 / values.length, 1.0 / values.length, "Охота", Color.RED);
-						values[2] = new Graph.Value(3.0 / values.length, 1.0 / values.length, "ДНК атака", Color.BLACK);
-						values[3] = new Graph.Value(4.0 / values.length, 1.0 / values.length, "Минерализация", Color.BLUE);
-						values[4] = new Graph.Value(5.0 / values.length, 1.0 / values.length, "Мёртвый", new Color(139, 69, 19, 100));
-						values[5] = new Graph.Value(6.0 / values.length, 1.0 / values.length, "Новорождённый", Color.WHITE);
+						values = new Graph.Value[AliveCell.ACTION.size()];
+						for(int i = 0 ; i < values.length ; i++) {
+							var act = AliveCell.ACTION.staticValues[i];
+							values[i] = new Graph.Value((i + 1.0) / values.length, 1.0 / values.length, act.description, new Color(act.r,act.g,act.b));
+						}
 					}
 					case HP -> {
 						values = new Graph.Value[10];
@@ -52,24 +55,48 @@ public class Legend extends JPanel{
 									maxAge = Math.max(maxAge, ((AliveCell) cell).getAge());
 							}
 						}
+						var rmaxAge = maxAge;
+						maxAge *= 1.4;//Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах
 						values = new Graph.Value[10];
+						long mAge = 0;
+						StringBuilder text = new StringBuilder(100);
 						for (int i = 0; i < values.length; i++) {
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * maxAge / values.length) + "", Color.getHSBColor((float) (1.0 * i / values.length), (float) 0.9, (float) 0.9));
+							long nAge = (i+1) * rmaxAge / values.length;
+							numToStr(mAge,text);
+							text.append(" - ");
+							numToStr(nAge,text);
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), Color.getHSBColor(i / (values.length * 1.4f), 0.9f, 0.9f));
+							text.setLength(0);
+							mAge = nAge;
 						}
 					}
 					case PHEN -> values = new Graph.Value[0];
 					case GENER -> {
 						maxGenDef = 0;
+						minGenDef = Long.MAX_VALUE;
 						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 								CellObject cell = Configurations.world.get(new Point(x, y));
-								if (cell != null && cell instanceof AliveCell)
+								if (cell != null && cell instanceof AliveCell) {
 									maxGenDef = Math.max(maxGenDef, ((AliveCell) cell).getGeneration());
+									minGenDef = Math.min(minGenDef, ((AliveCell) cell).getGeneration());
+								}
 							}
 						}
+						var rdel = maxGenDef - minGenDef;
+						long del = (long) (rdel * 1.4);//Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах
+						maxGenDef = minGenDef + del;
+						long mGen = minGenDef;
+						StringBuilder text = new StringBuilder(100);
 						values = new Graph.Value[10];
 						for (int i = 0; i < values.length; i++) {
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * maxGenDef / values.length) + "", Color.getHSBColor((float) (1.0 * i / values.length), (float) 0.9, (float) 0.9));
+							long nGen = minGenDef + (i+1) * rdel / values.length;
+							numToStr(mGen,text);
+							text.append(" - ");
+							numToStr(nGen,text);
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), Color.getHSBColor(i / (values.length * 1.4f), 0.9f, 0.9f));
+							text.setLength(0);
+							mGen = nGen;
 						}
 					}
 					case MINERALS -> {
@@ -87,8 +114,8 @@ public class Legend extends JPanel{
 						}
 					}
 				}
-				if (isNedUpdate) {
-					isNedUpdate = false;
+				if (updateSrin) {
+					updateSrin = false;
 					for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 						for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 							CellObject cell = Configurations.world.get(new Point(x, y));
@@ -99,6 +126,27 @@ public class Legend extends JPanel{
 				}
 				Graph.this.repaint(1);
 			}
+			private void numToStr(long num, StringBuilder sb) {
+				if(num < 1000){
+					sb.append(Long.toString(num));
+				} else if(num < 10000) {
+					sb.append(Long.toString(num / 1000));
+					sb.append(".");
+					sb.append(Long.toString((num % 1000) / 100));
+					sb.append("k");
+				}  else if(num < 1000000) {
+					sb.append(Long.toString(num / 1000));
+					sb.append("k");
+				} else if(num < 10000000) {
+					sb.append(Long.toString(num / 1000000));
+					sb.append(".");
+					sb.append(Long.toString((num % 1000000) / 100000));
+					sb.append("M");
+				} else {
+					sb.append(Long.toString(num / 1000000));
+					sb.append("M");
+				} 
+			}
 		}
 
 		
@@ -107,10 +155,14 @@ public class Legend extends JPanel{
 		
 		public enum MODE {	DOING,HP,YEAR,PHEN, GENER, MINERALS}
 		static MODE mode = MODE.DOING;
-		
+		/**Максимальный возраст объекта на экране*/
 		static long maxAge = 0;
+		/**Минимальное покаление объекта на экране*/
+		static long minGenDef = 0;
+		/**Максимальное покаление объекта на экране*/
 		static long maxGenDef = 0;
-		boolean isNedUpdate = false;
+		/**Если нужно обновить цвет объектов на экране*/
+		boolean updateSrin = false;
 		
 		/**Значение*/
 		class Value{
@@ -136,6 +188,9 @@ public class Legend extends JPanel{
 		}
 		
 		public void paintComponent(Graphics g) {
+			g.setColor(getBackground());
+			g.fillRect(0, 0, getWidth(), getHeight());
+			
 			g.setColor(Color.BLACK);
 			int width = getWidth()-BORDER*2;
 			g.drawLine(BORDER, HEIGHT-20, getWidth()-BORDER, HEIGHT-20);
@@ -153,23 +208,53 @@ public class Legend extends JPanel{
 		public static MODE getMode() {
 			return mode;
 		}
-
-		public static double getMaxAge() {
-			return maxAge;
+		/**
+		 * Превращает покаление клетки в конкретный цвет
+		 * @param age покаление
+		 * @return Цвет
+		 */
+		public static Color generationToColor(long gen) {
+			return AgeToColor(gen,1.0);
 		}
-
-		public static double getMaxGen() {
-			return maxGenDef;
+		/**
+		 * Превращает покаление клетки в конкретный цвет
+		 * @param gen покаление
+		 * @param alpha прозрачность цвета
+		 * @return Цвет
+		 */
+		public static Color generationToColor(long gen, double alpha) {
+			return Utils.getHSBColor(Utils.betwin(0.0, ((double)(gen - minGenDef))/(maxGenDef-minGenDef), 1.0), 1, 1,alpha);
+		}
+		/**
+		 * Превращает возраст клетки в конкретный цвет
+		 * @param age возраст, в тиках
+		 * @return Цвет
+		 */
+		public static Color AgeToColor(long age) {
+			return AgeToColor(age,1.0);
+		}
+		/**
+		 * Превращает возраст клетки в конкретный цвет
+		 * @param age возраст, в тиках
+		 * @param alpha прозрачность цвета
+		 * @return Цвет
+		 */
+		public static Color AgeToColor(long age, double alpha) {
+			return Utils.getHSBColor(Utils.betwin(0.0, ((double)age)/maxAge, 1.0), 1, 1,alpha);
 		}
 	}
 
+	/**Панель, на которой рисуются радиокнопки*/
+	JPanel panel;
+	/**Панель, на которой рисуются шкалы*/
+	Graph graph;
 	/**
 	 * Create the panel.
 	 */
 	public Legend() {
 		setLayout(new BorderLayout(0, 0));
 		
-		JPanel panel = new JPanel();
+		panel = new JPanel();
 		panel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		add(panel, BorderLayout.NORTH);
 		
@@ -198,7 +283,7 @@ public class Legend extends JPanel{
 		mineral.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(mineral);
 
-		Graph graph = new Graph();
+		graph = new Graph();
 		add(graph, BorderLayout.CENTER);
 		GroupLayout gl_Graph = new GroupLayout(graph);
 		gl_Graph.setHorizontalGroup(
@@ -211,83 +296,23 @@ public class Legend extends JPanel{
 		);
 		graph.setLayout(gl_Graph);
 
-		doing.addActionListener(e->{
-			if(doing.isSelected()) {
-				Graph.mode = Graph.MODE.DOING;
-				hp.setSelected(false);
-				year.setSelected(false);
-				generation.setSelected(false);
-				phenotype.setSelected(false);
-				mineral.setSelected(false);
-				graph.isNedUpdate = true;
-			}else {
-				doing.setSelected(true);
-			}
-		});
-		hp.addActionListener(e->{
-			if(hp.isSelected()) {
-				Graph.mode = Graph.MODE.HP;
-				doing.setSelected(false);
-				year.setSelected(false);
-				generation.setSelected(false);
-				phenotype.setSelected(false);
-				mineral.setSelected(false);
-				graph.isNedUpdate = true;
-			} else {
-				hp.setSelected(true);
-			}
-		});
-		year.addActionListener(e->{
-			if(year.isSelected()) {
-				Graph.mode = Graph.MODE.YEAR;
-				hp.setSelected(false);
-				doing.setSelected(false);
-				generation.setSelected(false);
-				phenotype.setSelected(false);
-				mineral.setSelected(false);
-				graph.isNedUpdate = true;
-			}else {
-				year.setSelected(true);
-			}
-		});
-		generation.addActionListener(e->{
-			if(generation.isSelected()) {
-				Graph.mode = Graph.MODE.GENER;
-				hp.setSelected(false);
-				year.setSelected(false);
-				doing.setSelected(false);
-				phenotype.setSelected(false);
-				mineral.setSelected(false);
-				graph.isNedUpdate = true;
-			}else {
-				generation.setSelected(true);
-			}
-		});
-		phenotype.addActionListener(e->{
-			if(phenotype.isSelected()) {
-				Graph.mode = Graph.MODE.PHEN;
-				hp.setSelected(false);
-				year.setSelected(false);
-				generation.setSelected(false);
-				doing.setSelected(false);
-				mineral.setSelected(false);
-				graph.isNedUpdate = true;
-			}else {
-				phenotype.setSelected(true);
-			}
-		});
-		mineral.addActionListener(e->{
-			if(mineral.isSelected()) {
-				Graph.mode = Graph.MODE.MINERALS;
-				hp.setSelected(false);
-				year.setSelected(false);
-				generation.setSelected(false);
-				doing.setSelected(false);
-				phenotype.setSelected(false);
-				graph.isNedUpdate = true;
-			}else {
-				mineral.setSelected(true);
-			}
-		});
+		doing.addActionListener(e->action(e,Graph.MODE.DOING));
+		hp.addActionListener(e->action(e,Graph.MODE.HP));
+		year.addActionListener(e->action(e,Graph.MODE.YEAR));
+		generation.addActionListener(e->action(e,Graph.MODE.GENER));
+		phenotype.addActionListener(e->action(e,Graph.MODE.PHEN));
+		mineral.addActionListener(e->action(e,Graph.MODE.MINERALS));
 	}
+
+	private void action(ActionEvent e, MODE doing) {
+		for(var i : panel.getComponents()) {
+			if(i instanceof JRadioButton rb) {
+				rb.setSelected(i == e.getSource());
+			}
+		}
+		Graph.mode = doing;
+		graph.updateSrin = !World.isActiv;
+	}
+	
+	
 }
