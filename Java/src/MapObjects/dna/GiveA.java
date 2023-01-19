@@ -42,12 +42,16 @@ public class GiveA extends CommandDoInterupted {
 				AliveCell target = (AliveCell) Configurations.world.get(point);
 				var hlt0 = cell.getHealth();  // бот отдает четверть своей энергии
 				var hlt = hlt0 / 4;
+				cell.color(AliveCell.ACTION.GIVE,hlt);
+				target.color(AliveCell.ACTION.RECEIVE,hlt);
 				cell.addHealth(-hlt);
 				target.addHealth(hlt);
 
 				var min0 = cell.getMineral();  // бот отдает четверть своих минералов
 				if (min0 > 3) {                 // только если их у него не меньше 4
 					long min = min0 / 4;
+					cell.color(AliveCell.ACTION.GIVE,min);
+					target.color(AliveCell.ACTION.RECEIVE,min);
 					cell.setMineral(min0 - min);
 					target.setMineral(target.getMineral() + min);
 				}

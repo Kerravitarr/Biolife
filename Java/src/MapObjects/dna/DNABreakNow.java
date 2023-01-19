@@ -44,7 +44,7 @@ public class DNABreakNow extends CommandDo {
 					bot.evolutionNode = bot.evolutionNode.newNode(bot, cell.getStepCount());
 				}
 				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
-					cell.color_DO = Color.BLACK;
+					cell.color(AliveCell.ACTION.BREAK_DNA,10);
 			}
 			case CLEAN, NOT_POISON, ORGANIC, POISON, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);

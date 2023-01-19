@@ -48,7 +48,7 @@ public class BiteA extends CommandDoInterupted {
 			Point point = nextPoint(cell,direction);
 			CellObject target = Configurations.world.get(point);
 			cell.addHealth(target.getHealth()/4);    //здоровье увеличилось
-			cell.goRed((int)target.getHealth()/4);           // бот покраснел
+			cell.color(AliveCell.ACTION.EAT_ORG,target.getHealth()/4);
 			target.addHealth(-target.getHealth()/4); //Одну четверть отдали
 		}
 		case ENEMY, FRIEND -> {
@@ -67,7 +67,7 @@ public class BiteA extends CommandDoInterupted {
 				var cl = hl / 4;           // количество энергии у бота прибавляется лишь чуть чуть, мы же кусили
 				cell.addHealth(cl);
 				target.addHealth(-cl);
-				cell.goRed((int) cl);                    // бот краснеет
+				cell.color(AliveCell.ACTION.EAT_ORG,cl);
 			} else {
 				//если у жертвы минералов больше, то нам его просто не прокусить
 				cell.setMineral(cell.getMineral()/2);  //Ну мы же попробовали
@@ -78,7 +78,7 @@ public class BiteA extends CommandDoInterupted {
 			//Кусь за стену
 			Point point = nextPoint(cell,direction);
 			Fossil target = (Fossil) Configurations.world.get(point);
-			target.addHealth(-cell.getHealth() / 10);	//Стена оооочень крепкая
+			target.addHealth(-cell.getHealth() / 20);	//Стена оооочень крепкая
 			if(target.getHealth() < 0) {
 				target.remove_NE();
 			}

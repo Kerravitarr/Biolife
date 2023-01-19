@@ -47,13 +47,17 @@ public class CareA extends CommandDoInterupted {
 				var min1 = target.getMineral();
 				if (hlt0 > hlt1) {              // если у бота больше энергии, чем у соседа
 					double hlt = (hlt0 - hlt1) / 2;   // то распределяем энергию поровну
+					cell.color(AliveCell.ACTION.GIVE,hlt);
 					cell.addHealth(-hlt);
+					target.color(AliveCell.ACTION.RECEIVE,hlt);
 					target.addHealth(hlt);
 				}
 				if (min0 > min1) {              // если у бота больше минералов, чем у соседа
 					long min = (min0 - min1) / 2;   // то распределяем их поровну
+					cell.color(AliveCell.ACTION.GIVE,min);
 					cell.setMineral(min0 - min);
 					target.setMineral(min1 + min);
+					target.color(AliveCell.ACTION.RECEIVE,min);
 				}
 			}
 			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);

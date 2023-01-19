@@ -46,7 +46,7 @@ public class EatA extends CommandDoInterupted {
 				Point point = nextPoint(cell,direction);
 				CellObject target = Configurations.world.get(point);
 				cell.addHealth(Math.abs(target.getHealth()));    //здоровье увеличилось на сколько осталось
-				cell.goRed((int) target.getHealth());           // бот покраснел
+				cell.color(AliveCell.ACTION.EAT_ORG,target.getHealth());
 				target.remove_NE();
 			}
 			case ENEMY, FRIEND -> {
@@ -64,7 +64,7 @@ public class EatA extends CommandDoInterupted {
 					target.remove_NE(); // удаляем жертву из списков
 					double cl = hl / 2;           // количество энергии у бота прибавляется на (половину от энергии жертвы)
 					cell.addHealth(cl);
-					cell.goRed((int) cl);                    // бот краснеет
+					cell.color(AliveCell.ACTION.EAT_ORG,cl);
 					return;
 				} else {
 					//если у жертвы минералов больше ----------------------
@@ -77,7 +77,7 @@ public class EatA extends CommandDoInterupted {
 						target.remove_NE(); // удаляем жертву из списков
 						double cl = Math.max(0,(hl / 2) - 2 * min1); // вычисляем, сколько энергии смог получить бот
 						cell.addHealth(cl);
-						cell.goRed((int) cl);                   // бот краснеет
+						cell.color(AliveCell.ACTION.EAT_ORG,cl);
 						return;                             // возвращаем 5
 					} else {
 						//--- если здоровья меньше, чем (минералов у жертвы)*2, то бот погибает от жертвы

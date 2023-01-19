@@ -39,7 +39,7 @@ public class DNACopy extends CommandDNA {
 				cell.setGeneration(cell.getGeneration() + 1);
 				cell.evolutionNode = cell.evolutionNode.newNode(bot, cell.getStepCount());
 				if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
-					cell.color_DO = Color.GRAY;
+					cell.color(AliveCell.ACTION.BREAK_DNA,10);
 				// Смены команды не будет, ведь мы эту команду перезаписали уже на нужную. Поэтому двигаем PC на шаг назад
 				return -1;
 			}
