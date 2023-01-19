@@ -5,12 +5,15 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.HeadlessException;
+import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -30,6 +33,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JViewport;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -68,6 +72,33 @@ public class BioLife extends JFrame {
 				}
 			}
 		}
+	}
+	
+	private class MouseMoveAdapter extends MouseAdapter{
+		private Point origin;
+
+		@Override
+		public void mousePressed(MouseEvent e) {
+			origin = new Point(e.getPoint());
+		}
+
+		@Override
+		public void mouseDragged(MouseEvent e) {
+			if (origin != null) {
+				JViewport viewPort = (JViewport) javax.swing.SwingUtilities.getAncestorOfClass(JViewport.class, world);
+				if (viewPort != null) {
+					int deltaX = origin.x - e.getX();
+					int deltaY = origin.y - e.getY();
+
+					Rectangle view = viewPort.getViewRect();
+					view.x += deltaX;
+					view.y += deltaY;
+
+					world.scrollRectToVisible(view);
+				}
+			}
+		}
+
 	}
 	
 	private final JPanel contentPane;
@@ -173,16 +204,26 @@ public class BioLife extends JFrame {
 		
 		world = new World();
 		
-		scrollPane = new JScrollPane();
+		scrollPane = new JScrollPane(){
+		    @Override
+		    protected void processMouseWheelEvent(MouseWheelEvent e) {
+		    	mouseWheel(e);
+		        super.processMouseWheelEvent(e);
+		    }
+
+		};
 		scrollPane.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
-				world.setPreferredSize(new Dimension(scrollPane.getWidth() * settings.scale.getValue() / 10  - 10,scrollPane.getHeight() * settings.scale.getValue() / 10  - 10));
+				world.setPreferredSize(new Dimension(scrollPane.getWidth() * settings.getScale() / 10  - 10,scrollPane.getHeight() * settings.getScale() / 10  - 10));
 			}
 		});
 		settings.setListener(scrollPane);
 		contentPane.add(scrollPane, BorderLayout.CENTER);
 		scrollPane.setViewportView(world);
+		var adapter = new MouseMoveAdapter();
+		world.addMouseListener(adapter);
+		world.addMouseMotionListener(adapter);
 		botInfo.setVisible(false);
 		settings.setVisible(false);
 		legend.setVisible(false);
@@ -211,7 +252,6 @@ public class BioLife extends JFrame {
 			@Override
 			public void keyPressed(KeyEvent e) {BioLife.this.keyPressed(e);}
 		});
-		
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
 	}
 
@@ -288,6 +328,11 @@ public class BioLife extends JFrame {
 			BioLife.this.toFront();
 			BioLife.this.requestFocus();
 		}
+	}
+	private void mouseWheel(MouseWheelEvent e) {
+		if (e.isControlDown()) {
+			settings.addScale(-e.getWheelRotation());
+        }
 	}
 	private void keyPressed(KeyEvent e) {
 		//System.out.println(e);

@@ -103,7 +103,7 @@ public class Settings extends JPanel{
 	private final ScrollPanel scrollBar_2;
 	private final ScrollPanel scrollBar_1;
 	private final ScrollPanel const_SP;
-	public ScrollPanel scale;
+	private final ScrollPanel scale;
 	JComponent listener = null;
 	private final JButton play;
 	private final ScrollPanel sun_speed;
@@ -328,5 +328,19 @@ public class Settings extends JPanel{
 
 	public void setListener(JComponent scrollPane) {
 		listener = scrollPane;
+	}
+	/**
+	 * Возвращает установленный настройками масштаб
+	 * @return число в интервале от 10 до 100
+	 */
+	public int getScale() {
+		return scale.getValue();
+	}
+	/**
+	 * Изменяет масштаб на велечину переданного параметра
+	 * @param val масштаб от 10 до 100
+	 */
+	public void addScale(int val) {
+		scale.setValue(getScale() + val);
 	}
 }
