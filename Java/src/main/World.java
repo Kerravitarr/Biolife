@@ -35,6 +35,8 @@ import MapObjects.Organic;
 import MapObjects.Poison;
 import MapObjects.Sun;
 import main.Point.DIRECTION;
+import panels.Legend;
+import panels.Legend.Graph.MODE;
 
 public class World extends JPanel implements Runnable,ComponentListener,MouseListener{	
 	/**Симуляция запущена?*/
@@ -92,6 +94,17 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			if(cell != null && cell.canStep(step)) {
 				try {
 					cell.step(step);
+					switch (Legend.Graph.getMode()) {
+						case HP,MINERALS,YEAR -> {
+							if (cell.getAge() % 100 == 0) // Перекрашиваем клетку иногда
+								cell.repaint();
+						}
+						default->{
+							if (cell.getAge() % 1000 == 0) // Перекрашиваем клетку иногда
+								cell.repaint();
+							}
+					}
+					
 				} catch (Exception e) {
 					isError = true;
 					isActiv = false;
@@ -476,7 +489,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			try {
 				switch (LV_STATUS.values()[(int)cell.get("alive")]) {
 					case LV_ALIVE -> {
-						//if(loadNineCell(cell,20,158))
+						//if(loadR(cell,359,76,10))
 							add(new AliveCell(cell,Configurations.tree));
 					}
 					case LV_ORGANIC -> add(new Organic(cell));
@@ -533,6 +546,32 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		Point pos = new Point(cell.getJ("pos"));
 		return pos.getX() == x && pos.getY() == y;
 	}
+	/**
+	 * Загружает только один столбец
+	 * @param cell описание клетки
+	 * @param x координата Х
+	 * @return true только для подходящей клетки
+	 */
+	@SuppressWarnings("unused")
+	private boolean loadColumn(JSON cell, int x) {
+		Point pos = new Point(cell.getJ("pos"));
+		return pos.getX() == x;
+	}
+	/**
+	 * Загружает все клетки в радиусе
+	 * @param cell описание клетки
+	 * @param x координата Х
+	 * @param y координата У
+	 * @param r радиус
+	 * @return true только для подходящей клетки
+	 */
+	@SuppressWarnings("unused")
+	private boolean loadR(JSON cell,  int x, int y, int r) {
+		Point pos = new Point(cell.getJ("pos"));
+		int delx = Math.abs(pos.getX() - x);
+		int dely = Math.abs(pos.getY() - y);
+		return dely <= r && (delx <= r || delx >= (Configurations.MAP_CELLS.width-r));
+	}
 
 	/**
 	 * Загружает клетку и её соседенй по координатам
@@ -543,10 +582,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	 */
 	@SuppressWarnings("unused")
 	private boolean loadNineCell(JSON cell, int x, int y) {
-		Point pos = new Point(cell.getJ("pos"));
-		int delx = Math.abs(pos.getX() - x);
-		int dely = Math.abs(pos.getY() - y);
-		return !(dely > 1 || (delx > 1 && delx != Configurations.MAP_CELLS.width-1));
+		return loadR(cell,x,y,1);
 	}
 	
 	
