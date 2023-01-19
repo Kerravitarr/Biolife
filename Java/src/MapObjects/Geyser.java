@@ -42,15 +42,27 @@ public class Geyser {
 			return "sx: " + startX + " ex: " + endX + " p: " + power + super.toString();
 		}
 	}
-	
-	public Geyser(int startX, int endX,int w,int h,DIRECTION dir, int power) {
+	/**
+	 * Создаёт гейзер
+	 * @param startX в рамках мира, с какой клетки начинается гейзер
+	 * @param endX в рамках мир, где он заканчивается
+	 * @param w ширина экрана в пикселях
+	 * @param h высота экрана в пикселях
+	 * @param dir направление движения воды в гейзере - вверх или вниз
+	 * @param gradPower скорость возрастания скорости гейзера. Если будет равен 1, то гейзер выйдет на максимальную силу сразу
+	 * @param calm показывает силу работы гейзера. Каждые сколько тиков клетку в центре будет сдувать
+	 * 
+	 *  сила гейзера. Чем выше число, тем сильнее работает
+	 */
+	public Geyser(int startX, int endX,int w,int h,DIRECTION dir, int gradPower, int calm) {
 		center = startX + (endX - startX ) / 2;
 		if(dir != DIRECTION.DOWN)
 			dir = DIRECTION.UP;
 		this.startX=startX;
 		this.endX=endX;
 		this.dir=dir;
-		this.power = Math.max(1, power);
+		this.gradPower = Math.max(1, gradPower);
+		this.calm = Math.max(1, calm);
 		updateScreen(w,h);
 	}
 	/**На сколько секций делится каждый гейзер, градиент скоростей*/
@@ -63,7 +75,9 @@ public class Geyser {
 	/**Середина гейзера*/
 	public int center;
 	/**Сила гейзера*/
-	public int power;
+	public int gradPower;
+	/**Каждые сколько тиков клетку в центре будет сдувать*/
+	public int calm;
 	/**Нижняя граница, где поток имеет боковую составляющую*/
 	private int downWall;
 	/**Верхняя граница, где поток имеет боковую составляющую*/
@@ -90,13 +104,13 @@ public class Geyser {
 				color = new Color(0, 0, 205, 10 + 6*i/(GRADIENT-1));
 			else
 				color = new Color(220, 20, 60, 13 + 12*i/(GRADIENT-1));
-			cr[i] 				   = new Section(startXPxL, Configurations.border.height, lenghtPx, h-Configurations.border.height*2, color,startL,lenghtSection, 1 + power * i / (GRADIENT-1));
+			cr[i] 				   = new Section(startXPxL, Configurations.border.height, lenghtPx, h-Configurations.border.height*2, color,startL,lenghtSection, 1 + gradPower * i / (GRADIENT-1));
 			if(i == GRADIENT - 1) {
 				lenghtSection = endR - (startL+lenghtSection);
 				lenghtPx = Point.getRr(lenghtSection);
 			}
 			int startXPxR = Point.getRx(endR - lenghtSection);
-			cr[GRADIENT*2 - i - 1] = new Section(startXPxR, Configurations.border.height, lenghtPx, h-Configurations.border.height*2, color,endR-lenghtSection,lenghtSection, 1 + power * i / (GRADIENT-1));
+			cr[GRADIENT*2 - i - 1] = new Section(startXPxR, Configurations.border.height, lenghtPx, h-Configurations.border.height*2, color,endR-lenghtSection,lenghtSection, 1 + gradPower * i / (GRADIENT-1));
 			startL += lenghtSection;
 			endR -= lenghtSection;
 		}
@@ -115,7 +129,7 @@ public class Geyser {
 			return;
 		for (Section se : cr) {
 			if(se.startX <= cell.getPos().getX() && cell.getPos().getX() <= se.endX) {
-				if(cell.getAge() % (power - se.power + 2) == 0) { // +2 так как se.power меняется от 1 до power + 1, а на ноль делить нельзя
+				if(cell.getAge() % (calm + (gradPower - se.power + 2)) == 0) { // +2 так как se.power меняется от 1 до power + 1, а на ноль делить нельзя
 					cell.moveD(dir); // Некая сила
 					if (cell.getPos().getY() < upWall) { // Сдувание клетки в верхней части гейзера (засасывание/выталкивание)
 						boolean right = cell.getPos().getX() - center > 0;

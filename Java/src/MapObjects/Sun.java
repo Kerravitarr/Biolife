@@ -52,7 +52,7 @@ public class Sun {
 			return  power - (Configurations.DIRTY_WATER * pos.getY() / Configurations.MAP_CELLS.height);
 		}
 		public synchronized void repaint() {
-			for (int i = 0; i < Configurations.DIRTY_WATER*sizeDraw; i++) {
+			for (int i = 0; i < rows.length; i++) {
 				float sunPower = (float) ((240 - Math.max(0, (power - i/sizeDraw)/(power+1))*60)/360);
 				rows[i].setColor(Utils.getHSBColor(sunPower, 1, 1,0.7));
 			}

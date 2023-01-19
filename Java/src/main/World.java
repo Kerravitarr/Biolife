@@ -24,6 +24,7 @@ import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.LV_STATUS;
 import MapObjects.CellObject.OBJECT;
+import MapObjects.Fossil;
 import Utils.ColorRec;
 import Utils.FPScounter;
 import Utils.JSON;
@@ -132,6 +133,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	/**Все цвета, которые мы должны отобразить на поле*/
 	ColorRec [] colors;
 	/**Это мы, наш поток, в нём мы рисуем всё и всяк*/
+	@SuppressWarnings("unused")
 	private final AutostartThread worldThread;
 	/**Мы живы. Наш поток жив, мы выполняем расчёт*/
 	public boolean isStart = true;
@@ -176,8 +178,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public void worldGenerate() {
 		var vaxX = Configurations.MAP_CELLS.width;
 		geysers = new Geyser[2];
-		geysers[0]  = new Geyser(vaxX * 10 / 40,vaxX * 13 / 40,getWidth(),getHeight(),DIRECTION.DOWN,10);
-		geysers[1]  = new Geyser(vaxX * 30 / 40,vaxX * 33 / 40,getWidth(),getHeight(),DIRECTION.UP,10);
+		geysers[0]  = new Geyser(vaxX * 10 / 40,vaxX * 13 / 40,getWidth(),getHeight(),DIRECTION.DOWN,10,10);
+		geysers[1]  = new Geyser(vaxX * 30 / 40,vaxX * 33 / 40,getWidth(),getHeight(),DIRECTION.UP,10, 2);
 		Configurations.sun = new Sun(getWidth(),getHeight());
 		Point.update();
 		
@@ -331,6 +333,13 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		}
 	}
 
+	/**
+	 * Возвращает тип клетки по указанным координатам
+	 * @param point координаты, которые надо протестировать
+	 * @return объект OBJECT. ВАЖНОЕ ЗАМЕЧАНИЕ!!!!
+	 * 			Вместо OBJECT.FRIEND и OBJECT.ENEMY возвращается OBJECT.BOT
+	 * 			Вместо OBJECT.NOT_POISON возвращается OBJECT.POISON
+	 */
 	public OBJECT test(Point point) {
 		if(point.getY() < 0 || point.getY() >= Configurations.MAP_CELLS.height)
 			return OBJECT.WALL;
@@ -376,6 +385,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	}
 
 	public synchronized void recalculate() {
+		var oActiv = isActiv;
 		if(isActiv) {
 			isActiv = false;
 			repaint_stop = 5;
@@ -398,6 +408,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		colors[1] = new ColorRec(width, (int) (height + lenghtY * Configurations.LEVEL_MINERAL), getWidth() - width * 2, (int) (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2), Utils.getHSBColor(270.0 / 360, 0.5, 1.0, 0.5));
 		colors[1 + 1] = new ColorRec(width, (int) (getHeight() - height - (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2)), getWidth() - width * 2, (int) (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2), Utils.getHSBColor(300.0 / 360, 0.5, 1.0, 0.5));
 		colors[1 + 2] = new ColorRec(width, getHeight() - height, getWidth() - width * 2, height, new Color(139, 69, 19, 255));
+		if(oActiv && !isActiv)
+			isActiv = true;
 	}
 
 	public synchronized JSON serelization() {
@@ -461,15 +473,21 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		List<JSON> cells = json.getAJ("Cells");		
 		Configurations.worldMap = new CellObject[Configurations.MAP_CELLS.width][Configurations.MAP_CELLS.height];
 		for (JSON cell : cells) {
-			switch (LV_STATUS.values()[(int)cell.get("alive")]) {
-				case LV_ALIVE -> {
-			    	//Point pos = new Point(cell.getJ("pos"));
-					//if(pos.x == MAP_CELLS.width/2 && (pos.y > 100 && pos.y < 120))
-						add(new AliveCell(cell,Configurations.tree));
+			try {
+				switch (LV_STATUS.values()[(int)cell.get("alive")]) {
+					case LV_ALIVE -> {
+						//if(loadNineCell(cell,20,158))
+							add(new AliveCell(cell,Configurations.tree));
+					}
+					case LV_ORGANIC -> add(new Organic(cell));
+					case LV_POISON -> add(new Poison(cell));
+					case LV_WALL -> add(new Fossil(cell));
+					default -> System.err.println("Ошибка загрузки строки: \n" + cell);
 				}
-				case LV_ORGANIC -> add(new Organic(cell));
-				case LV_POISON -> add(new Poison(cell));
-				default -> System.err.println(cell);
+			} catch (java.lang.RuntimeException e1) {
+				e1.printStackTrace();
+				JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage() + "<br>Для объекта<br>"+cell.toJSONString(),	"BioLife", JOptionPane.ERROR_MESSAGE);
+				throw e1;
 			}
 		}
 		sb.event();
@@ -501,6 +519,34 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		worldGenerate();
 		sb.event();
 		sb.event();
+	}
+	
+	/**
+	 * Загружает только одну клетку по координатам
+	 * @param cell описание клетки
+	 * @param x координата Х
+	 * @param y координата У
+	 * @return true только для подходящей клетки
+	 */
+	@SuppressWarnings("unused")
+	private boolean loadOneCell(JSON cell, int x, int y) {
+		Point pos = new Point(cell.getJ("pos"));
+		return pos.getX() == x && pos.getY() == y;
+	}
+
+	/**
+	 * Загружает клетку и её соседенй по координатам
+	 * @param cell описание клетки
+	 * @param x координата Х
+	 * @param y координата У
+	 * @return true только для подходящей клетки
+	 */
+	@SuppressWarnings("unused")
+	private boolean loadNineCell(JSON cell, int x, int y) {
+		Point pos = new Point(cell.getJ("pos"));
+		int delx = Math.abs(pos.getX() - x);
+		int dely = Math.abs(pos.getY() - y);
+		return !(dely > 1 || (delx > 1 && delx != Configurations.MAP_CELLS.width-1));
 	}
 	
 	
