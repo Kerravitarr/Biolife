@@ -1,17 +1,15 @@
 package panels;
 
-import MapObjects.AliveCell;
-import MapObjects.CellObject;
-import MapObjects.CellObject.OBJECT;
-import MapObjects.Poison;
-import MapObjects.dna.CommandDNA;
-import MapObjects.dna.DNA;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
@@ -21,11 +19,17 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
 import javax.swing.SwingConstants;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
+
+import MapObjects.AliveCell;
+import MapObjects.CellObject;
+import MapObjects.CellObject.OBJECT;
+import MapObjects.Poison;
+import MapObjects.dna.CommandDNA;
+import MapObjects.dna.DNA;
 import main.Configurations;
 
 public class BotInfo extends JPanel {
@@ -76,48 +80,73 @@ public class BotInfo extends JPanel {
          }
 	}
 	/**Пара подписи и текстового поля*/
-	private static class TextPair extends JPanel {
+	private class TextPair extends JPanel {
 		/**Текст пары */
 		private JLabel text = null;
+		/**Панель пролистывания*/
+		private JScrollPane scroll = null;
 		/**Текстовое поле пары*/
-		private JTextField field = null;
+		private JLabel field = null;
 		
 		public TextPair(String label) {
 			setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 			text = new JLabel(label);
 			add(text);
+
+			scroll = new JScrollPane();
+			scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+			scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+			scroll.setBorder(BorderFactory.createEmptyBorder());
+			scroll.getVerticalScrollBar().setUnitIncrement(1);
+			add(scroll);
 			
-			field = new JTextField();
-			field.setBackground(Color.WHITE);
-			field.setHorizontalAlignment(SwingConstants.CENTER);
-			field.setEnabled(false);
-			field.setEditable(false);
-			add(field);
+			field = new JLabel();
+			scroll.setViewportView(field);
+			
+	        scrolFieldList.add(this);
 		}
 
-		public void clear() {
-			setText("");
-		}
+		public void clear() {setText("");}
 
-		public void setText(String string) {
-			field.setText(string);
+		public void setText(String text) {
+			field.setText(text);
 		}
 
 		@Override
 		public void setBackground(Color bg) {
 			super.setBackground(bg);
-			if(text != null && field != null) {
+			if(text != null && field != null && scroll != null) {
 				text.setBackground(bg);
+				scroll.setBackground(bg);
 				field.setBackground(bg);
+				field.setOpaque(true);
+				
+				var hsb = java.awt.Color.RGBtoHSB(bg.getRed(),bg.getGreen(),bg.getBlue(), null);
+				var invert = new Color(Color.HSBtoRGB(hsb[0] > 0.5f ? (hsb[0] - 0.5f) : (hsb[0] + 0.5f), hsb[1] > 0.5f ? (hsb[1] - 0.5f) : (hsb[1] + 0.5f),hsb[2] > 0.5f ? (hsb[2] - 0.5f) : (hsb[2] + 0.5f)));
+				text.setForeground(invert);
+				field.setForeground(invert);
 			}
 		}
 
 		public void setToolTipText(String tttext) {
 			super.setToolTipText(tttext);
-			if(text != null && field != null) {
+			if(text != null && field != null && scroll != null) {
 				text.setToolTipText(tttext);
+				scroll.setToolTipText(tttext);
 				field.setToolTipText(tttext);
 			}
+		}
+		/**Автоматически проматывает текст поля на один символ дальше*/
+		public void scrol() {
+			var pos = scroll.getHorizontalScrollBar().getValue() + 1;
+			if(pos >= field.getText().length())
+				pos = 0;
+			scroll.getHorizontalScrollBar().setValue(pos);
+			
+		}
+		
+		public String toString() {
+			return "TextPair " + text.getText() + " " + field.getText();
 		}
 	}
 	/**Клетка-затычка*/
@@ -186,6 +215,8 @@ public class BotInfo extends JPanel {
 	private final JPanel panel;
 	/**Тестовая клетка, для работы с командами без конца*/
 	private TextAL testCell = null;
+	/**Список тех полей, которые нужно автоматически проматывать*/
+	private final Set<TextPair> scrolFieldList;
 	
 	class WorkTask implements Runnable{
 		@Override
@@ -217,6 +248,9 @@ public class BotInfo extends JPanel {
 	 */
 	public BotInfo() {
 		Configurations.info = this;
+		
+		scrolFieldList = new HashSet<>();
+		
 		setLayout(new BorderLayout(0, 0));
 		
 		panel = new JPanel();
@@ -226,10 +260,10 @@ public class BotInfo extends JPanel {
 		panel_DNA = new JPanel();
 		
 		JPanel panel_const = new JPanel();
-		panel_const.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u041A\u043E\u043D\u0441\u0442\u0430\u043D\u0442\u044B", TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_const.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), getProperty("ConstPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
 		
 		panel_variant = new JPanel();
-		panel_variant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), "\u041F\u0435\u0440\u0435\u043C\u0435\u043D\u043D\u044B\u0435", TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panel_variant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), getProperty("VarPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
 		
 		scrollPane_inter = new JScrollPane();
 		scrollPane_inter.setEnabled(false);
@@ -347,10 +381,10 @@ public class BotInfo extends JPanel {
 		
 		panel_variant.setLayout(gl_panel_variant);
 
-		pos = new TextPair("Позиция:");
-		hp = new TextPair("Здоровье:");
-		state = new TextPair("Состояние:");
-		age = new TextPair("Возраст:");
+		pos = new TextPair(getProperty("LabelPos"));
+		hp = new TextPair(getProperty("LabelHp"));
+		state = new TextPair(getProperty("LabelState"));
+		age = new TextPair(getProperty("LabelAge"));
 
 		pos.setToolTipText(getProperty("fieldPos"));
 		hp.setToolTipText(getProperty("fieldHp"));
@@ -385,7 +419,7 @@ public class BotInfo extends JPanel {
 		panel_const.setLayout(gl_panel_const);
 		panel_DNA.setLayout(new BorderLayout(0, 0));
 		
-		JLabel lblNewLabel_9 = new JLabel("ДНК");
+		JLabel lblNewLabel_9 = new JLabel(getProperty("DNA_Panel"));
 		lblNewLabel_9.setHorizontalAlignment(SwingConstants.CENTER);
 		panel_DNA.add(lblNewLabel_9, BorderLayout.NORTH);
 		
@@ -393,7 +427,7 @@ public class BotInfo extends JPanel {
 		panel_DNA.add(scrollPane, BorderLayout.CENTER);
 		
 		listDNA = new JList<>();
-		listDNA.setToolTipText("<HTML>Чтобы спрогнозировать следующий шаг генома - нажмите Е");
+		listDNA.setToolTipText(getProperty("InterraptToolTipText"));
 		listDNA.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -427,8 +461,8 @@ public class BotInfo extends JPanel {
 		if (getCell() instanceof AliveCell aliveCell) {
 			panel_variant.setVisible(true);
 			panel_DNA.setVisible(true);
-			generation.setText(aliveCell.getGeneration()+"");
-			photos.setText((aliveCell.photosynthesisEffect+"").substring(0, 3));
+			generation.setText(Integer.toString(aliveCell.getGeneration()));
+			photos.setText((Double.toString(aliveCell.photosynthesisEffect)).substring(0, 3));
 			phenotype.setBackground(aliveCell.phenotype);
 			phenotype.setText(Integer.toHexString(aliveCell.phenotype.getRGB()));
 			filogen.setText(aliveCell.getBranch());
@@ -444,14 +478,17 @@ public class BotInfo extends JPanel {
 		}
 	}
 
+	/**
+	 * Обновляет значения динамических полей - возраст, направление т.д.
+	 */
 	private void setDinamicHaracteristiks() {
 		pos.setText(cell.getPos().toString());
-		state.setText(getCell().getAlive().name());
+		state.setText(getCell().getAlive().toString());
 		age.setText(String.valueOf(getCell().getAge()));
 		if (getCell() instanceof AliveCell alive) {
 			if(testCell != null) //Так мы сможем обновлять эту клетку
 				alive = testCell;
-			direction.setText(alive.direction.name());
+			direction.setText(alive.direction.toSString());
 			var addHP = Math.round(Configurations.sun.getEnergy(alive.getPos())+(1+alive.photosynthesisEffect) * alive.getMineral() / AliveCell.MAX_MP);
 			if (addHP > 0) {
 				if(alive.getDNA_wall() > 0)
@@ -472,7 +509,10 @@ public class BotInfo extends JPanel {
 				mp.setText(Long.toString(alive.getMineral()));
 			}
 			toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
-			buoyancy.setText(String.valueOf(alive.getBuoyancy()));
+			buoyancy.setText(String.valueOf(alive.getBuoyancy()));	
+			
+			for(var i : scrolFieldList) 
+				i.scrol();
 		} else if (getCell() instanceof Poison poison) {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 			toxicFIeld.setText(poison.type.name());
@@ -481,17 +521,17 @@ public class BotInfo extends JPanel {
 		}
 	}
 	private void clearText() {
-		generation.setText("");
-		age.setText("");
-		state.setText("");
-		hp.setText("");
-		mp.setText("");
-		direction.setText("");
-		photos.setText("");
-		phenotype.setText("");
-		filogen.setText("");
-		pos.setText("");
-		toxicFIeld.setText("");
+		generation.clear();
+		age.clear();
+		state.clear();
+		hp.clear();
+		mp.clear();
+		direction.clear();
+		photos.clear();
+		phenotype.clear();
+		filogen.clear();
+		pos.clear();
+		toxicFIeld.clear();
 		buoyancy.clear();
 		listDNA.setModel(new DefaultListModel<>());
 		panel_variant.setVisible(false);
@@ -595,6 +635,6 @@ public class BotInfo extends JPanel {
 	}
 	
 	private String getProperty(String name) {
-		return "<HTML>" + Configurations.bundle.getString("BotInfo."+name);
+		return Configurations.getProperty(BotInfo.class,name);
 	}
 }
