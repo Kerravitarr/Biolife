@@ -132,4 +132,18 @@ public class Configurations {
 		ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
 		POISON_STREAM = configWorld.get("POISON_STREAM");
 	}
+	
+	/**
+	 * Возвращает строку описания для определённого класса
+	 * @param cls - класс, в котором эта строка находится
+	 * @param name - ключ
+	 * @return Строка в формате HTML
+	 */
+	public static String getProperty(Class<?> cls, String name) {
+		StringBuilder key = new StringBuilder(100);
+		key.append(cls.getTypeName());
+		key.append('.');
+		key.append(name);
+		return "<HTML>" + Configurations.bundle.getString(key.toString());
+	}
 }

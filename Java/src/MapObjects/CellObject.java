@@ -16,7 +16,18 @@ import main.Point.DIRECTION;
  */
 public abstract class CellObject {
 	/**Статус*/
-	public enum LV_STATUS {LV_ALIVE,LV_ORGANIC,LV_POISON,LV_WALL,GHOST};
+	public enum LV_STATUS {
+		LV_ALIVE("Клетка"), LV_ORGANIC("Органика"), LV_POISON("Яд"), LV_WALL("Стена"), GHOST("Ошибка");
+		/**Имя типа объекта*/
+		private String name;
+
+		LV_STATUS(String n) {name = n;}
+		
+		public String toString() {
+			return name;
+		}
+	};
+
     /**Состояние объекта*/
     protected LV_STATUS alive;
 	/**Статус*/
@@ -38,11 +49,11 @@ public abstract class CellObject {
 		public static final OBJECT[] myEnumValues = OBJECT.values();
 		/**На сколько нужно сдвинуть счётчик команда дополнительно, типо развилка. Это-же - номер прерывания*/
 		public final int nextCMD;
-		//Является это место пустым
+		/**Является это место пустым*/
 		public final boolean isEmptyPlase;
-		//Является это место ядовитым
+		/**Является это место ядовитым*/
 		public final boolean isPosion;
-		//Является это место ботом
+		/**Является это место ботом*/
 		public final boolean isBot;
 		OBJECT(int nextCMD) {this(nextCMD,false,false,false);}
 		OBJECT(int nextCMD, boolean isEmptyPlase, boolean isPosion, boolean isBot) {

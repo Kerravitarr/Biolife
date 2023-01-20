@@ -223,7 +223,7 @@ public abstract class CommandDNA {
 	 */
 	protected String absoluteDirection(int value) {
 		if (isFullMod)
-			return DIRECTION.toEnum(value).name();
+			return DIRECTION.toEnum(value).toSString();
 		else
 			return DIRECTION.toEnum(value).toString();
 	};

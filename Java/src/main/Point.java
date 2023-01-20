@@ -47,7 +47,9 @@ public class Point{
 		public DIRECTION inversion() {
 			return next(size()/2);
 		}
-		
+		/**
+		 * Превращает направление в символ
+		 */
 		public String toString() {
 			switch (this) {
 				case DOWN->{return "↓";}
@@ -58,6 +60,20 @@ public class Point{
 				case UP->{return "↑";}
 				case UP_L->{return "↖";}
 				case UP_R->{return "↗";}
+				default->{return null;}
+			}
+		}
+		/**Превращает направление в букву*/
+		public String toSString() {
+			switch (this) {
+				case DOWN->{return "Ю";}
+				case DOWN_L->{return "ЮЗ";}
+				case DOWN_R->{return "ЮВ";}
+				case LEFT->{return "З";}
+				case RIGHT->{return "В";}
+				case UP->{return "С";}
+				case UP_L->{return "СЗ";}
+				case UP_R->{return "СВ";}
 				default->{return null;}
 			}
 		}
