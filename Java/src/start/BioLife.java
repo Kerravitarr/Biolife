@@ -215,7 +215,17 @@ public class BioLife extends JFrame {
 		scrollPane.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
-				world.setPreferredSize(new Dimension(scrollPane.getWidth() * settings.getScale() / 10  - 10,scrollPane.getHeight() * settings.getScale() / 10  - 10));
+				var newW = (scrollPane.getWidth() * settings.getScale()) / 10  - 10;
+				var newH = (scrollPane.getHeight() * settings.getScale()) / 10  - 10;
+				
+				if(settings.getScale() > 10) {
+					newH = (int) ((newW * (1 + (Configurations.UP_border + Configurations.DOWN_border)) * Configurations.MAP_CELLS.height) / Configurations.MAP_CELLS.width);
+					
+					scrollPane.getVerticalScrollBar().setUnitIncrement(Math.max(1, newH / 100));
+					scrollPane.getHorizontalScrollBar().setUnitIncrement(Math.max(1, newW / 100));
+				}
+				
+				world.setPreferredSize(new Dimension(newW,newH));
 			}
 		});
 		settings.setListener(scrollPane);
