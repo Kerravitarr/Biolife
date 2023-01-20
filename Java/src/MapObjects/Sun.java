@@ -71,7 +71,6 @@ public class Sun {
 			startX = (i+1) * Configurations.MAP_CELLS.width / Configurations.SUN_PARTS;
 		}
 		startX= 0;
-		Configurations.SUN_POSITION = Configurations.SUN_PARTS / 2;
 		resize(width, height);
 	}
 
