@@ -6,17 +6,17 @@
 
 :make
 
-rd /s /q .\build\
-rd /s /q .\docs\
-rd /s /q .\bin\
+rd /s /q .\jarFile\
+rd /s /q .\docsFiles\
+rd /s /q .\binFiles\
 
 @echo =======================================
 @echo STEP 1. Compiling files to bytecode.
 @echo =======================================
-javac --release 16 -encoding utf8 -d bin src\start\*.java src\main\*.java src\start\*.java src\MapObjects\*.java src\panels\*.java src\Utils\*.java src\MapObjects\dna\*.java
+javac --release 16 -encoding utf8 -classpath  src\ -d binFiles src\start\BioLife.java
 @if errorlevel 1 Goto error
-mkdir .\bin\locales
-xcopy .\src\locales .\bin /e
+mkdir .\binFiles\locales
+xcopy .\src\locales .\binFiles\locales /e
 @CLS
 @echo =======================================
 @echo Step 1 - OK
@@ -24,7 +24,7 @@ xcopy .\src\locales .\bin /e
 @echo =======================================
 @echo STEP 2. Creation of program documentation
 @echo =======================================
-javadoc -encoding utf8  -d docs -sourcepath src\start\*.java src\main\*.java src\start\*.java src\MapObjects\*.java src\panels\*.java src\Utils\*.java src\MapObjects\dna\*.java
+javadoc -encoding utf8  -d docsFiles -sourcepath src\start\*.java src\main\*.java src\start\*.java src\MapObjects\*.java src\panels\*.java src\Utils\*.java src\MapObjects\dna\*.java
 rem if errorlevel 1 Goto error - Ой, да кому нужны документы? Что-то да соберётся
 @CLS
 @echo =======================================
@@ -33,7 +33,7 @@ rem if errorlevel 1 Goto error - Ой, да кому нужны документ
 @echo =======================================
 @echo STEP 3. Collecting bytecode into an executable
 @echo =======================================
-jar -cvef start.BioLife BioLife.jar -C bin .
+jar -cvef start.BioLife BioLife.jar -C binFiles .
 @if errorlevel 1 Goto error
 @CLS
 @echo =======================================
@@ -46,14 +46,14 @@ jar -cvef start.BioLife BioLife.jar -C bin .
 @echo Step 3 - OK
 @echo =======================================
 
-mkdir .\build\
-move BioLife.jar .\build\
+mkdir .\jarFile\
+move BioLife.jar .\jarFile\
 goto end
 
 :clean
-rd /s /q .\build\
-rd /s /q .\docs\
-rd /s /q .\bin\
+rd /s /q .\jarFile\
+rd /s /q .\docsFiles\
+rd /s /q .\binFiles\
 goto end
 
 :error
