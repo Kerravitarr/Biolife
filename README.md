@@ -23,5 +23,5 @@ Currently only available for Windows. I promise to add Linux support soon.
 #### Windows:
 1. Install JDK and JRE
 2. Run WindowsMake.bat
-3. Launching the application from the /build
+3. Launching the application from the /Java
 4. Have fun
