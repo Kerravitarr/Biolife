@@ -25,18 +25,17 @@ import MapObjects.CellObject;
 import MapObjects.CellObject.LV_STATUS;
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Fossil;
+import MapObjects.Geyser;
+import MapObjects.Organic;
+import MapObjects.Poison;
+import MapObjects.Sun;
 import Utils.ColorRec;
 import Utils.FPScounter;
 import Utils.JSON;
 import Utils.StreamProgressBar;
 import Utils.Utils;
-import MapObjects.Geyser;
-import MapObjects.Organic;
-import MapObjects.Poison;
-import MapObjects.Sun;
 import main.Point.DIRECTION;
 import panels.Legend;
-import panels.Legend.Graph.MODE;
 
 public class World extends JPanel implements Runnable,ComponentListener,MouseListener{	
 	/**Симуляция запущена?*/
@@ -403,10 +402,10 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			isActiv = false;
 			repaint_stop = 5;
 		}
-		double hDel = 1.0 * getHeight() * (1 - (Configurations.UP_border + Configurations.DOWN_border)) / (Configurations.MAP_CELLS.height);
-		double wDel = 1.0 * getWidth() / (Configurations.MAP_CELLS.width);
+		double hDel = ((double) getHeight()) * (1 - (Configurations.UP_border + Configurations.DOWN_border)) / (Configurations.MAP_CELLS.height);
+		double wDel = ((double) getWidth()) / (Configurations.MAP_CELLS.width);
 		Configurations.scale = Math.min(hDel, wDel);
-		Configurations.border.width = (int) Math.round((getWidth() -Configurations.MAP_CELLS.width*Configurations.scale)/2);
+		Configurations.border.width = (int) Math.round((getWidth() - Configurations.MAP_CELLS.width*Configurations.scale)/2);
 		Configurations.border.height = (int) Math.round((getHeight() - Configurations.MAP_CELLS.height*Configurations.scale)/2);
 		Point.update();
 		for(Geyser gz : Configurations.geysers)

@@ -1,15 +1,15 @@
 package main;
 
-import MapObjects.AliveCell;
-import MapObjects.Poison;
-import Utils.JSON;
-
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import MapObjects.AliveCell;
+import MapObjects.Poison;
+import Utils.JSON;
 
 //@Deprecated
 public class EvolutionTree {
@@ -284,7 +284,7 @@ public class EvolutionTree {
 				node.remove();
 		}
 	}
-	@SuppressWarnings("UnnecessaryContinue")
+
 	public void step() {
 		if(!removeNode.isEmpty()) {
 			for(var node :removeNode) {
