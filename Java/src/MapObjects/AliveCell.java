@@ -43,6 +43,7 @@ public class AliveCell extends AliveCellProtorype{
     	dna = new DNA(cell.getJ("DNA"));
     	health = cell.get("health");
     	mineral = cell.getL("mineral");
+		buoyancy = cell.getI("buoyancy");
     	direction = DIRECTION.toEnum(cell.getI("direction"));
     	DNA_wall = cell.getI("DNA_wall");
     	poisonType =  Poison.TYPE.toEnum(cell.getI("posionType"));
@@ -451,6 +452,7 @@ public class AliveCell extends AliveCellProtorype{
 		make.add("DNA",dna.toJSON());
 		make.add("health",health);
 		make.add("mineral",mineral);
+		make.add("buoyancy",buoyancy);
 		make.add("direction",DIRECTION.toNum(direction));
 		make.add("DNA_wall",DNA_wall);
 		make.add("posionType",getPosionType().ordinal());
