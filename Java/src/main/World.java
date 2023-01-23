@@ -190,7 +190,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public void worldGenerate() {
 		var vaxX = Configurations.MAP_CELLS.width;
 		geysers = new Geyser[2];
-		geysers[0]  = new Geyser(vaxX * 10 / 40,vaxX * 13 / 40,getWidth(),getHeight(),DIRECTION.DOWN,10,10);
+		geysers[0]  = new Geyser(vaxX * 5 / 40,vaxX * 18 / 40,getWidth(),getHeight(),DIRECTION.DOWN,10,10);
 		geysers[1]  = new Geyser(vaxX * 30 / 40,vaxX * 33 / 40,getWidth(),getHeight(),DIRECTION.UP,10, 2);
 		Configurations.sun = new Sun(getWidth(),getHeight());
 		Point.update();
