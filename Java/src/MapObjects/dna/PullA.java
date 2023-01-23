@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import static MapObjects.CellObject.OBJECT.CLEAN;
 import static MapObjects.CellObject.OBJECT.WALL;
+import static MapObjects.CellObject.OBJECT.OWALL;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
@@ -24,7 +25,7 @@ public class PullA extends CommandDoInterupted {
 
 	protected PullA(String shotName, String longName, boolean isAbsolute) {
 		super(1, shotName, longName);
-		setInterrupt(isAbsolute, WALL, CLEAN);
+		setInterrupt(isAbsolute, WALL,OWALL,  CLEAN);
 	}
 	@Override
 	protected void doing(AliveCell cell) {
@@ -61,8 +62,15 @@ public class PullA extends CommandDoInterupted {
 				if(!targetStep)
 					cell.moveD(direction.inversion()); //Мы не смогли толкнуть цель, поэтому отлетаем сами
 			}
-			case WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
-			default -> throw new IllegalArgumentException("Unexpected value: " + see);
+			case WALL, OWALL -> {
+				if(cell.moveD(direction.inversion())) {	//Мы не можем толкнуть в стену... Но всё относительно!
+					return;
+				} else {
+					cell.getDna().interrupt(cell, see.nextCMD);	// Мы прям заперты - проблема
+				}
+			}
+			case CLEAN -> cell.getDna().interrupt(cell, see.nextCMD);
+			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
 	
