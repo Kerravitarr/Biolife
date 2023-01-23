@@ -44,18 +44,23 @@ public class CreatePoisonA extends CommandDo {
 				Poison newPoison = new Poison(cell.getPosionType(),cell.getStepCount(),point,Math.min(HP_FOR_POISON * 2/3, cell.getPosionPower()));
 	            Configurations.world.add(newPoison);//Сделали потомка
 	            return;
+			case OWALL:{
+				if(cell.getPosionType() != Poison.TYPE.PINK) {
+					cell.setPosionPower(cell.getPosionPower() + 1);
+					return; //Мы пукнули в стену, а попало в нас. Согласен, спорный момент
+				}
+			}
 			case ORGANIC:
 			case FRIEND:
 			case ENEMY:
 			case POISON:
 			case NOT_POISON:
-			case OWALL:
 				point = nextPoint(cell,direction);
 				CellObject target = Configurations.world.get(point);
 				if(target.toxinDamage(cell.getPosionType(), (int) Math.min(HP_FOR_POISON * 2/3, cell.getPosionPower())))
 					target.remove_NE();
 				return;
-			default:
+			case BOT:
 				throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}

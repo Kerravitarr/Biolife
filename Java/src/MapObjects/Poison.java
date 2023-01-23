@@ -86,11 +86,14 @@ public class Poison extends CellObject {
 					Poison newPoison = new Poison(type,getStepCount(),point,getHealth());
 		            Configurations.world.add(newPoison);//Сделали новую каплю
 				}break;
+				case OWALL:{
+					if(type != TYPE.PINK)
+						return ;	//Кроме розового яда - все остальные для стен непрохдимы
+				}
 				case ORGANIC :
 				case ENEMY:
 				case FRIEND:
 				case POISON:
-				case OWALL:
 				case NOT_POISON:{
 					energy /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
 					if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
@@ -128,9 +131,12 @@ public class Poison extends CellObject {
 				}
 				destroy(); // Не важно что мы вернём - мы того
 			}return true;
+			case OWALL:{
+				if(type != TYPE.PINK)
+					return false;	//Кроме розового яда - все остальные для стен непрохдимы
+			}
 			case ORGANIC :
 			case ENEMY :
-			case OWALL :
 			case FRIEND :{
 				Point point = getPos().next(direction);
 				CellObject cell = Configurations.world.get(point);
