@@ -41,19 +41,19 @@ public abstract class AliveCellProtorype extends CellObject{
 	/**Для изменения цвета*/
 	public enum ACTION {
 		/**Съесть органику - красный*/
-		EAT_ORG(Configurations.getHProperty(ACTION.class,"EAT_ORG"),255,0,0,1), 
+		EAT_ORG(Configurations.getProperty(ACTION.class,"EAT_ORG"),255,0,0,1), 
 		/**Съесть минералы - синий*/
-		EAT_MIN(Configurations.getHProperty(ACTION.class,"EAT_MIN"),0,0,255,1), 
+		EAT_MIN(Configurations.getProperty(ACTION.class,"EAT_MIN"),0,0,255,1), 
 		/**Фотосинтез - зелёный*/
-		EAT_SUN(Configurations.getHProperty(ACTION.class,"EAT_SUN"),0,255,0,1), 
+		EAT_SUN(Configurations.getProperty(ACTION.class,"EAT_SUN"),0,255,0,1), 
 		/**Поделиться - оливковый, грязно-жёлтый*/
-		GIVE(Configurations.getHProperty(ACTION.class,"GIVE"),128,128,0,0.5), 
+		GIVE(Configurations.getProperty(ACTION.class,"GIVE"),128,128,0,0.5), 
 		/**Принять подачку - морской волны*/
-		RECEIVE(Configurations.getHProperty(ACTION.class,"RECEIVE"),0,128,128,0.5), 
+		RECEIVE(Configurations.getProperty(ACTION.class,"RECEIVE"),0,128,128,0.5), 
 		/**Сломать мою ДНК - чёрный*/
-		BREAK_DNA(Configurations.getHProperty(ACTION.class,"BREAK_DNA"),0,0,0,1), 
+		BREAK_DNA(Configurations.getProperty(ACTION.class,"BREAK_DNA"),0,0,0,1), 
 		/**Ничего не делать - серый*/
-		NOTHING(Configurations.getHProperty(ACTION.class,"NOTHING"),128,128,128,0.04);
+		NOTHING(Configurations.getProperty(ACTION.class,"NOTHING"),128,128,128,0.04);
 		public static final ACTION[] staticValues = ACTION.values();
 		public static int size() {return staticValues.length;}
 		
@@ -88,13 +88,13 @@ public abstract class AliveCellProtorype extends CellObject{
 	 */
 	public class Specialization extends HashMap<Specialization.TYPE,Integer>{
 		public enum TYPE{
-			PHOTOSYNTHESIS(		Configurations.getHProperty(TYPE.class,"PHOTOSYNTHESIS"),	360f*2/7),
-			DIGESTION(			Configurations.getHProperty(TYPE.class,"DIGESTION"),			360f*3/7),
-			MINERALIZATION(		Configurations.getHProperty(TYPE.class,"MINERALIZATION"),	360f*5/7),
-			MINERAL_PROCESSING(	Configurations.getHProperty(TYPE.class,"MINERAL_PROCESSING"),360f*4/7),
-			FERMENTATION(		Configurations.getHProperty(TYPE.class,"FERMENTATION"),		360f*1/7),
-			ASSASSINATION(		Configurations.getHProperty(TYPE.class,"ASSASSINATION"),		360f*0/7),
-			ACCUMULATION(		Configurations.getHProperty(TYPE.class,"ACCUMULATION"),		360f*6/7),
+			PHOTOSYNTHESIS(		Configurations.getProperty(TYPE.class,"PHOTOSYNTHESIS"),	360f*2/7),
+			DIGESTION(			Configurations.getProperty(TYPE.class,"DIGESTION"),			360f*3/7),
+			MINERALIZATION(		Configurations.getProperty(TYPE.class,"MINERALIZATION"),	360f*5/7),
+			MINERAL_PROCESSING(	Configurations.getProperty(TYPE.class,"MINERAL_PROCESSING"),360f*4/7),
+			FERMENTATION(		Configurations.getProperty(TYPE.class,"FERMENTATION"),		360f*1/7),
+			ASSASSINATION(		Configurations.getProperty(TYPE.class,"ASSASSINATION"),		360f*0/7),
+			ACCUMULATION(		Configurations.getProperty(TYPE.class,"ACCUMULATION"),		360f*6/7),
 			;
 			
 			public static final TYPE[] staticValues = TYPE.values();
@@ -139,8 +139,7 @@ public abstract class AliveCellProtorype extends CellObject{
 			float lenght = (float) Math.sqrt(x * x + y * y);
 			float angle = (float) (Math.acos(x / lenght) / (Math.PI));
 			if(y < 0) angle = 1f - angle;
-			angle = (float) Math.asin(y / lenght);
-			phenotype = Utils.getHSBColor(angle, 1f, lenght / 100, 1f);
+			phenotype = Utils.getHSBColor(angle, 1f, 0.5 + lenght / 200, 1f);
 		}
 		/**Сохраняет новое значение специализации*/
 		public void set(TYPE type, int co) {
@@ -261,7 +260,7 @@ public abstract class AliveCellProtorype extends CellObject{
 
 	/**
 	 * Добавляет или отнимает минералы у клетки
-	 * @param новый кусочек минералов (отрицательный, если отнимаем)
+	 * @param mineral новый кусочек минералов (отрицательный, если отнимаем)
 	 */
 	public void addMineral(long mineral) {
 		setMineral(getMineral() + mineral);
