@@ -5,9 +5,6 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import MapObjects.Poison.TYPE;
 import MapObjects.dna.Birth;
@@ -18,103 +15,11 @@ import Utils.JSON;
 import Utils.Utils;
 import main.Configurations;
 import main.EvolutionTree;
-import main.EvolutionTree.Node;
 import main.Point;
 import main.Point.DIRECTION;
 import panels.Legend;
-public class AliveCell extends CellObject{	
-	//КОНСТАНТЫ
-	/**Размер мозга изначальный*/
-	public static final int DEF_MINDE_SIZE = 64;
-	/**Размер мозга максимальный, чтобы небыло взрывного роста и поедания памяти*/
-	public static final int MAX_MINDE_SIZE = 1024;
-	/**Начальный уровень здоровья клеток*/
-	private static final int START_HP = 5;
-	/**Начальный уровень минералов клеток*/
-	private static final int START_MP = 5;
-	/**Сколько нужно жизней для размножения, по умолчанию*/
-	public static final int MAX_HP = 999;
-	/**Сколько можно сохранить минералов*/
-	public static final int MAX_MP = 999;
-	/**На сколько организм тяготеет к фотосинтезу (0-4)*/
-	private static final double DEF_PHOTOSIN = 2;
-	/**Столько здоровья требуется клетке для жизни на ход*/
-	private static final long HP_PER_STEP = 4;
-	/**Для изменения цвета*/
-	public enum ACTION {
-		/**Съесть органику - красный*/
-		EAT_ORG("Есть органику",255,0,0,1), 
-		/**Съесть минералы - синий*/
-		EAT_MIN("Есть минералы",0,0,255,1), 
-		/**Фотосинтез - зелёный*/
-		EAT_SUN("Фотосинтез",0,255,0,1), 
-		/**Поделиться - оливковый, грязно-жёлтый*/
-		GIVE("Отдавать ресурсы",128,128,0,0.5), 
-		/**Принять подачку - морской волны*/
-		RECEIVE("Получать ресурсы",0,128,128,0.5), 
-		/**Сломать мою ДНК - чёрный*/
-		BREAK_DNA("Ломаю ДНК",0,0,0,1), 
-		/**Ничего не делать - серый*/
-		NOTHING("Ничего не делаю",128,128,128,0.04);
-		public static final ACTION[] staticValues = ACTION.values();
-		public static int size() {return staticValues.length;}
-		
-		ACTION(String des, int rc, int gc, int bc, double power) {r=rc;g=gc;b=bc;p=power;description=des;}
-		public final int r;
-		public final int g;
-		public final int b;
-		private final double p;
-		public final String description;
-	};
+public class AliveCell extends AliveCellProtorype{	
 	
-	//=================Внутреннее состояние бота
-	/**Мозг*/
-	private DNA dna;
-    /**Жизни*/
-    private double health = START_HP;
-    //Минералы
-    private long mineral = START_MP;
-    /**Направление движения*/
-    public Point.DIRECTION direction = Point.DIRECTION.UP;
-    //Защитный покров ДНК, он мешает изменить Нашу ДНК
-    private int DNA_wall = 0;
-    /**Тип яда к которому клетка устойчива*/
-    private Poison.TYPE poisonType = Poison.TYPE.UNEQUIPPED;
-    /**Сила устойчивости к яду*/
-    private int poisonPower = 0;
-    /**Плавучесть. Меняется от -10 до 10 Где -10 - тонуть каждый ход, 10 - всплывать каждый ход, 1 - тонуть каждые 10 ходов*/
-    private int buoyancy = 0;
-    /**Специальный флаг, показывает, что бот на этом ходу спит*/
-    private boolean isSleep = false;
-    /**Цвет с большим числом значений*/
-    private class DColor{
-    	double r, g, b, a; 
-    	DColor(double r,double g, double b, double a){this.r=r;this.g=g;this.b=b;this.a=a;}
-    	DColor(double r,double g, double b){this(r,g,b,255);}
-    	DColor(){this(255,255,255);}
-    	void addR(double add) {r = Utils.betwin(0.0, r+add, 255.0);}
-    	void addG(double add) {g = Utils.betwin(0.0, g+add, 255.0);}
-    	void addB(double add) {b = Utils.betwin(0.0, b+add, 255.0);}
-    	int getR() {return (int) Utils.betwin(0.0, r, 255.0);}
-    	int getG() {return (int) Utils.betwin(0.0, g, 255.0);}
-    	int getB() {return (int) Utils.betwin(0.0, b, 255.0);}
-    	int getA() {return (int) Utils.betwin(0.0, a, 255.0);}
-		public Color getC() {return new Color(getR(),getG(),getB(),getA());}
-    };
-    private DColor color_cell = new DColor();
-    
-    //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
-    /**Поколение (мутационное). Другими словами - как далеко клетка ушла от изначальной*/
-    private int Generation = 0;
-    /**Фенотип бота*/
-    public Color phenotype = new Color(128,128,128);
-    //Показывает на сколько организм тяготеет к фотосинтезу
-    public double photosynthesisEffect = DEF_PHOTOSIN;
-    /**Дерево эволюции*/
-    public Node evolutionNode = null;
-    
-    //===============Параметры братства, многоклеточность=======
-    private final Map<Point,AliveCell> friends = new HashMap<>(DIRECTION.size());
     
     /**
      * Создание клетки без рода и племени
@@ -125,6 +30,7 @@ public class AliveCell extends CellObject{
     	dna = new DNA(DEF_MINDE_SIZE);
     	color_DO = new Color(255,255,255);
 		evolutionNode = EvolutionTree.root;
+		specialization = new Specialization();
     }
 
     /**
@@ -143,8 +49,7 @@ public class AliveCell extends CellObject{
     	poisonPower = cell.getI("posionPower");
     	
     	Generation = cell.getI("Generation");
-    	phenotype = new Color((Long.decode("0x"+cell.get("phenotype"))).intValue(),true);
-    	photosynthesisEffect = cell.get("photosynthesisEffect");
+    	specialization = new Specialization();
     	
     	evolutionNode = tree.getNode(cell.get("GenerationTree"));
     	
@@ -169,12 +74,11 @@ public class AliveCell extends CellObject{
 	    poisonType = cell.getPosionType();
 		poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
 	
-	    phenotype = new Color(cell.phenotype.getRGB(),true);   // цвет такой же, как у предка
+		specialization = new Specialization(cell);
 	    direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));   // направление, куда повернут новорожденный, генерируется случайно
 	
 	    dna = new DNA(cell.dna);
 	    
-	    photosynthesisEffect = cell.photosynthesisEffect;
 	    setGeneration(cell.Generation);
 	    color_DO = new Color(255,255,255,evolutionNode.getAlpha());
 	    repaint();
@@ -209,7 +113,7 @@ public class AliveCell extends CellObject{
         if (this.getPos().getY() >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL)) {
         	double realLv = this.getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
         	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
-            this.setMineral(Math.round(this.getMineral() + Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - this.photosynthesisEffect))); //Эффективный фотосинтез мешает нам переваривать пищу
+            this.addMineral(Math.round(Configurations.CONCENTRATION_MINERAL * (realLv / dist) * 10 * get(Specialization.TYPE.MINERALIZATION))); //Эффективный фотосинтез мешает нам переваривать пищу
         }
         if(getAge() % 50 == 0) {
             color(ACTION.NOTHING, color_cell.r+color_cell.g+color_cell.b);
@@ -225,8 +129,8 @@ public class AliveCell extends CellObject{
 		int friendCount = getFriends().size() + 1;
 		int maxToxic = poisonPower;
 		Point delP = null;
-		for (Entry<Point, AliveCell> cell_e : getFriends().entrySet()) {
-			AliveCell cell = cell_e.getValue();
+		for (var cell_e : getFriends().entrySet()) {
+			var cell = cell_e.getValue();
 			allHp+=cell.getHealth();
 			allMin+=cell.getMineral();
 			allDNA_wall+=cell.DNA_wall;
@@ -247,7 +151,7 @@ public class AliveCell extends CellObject{
 		setHealth(allHp);
 		setMineral(allMin);
 		DNA_wall = allDNA_wall;
-		for (AliveCell friendCell : getFriends().values()) {
+		for (var friendCell : getFriends().values()) {
 			if (getAge() % 100 == 0) {
 				if (allHp > friendCell.getHealth())
 					friendCell.color(ACTION.RECEIVE, allHp - friendCell.getHealth());
@@ -317,52 +221,35 @@ public class AliveCell extends CellObject{
 	 */
 	protected void mutation() {
 		setGeneration(getGeneration() + 1);
-		/**Дельта, гуляет от -1 до 1*/
-		double del = (0.5 - Math.random())*2;
-        switch (Utils.random(2, 10)) { // К сожалению 0 и 1 вырезаны.
-            case 2 -> //Мутирует эффективность фотосинтеза
-                this.photosynthesisEffect = Math.max(0, Math.min(this.photosynthesisEffect * (1+del*0.1), 4));
-            case 3 -> { //Мутирует геном
+        switch (Utils.random(0, 5)) { // К сожалению 0 и 1 вырезаны.
+            case 0 ->{ //Мутирует специализация
+            	int co = Utils.random(0, 100); //Новое значение специализации
+            	int tp = Utils.random(0, Specialization.TYPE.size() - 1); //Какая специализация
+            	specialization.set(Specialization.TYPE.staticValues[tp],co);
+                }
+            case 1 -> { //Мутирует геном
                 int ma = Utils.random(0, dna.size-1); //Индекс гена
                 int mc = Utils.random(0, CommandList.COUNT_COMAND); //Его значение
                 dna = dna.update(ma, mc);
             	}
-            case 4 -> {
-				//Мутирует красный цвет
-				int red = phenotype.getRed();
-				red = (int) Math.max(0, Math.min(red + del * 10, 255));
-				phenotype = new Color(red,phenotype.getGreen(), phenotype.getBlue(), phenotype.getAlpha());
-			}
-            case 5 -> {
-				//Мутирует зелёный цвет
-				int green = phenotype.getGreen();
-				green = (int) Math.max(0, Math.min(green + del * 10, 255));
-				phenotype = new Color(phenotype.getRed(),green, phenotype.getBlue(), phenotype.getAlpha());
-			}
-            case 6 -> {
-				//Мутирует синий цвет
-				int blue = phenotype.getGreen();
-				blue = (int) Math.max(0, Math.min(blue + del * 10, 255));
-				phenotype = new Color(phenotype.getRed(),phenotype.getGreen(), blue, phenotype.getAlpha());
-			}
-            case 7 -> { //Один геном дублируется
+            case 2 -> { //Один геном дублируется
             	if(dna.size + 1 <= MAX_MINDE_SIZE) {
                 	int mc = Utils.random(0, dna.size - 1); //Ген, который будет дублироваться
             		dna = dna.doubling(mc);
             	}
             }
-            case 8 -> { //Геном укорачивается на один ген
+            case 3 -> { //Геном укорачивается на один ген
             	int mc = Utils.random(0, dna.size - 1); //Ген, который будет удалён
             	dna = dna.compression(mc);
             }
-            case 9 -> { // Смена типа яда на который мы отзываемся
+            case 4 -> { // Смена типа яда на который мы отзываемся
             	poisonType = TYPE.toEnum(Utils.random(0, TYPE.size()));
             	if(poisonType != TYPE.UNEQUIPPED)
             		poisonPower = Utils.random(1, (int) (CreatePoisonA.HP_FOR_POISON * 2 / 3));
             	else
             		poisonPower = 0; //К этому у нас защищённости ни какой
             }
-            case 10 -> { //Мутирует вектор прерываний
+            case 5 -> { //Мутирует вектор прерываний
                 int ma = Utils.random(0, dna.interrupts.length-1); //Индекс в векторе
                 int mc = Utils.random(0, dna.size-1); //Его значение
                 dna.interrupts[ma] = mc;
@@ -544,74 +431,12 @@ public class AliveCell extends CellObject{
 		}
 			
 	}
-
-	/**
-	 * @return the health
-	 */
-	@Override
-	public double getHealth() {
-		return health;
-	}
 	
 	@Override
 	public void setHealth(double health) {
 		this.health=health;
 		if(this.health < 0)
 			bot2Organic();
-	}
-
-	/**
-	 * @param years the years to set
-	 */
-	public void setAge(int years) {
-		super.setAge(years);
-	}
-
-	/**
-	 * @return the generation
-	 */
-	public int getGeneration() {
-		return Generation;
-	}
-
-	/**
-	 * @param generation the generation to set
-	 */
-	public void setGeneration(int generation) {
-		Generation = generation;
-	}
-
-	/**
-	 * @return the mineral
-	 */
-	public long getMineral() {
-		return mineral;
-	}
-
-	/**
-	 * @param mineral the mineral to set
-	 */
-	public void setMineral(long mineral) {
-		this.mineral = Math.min(mineral, MAX_MP);
-	}
-	
-	@Override
-	public void repaint() {
-		switch (Legend.Graph.getMode()) {
-			case MINERALS -> color_DO = new Color(0,0,(int) Utils.betwin(0, (255.0*mineral/MAX_MP),255),evolutionNode.getAlpha());
-			case GENER -> color_DO =Legend.Graph.generationToColor(Generation,evolutionNode.getAlpha()/255.0);
-			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge(),evolutionNode.getAlpha()/255.0);
-			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,health)/MAX_HP)),0,0,evolutionNode.getAlpha());
-			case PHEN -> color_DO = new Color(phenotype.getRed(), phenotype.getGreen(), phenotype.getBlue(),evolutionNode.getAlpha());
-			case DOING -> color_DO = new Color(color_DO.getRed(), color_DO.getGreen(), color_DO.getBlue(),evolutionNode.getAlpha());
-		}
-	}
-
-	/**
-	 * @return Ветвь эволюции
-	 */
-	public String getBranch() {
-		return evolutionNode.getBranch();
 	}
 
 	public void setFriend(AliveCell friend) {
@@ -638,7 +463,6 @@ public class AliveCell extends CellObject{
 
 	    //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
 		make.add("phenotype",Integer.toHexString(phenotype.getRGB()));
-		make.add("photosynthesisEffect",photosynthesisEffect);
 		
 		//===============МНОГОКЛЕТОЧНОСТЬ===================
 		JSON[] fr = new JSON[getFriends().size()];
@@ -656,45 +480,4 @@ public class AliveCell extends CellObject{
 		return poisonType;
 	}
 
-	/**
-	 * @return на сколько много очков урона клетка может игнорировать
-	 */
-	public int getPosionPower() {
-		return poisonPower;
-	}
-	public void setPosionPower(int poisonPower) {
-		this.poisonPower = poisonPower;
-	}
-	/**
-	 * @return the dna
-	 */
-	public DNA getDna() {
-		return dna;
-	}
-
-	public int getBuoyancy() {
-		return buoyancy;
-	}
-
-	public void setSleep(boolean isSleep) {
-		this.isSleep = isSleep;
-	}
-
-	public void setBuoyancy(int buoyancy) {
-		this.buoyancy = Utils.betwin(-100, buoyancy, 100);
-	}
-
-	public Map<Point,AliveCell> getFriends() {
-		return friends;
-	}
-	public int getDNA_wall() {
-		return DNA_wall;
-	}
-	public void setDNA_wall(int DNA_wall) {
-		this.DNA_wall=DNA_wall;
-	}
-
-	public void DNAupdate(int ma, int mc) {
-		dna = dna.update(ma, mc);
-	}
 }
