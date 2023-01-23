@@ -1,6 +1,7 @@
 package main;
 
 import java.awt.Dimension;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -139,11 +140,16 @@ public class Configurations {
 	 * @param name - ключ
 	 * @return Строка в формате HTML
 	 */
+	public static String getHProperty(Class<?> cls, String name) {
+		return MessageFormat.format("<HTML>{0}",getProperty(cls,name));
+	}
+	/**
+	 * Возвращает строку описания для определённого класса
+	 * @param cls - класс, в котором эта строка находится
+	 * @param name - ключ
+	 * @return Строка в формате HTML
+	 */
 	public static String getProperty(Class<?> cls, String name) {
-		StringBuilder key = new StringBuilder(100);
-		key.append(cls.getTypeName());
-		key.append('.');
-		key.append(name);
-		return "<HTML>" + Configurations.bundle.getString(key.toString());
+		return Configurations.bundle.getString(MessageFormat.format("{0}.{1}", cls.getTypeName(),name));
 	}
 }

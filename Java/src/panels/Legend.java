@@ -258,28 +258,28 @@ public class Legend extends JPanel{
 		panel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		add(panel, BorderLayout.NORTH);
 		
-		JRadioButton doing = new JRadioButton(Configurations.getProperty(Legend.class,"LabelDoing"));
+		JRadioButton doing = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelDoing"));
 		doing.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		doing.setSelected(true);
 		panel.add(doing);
 		
-		JRadioButton hp = new JRadioButton(Configurations.getProperty(Legend.class,"LabelHp"));
+		JRadioButton hp = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelHp"));
 		hp.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(hp);
 		
-		JRadioButton year = new JRadioButton(Configurations.getProperty(Legend.class,"LabelAge"));
+		JRadioButton year = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelAge"));
 		year.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(year);
 		
-		JRadioButton generation = new JRadioButton(Configurations.getProperty(Legend.class,"LabelGeneration"));
+		JRadioButton generation = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelGeneration"));
 		generation.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(generation);
 		
-		JRadioButton phenotype = new JRadioButton(Configurations.getProperty(Legend.class,"LabelPhenotype"));
+		JRadioButton phenotype = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelPhenotype"));
 		phenotype.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(phenotype);
 		
-		JRadioButton mineral = new JRadioButton(Configurations.getProperty(Legend.class,"LabelMp"));
+		JRadioButton mineral = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelMp"));
 		mineral.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(mineral);
 

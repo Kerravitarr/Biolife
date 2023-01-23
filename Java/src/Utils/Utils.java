@@ -9,9 +9,9 @@ import java.util.concurrent.locks.LockSupport;
 public class Utils {
 
 	/**
-	 * Метод получения псевдослучайного целого числа от min до max (включая max);
-	 * @param min
-	 * @param max
+	 * Метод получения псевдослучайного целого числа [min,max];
+	 * @param min минимальное значение, включительно
+	 * @param max максимальное значение, включительно
 	 */
 	public static int random(int min, int max) {
 		max -= min;
