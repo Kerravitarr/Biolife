@@ -15,7 +15,7 @@ public class Buoyancy_UP extends CommandDo {
 	
 	public Buoyancy_UP() {this("☁","Стать легче");}
 	
-	protected Buoyancy_UP(String shotName,String longName) {super(shotName,longName);}
+	protected Buoyancy_UP(String shotName,String longName) {super(1,shotName,longName);}
 
 	@Override
 	protected void doing(AliveCell cell) {
@@ -27,7 +27,13 @@ public class Buoyancy_UP extends CommandDo {
 	 * @param isUp - true, значит плотность уменьшается
 	 */
 	protected void buoyancy(AliveCell cell,boolean isUp) {
-		cell.addHealth(-HP_COST);//Переводит 1 хп в 0.1 плавучести
-		cell.setBuoyancy(cell.getBuoyancy() + (isUp ?  +DEL : -DEL));
+		var par = param(cell, 0,200) - 100;
+		cell.addHealth(-HP_COST * par / 10);//Переводит 1 хп в 0.1 плавучести
+		cell.setBuoyancy(cell.getBuoyancy() + (isUp ?  +DEL : -DEL) * par);
 	}
+
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna){
+		return Integer.toString(param(cell, 0,200) - 100);
+	};
 }
