@@ -217,15 +217,24 @@ public class BioLife extends JFrame {
 			public void componentResized(ComponentEvent e) {
 				var newW = (scrollPane.getWidth() * settings.getScale()) / 10  - 10;
 				var newH = (scrollPane.getHeight() * settings.getScale()) / 10  - 10;
+				var horizont = scrollPane.getHorizontalScrollBar();
+				var vertical = scrollPane.getVerticalScrollBar();
 				
 				if(settings.getScale() > 10) {
 					newH = (int) ((newW * (1 + (Configurations.UP_border + Configurations.DOWN_border)) * Configurations.MAP_CELLS.height) / Configurations.MAP_CELLS.width);
 					
-					scrollPane.getVerticalScrollBar().setUnitIncrement(Math.max(1, newH / 100));
-					scrollPane.getHorizontalScrollBar().setUnitIncrement(Math.max(1, newW / 100));
+					horizont.setUnitIncrement(Math.max(1, newW / 100));
+					vertical.setUnitIncrement(Math.max(1, newH / 100));
 				}
 				
+				var wOffset = ((double) newW) / world.getWidth();
+				var hOffset = ((double) newH) / world.getHeight();
+				System.out.println(hOffset);
+				
 				world.setPreferredSize(new Dimension(newW,newH));
+				
+				horizont.setValue((int) (horizont.getValue() * wOffset));
+				vertical.setValue((int) (vertical.getValue() * hOffset));
 			}
 		});
 		settings.setListener(scrollPane);
