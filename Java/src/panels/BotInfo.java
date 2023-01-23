@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +26,7 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
 import MapObjects.AliveCell;
+import MapObjects.AliveCellProtorype;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Poison;
@@ -88,6 +90,9 @@ public class BotInfo extends JPanel {
 		/**Текстовое поле пары*/
 		private JLabel field = null;
 		
+		/**Общий для всех счётчик, который листает бегущие строки*/
+		private static int counter = 0;
+		
 		public TextPair(String label) {
 			setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 			text = new JLabel(label);
@@ -138,11 +143,12 @@ public class BotInfo extends JPanel {
 		}
 		/**Автоматически проматывает текст поля на один символ дальше*/
 		public void scrol() {
-			var pos = scroll.getHorizontalScrollBar().getValue() + 1;
-			if(pos >= field.getText().length())
-				pos = 0;
-			scroll.getHorizontalScrollBar().setValue(pos);
-			
+			var max = field.getText().length();
+			var pos = counter % (2 * max + 40);
+			if(pos < max + 19)
+				scroll.getHorizontalScrollBar().setValue(pos);
+			else
+				scroll.getHorizontalScrollBar().setValue((2 * max + 40) - pos);
 		}
 		
 		public String toString() {
@@ -219,8 +225,11 @@ public class BotInfo extends JPanel {
 	private final Set<TextPair> scrolFieldList;
 	
 	class WorkTask implements Runnable{
+		static boolean isUpdate = false;
 		@Override
 		public void run() {
+			if(isUpdate) return;
+			isUpdate = true;
 			if(isVisible() && getCell() != null && !getCell().aliveStatus(AliveCell.LV_STATUS.GHOST)) {
 				setDinamicHaracteristiks();
 				if(getCell() instanceof AliveCell lcell) {
@@ -240,6 +249,7 @@ public class BotInfo extends JPanel {
 					listDNA.setModel(new DefaultListModel<> ());
 				}
 			}
+			isUpdate = false;
 		}
 	}
 
@@ -451,6 +461,7 @@ public class BotInfo extends JPanel {
 	}
 	
 	
+	
 	public void setCell(CellObject cellObject) {
 		clearText();
 		this.cell=cellObject;
@@ -462,7 +473,15 @@ public class BotInfo extends JPanel {
 			panel_variant.setVisible(true);
 			panel_DNA.setVisible(true);
 			generation.setText(Integer.toString(aliveCell.getGeneration()));
-			photos.setText((Double.toString(aliveCell.photosynthesisEffect)).substring(0, 3));
+			var type = AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS;
+			var max = 0d;
+			for(var t : AliveCellProtorype.Specialization.TYPE.staticValues) {
+				if(max < aliveCell.get(t)) {
+					max = aliveCell.get(t);
+					type = t;
+				}
+			}
+			photos.setText(MessageFormat.format("{0} {1}%",type,aliveCell.get(type) * 100));
 			phenotype.setBackground(aliveCell.phenotype);
 			phenotype.setText(Integer.toHexString(aliveCell.phenotype.getRGB()));
 			filogen.setText(aliveCell.getBranch());
@@ -489,28 +508,15 @@ public class BotInfo extends JPanel {
 			if(testCell != null) //Так мы сможем обновлять эту клетку
 				alive = testCell;
 			direction.setText(alive.direction.toSString());
-			var addHP = Math.round(Configurations.sun.getEnergy(alive.getPos())+(1+alive.photosynthesisEffect) * alive.getMineral() / AliveCell.MAX_MP);
-			if (addHP > 0) {
-				if(alive.getDNA_wall() > 0)
-					hp.setText(((int) getCell().getHealth()) + " +" + addHP + " ⊡" + alive.getDNA_wall());
-				else
-					hp.setText(((int) getCell().getHealth()) + " +" + addHP);
-			} else {
-				if(alive.getDNA_wall() > 0)
-					hp.setText(((int) getCell().getHealth()) + " ⊡" + alive.getDNA_wall());
-				else
-					hp.setText(Integer.toString((int)getCell().getHealth()));
-			}
-			double realLv = alive.getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
-			if(realLv > 0) {
-				double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
-				mp.setText(alive.getMineral()+" +" + Math.round(Configurations.CONCENTRATION_MINERAL * (realLv/dist) * (5 - alive.photosynthesisEffect)));
-			} else {
-				mp.setText(Long.toString(alive.getMineral()));
-			}
+			if(alive.getDNA_wall() > 0)
+				hp.setText(((int) getCell().getHealth()) + " ⊡" + alive.getDNA_wall());
+			else
+				hp.setText(Integer.toString((int)getCell().getHealth()));
+			mp.setText(Long.toString(alive.getMineral()));
 			toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
 			buoyancy.setText(String.valueOf(alive.getBuoyancy()));	
 			
+			TextPair.counter++;
 			for(var i : scrolFieldList) 
 				i.scrol();
 		} else if (getCell() instanceof Poison poison) {
@@ -635,6 +641,6 @@ public class BotInfo extends JPanel {
 	}
 	
 	private String getProperty(String name) {
-		return Configurations.getProperty(BotInfo.class,name);
+		return Configurations.getHProperty(BotInfo.class,name);
 	}
 }

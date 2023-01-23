@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import MapObjects.AliveCellProtorype;
 import main.Configurations;
 
 /**
@@ -14,9 +15,10 @@ public class HowMuchSun extends CommandExplore {
 
 	@Override
 	protected int explore(AliveCell cell) {
-		double t = (1 + cell.photosynthesisEffect) * cell.getMineral() / AliveCell.MAX_MP;
+        double t = 10 * cell.getMineral() / AliveCell.MAX_MP;
 		var param = param(cell, 0,Configurations.ADD_SUN_POWER + Configurations.BASE_SUN_POWER);
-		return Configurations.sun.getEnergy(cell.getPos()) + t > param ? 0 : 1;
+        double hlt = Configurations.sun.getEnergy(cell.getPos()) + t;
+		return (hlt * cell.get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS)) > param ? 0 : 1;
 	}
 	
 	
