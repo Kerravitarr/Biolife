@@ -2,9 +2,10 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
-import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Fossil;
+import MapObjects.Organic;
+import MapObjects.Poison;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -47,10 +48,17 @@ public class BiteA extends CommandDoInterupted {
 		switch (see) {
 		case ORGANIC ->  {
 			Point point = nextPoint(cell,direction);
-			CellObject target = Configurations.world.get(point);
-			cell.addHealth(target.getHealth()/4);    //здоровье увеличилось
-			cell.color(AliveCell.ACTION.EAT_ORG,target.getHealth()/4);
-			target.addHealth(-target.getHealth()/4); //Одну четверть отдали
+			Organic target = (Organic) Configurations.world.get(point);
+			if(target.getPoison() != Poison.TYPE.UNEQUIPPED) { //Если еда ядовита - то мы получаем урон
+				cell.toxinDamage(target.getPoison(),target.getPoisonCount());
+			}
+			var F = cell.get(AliveCellProtorype.Specialization.TYPE.DIGESTION);//Эффективность пищеварения - поглащения отработанной пищи
+			var hpInOrg = F * target.getHealth() / 4;	
+			if(target.getPoison() != Poison.TYPE.YELLOW)	//Обработанная жёлтым ядом пища - сытнее
+				hpInOrg /= 2;
+			cell.addHealth(hpInOrg);    //здоровье увеличилось
+			cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
+			target.addHealth(-hpInOrg); //Одну четверть отдали
 		}
 		case ENEMY, FRIEND -> {
 			//--------- дошли до сюда, значит впереди живой бот -------------------

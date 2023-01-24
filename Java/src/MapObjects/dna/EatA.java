@@ -2,14 +2,15 @@ package MapObjects.dna;
 
 import static MapObjects.CellObject.OBJECT.CLEAN;
 import static MapObjects.CellObject.OBJECT.NOT_POISON;
+import static MapObjects.CellObject.OBJECT.OWALL;
 import static MapObjects.CellObject.OBJECT.POISON;
 import static MapObjects.CellObject.OBJECT.WALL;
-import static MapObjects.CellObject.OBJECT.OWALL;
 
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
-import MapObjects.CellObject;
 import MapObjects.Fossil;
+import MapObjects.Organic;
+import MapObjects.Poison;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -45,9 +46,16 @@ public class EatA extends CommandDoInterupted {
 		switch (see) {
 			case ORGANIC ->  {
 				Point point = nextPoint(cell,direction);
-				CellObject target = Configurations.world.get(point);
-				cell.addHealth(Math.abs(target.getHealth()));    //здоровье увеличилось на сколько осталось
-				cell.color(AliveCell.ACTION.EAT_ORG,target.getHealth());
+				Organic target = (Organic) Configurations.world.get(point);
+				if(target.getPoison() != Poison.TYPE.UNEQUIPPED) { //Если еда ядовита - то мы получаем урон
+					cell.toxinDamage(target.getPoison(),target.getPoisonCount());
+				}
+				var F = cell.get(AliveCellProtorype.Specialization.TYPE.DIGESTION);//Эффективность пищеварения - поглащения отработанной пищи
+				var hpInOrg = F * target.getHealth();	
+				if(target.getPoison() != Poison.TYPE.YELLOW)	//Обработанная жёлтым ядом пища - сытнее
+					hpInOrg /= 2;
+				cell.addHealth(hpInOrg);    //здоровье увеличилось
+				cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
 				target.remove_NE();
 			}
 			case ENEMY, FRIEND -> {

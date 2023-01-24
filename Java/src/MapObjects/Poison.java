@@ -12,8 +12,11 @@ import panels.Legend;
 
 public class Poison extends CellObject {
 	/**Максимальная токсичность яда*/
-	static final int MAX_TOXIC = 2000;
+	public static final int MAX_TOXIC = 2000;
+	/**Максимальная вязкость яда. Причём реальная вязкость будет как е^stream! Так что тут будет примерно 22к*/
+	public static final int MAX_STREAM = 10;
 	
+	/**Все возможные типы яда*/
 	public enum TYPE {
 		/**Без яда, используется для клеток*/
 		UNEQUIPPED("НЕТ"),
@@ -53,12 +56,15 @@ public class Poison extends CellObject {
 	public double radius = 1;
 	/**Когда следующее деление*/
 	public int nextDouble;
+	/**Вязкость яда*/
+	private int stream = 150;
 
 	public Poison(JSON poison) {
 		super(poison);
 		setHealth(Math.round((double)poison.get("energy")));
 		type = TYPE.toEnum(poison.getI("type"));
 		nextDouble = getTimeToNextDouble();
+		stream = poison.get("stream");
 		repaint();
 	}
 
@@ -73,8 +79,6 @@ public class Poison extends CellObject {
 
 	@Override
 	void step() {
-		if(Configurations.POISON_STREAM == 0) //При таком уровне разложения, яд сразу исчезает
-			destroy();
 		if ((getAge()) >= nextDouble) { // Вязкость яда
 			DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
 			switch (see(dir)) {
@@ -113,7 +117,7 @@ public class Poison extends CellObject {
 	}
 	
 	private int getTimeToNextDouble() {
-		return (int) Math.round(getAge() + Configurations.POISON_STREAM * (2 - energy / MAX_TOXIC));
+		return (int) Math.round(getAge() + stream * (2 - energy / MAX_TOXIC));
 	}
 
 	public boolean move(DIRECTION direction) {
@@ -175,6 +179,7 @@ public class Poison extends CellObject {
 	@Override
 	public JSON toJSON(JSON make) {
 		make.add("energy", energy);
+		make.add("stream", stream);
 		make.add("type", type.ordinal());
 		return make;
 	}

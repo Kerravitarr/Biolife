@@ -112,7 +112,6 @@ public class Settings extends JPanel{
 	private final JButton saveButton;
 	private final JButton step_button;
 	private final ScrollPanel sun_size;
-	private final ScrollPanel PoisonStreem;
 	
 	/**
 	 * Create the panel.
@@ -134,7 +133,7 @@ public class Settings extends JPanel{
 		scrollBar_4 = new ScrollPanel("Высота минерализации",0,100);
 		scrollBar_5 = new ScrollPanel("Концентрация минералов",0,40);
 		scrollBar_5.setBlockIncrement(5);
-		scrollBar_6 = new ScrollPanel("Скорость разложения",10,1);
+		scrollBar_6 = new ScrollPanel("Скорость разложения",100,1);
 		scrollBar_7 = new ScrollPanel("Частота кадров",100,0);
 		scrollBar_7.setBlockIncrement(20);
 		scale = new ScrollPanel("Масштаб",10,100);
@@ -142,9 +141,6 @@ public class Settings extends JPanel{
 		sun_speed = new ScrollPanel("Скорость солнца",200,1);
 		sun_speed.setValue(Configurations.SUN_SPEED);
 		sun_size = new ScrollPanel("Размер солнца",1,Configurations.SUN_PARTS*2);
-		PoisonStreem = new ScrollPanel("Вязкость яда",0,16);
-		PoisonStreem.setBlockIncrement(3);
-		PoisonStreem.setValue((int) Math.round(Math.log(Configurations.POISON_STREAM)));
 		
 		play = new JButton();
 		play.setToolTipText("Для простоты можно нажать пробел на клавиатуре");
@@ -160,7 +156,6 @@ public class Settings extends JPanel{
 				.addGroup(gl_panel.createSequentialGroup()
 					.addContainerGap()
 					.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
-						.addComponent(PoisonStreem, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(const_SP, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(saveButton, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(load_button, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
@@ -199,8 +194,6 @@ public class Settings extends JPanel{
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(scrollBar_6, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(PoisonStreem, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(scrollBar_7, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(scale, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
@@ -238,20 +231,9 @@ public class Settings extends JPanel{
 		scrollBar_2.setValue(Configurations.AGGRESSIVE_ENVIRONMENT*100);
 		scrollBar_1.setValue(Configurations.DIRTY_WATER);
 		const_SP.setValue(Configurations.BASE_SUN_POWER);
-		if(Configurations.POISON_STREAM == 0)
-			PoisonStreem.setValue(0);
-		else
-			PoisonStreem.setValue(Math.log(Configurations.POISON_STREAM));
 	}
 	
 	public final void setListeners() {
-
-		PoisonStreem.addAdjustmentListener(e->{
-			if(e.getValue() == 0)
-				Configurations.POISON_STREAM =  0;
-			else
-				Configurations.POISON_STREAM =  (int) Math.round(Math.exp(e.getValue()));
-		});
 		scroll_SP.addAdjustmentListener(e->{
 			Configurations.ADD_SUN_POWER =  e.getValue();
 			Configurations.world.recalculate();

@@ -53,10 +53,8 @@ public class Configurations {
 	public static double LEVEL_MINERAL = 0.30;
 	/**Концентрация минералов*/
 	public static double CONCENTRATION_MINERAL = 1;
-	//Как долго разлагается органика
-	public static int TIK_TO_EXIT = 2;
-	/**Вязкость яда, как быстро он растекается*/
-	public static int POISON_STREAM = 150;
+	/**Сколько ходов до разложения органики*/
+	public static int TIK_TO_EXIT = 4;
 	
 	//Отображение карты на экране
 	/**Масштаб*/
@@ -110,7 +108,6 @@ public class Configurations {
 		configWorld.add("SUN_SPEED", SUN_SPEED);
 		configWorld.add("SUN_LENGHT", SUN_LENGHT);
 		configWorld.add("SUN_POSITION", SUN_POSITION);
-		configWorld.add("POISON_STREAM", POISON_STREAM);
 		return configWorld;
 	}
 	/**Загрузка конфигурации мира*/
@@ -131,7 +128,6 @@ public class Configurations {
 		SUN_POSITION = configWorld.get("SUN_POSITION");
 		BASE_SUN_POWER = configWorld.get("BASE_SUN_POWER");
 		ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
-		POISON_STREAM = configWorld.get("POISON_STREAM");
 	}
 	
 	/**
