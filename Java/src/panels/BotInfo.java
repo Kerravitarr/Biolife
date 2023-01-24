@@ -3,8 +3,11 @@ package panels;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.AffineTransform;
 import java.text.MessageFormat;
 import java.util.HashSet;
 import java.util.Set;
@@ -48,8 +51,15 @@ public class BotInfo extends JPanel {
 		enum TYPE{
 			CMD_I,CMD_D,CMD,PARAM,ARG
 		}
+		/**Цвет строки*/
 		private final Color color;
+		/**Текст строки*/
 		private final String text;
+		/**Преобразование символов в квадрат. Спецобъект*/
+		private static final FontRenderContext frc = new FontRenderContext( new AffineTransform(),true,true);     
+		private static final Font font = javax.swing.UIManager.getDefaults().getFont("Label.font");
+		/**Ширина текста в пикселях*/
+		private int textwidth;
 		
 		public JListRow(String text,TYPE type) {
 			switch (type) {
@@ -61,25 +71,44 @@ public class BotInfo extends JPanel {
 				default -> color = null;
 			}
 			this.text=text;
+			textwidth = (int)(font.getStringBounds(text, frc).getWidth());
 		}
 	}
 	/**Отрисовщик строк таблицы. Очень помогает каждой строке давать свой цвет*/
-	private static class JlistRender extends DefaultListCellRenderer{
-		 @Override
-         public Component getListCellRendererComponent(@SuppressWarnings("rawtypes") JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-              Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-              if(value == null) return c;
-              if (value instanceof JListRow nextRow) {
-                   setText(nextRow.text);
-                   setBackground(nextRow.color);
-                   if (isSelected) {
-                        setBackground(getBackground().darker());
-                   }
-              } else {
-            	  throw new IllegalArgumentException("Список параметров содержит странные параметры. Это вообще что?! " + value.getClass());
-              }
-              return c;
-         }
+	private class JlistRender extends DefaultListCellRenderer {
+		/**Общий для всех счётчик, который листает бегущие строки*/
+		private static int counter = 0;
+		/**Время паузы между встречными движениями*/
+		private static int timeout = 10;
+		
+		@Override
+		public Component getListCellRendererComponent(@SuppressWarnings("rawtypes") JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+			var c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+			if (value == null)
+				return c;
+			if (value instanceof JListRow nextRow) {
+				var maxW = panel_DNA.getWidth() - 40;
+				if (nextRow.textwidth > maxW) {
+					var lenght = nextRow.text.length();
+					int countVChir = (int) (lenght * maxW / nextRow.textwidth);
+					var pos = JlistRender.counter % (2 * (lenght + timeout));
+					if (pos < lenght + timeout)
+						setText(nextRow.text.substring(Utils.Utils.betwin(0, pos, lenght - countVChir)));
+					else
+						setText(nextRow.text.substring(Utils.Utils.betwin(0, 2 * (lenght + timeout) - (pos + 2 * timeout), lenght - countVChir)));
+				} else {
+					setText(nextRow.text);
+				}
+				if (isSelected) 
+					setBackground(getBackground().darker());
+				else 
+					setBackground(nextRow.color);
+				setOpaque(true);
+			} else {
+				throw new IllegalArgumentException("Список параметров содержит странные параметры. Это вообще что?! " + value.getClass());
+			}
+			return c;
+		}
 	}
 	/**Пара подписи и текстового поля*/
 	private class TextPair extends JPanel {
@@ -89,9 +118,11 @@ public class BotInfo extends JPanel {
 		private JScrollPane scroll = null;
 		/**Текстовое поле пары*/
 		private JLabel field = null;
-		
+
 		/**Общий для всех счётчик, который листает бегущие строки*/
 		private static int counter = 0;
+		/**Время паузы между встречными движениями*/
+		private static int timeout = 10;
 		
 		public TextPair(String label) {
 			setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
@@ -144,11 +175,11 @@ public class BotInfo extends JPanel {
 		/**Автоматически проматывает текст поля на один символ дальше*/
 		public void scrol() {
 			var max = field.getText().length();
-			var pos = counter % (2 * max + 40);
-			if(pos < max + 19)
+			var pos = JlistRender.counter % (2 * (max + timeout));
+			if (pos < max + timeout)
 				scroll.getHorizontalScrollBar().setValue(pos);
 			else
-				scroll.getHorizontalScrollBar().setValue((2 * max + 40) - pos);
+				scroll.getHorizontalScrollBar().setValue(2 * (max + timeout) - (pos + timeout));
 		}
 		
 		public String toString() {
@@ -240,7 +271,10 @@ public class BotInfo extends JPanel {
 						oldIndex = lcell.getDna().getIndex();
 						testCell = null;
 						printDNA(lcell); 
+					} else {
+						listDNA.repaint();
 					}
+					JlistRender.counter++;
 				}
 			} else {
 				if(cell != null) {
@@ -434,10 +468,11 @@ public class BotInfo extends JPanel {
 		panel_DNA.add(lblNewLabel_9, BorderLayout.NORTH);
 		
 		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 		panel_DNA.add(scrollPane, BorderLayout.CENTER);
 		
 		listDNA = new JList<>();
-		listDNA.setToolTipText(getProperty("InterraptToolTipText"));
+		listDNA.setToolTipText(getProperty("DNAToolTipText"));
 		listDNA.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
@@ -459,8 +494,6 @@ public class BotInfo extends JPanel {
 		
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new WorkTask(), 100, 100, TimeUnit.MILLISECONDS);
 	}
-	
-	
 	
 	public void setCell(CellObject cellObject) {
 		clearText();
@@ -526,6 +559,7 @@ public class BotInfo extends JPanel {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 		}
 	}
+	
 	private void clearText() {
 		generation.clear();
 		age.clear();
@@ -548,7 +582,6 @@ public class BotInfo extends JPanel {
 		CommandDNA.setFullMod(isFullMod);
 	}
 
-
 	/**
 	 * @return the cell
 	 */
@@ -564,6 +597,8 @@ public class BotInfo extends JPanel {
 		}
 		testCell.next();
 	}
+	
+	
 	/**
 	 * Печатает в табличку гены клетки
 	 * @param lcell - клетка, которую обрабатываем
@@ -574,6 +609,7 @@ public class BotInfo extends JPanel {
 		DefaultListModel<JListRow> model = new DefaultListModel<>();
 		model.setSize(dna.size);
 		var first = dna.get();
+		//Адрес прерывания
 		int interVal = -1;
 		if (first.isInterrupt()) {
 			scrollPane_inter.setVisible(true);
@@ -588,56 +624,74 @@ public class BotInfo extends JPanel {
 		} else {
 			scrollPane_inter.setVisible(false);
 		}
-		for (int i = 0; i < dna.size; i++) {
+		for (int i = 0; i < dna.size; ) {
 			int cmd = dna.getIndex();
 			CommandDNA cmd_o = dna.get();
-			StringBuilder sb = new StringBuilder();
-			if(cmd == interVal)
-				sb.append("**");
-			sb.append(cmd);
-			sb.append("=");
-			sb.append(dna.get(cmd, 0));
-			sb.append(" ");
-			sb.append(cmd_o.toString(lcell, dna));
-			if (cmd_o.isInterrupt())
-				model.add(i, new JListRow(sb.toString(), JListRow.TYPE.CMD_I));
-			else if (cmd_o.isDoing())
-				model.add(i, new JListRow(sb.toString(), JListRow.TYPE.CMD_D));
-			else
-				model.add(i, new JListRow(sb.toString(), JListRow.TYPE.CMD));
-
+			addDNA(lcell, dna, model, interVal, i++, cmd, cmd_o, cmd_o.isInterrupt() ? JListRow.TYPE.CMD_I : (cmd_o.isDoing() ? JListRow.TYPE.CMD_D : JListRow.TYPE.CMD));
+			
 			for (int j = 0; j < cmd_o.getCountParams(); j++) {
-				sb = new StringBuilder();
-				var index_cmd = (cmd + j + 1) % dna.size;
-				if(index_cmd == interVal)
-					sb.append("**");
-				sb.append(index_cmd);
-				sb.append("=");
-				sb.append(dna.get(cmd + j + 1, 0));
-				sb.append(" П ");
-				sb.append(cmd_o.getParam(lcell, j, dna));
-				model.add(++i, new JListRow(sb.toString(), JListRow.TYPE.PARAM));
+				addDNA(lcell, dna, model, interVal, i++, cmd + j + 1, cmd_o, JListRow.TYPE.PARAM, j);
 			}
 			for (int j = 0; j < cmd_o.getCountBranch(); j++) {
-				sb = new StringBuilder();
-				var index_cmd = (cmd + cmd_o.getCountParams() + j + 1) % dna.size;
-				if(index_cmd == interVal)
-					sb.append("**");
-				sb.append(index_cmd);
-				sb.append("=");
-				sb.append(dna.get(cmd + j + 1, 0));
-				sb.append(" А");
-				sb.append(j);
-				sb.append(" (");
-				var atr = dna.get(dna.getIndex() + 1 + cmd_o.getCountParams(), j);
-				sb.append((dna.getIndex() + atr) % dna.size);
-				sb.append(")");
-				model.add(++i, new JListRow(sb.toString(), JListRow.TYPE.CMD));
+				addDNA(lcell, dna, model, interVal, i++ , cmd + cmd_o.getCountParams() + j + 1, cmd_o, JListRow.TYPE.ARG, j);
 			}
 			dna.next(1 + cmd_o.getCountParams() + cmd_o.getCountBranch());
 		}
 		listDNA.setModel(model);
 		BotInfo.this.revalidate();
+	}
+	
+	private void addDNA(AliveCell lcell, DNA dna, DefaultListModel<JListRow> model, int interVal, int indexRowInModel, int indexCmd, CommandDNA cmd_o, JListRow.TYPE type) {
+		addDNA(lcell, dna, model, interVal, indexRowInModel, indexCmd, cmd_o, type, -1);
+	}
+	/**
+	 * Добавляет одну строчку к листу ДНК
+	 * @param lcell клетка, чья строка
+	 * @param dna её ДНК (фишка в том, что это копия)
+	 * @param model модель, в которую добавлять будем данные
+	 * @param interVal какой индексу прерывания, если активное
+	 * @param indexRowInModel какой номер строки добавляем
+	 * @param indexCmd какой индекс у команды
+	 * @param cmd_o команда, которую разбираем
+	 * @param type тип команды. Это может быть команда, а может быть её параметр или аргумент
+	 * @param indexParamOrBrenh
+	 */
+	private void addDNA(AliveCell lcell, DNA dna, DefaultListModel<JListRow> model, int interVal, int indexRowInModel, int indexCmd, CommandDNA cmd_o, JListRow.TYPE type, int indexParamOrBrenh) {
+		StringBuilder sb = new StringBuilder();
+		if(indexCmd == interVal)
+			sb.append("* ");
+		else
+			sb.append("  ");
+		sb.append(indexCmd % dna.size);
+		sb.append("=");
+		sb.append(dna.get(indexCmd, 0));
+		switch (type) {
+			case CMD,CMD_D,CMD_I -> {
+				sb.append(" ");
+				sb.append(cmd_o.toString(lcell, dna));
+				if(indexRowInModel == 0) {
+					var val = cmd_o.value(lcell, dna);
+					if(val != null) {
+						sb.append(" → ");
+						sb.append(cmd_o.value(lcell, dna));
+					}
+				}
+			}
+			case PARAM -> {
+				sb.append(" П ");
+				sb.append(cmd_o.getParam(lcell, indexParamOrBrenh, dna));
+			}
+			case ARG -> {
+				sb.append(" А");
+				sb.append(indexParamOrBrenh);
+				sb.append(" (");
+				var atr = dna.get(dna.getIndex() + 1 + cmd_o.getCountParams(), indexParamOrBrenh);
+				sb.append((dna.getIndex() + atr) % dna.size);
+				sb.append(")");
+			}
+		}
+		
+		model.add(indexRowInModel, new JListRow(sb.toString(), type));
 	}
 	
 	private String getProperty(String name) {
