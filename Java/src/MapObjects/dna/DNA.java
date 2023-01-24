@@ -163,8 +163,7 @@ public class DNA {
 		return mind[pos];
 	}
 	
-	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(Object obj, int tolerance) {
 		if(this == obj) {
 			return true;
 		} else if (obj instanceof DNA dna) {
@@ -177,7 +176,7 @@ public class DNA {
 				if(dna.mind[i] != dna.mind[i])
 					dif++;
 			}
-			return dif <= 2;
+			return dif <= tolerance;
 		} else {
 			return false;
 		}

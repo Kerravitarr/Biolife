@@ -2,6 +2,7 @@ package MapObjects;
 
 import java.awt.Color;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import MapObjects.dna.DNA;
@@ -112,11 +113,11 @@ public abstract class AliveCellProtorype extends CellObject{
 		Specialization() {
 			super(TYPE.size()); 
 			for(var i : TYPE.staticValues)
-				this.put(i, 100 / TYPE.size());
+				put(i, 100 / TYPE.size());
 			var summ = 0;
 			for(var i : this.values())
 				summ += i;
-			this.put(TYPE.PHOTOSYNTHESIS, get(TYPE.PHOTOSYNTHESIS) + (100 - summ));
+			put(TYPE.PHOTOSYNTHESIS, get(TYPE.PHOTOSYNTHESIS) + (100 - summ));
 			set(TYPE.PHOTOSYNTHESIS,50);
 			updateColor();
 		}
@@ -125,6 +126,18 @@ public abstract class AliveCellProtorype extends CellObject{
 		public Specialization(AliveCell cell) {
 			this.putAll(cell.specialization);
 			phenotype = cell.phenotype;
+		}
+		
+		/**Копируем специализацию нашего предка*/
+		public Specialization(JSON json) {
+	    	List<Integer> keys = json.getA("keys");
+	    	List<Integer> vals = json.getA("vals");
+	    	
+	    	for(int i = 0 ; i < keys.size() ; i++) {
+	    		put(TYPE.staticValues[keys.get(i)],vals.get(i));
+	    	}
+
+			updateColor();
 		}
 
 		private void updateColor() {
@@ -170,6 +183,21 @@ public abstract class AliveCellProtorype extends CellObject{
 			}
 		}
 
+		public JSON toJSON() {
+			JSON make = new JSON();
+			int [] keys = new int[size()];
+			int [] vals = new int[size()];
+			var i = 0;
+			for(var s : entrySet()) {
+				keys[i] = s.getKey().ordinal();
+				vals[i] = s.getValue();
+				i++;
+			}
+			make.add("keys", keys);
+			make.add("vals", vals);
+			return make;
+		}
+
 	}
 	
 	//=================Внутреннее состояние бота
@@ -207,6 +235,8 @@ public abstract class AliveCellProtorype extends CellObject{
     public Color phenotype;
     /**Дерево эволюции*/
     public Node evolutionNode = null;
+    /**Показывает сколько ошибок допускает бот, прежде чем сказать - наши ДНК разные!*/
+    protected int tolerance = 2;
     
     //===============Параметры братства, многоклеточность=======
     protected final Map<Point,AliveCell> friends = new HashMap<>(DIRECTION.size());

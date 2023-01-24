@@ -48,9 +48,10 @@ public class AliveCell extends AliveCellProtorype{
     	DNA_wall = cell.getI("DNA_wall");
     	poisonType =  Poison.TYPE.toEnum(cell.getI("posionType"));
     	poisonPower = cell.getI("posionPower");
+    	tolerance = cell.getI("tolerance");
     	
     	Generation = cell.getI("Generation");
-    	specialization = new Specialization();
+    	specialization = new Specialization(cell.getJ("Specialization"));
     	
     	evolutionNode = tree.getNode(cell.get("GenerationTree"));
     	
@@ -222,7 +223,7 @@ public class AliveCell extends AliveCellProtorype{
 	 */
 	protected void mutation() {
 		setGeneration(getGeneration() + 1);
-        switch (Utils.random(0, 5)) { // К сожалению 0 и 1 вырезаны.
+        switch (Utils.random(0, 6)) { // К сожалению 0 и 1 вырезаны.
             case 0 ->{ //Мутирует специализация
             	int co = Utils.random(0, 100); //Новое значение специализации
             	int tp = Utils.random(0, Specialization.TYPE.size() - 1); //Какая специализация
@@ -254,6 +255,9 @@ public class AliveCell extends AliveCellProtorype{
                 int ma = Utils.random(0, dna.interrupts.length-1); //Индекс в векторе
                 int mc = Utils.random(0, dna.size-1); //Его значение
                 dna.interrupts[ma] = mc;
+            }
+            case 6 -> { //Мутирует наша невосприимчивость
+            	tolerance = Utils.random(0, dna.size - 1);
             }
         }
 		evolutionNode = evolutionNode.newNode(this,getStepCount());
@@ -330,7 +334,7 @@ public class AliveCell extends AliveCellProtorype{
 	@Override
 	protected boolean isRelative(CellObject cell0) {
 		if (cell0 instanceof AliveCell bot0) {
-			return bot0.dna.equals(this.dna);
+			return bot0.dna.equals(this.dna, this.tolerance);
 		} else {
 			return false;
 		}
@@ -457,6 +461,7 @@ public class AliveCell extends AliveCellProtorype{
 		make.add("DNA_wall",DNA_wall);
 		make.add("posionType",getPosionType().ordinal());
 		make.add("posionPower",getPosionPower());
+		make.add("tolerance",tolerance);
 
 	    //=================ПАРАМЕТРЫ БОТА============
 		make.add("Generation",Generation);
@@ -472,6 +477,10 @@ public class AliveCell extends AliveCellProtorype{
 		for (int i = 0; i < fr.length; i++)
 			fr[i] = ((Point)points[i]).toJSON();
 		make.add("friends",fr);
+		
+		//===============СПЕЦИАЛИЗАЦИЯ===================
+		make.add("Specialization",specialization.toJSON());
+		
 		return make;
 	}
 
