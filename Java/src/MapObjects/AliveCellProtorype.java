@@ -150,7 +150,7 @@ public abstract class AliveCellProtorype extends CellObject{
 				y += iy;
 			}
 			float lenght = (float) Math.sqrt(x * x + y * y);
-			float angle = (float) (Math.acos(x / lenght) / (Math.PI));
+			float angle = (float) (Math.acos(x / lenght) / (2 * Math.PI));
 			if(y < 0) angle = 1f - angle;
 			phenotype = Utils.getHSBColor(angle, 1f, 0.5 + lenght / 200, 1f);
 		}

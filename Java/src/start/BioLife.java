@@ -229,7 +229,6 @@ public class BioLife extends JFrame {
 				
 				var wOffset = ((double) newW) / world.getWidth();
 				var hOffset = ((double) newH) / world.getHeight();
-				System.out.println(hOffset);
 				
 				world.setPreferredSize(new Dimension(newW,newH));
 				

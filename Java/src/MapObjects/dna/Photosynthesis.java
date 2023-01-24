@@ -18,8 +18,9 @@ public class Photosynthesis extends CommandDo {
 
 	@Override
 	protected void doing(AliveCell cell) {
+		var eff = cell.get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS);
         //Показывает эффективность нашего фотосинтеза
-        double t = 10 * cell.getMineral() / AliveCell.MAX_MP;
+        double t = 10 * eff * cell.getMineral() / AliveCell.MAX_MP;
         // формула вычисления энергии
         double hlt = Configurations.sun.getEnergy(cell.getPos()) + t;
         hlt *= cell.get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS);

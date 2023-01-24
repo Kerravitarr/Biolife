@@ -15,10 +15,11 @@ public class HowMuchSun extends CommandExplore {
 
 	@Override
 	protected int explore(AliveCell cell) {
-        double t = 10 * cell.getMineral() / AliveCell.MAX_MP;
+		var eff = cell.get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS);
+        double t = 10 * eff * cell.getMineral() / AliveCell.MAX_MP;
 		var param = param(cell, 0,Configurations.ADD_SUN_POWER + Configurations.BASE_SUN_POWER);
         double hlt = Configurations.sun.getEnergy(cell.getPos()) + t;
-		return (hlt * cell.get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS)) > param ? 0 : 1;
+		return (hlt * eff) > param ? 0 : 1;
 	}
 	
 	
