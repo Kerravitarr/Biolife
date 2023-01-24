@@ -1,7 +1,5 @@
 package MapObjects.dna;
 
-import java.text.MessageFormat;
-
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import main.Configurations;
@@ -13,8 +11,10 @@ import main.Configurations;
  * используя минералы
  */
 public class Photosynthesis extends CommandDo {
+	
+	private final MessageFormat valueFormat = new MessageFormat("HP += {0, number, #.#}");
 
-	protected Photosynthesis() {super(Configurations.getProperty(Photosynthesis.class, "Shot"),Configurations.getProperty(Photosynthesis.class, "Long"));}
+	protected Photosynthesis() {super();}
 
 	@Override
 	protected void doing(AliveCell cell) {
@@ -36,8 +36,8 @@ public class Photosynthesis extends CommandDo {
         double hlt = Configurations.sun.getEnergy(cell.getPos()) + t;
         hlt *= cell.get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS);
 		if (hlt > 0)
-			return MessageFormat.format("HP += {0}", hlt);
+			return valueFormat.format(hlt);
 		else
-			return "";
+			return null;
 	}
 }

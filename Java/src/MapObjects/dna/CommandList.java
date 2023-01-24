@@ -1,6 +1,9 @@
 package MapObjects.dna;
 
+import java.text.MessageFormat;
+
 import MapObjects.AliveCell;
+import main.Configurations;
 
 /**
  * Специальный класс, по фатку представляющий доступ к массиву со всеми возможными функциями из ДНК
@@ -50,6 +53,24 @@ public class CommandList {
 				System.out.println(e);
 			}
 		}
+		for (CommandDNA cmd : list) {
+			var cls = cmd.getClass();
+			if(cls == Jump.class) continue;
+			try{
+				Configurations.getProperty(cls, "Shot");
+			}catch(RuntimeException e){
+				System.out.println(MessageFormat.format("Не существует описания в файле для функции {0}.Shot", cls.getTypeName()));
+			}
+			try{
+				Configurations.getProperty(cls, "Long");
+			}catch(RuntimeException e){
+				System.out.println(MessageFormat.format("Не существует описания в файле для функции {0}.Long", cls.getTypeName()));
+			}
+		}
+		
+		
+
+		
 		
 	}
 	/**

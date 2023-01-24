@@ -5,7 +5,7 @@ import main.Point.DIRECTION;
 
 
 public class BiteR extends BiteA {
-	public BiteR() {super("🍗 О", "Кусить О",false);};
+	public BiteR() {super(false);};
 	@Override
 	protected void doing(AliveCell cell) {
 		bite(cell,relatively(cell, param(cell,0, DIRECTION.size())));

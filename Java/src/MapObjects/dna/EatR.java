@@ -10,7 +10,7 @@ import main.Point.DIRECTION;
  */
 public class EatR extends EatA {
 	
-	public EatR() {super("🍴 O","Съесть O",false);};
+	public EatR() {super(false);};
 	@Override
 	protected void doing(AliveCell cell) {
 		eat(cell,relatively(cell, param(cell,0, DIRECTION.size())));

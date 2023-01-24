@@ -7,6 +7,7 @@ import static MapObjects.CellObject.OBJECT.WALL;
 import static MapObjects.CellObject.OBJECT.OWALL;
 
 import MapObjects.AliveCell;
+import MapObjects.AliveCellProtorype;
 import MapObjects.CellObject;
 import MapObjects.Fossil;
 import main.Configurations;
@@ -22,10 +23,10 @@ public class EatA extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 4;
 
-	public EatA() {this("🍴 А","Съесть А",true);};
+	public EatA() {this(true);};
 
-	protected EatA(String shotName, String longName, boolean isAbsolute) {
-		super(1, shotName, longName);
+	protected EatA(boolean isAbsolute) {
+		super(1);
 		setInterrupt(isAbsolute, CLEAN, NOT_POISON, POISON, WALL,OWALL);
 	}
 	
@@ -57,31 +58,32 @@ public class EatA extends CommandDoInterupted {
 				var min0 = cell.getMineral();  // определим количество минералов у нас
 				var min1 = target.getMineral();  // определим количество минералов у потенциального обеда
 				var hl = target.getHealth();  // определим энергию у потенциального обеда
+				var F = cell.get(AliveCellProtorype.Specialization.TYPE.ASSASSINATION);//Сила укуса. Ооочень сильные могут прокусить даже хороший панцирь
 				// если у бота минералов больше
-				if (min0 >= min1) {
-					cell.setMineral(min0 - min1); // количество минералов у бота уменьшается на количество минералов у жертвы
+				if (min0 * F * 2 >= min1) {
+					cell.addMineral(-min1);		 // количество минералов у бота уменьшается на количество минералов у жертвы
 					// типа, стесал свои зубы о панцирь жертвы
-					target.remove_NE(); // удаляем жертву из списков
-					double cl = hl / 2;           // количество энергии у бота прибавляется на (половину от энергии жертвы)
+					target.remove_NE(); 		// удаляем жертву из списков
+					double cl = F * hl;         // количество энергии у бота прибавляется
 					cell.addHealth(cl);
 					cell.color(AliveCell.ACTION.EAT_ORG,cl);
 					return;
 				} else {
 					//если у жертвы минералов больше ----------------------
 					cell.setMineral(0);  // то бот израсходовал все свои минералы на преодоление защиты
-					min1 = min1 - min0;       // у жертвы количество минералов тоже уменьшилось
+					min1 = (long) (min1 - min0 * F * 2);       // у жертвы количество минералов тоже уменьшилось
 					target.setMineral(min1);       // перезаписали минералы жертве
 					//------ если здоровья в 2 раза больше, чем минералов у жертвы  ------
 					//------ то здоровьем проламываем минералы ---------------------------
-					if (cell.getHealth() >= 2 * min1) {
+					if (cell.getHealth() * F * 2 >= 2 * min1) {
 						target.remove_NE(); // удаляем жертву из списков
-						double cl = Math.max(0,(hl / 2) - 2 * min1); // вычисляем, сколько энергии смог получить бот
+						double cl = Math.max(0,(F * hl) - 2 * min1); // вычисляем, сколько энергии смог получить бот
 						cell.addHealth(cl);
 						cell.color(AliveCell.ACTION.EAT_ORG,cl);
 						return;                             // возвращаем 5
 					} else {
 						//--- если здоровья меньше, чем (минералов у жертвы)*2, то бот погибает от жертвы
-						target.setMineral(min1 - Math.round(cell.getHealth() / 2));  // у жертвы минералы истраченны
+						target.setMineral(min1 - Math.round(F * 2 * cell.getHealth() / 2));  // у жертвы минералы истраченны
 						cell.setHealth(0);  // здоровье уходит в ноль
 						return;
 					}
@@ -91,7 +93,8 @@ public class EatA extends CommandDoInterupted {
 				//Кусь за стену
 				Point point = nextPoint(cell,direction);
 				Fossil target = (Fossil) Configurations.world.get(point);
-				target.addHealth(-cell.getHealth() / 10);	//Стена оооочень крепкая
+				var F = cell.get(AliveCellProtorype.Specialization.TYPE.ASSASSINATION) * 2;//Сила укуса. Ооочень сильные могут прокусить даже хороший панцирь
+				target.addHealth(- F * cell.getHealth() / 10);	//Стена оооочень крепкая
 				if(target.getHealth() < 0) {
 					target.remove_NE();
 				}

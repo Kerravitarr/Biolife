@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import MapObjects.AliveCellProtorype;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Fossil;
@@ -18,7 +19,7 @@ public class BiteA extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
 
-	public BiteA() {this("🍗 A", "Кусить A",true);};
+	public BiteA() {this(true);};
 
 	/**
 	 * Инициализирует функцию куся
@@ -26,8 +27,8 @@ public class BiteA extends CommandDoInterupted {
 	 * @param longName полное имя функции
 	 * @param isAbsolute абсолютная или относительная функция
 	 */
-	protected BiteA(String shotName, String longName,boolean isAbsolute) {
-		super(1, shotName, longName);
+	protected BiteA(boolean isAbsolute) {
+		super(1);
 		setInterrupt(isAbsolute, OBJECT.CLEAN, OBJECT.NOT_POISON, OBJECT.POISON, OBJECT.WALL);
 	}
 	
@@ -60,11 +61,12 @@ public class BiteA extends CommandDoInterupted {
 			var min1 = target.getMineral() / 2;  // определим количество минералов у цели,
 			//но так как мы только кусаем - то и прорываться нам не через весь панцирь
 			var hl = target.getHealth();  // определим энергию у потенциального кусиха
+			var F = cell.get(AliveCellProtorype.Specialization.TYPE.ASSASSINATION);//Сила укуса. Ооочень сильные могут прокусить даже хороший панцирь
 			//Если у цели минералов не слишком много, а у нас жизней сильно меньше - можем его кусить
-			if (min0 >= (min1/2) && (cell.getHealth()/2 < hl)) {
+			if (min0 * F * 2 >= (min1/2) && (cell.getHealth()/2 < hl)) {
 				cell.setMineral(min0 - min1/2); // количество минералов у бота уменьшается на количество минералов у жертвы
 				// типа, стесал свои зубы о панцирь жертвы
-				var cl = hl / 4;           // количество энергии у бота прибавляется лишь чуть чуть, мы же кусили
+				var cl = F * hl / 2;           // количество энергии у бота прибавляется лишь чуть чуть, мы же кусили
 				cell.addHealth(cl);
 				target.addHealth(-cl);
 				cell.color(AliveCell.ACTION.EAT_ORG,cl);

@@ -11,6 +11,8 @@ import MapObjects.AliveCell;
  *
  */
 public abstract class CommandExplore extends CommandDNA {
+	
+	private final MessageFormat valueFormat = new MessageFormat("A{0} PC += {1}");
 
 	/**
 	 * Cнициализирует класс исследования
@@ -42,16 +44,13 @@ public abstract class CommandExplore extends CommandDNA {
 	/**Это явно не функция действия, мы можем сколько угодно рассматривать окружающий мир*/
 	@Override
 	public boolean isDoing() {return false;};
+	
 	/**
 	 * Для всех команд открытия разрешено так делать. А знаете почему? Потому что команды открытия не меняют внутренее состояние!
 	 * Команда действие может сдвинуть клетку или заставить её что ни будь сделать, а это лишь изучит окружающий мир
 	 */
-	@Override
-	public String toString(AliveCell cell, DNA dna) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(super.toString(cell,dna));
-		sb.append(" = A");
-		sb.append(explore(cell));
-		return sb.toString();
+	public String value(AliveCell cell, DNA dna) {
+		var ofset = explore(cell);
+        return valueFormat.format(ofset,(dna.get(dna.getIndex() + 1 + getCountParams(), ofset)) % dna.size);
 	}
 }

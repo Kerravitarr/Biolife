@@ -23,6 +23,14 @@ public abstract class CommandDNA {
 	private final String longName;
 	/**Показывает, что мы должны отображать всё в кратком виде*/
 	private static boolean isFullMod = false;
+	
+	protected class MessageFormat{
+		private final java.text.MessageFormat localFormat;
+
+		public MessageFormat(String pattern) {localFormat = new java.text.MessageFormat(pattern);}
+		public String format(Object ... arguments) {return localFormat.format(arguments);}
+	}
+	
 	/**
 	 * Констурктор класса
 	 * @param countParams - число параметров у функции
@@ -35,6 +43,17 @@ public abstract class CommandDNA {
 		this.countBranch = countBranch;
 		this.shotName = shotName;
 		this.longName = longName;
+	}
+	/**
+	 * Констурктор класса
+	 * @param countParams - число параметров у функции
+	 * @param countBranch - число ветвей у функции
+	 */
+	protected CommandDNA(int countParams,int countBranch) {
+		this.countParams = countParams;
+		this.countBranch = countBranch;
+		this.shotName = (Configurations.getProperty(this.getClass(), "Shot"));
+		this.longName = (Configurations.getProperty(this.getClass(), "Long"));
 	}
 
 	/**
@@ -197,6 +216,22 @@ public abstract class CommandDNA {
 	 */
 	public String toString(AliveCell cell, DNA dna) {
 		return toString();
+	}
+	/**
+	 * Если фукция хочет написать, что она изменит в боте - то эта надпись будет тут
+	 * @param cell - клетка, функция которой исследуется
+	 * @return Строковое описание функции
+	 */
+	protected String value(AliveCell cell) {return null;}
+	
+	/**
+	 * Если фукция хочет написать, что она изменит в боте - то эта надпись будет тут
+	 * @param cell - клетка, функция которой исследуется
+	 * @param dna - "локальная" копия ДНК, в которой и хранится параметр
+	 * @return Строковое описание функции
+	 */
+	public String value(AliveCell cell, DNA dna) {
+		return value(cell);
 	}
 	/**
 	 * Возвращает описание параметра по переданному значению
