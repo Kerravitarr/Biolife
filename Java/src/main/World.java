@@ -42,7 +42,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public static boolean isActiv = true;
 	/**Произошла авария?*/
 	public static boolean isError = false;
-	/**Сколько милисекунд делать перед ходами*/
+	/**Сколько кадров отрисовывать перед ходом. Если = 0, то как можно меньше. Если = 1, то считать всё на одном процессоре, если >1, то ФПС будет во столько раз больше ППС*/
 	public static int msTimeout = 0;
 	class AutostartThread extends Thread{AutostartThread(Runnable target){super(target);start();}}
 	final ForkJoinWorkerThreadFactory factory = new ForkJoinWorkerThreadFactory() {
@@ -122,14 +122,14 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	
 	/**Шаги мира*/
 	public long step = 0;
-	/**Специальный таймер, который позволяет замедлить симуляцию*/
+	/**Счётчик количества отрисованных кадров. А ещё это специальный таймер, который позволяет замедлить симуляцию*/
 	public int timeoutStep = 0;
 	/**Всего точек по процессорам - сколько процессоров, в каждом ряду есть у*/
 	private List<WorldTask> cellsTask;
 	/**Флаг, показывает какую часть экрана обрабатываем (первую или вторую)*/
 	private boolean isFirst = false;
 	/**Очередь потоков, которая будет обсчитывать мир*/
-	private ExecutorService executor;
+	private final ExecutorService maxExecutor;
 	/**Счётчик ФПС*/
 	public final FPScounter fps = new FPScounter();
 	/**Счётчик шагов*/
@@ -157,7 +157,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public World() {
 		super();
 		Configurations.world = this;
-		executor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1), factory, null, true); // Один поток нужен системе для отрисовки
+		maxExecutor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1), factory, null, true); // Один поток нужен системе для отрисовки
 		
 		worldGenerate();
 		
@@ -180,7 +180,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public void run() {
 		Thread.currentThread().setName("World thread");
 		while (isStart) {
-			if (isActiv && msTimeout == 0)
+			if (isActiv && msTimeout < 2)
 				step();
 			else
 				Utils.pause(1);
@@ -235,9 +235,20 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public synchronized void step() {
 		try {
 			isFirst = Configurations.rnd.nextBoolean();
-			executor.invokeAll(cellsTask);
+			
+			if(msTimeout == 1) {
+				for(var t : cellsTask)
+					t.call();
+			} else {
+				maxExecutor.invokeAll(cellsTask);
+			}
 			isFirst = !isFirst;
-			executor.invokeAll(cellsTask);
+			if(msTimeout == 1) {
+				for(var t : cellsTask)
+					t.call();
+			} else {
+				maxExecutor.invokeAll(cellsTask);
+			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
@@ -254,7 +265,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		
 		paintField(g);
 		
-		if(isActiv && (msTimeout != 0 && timeoutStep % msTimeout == 0)) {
+		if(isActiv && (msTimeout > 1 && timeoutStep % (msTimeout - 1) == 0)) {
 			step();
 		}
 		int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
