@@ -4,6 +4,7 @@ import java.awt.Dimension;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Locale;
+import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 import java.util.SplittableRandom;
 import java.util.concurrent.Executors;
@@ -146,6 +147,11 @@ public class Configurations {
 	 * @return Строка в формате HTML
 	 */
 	public static String getProperty(Class<?> cls, String name) {
-		return Configurations.bundle.getString(MessageFormat.format("{0}.{1}", cls.getTypeName(),name));
+		try {
+			return Configurations.bundle.getString(MessageFormat.format("{0}.{1}", cls.getTypeName(),name));
+		} catch (MissingResourceException e) {
+			System.err.println(MessageFormat.format("Не найдено свойство {0}.{1}", cls.getTypeName(),name));
+			throw e;
+		}
 	}
 }
