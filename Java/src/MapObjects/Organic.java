@@ -8,23 +8,27 @@ import Utils.JSON;
 import Utils.Utils;
 import main.Configurations;
 import main.Point.DIRECTION;
+import panels.Legend;
 
 public class Organic extends CellObject {
 	/**Цвет орагиники*/
-    private static Color color_DO = new Color(139,69,19,200);
+    private static Color ORGANIC_COLOR = new Color(139,69,19,200);
     /**Сколько в ораганизме остальсь еды*/
     private double energy;
     /**Каким ядом данная органика заражена*/
     private Poison.TYPE poison = Poison.TYPE.UNEQUIPPED;
     /**Как много в ней яда*/
     private double poisonCount = 0;
+	/**Когда следующее деление*/
+	public int nextDouble;
     
 
 	public Organic(AliveCell cell) {
 		super(cell.getStepCount(), LV_STATUS.LV_ORGANIC);
 		setPos(cell.getPos());
 		energy = Math.abs(cell.getHealth()) + AliveCell.MAX_HP/10.0 + cell.getMineral(); //Превращается в органику всё, что только может
-	    super.color_DO = color_DO;
+	    super.color_DO = ORGANIC_COLOR;
+	    nextDouble = getTimeToNextDouble();
 	}
 	/**
      * Загрузка клетки
@@ -36,7 +40,8 @@ public class Organic extends CellObject {
     	energy = cell.get("energy");
     	poison = TYPE.toEnum(cell.getI("poison"));
     	poisonCount = cell.get("poisonCount");
-    	super.color_DO = color_DO;
+    	super.color_DO = ORGANIC_COLOR;
+    	nextDouble = getTimeToNextDouble();
 	}
 
 
@@ -46,9 +51,34 @@ public class Organic extends CellObject {
 			moveD(DIRECTION.DOWN);
 		}
 		energy -= 1.0/Configurations.TIK_TO_EXIT;
-		poisonCount = getPoisonCount() * 0.99;	//1% выветривается постепенно. Тоже самое, как с нормальным ядом
-		if(energy <= 0)
-			destroy();
+		if(poison != Poison.TYPE.UNEQUIPPED) {
+			if (getAge() >= nextDouble) { // Вязкость яда
+				DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
+				var nen = poisonCount /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
+				if(Poison.createPoison(getPos().next(dir),poison,getStepCount(), nen, getStream())) {
+					poisonCount = nen;
+				}
+	 			nextDouble = getTimeToNextDouble();
+	 			if(poisonCount <= 1)
+	 				poison = Poison.TYPE.UNEQUIPPED;
+			}
+		}
+		if(energy <= 0){
+			try {
+				destroy();
+			}catch (CellObjectRemoveException e) {
+				if(poison != Poison.TYPE.UNEQUIPPED)
+					Poison.createPoison(getPos(),poison,getStepCount(), poisonCount, getStream());
+				throw e;
+			}
+		}
+	}
+	/**
+	 * Вычисляет сколько шагов нужно для следующего разделения
+	 * @return
+	 */
+	private int getTimeToNextDouble() {
+		return (int) Math.round(getAge() + getStream() * (2 - energy / Poison.MAX_TOXIC));
 	}
 	
 	public boolean toxinDamage(TYPE type, int damag) {
@@ -67,7 +97,7 @@ public class Organic extends CellObject {
 
 	@Override
 	public void paint(Graphics g) {
-		g.setColor(color_DO);
+		g.setColor(ORGANIC_COLOR);
 		
 		int r = getPos().getRr();
 		int rx = getPos().getRx();
@@ -101,9 +131,27 @@ public class Organic extends CellObject {
 		return false;
 	}
 
+	public int getStream() {
+		return (int) (Poison.MAX_STREAM * getHealth() / AliveCell.MAX_HP);
+	}
+
 
 	@Override
-	public void repaint() {}
+	public void repaint() {
+		switch (Legend.Graph.getMode()) {
+			case POISON -> {
+				var rg = (int) Utils.betwin(0, getHealth() / Poison.MAX_TOXIC, 1.0) * 255;
+				switch (poison) {
+					case BLACK -> color_DO = new Color(255-rg,255- rg,255- rg);
+					case PINK -> color_DO = new Color(rg, rg / 2, rg / 2);
+					case YELLOW -> color_DO = new Color(rg, rg, 0);
+					case UNEQUIPPED ->  color_DO = ORGANIC_COLOR;
+				}
+				
+			}
+			default -> color_DO = ORGANIC_COLOR;
+		}
+	}
 
 	/**Возвращает тип яда, которым пропитанна органика*/
 	public Poison.TYPE getPoison() {

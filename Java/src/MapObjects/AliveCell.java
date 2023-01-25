@@ -6,6 +6,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
 
+import MapObjects.CellObject.CellObjectRemoveException;
 import MapObjects.Poison.TYPE;
 import MapObjects.dna.Birth;
 import MapObjects.dna.CommandList;
@@ -297,7 +298,7 @@ public class AliveCell extends AliveCellProtorype{
 		if(see == OBJECT.POISON){
 			Point point = getPos().next(direction);
 			Poison cell = (Poison) Configurations.world.get(point);
-			if(cell.type == getPosionType())
+			if(cell.getType() == getPosionType())
 				return OBJECT.NOT_POISON;
 			else
 				return OBJECT.POISON;
@@ -340,6 +341,9 @@ public class AliveCell extends AliveCellProtorype{
 		}
 	}
 
+	/**
+	 * Если яд слишком сильный - бот просто не трогает своё здоровье
+	 */
 	@Override
 	public boolean toxinDamage(TYPE type,int damag) {
 		if(type == getPosionType() && getPosionPower() >= damag) {
@@ -352,8 +356,9 @@ public class AliveCell extends AliveCellProtorype{
 					if(type == getPosionType())	//Родной яд действует слабже
 						damag /= 2;
 					var isLife = damag < getHealth();
-					if (isLife)
+					if (isLife) {
 						addHealth(-damag);
+					}
 					return !isLife;
 				}
 				case BLACK->{
