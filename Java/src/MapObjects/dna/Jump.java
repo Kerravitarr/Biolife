@@ -9,7 +9,9 @@ import MapObjects.AliveCell;
  */
 public class Jump extends CommandDNA {
 
-	public Jump() {super(1,0,"PC+=П","Сл. Команда");}
+	private final MessageFormat paramFormat = new MessageFormat("{0} ({1})");
+
+	public Jump() {super(1,0);}
 
 	@Override
 	protected int perform(AliveCell cell) {
@@ -20,13 +22,8 @@ public class Jump extends CommandDNA {
 	
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){
-		StringBuilder sb = new StringBuilder();
 		var value = param(dna, numParam);
-		sb.append(value);
-		sb.append(" (");
-		sb.append((value+dna.getIndex())%dna.size);
-		sb.append(")");
-		return sb.toString();
+		return paramFormat.format(value,(value+dna.getIndex())%dna.size);
 	};
 	
 	public String value(AliveCell cell, DNA dna) {

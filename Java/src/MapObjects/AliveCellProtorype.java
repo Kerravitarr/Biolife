@@ -42,23 +42,23 @@ public abstract class AliveCellProtorype extends CellObject{
 	/**Для изменения цвета*/
 	public enum ACTION {
 		/**Съесть органику - красный*/
-		EAT_ORG(Configurations.getProperty(ACTION.class,"EAT_ORG"),255,0,0,1), 
+		EAT_ORG(255,0,0,1), 
 		/**Съесть минералы - синий*/
-		EAT_MIN(Configurations.getProperty(ACTION.class,"EAT_MIN"),0,0,255,1), 
+		EAT_MIN(0,0,255,1), 
 		/**Фотосинтез - зелёный*/
-		EAT_SUN(Configurations.getProperty(ACTION.class,"EAT_SUN"),0,255,0,1), 
+		EAT_SUN(0,255,0,1), 
 		/**Поделиться - оливковый, грязно-жёлтый*/
-		GIVE(Configurations.getProperty(ACTION.class,"GIVE"),128,128,0,0.5), 
+		GIVE(128,128,0,0.5), 
 		/**Принять подачку - морской волны*/
-		RECEIVE(Configurations.getProperty(ACTION.class,"RECEIVE"),0,128,128,0.5), 
+		RECEIVE(0,128,128,0.5), 
 		/**Сломать мою ДНК - чёрный*/
-		BREAK_DNA(Configurations.getProperty(ACTION.class,"BREAK_DNA"),0,0,0,1), 
+		BREAK_DNA(0,0,0,1), 
 		/**Ничего не делать - серый*/
-		NOTHING(Configurations.getProperty(ACTION.class,"NOTHING"),128,128,128,0.04);
+		NOTHING(128,128,128,0.04);
 		public static final ACTION[] staticValues = ACTION.values();
 		public static int size() {return staticValues.length;}
 		
-		ACTION(String des, int rc, int gc, int bc, double power) {r=rc;g=gc;b=bc;p=power;description=des;}
+		ACTION(int rc, int gc, int bc, double power) {r=rc;g=gc;b=bc;p=power;description = Configurations.getProperty(getClass(), super.name());}
 		public final int r;
 		public final int g;
 		public final int b;
@@ -89,25 +89,25 @@ public abstract class AliveCellProtorype extends CellObject{
 	 */
 	public class Specialization extends HashMap<Specialization.TYPE,Integer>{
 		public enum TYPE{
-			PHOTOSYNTHESIS(		Configurations.getProperty(TYPE.class,"PHOTOSYNTHESIS"),	360f*2/7),
-			DIGESTION(			Configurations.getProperty(TYPE.class,"DIGESTION"),			360f*3/7),
-			MINERALIZATION(		Configurations.getProperty(TYPE.class,"MINERALIZATION"),	360f*5/7),
-			MINERAL_PROCESSING(	Configurations.getProperty(TYPE.class,"MINERAL_PROCESSING"),360f*4/7),
-			FERMENTATION(		Configurations.getProperty(TYPE.class,"FERMENTATION"),		360f*1/7),
-			ASSASSINATION(		Configurations.getProperty(TYPE.class,"ASSASSINATION"),		360f*0/7),
-			ACCUMULATION(		Configurations.getProperty(TYPE.class,"ACCUMULATION"),		360f*6/7),
+			PHOTOSYNTHESIS(		360f*2/7),
+			DIGESTION(			360f*3/7),
+			MINERALIZATION(		360f*5/7),
+			MINERAL_PROCESSING(	360f*4/7),
+			FERMENTATION(		360f*1/7),
+			ASSASSINATION(		360f*0/7),
+			ACCUMULATION(		360f*6/7),
 			;
 			
 			public static final TYPE[] staticValues = TYPE.values();
 			public static int size() {return staticValues.length;}
 			
-			TYPE(String n, float c) {name = n; color = c/360f;}
+			TYPE(float c) {name = Configurations.getProperty(getClass(), super.name()); color = c/360f;}
 			
 			public String toString() {return name;}
 			
 			private String name;
 			/**Цвет специализации [0,1]*/
-			private float color;
+			public final float color;
 		}
 		
 		Specialization() {
@@ -181,6 +181,7 @@ public abstract class AliveCellProtorype extends CellObject{
 					}
 				}
 			}
+			updateColor();
 		}
 
 		public JSON toJSON() {
@@ -311,6 +312,15 @@ public abstract class AliveCellProtorype extends CellObject{
 			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,health)/MAX_HP)),0,0,evolutionNode.getAlpha());
 			case PHEN -> color_DO = new Color(phenotype.getRed(), phenotype.getGreen(), phenotype.getBlue(),evolutionNode.getAlpha());
 			case DOING -> color_DO = new Color(color_DO.getRed(), color_DO.getGreen(), color_DO.getBlue(),evolutionNode.getAlpha());
+			case POISON -> {
+				var rg = (int) Utils.betwin(0, getPosionPower() / Poison.MAX_TOXIC, 1.0) * 255;
+				switch (getPosionType()) {
+					case BLACK -> color_DO = new Color(255-rg, 255-rg, 255-rg);
+					case PINK -> color_DO = new Color(rg, rg / 2, rg / 2);
+					case YELLOW -> color_DO = new Color(rg, rg, 0);
+					case UNEQUIPPED -> color_DO = Color.BLACK;
+				}
+			}
 		}
 	}
 

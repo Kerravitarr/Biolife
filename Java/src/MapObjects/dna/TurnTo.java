@@ -72,8 +72,8 @@ public class TurnTo extends CommandDo {
 			}
 			case POISON -> {	//Конфигурация мира не умеет отличать яды от лекарств
 				return switch (type) {
-					case NOT_POISON->	((Poison) Configurations.world.get(point)).type == cell.getPosionType();
-					case POISON->		((Poison) Configurations.world.get(point)).type != cell.getPosionType();
+					case NOT_POISON->	((Poison) Configurations.world.get(point)).getType() == cell.getPosionType();
+					case POISON->		((Poison) Configurations.world.get(point)).getType() != cell.getPosionType();
 					case BOT, CLEAN, FRIEND, ORGANIC, OWALL, ENEMY, WALL -> false;
 				};
 			}

@@ -6,7 +6,6 @@ import java.awt.Graphics;
 import Utils.JSON;
 import Utils.Utils;
 import main.Point.DIRECTION;
-import panels.Legend;
 
 /**
  * Ороговевшая клетка. Она превратилась в стену и теперь защищает других от себя
@@ -48,7 +47,7 @@ public class Fossil extends CellObject {
 	 */
 	@Override
 	public boolean move(DIRECTION direction) {
-		return true;
+		return false;
 	}
 
 	@Override

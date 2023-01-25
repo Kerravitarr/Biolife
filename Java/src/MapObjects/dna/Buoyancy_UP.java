@@ -1,8 +1,6 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import MapObjects.AliveCellProtorype;
-import main.Configurations;
 
 /**
  * Функция уменьшает плотность клетки, заставляя последюю всплывать

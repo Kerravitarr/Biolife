@@ -3,6 +3,7 @@ package MapObjects.dna;
 import static MapObjects.CellObject.OBJECT.ENEMY;
 import static MapObjects.CellObject.OBJECT.FRIEND;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
+import static MapObjects.CellObject.OBJECT.OWALL;
 import static MapObjects.CellObject.OBJECT.WALL;
 
 import MapObjects.AliveCell;
@@ -16,13 +17,17 @@ import main.Point.DIRECTION;
  *
  */
 public class CloneA extends Birth {
-
-	public CloneA() {this("♡∪□ А","Клон и присос А");};
-
-	protected CloneA(String shotName,String longName) {super(2,shotName,longName); isInterrupt = true;};
+	/**Абсолютные координаты или относительные*/
+	private final boolean isAbolute;
+	
+	public CloneA() {this(true);};
+	protected CloneA(boolean isA) {super(2);isAbolute = isA; isInterrupt = true;};
 	@Override
 	protected void doing(AliveCell cell) {
-		clone(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
+		if(isAbolute)
+			clone(cell,DIRECTION.toEnum(param(cell,1, DIRECTION.size())));
+		else
+			clone(cell,relatively(cell,param(cell,0, DIRECTION.size())));
 	}
 	/**
 	 * Непосредственно клонироваться и присосаться
@@ -50,16 +55,15 @@ public class CloneA extends Birth {
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
 		if(numParam == 0)
-			return absoluteDirection(param(dna, 0, DIRECTION.size()));
+			return isAbolute ? absoluteDirection(param(dna, numParam, DIRECTION.size())) : relativeDirection(cell, param(dna, numParam, DIRECTION.size()));
 		else
 			return "ci = " + String.valueOf((dna.getIndex() + param(cell,1)) % dna.size);
 	}
-	@Override
-	public int getInterrupt(AliveCell cell, DNA dna){return getInterrupt(cell, dna, true);}
-	protected int getInterrupt(AliveCell cell, DNA dna, boolean isA){
-		if(isA)
-			return getInterruptA(cell, dna, 0,ENEMY, FRIEND, ORGANIC, WALL);
+	
+	public int getInterrupt(AliveCell cell, DNA dna){
+		if(isAbolute)
+			return getInterruptA(cell, dna, 0,ENEMY, FRIEND, ORGANIC, WALL, OWALL);
 		else
-			return getInterruptR(cell, dna, 0,ENEMY, FRIEND, ORGANIC, WALL);
+			return getInterruptR(cell, dna, 0,ENEMY, FRIEND, ORGANIC, WALL, OWALL);
 	}
 }

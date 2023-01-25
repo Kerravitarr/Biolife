@@ -203,7 +203,7 @@ public abstract class CommandDNA {
 
 	@Override
 	public String toString() {
-		if (isFullMod)
+		if (isFullMod())
 			return getLongName();
 		else
 			return getShotName();
@@ -257,7 +257,7 @@ public abstract class CommandDNA {
 	 * @return Текстовое описание направления
 	 */
 	protected String absoluteDirection(int value) {
-		if (isFullMod)
+		if (isFullMod())
 			return DIRECTION.toEnum(value).toSString();
 		else
 			return DIRECTION.toEnum(value).toString();
@@ -270,7 +270,7 @@ public abstract class CommandDNA {
 	 * @return Текстовое описание направления
 	 */
 	protected String relativeDirection(AliveCell cell, int value) {
-		if (isFullMod)
+		if (isFullMod())
 			return cell.direction.next(value).name();
 		else
 			return cell.direction.next(value).toString();
@@ -287,5 +287,8 @@ public abstract class CommandDNA {
 	 */
 	public int getInterrupt(AliveCell cell, DNA dna) {
 		throw new UnsupportedOperationException("Если у вас есть прерывание - будьте любезны его реализовать для " + toString() + " " + this.getClass());
+	}
+	public static boolean isFullMod() {
+		return isFullMod;
 	}
 }

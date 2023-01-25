@@ -9,8 +9,10 @@ import MapObjects.AliveCell;
  *
  */
 public class Loop extends CommandDNA {
+	
+	private final MessageFormat paramFormat = new MessageFormat("{0} ({1})");
 
-	public Loop() {super(1,0,"⮍","Цикл");};
+	public Loop() {super(1,0);};
 	@Override
 	protected int perform(AliveCell cell) {
 		int count = param(cell,0);
@@ -22,15 +24,16 @@ public class Loop extends CommandDNA {
 	
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){
-		StringBuilder sb = new StringBuilder();
-		var val = param(dna,0);
-		sb.append(val);
-		sb.append(" (");
-		val = (dna.getIndex()+2-val)%dna.size;
-		if(val < 0) 
-			val += dna.size;
-		sb.append(val);
-		sb.append(")");
-		return sb.toString();
+		var val = param(dna, 0);
+		var npc = (dna.getIndex() + 2 - val) % dna.size;
+		if(npc < 0) 
+			npc += dna.size;
+		return paramFormat.format(val,npc);
 	};
+	public String value(AliveCell cell, DNA dna) {
+		var npc = (dna.getIndex() + 2 - param(dna, 0)) % dna.size;
+		if (npc < 0)
+			npc += dna.size;
+		return Integer.toString(npc);
+	}
 }
