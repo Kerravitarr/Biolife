@@ -119,8 +119,6 @@ public class BotInfo extends JPanel {
 		/**Текстовое поле пары*/
 		private JLabel field = null;
 
-		/**Общий для всех счётчик, который листает бегущие строки*/
-		private static int counter = 0;
 		/**Время паузы между встречными движениями*/
 		private static int timeout = 10;
 		
@@ -130,6 +128,7 @@ public class BotInfo extends JPanel {
 			add(text);
 
 			scroll = new JScrollPane();
+			scroll.getVerticalScrollBar().setVisibleAmount(0);
 			scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
 			scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 			scroll.setBorder(BorderFactory.createEmptyBorder());
@@ -174,7 +173,7 @@ public class BotInfo extends JPanel {
 		}
 		/**Автоматически проматывает текст поля на один символ дальше*/
 		public void scrol() {
-			var max = field.getText().length();
+			var max = (scroll.getHorizontalScrollBar().getMaximum() - scroll.getHorizontalScrollBar().getVisibleAmount());
 			var pos = JlistRender.counter % (2 * (max + timeout));
 			if (pos < max + timeout)
 				scroll.getHorizontalScrollBar().setValue(pos);
@@ -246,6 +245,8 @@ public class BotInfo extends JPanel {
 	private final JPanel panel_variant;
 	/**Панель, на которой написано про ДНК*/
 	private final JPanel panel_DNA;
+	/**Панель со всеми константами*/
+	private final JPanel panelConstant;
 	/**Список с прерываниями*/
 	private final JList<String> list_inter;
 	private final JScrollPane scrollPane_inter;
@@ -256,11 +257,9 @@ public class BotInfo extends JPanel {
 	private final Set<TextPair> scrolFieldList;
 	
 	class WorkTask implements Runnable{
-		static boolean isUpdate = false;
+		static boolean updateCounter = false;
 		@Override
 		public void run() {
-			if(isUpdate) return;
-			isUpdate = true;
 			if(isVisible() && getCell() != null && !getCell().aliveStatus(AliveCell.LV_STATUS.GHOST)) {
 				setDinamicHaracteristiks();
 				if(getCell() instanceof AliveCell lcell) {
@@ -274,7 +273,10 @@ public class BotInfo extends JPanel {
 					} else {
 						listDNA.repaint();
 					}
-					JlistRender.counter++;
+					if(!updateCounter) {
+						updateCounter = true;
+						JlistRender.counter++;
+					}
 				}
 			} else {
 				if(cell != null) {
@@ -283,7 +285,6 @@ public class BotInfo extends JPanel {
 					listDNA.setModel(new DefaultListModel<> ());
 				}
 			}
-			isUpdate = false;
 		}
 	}
 
@@ -303,8 +304,8 @@ public class BotInfo extends JPanel {
 		
 		panel_DNA = new JPanel();
 		
-		JPanel panel_const = new JPanel();
-		panel_const.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), getProperty("ConstPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		panelConstant = new JPanel();
+		panelConstant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), getProperty("ConstPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
 		
 		panel_variant = new JPanel();
 		panel_variant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), getProperty("VarPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
@@ -319,14 +320,14 @@ public class BotInfo extends JPanel {
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
 						.addComponent(panel_DNA, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
 						.addComponent(scrollPane_inter, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
-						.addComponent(panel_const, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
+						.addComponent(panelConstant, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
 						.addComponent(panel_variant, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
 			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
-					.addComponent(panel_const, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+					.addComponent(panelConstant, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addGap(5)
 					.addComponent(panel_variant, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
@@ -436,7 +437,7 @@ public class BotInfo extends JPanel {
 		age.setToolTipText(getProperty("fieldAge"));
 		
 		
-		GroupLayout gl_panel_const = new GroupLayout(panel_const);
+		GroupLayout gl_panel_const = new GroupLayout(panelConstant);
 		gl_panel_const.setHorizontalGroup(
 			gl_panel_const.createParallelGroup(Alignment.TRAILING)
 				.addGroup(gl_panel_const.createSequentialGroup()
@@ -460,7 +461,7 @@ public class BotInfo extends JPanel {
 					.addComponent(pos, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addContainerGap(20, Short.MAX_VALUE))
 		);
-		panel_const.setLayout(gl_panel_const);
+		panelConstant.setLayout(gl_panel_const);
 		panel_DNA.setLayout(new BorderLayout(0, 0));
 		
 		JLabel lblNewLabel_9 = new JLabel(getProperty("DNA_Panel"));
@@ -516,7 +517,7 @@ public class BotInfo extends JPanel {
 			}
 			photos.setText(MessageFormat.format("{0} {1}%",type,aliveCell.get(type) * 100));
 			phenotype.setBackground(aliveCell.phenotype);
-			phenotype.setText(Integer.toHexString(aliveCell.phenotype.getRGB()));
+			phenotype.setText(MessageFormat.format("R{0} G{0} B{0}", aliveCell.phenotype.getRed(), aliveCell.phenotype.getGreen(), aliveCell.phenotype.getBlue()));
 			filogen.setText(aliveCell.getBranch());
 			
 			DefaultListModel<String> model = new DefaultListModel<> ();
@@ -549,15 +550,17 @@ public class BotInfo extends JPanel {
 			toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
 			buoyancy.setText(String.valueOf(alive.getBuoyancy()));	
 			
-			TextPair.counter++;
 			for(var i : scrolFieldList) 
 				i.scrol();
+			WorkTask.updateCounter = false;
 		} else if (getCell() instanceof Poison poison) {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
-			toxicFIeld.setText(poison.type.name());
+			toxicFIeld.setText(poison.getType().name());
 		} else {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 		}
+		panelConstant.repaint();
+		panel_variant.repaint();
 	}
 	
 	private void clearText() {
@@ -614,11 +617,20 @@ public class BotInfo extends JPanel {
 		if (first.isInterrupt()) {
 			scrollPane_inter.setVisible(true);
 			var inter = first.getInterrupt(lcell, dna);
-			list_inter.setSelectedIndex(inter);
 			if(inter != -1){
+				DefaultListModel<String> modelinterrapt = new DefaultListModel<> ();
+				modelinterrapt.setSize(dna.interrupts.length);
+				modelinterrapt.add(0,OBJECT.get(inter) + " - " + String.valueOf(dna.interrupts[inter]));
+				for(int i = 0 ; i < dna.interrupts.length - 1; i++) {
+					if(i == inter) continue;
+					modelinterrapt.add(i + (i < inter ? 1 : 0),OBJECT.get(i) + " - " + String.valueOf(dna.interrupts[i]));
+				}
+				list_inter.setModel(modelinterrapt);
+				list_inter.setSelectedIndex(0);
 				list_inter.setBackground(RED);
 				interVal = dna.interrupts[inter];
 			}else {
+				list_inter.setSelectedIndex(inter);
 				list_inter.setBackground(Color.WHITE);
 			}
 		} else {
@@ -658,11 +670,12 @@ public class BotInfo extends JPanel {
 	 */
 	private void addDNA(AliveCell lcell, DNA dna, DefaultListModel<JListRow> model, int interVal, int indexRowInModel, int indexCmd, CommandDNA cmd_o, JListRow.TYPE type, int indexParamOrBrenh) {
 		StringBuilder sb = new StringBuilder();
+		indexCmd = indexCmd % dna.size;
 		if(indexCmd == interVal)
 			sb.append("* ");
 		else
 			sb.append("  ");
-		sb.append(indexCmd % dna.size);
+		sb.append(indexCmd);
 		sb.append("=");
 		sb.append(dna.get(indexCmd, 0));
 		switch (type) {
