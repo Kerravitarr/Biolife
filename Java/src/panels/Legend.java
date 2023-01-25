@@ -5,8 +5,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.ActionEvent;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
@@ -15,16 +14,14 @@ import javax.swing.JRadioButton;
 import javax.swing.border.BevelBorder;
 
 import MapObjects.AliveCell;
+import MapObjects.AliveCellProtorype;
 import MapObjects.CellObject;
+import MapObjects.Poison;
 import Utils.Utils;
-
-import java.lang.management.RuntimeMXBean;
-import java.util.concurrent.TimeUnit;
 import main.Configurations;
 import main.Point;
 import main.World;
 import panels.Legend.Graph.MODE;
-import start.BioLife;
 
 public class Legend extends JPanel{
 	public static class Graph extends JPanel {
@@ -70,7 +67,13 @@ public class Legend extends JPanel{
 							mAge = nAge;
 						}
 					}
-					case PHEN -> values = new Graph.Value[0];
+					case PHEN ->  {
+						values = new Graph.Value[AliveCellProtorype.Specialization.TYPE.size()];
+						for(int i = 0 ; i < values.length ; i++) {
+							var act = AliveCellProtorype.Specialization.TYPE.staticValues[i];
+							values[i] = new Graph.Value((i + 1.0) / values.length, 1.0 / values.length, act.toString(), Utils.getHSBColor(act.color, 1f, 1f, 1f));
+						}
+					}
 					case GENER -> {
 						maxGenDef = 0;
 						minGenDef = Long.MAX_VALUE;
@@ -113,6 +116,13 @@ public class Legend extends JPanel{
 							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * maxMP / values.length) + "", new Color(0, 0, (int) (255.0 * i / values.length)));
 						}
 					}
+					case POISON -> {
+						values = new Graph.Value[10];
+						for (int i = 0; i < values.length; i++) {
+							var rg = (int) (255.0 * i / values.length);
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * Poison.MAX_TOXIC / values.length) + "", new Color(rg, rg, rg));
+						}
+					}
 				}
 				if (updateSrin) {
 					updateSrin = false;
@@ -153,7 +163,7 @@ public class Legend extends JPanel{
 		static final int HEIGHT = 40;
 		static final int BORDER = 50;
 		
-		public enum MODE {	DOING,HP,YEAR,PHEN, GENER, MINERALS}
+		public enum MODE {	DOING,HP,YEAR,PHEN, GENER, MINERALS, POISON}
 		static MODE mode = MODE.DOING;
 		/**Максимальный возраст объекта на экране*/
 		static long maxAge = 0;
@@ -259,29 +269,26 @@ public class Legend extends JPanel{
 		add(panel, BorderLayout.NORTH);
 		
 		JRadioButton doing = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelDoing"));
-		doing.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		doing.setSelected(true);
 		panel.add(doing);
 		
 		JRadioButton hp = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelHp"));
-		hp.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(hp);
 		
 		JRadioButton year = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelAge"));
-		year.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(year);
 		
 		JRadioButton generation = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelGeneration"));
-		generation.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(generation);
 		
 		JRadioButton phenotype = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelPhenotype"));
-		phenotype.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(phenotype);
 		
 		JRadioButton mineral = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelMp"));
-		mineral.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		panel.add(mineral);
+		
+		JRadioButton poison = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelPoison"));
+		panel.add(poison);
 
 		graph = new Graph();
 		add(graph, BorderLayout.CENTER);
@@ -302,6 +309,14 @@ public class Legend extends JPanel{
 		generation.addActionListener(e->action(e,Graph.MODE.GENER));
 		phenotype.addActionListener(e->action(e,Graph.MODE.PHEN));
 		mineral.addActionListener(e->action(e,Graph.MODE.MINERALS));
+		poison.addActionListener(e->action(e,Graph.MODE.POISON));
+
+		for(var i : panel.getComponents()) {
+			if(i instanceof JRadioButton rb) {
+				rb.setFont(new Font("Tahoma", Font.PLAIN, 11));
+				rb.setFocusable(false);
+			}
+		}
 	}
 
 	private void action(ActionEvent e, MODE doing) {
