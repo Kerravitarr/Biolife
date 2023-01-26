@@ -107,7 +107,7 @@ public abstract class CommandDNA {
 	 * Возвращает параметр ДНК
 	 * @param dna - днк, параметр который возвращаем
 	 * @param numParam - номер параметра
-	 * @return значение параметра, от 0 до CommandList.COUNT_COMAND, включетльно
+	 * @return значение параметра [0,CommandList.COUNT_COMAND]
 	 */
 	protected static int param(DNA dna, int numParam) {
 		return dna.get(dna.getIndex(),  1 +numParam);
@@ -123,11 +123,34 @@ public abstract class CommandDNA {
 		return param(cell.getDna(),index,maxVal);
 	}
 	/**
+	 * Возвращает параметр ДНК как направление смотрения
+	 * @param cell - клетка, параметр который возвращаем
+	 * @param index - номер параметра
+	 * @param isAbsolute - абсолютное-ли значение направления нам требуется?
+	 * @return значение параметра, от 0 до maxVal, включетльно
+	 */
+	protected static DIRECTION param(AliveCell cell, int index, boolean isAbsolute) {
+		var par = param(cell,index, DIRECTION.size() - 1);
+		return isAbsolute ? DIRECTION.toEnum(par) : cell.direction.next(par);
+	}
+	/**
+	 * Возвращает параметр ДНК как направление смотрения
+	 * @param dna - днк, параметр который возвращаем
+	 * @param cell - клетка, параметр который возвращаем
+	 * @param index - номер параметра
+	 * @param isAbsolute - абсолютное-ли значение направления нам требуется?
+	 * @return значение параметра, от 0 до maxVal, включетльно
+	 */
+	protected static DIRECTION param(DNA dna, AliveCell cell, int index, boolean isAbsolute) {
+		var par = param(dna,index, DIRECTION.size() - 1);
+		return isAbsolute ? DIRECTION.toEnum(par) : cell.direction.next(par);
+	}
+	/**
 	 * Возвращает параметр ДНК
 	 * @param dna - днк, параметр который возвращаем
 	 * @param index - номер параметра
 	 * @param maxVal - максимальное значение, которым ограничивается параметр
-	 * @return значение параметра, от 0 до maxVal, включетльно
+	 * @return значение параметра [0, maxVal]
 	 */
 	protected static int param(DNA dna, int index, double maxVal) {
 		return (int) Math.round(maxVal * param(dna,index) / CommandList.COUNT_COMAND);
@@ -241,16 +264,33 @@ public abstract class CommandDNA {
 	 * @return текстовое описание параметра
 	 */
 	public String getParam(AliveCell cell, int numParam, DNA dna){
-		if(countParams != 0)
-			throw new UnsupportedOperationException("Забыл подписать параметр для " + toString() + " " + this.getClass());
-		else
-			return nonParam();
+		throw new UnsupportedOperationException("Забыл подписать параметр для " + toString() + " " + this.getClass());
 	};
 	/**
-	 * Заглушка для функции без параметров
-	 * @return ""
+	 * Возвращает описание ветви, по которой может идти программа
+	 * @param cell - клетка, ветвь который нам важен
+	 * @param numBranch - номер этой ветви, считая от 0
+	 * @param dna - "локальная" копия ДНК, в которой и хранится параметр
+	 * @return текстовое описание ветви
 	 */
-	protected String nonParam() {return "";};
+	public String getBranch(AliveCell cell, int numBranch, DNA dna){
+		System.err.println("Забыл подписать ветвь для " + toString() + " " + this.getClass());
+		StringBuilder sb = new StringBuilder();
+		sb.append(" (");
+		var atr = dna.get(dna.getIndex() + 1 + this.getCountParams(), numBranch);
+		sb.append((dna.getIndex() + atr) % dna.size);
+		sb.append(")");
+		return sb.toString();
+	};
+	/**Стандартный ответ, если ветвей 2 и они показывают > или < параметра*/
+	protected String branchMoreeLees(AliveCell cell, int numBranch, DNA dna) {
+		if(numBranch == 0)
+			return "≥П";
+		else if(numBranch == 1)
+			return "<П";
+		else 
+			return getBranch(cell,numBranch,dna);
+	}
 	/**
 	 * Переводит значение в абсолютное направление
 	 * @param value - значение параметра
@@ -261,6 +301,15 @@ public abstract class CommandDNA {
 			return DIRECTION.toEnum(value).toSString();
 		else
 			return DIRECTION.toEnum(value).toString();
+	};
+	/**
+	 * Переводит значение в абсолютное направление
+	 * @param dna - "локальная" копия ДНК, в которой и хранится параметр
+	 * @param value - значение параметра
+	 * @return Текстовое описание направления
+	 */
+	protected String absoluteDirection(DNA dna, int value) {
+		return absoluteDirection(param(dna,0, DIRECTION.size()));
 	};
 
 	/**

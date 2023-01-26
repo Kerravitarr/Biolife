@@ -1,14 +1,13 @@
 package MapObjects.dna;
 
-import java.awt.Color;
-
-import MapObjects.AliveCell;
-import MapObjects.CellObject.OBJECT;
 import static MapObjects.CellObject.OBJECT.CLEAN;
 import static MapObjects.CellObject.OBJECT.NOT_POISON;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
 import static MapObjects.CellObject.OBJECT.POISON;
 import static MapObjects.CellObject.OBJECT.WALL;
+
+import MapObjects.AliveCell;
+import MapObjects.CellObject.OBJECT;
 import main.Configurations;
 import main.Point;
 import panels.Legend;

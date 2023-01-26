@@ -11,7 +11,7 @@ import main.Point;
  */
 public class HowMuchMPTarget extends CommandExplore {
 
-	public HowMuchMPTarget() {super("O_O ♢∸","ХП у него ск?",1,3);}
+	public HowMuchMPTarget() {super(1,3);}
 	
 	@Override
 	protected int explore(AliveCell cell) {
@@ -19,13 +19,21 @@ public class HowMuchMPTarget extends CommandExplore {
 		if (see.isBot) {
 			Point point = nextPoint(cell,cell.direction);
 			AliveCell target = (AliveCell) Configurations.world.get(point);
-			return target.getMineral() < param(cell,0, AliveCell.MAX_MP) ? 0 : 1;
+			return target.getMineral() >= param(cell,0, AliveCell.MAX_MP) ? 0 : 1;
 		} else {
 			return 2;
 		}
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		return String.valueOf(param(dna, 0, AliveCell.MAX_MP)) + "мп";
+		return String.valueOf(param(dna, 0, AliveCell.MAX_MP));
+	}
+	public String getBranch(AliveCell cell, int numBranch, DNA dna) {
+		if(numBranch == 0)
+			return "≥П";
+		else if(numBranch == 1)
+			return "<П";
+		else
+			return "∅";
 	}
 }

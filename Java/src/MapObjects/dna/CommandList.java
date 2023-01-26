@@ -118,6 +118,8 @@ public class CommandList {
 			case BLOCK_3_2+4 -> new WhoIsNearby();
 			case BLOCK_3_2+5 -> new FindNear();
 			case BLOCK_3_2+6-> new WhatMyPosion();
+			case BLOCK_3_2+7-> new HMFoodTank();
+			case BLOCK_3_2+8-> new HMMineralTank();
 				
 			case BLOCK_4 -> new EatA();
 			case BLOCK_4+1 -> new EatR();
@@ -137,11 +139,16 @@ public class CommandList {
 			case BLOCK_5+4 -> new DNAStrengthen();
 			case BLOCK_5+5 -> new DNAWallBreak();
 			case BLOCK_5+6 -> new Loop();
+			case BLOCK_5+7 -> new ChangeSpecialization();
 				
 			case BLOCK_6 -> new ClingA();
 			case BLOCK_6+1 -> new ClingR();
 			case BLOCK_6+2 -> new CloneA();
 			case BLOCK_6+3 -> new CloneR();
+			case BLOCK_6+4 -> new AddTankFood();
+			case BLOCK_6+5 -> new AddTankMineral();
+			case BLOCK_6+6 -> new SubTankFood();
+			case BLOCK_6+7 -> new SubTankMineral();
 			default -> new Jump();
 		}; //TODO Проверить - кто вокруг меня? Друзья, враги, кто?
 	}

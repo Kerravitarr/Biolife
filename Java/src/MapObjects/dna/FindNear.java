@@ -15,7 +15,7 @@ import main.Point.DIRECTION;
  */
 public class FindNear extends CommandExplore {
 
-	public FindNear() {super("🔍",Configurations.bundle.getString("DNA.FindNear"),1,2);}
+	public FindNear() {super(1,2);}
 	
 	@Override
 	protected int explore(AliveCell cell) {
@@ -74,4 +74,8 @@ public class FindNear extends CommandExplore {
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
 		return OBJECT.get(param(cell,0, OBJECT.size() - 1)).toString();
 	}
+	
+	public String getBranch(AliveCell cell, int numBranch, DNA dna){
+		return numBranch == 0 ? "👎" : "👌";
+	};
 }

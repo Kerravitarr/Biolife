@@ -107,13 +107,13 @@ public class Legend extends JPanel{
 						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 								CellObject cell = Configurations.world.get(new Point(x, y));
-								if (cell != null && cell instanceof AliveCell)
-									maxMP = Math.max(maxMP, ((AliveCell) cell).getMineral());
+								if (cell != null && cell instanceof AliveCell acell)
+									maxMP = Math.max(maxMP, acell.getMineral());
 							}
 						}
 						values = new Graph.Value[10];
 						for (int i = 0; i < values.length; i++) {
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * maxMP / values.length) + "", new Color(0, 0, (int) (255.0 * i / values.length)));
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, Integer.toString((int) (i * maxMP / values.length)), new Color(0, 0, (int) (255.0 * i / values.length)));
 						}
 					}
 					case POISON -> {

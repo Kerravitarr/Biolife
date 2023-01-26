@@ -15,4 +15,8 @@ public class IAmSurrounded extends CommandExplore {
 	protected int explore(AliveCell cell) {
 		return findEmptyDirection(cell) == null ? 0 : 1;
 	}
+	
+	public String getBranch(AliveCell cell, int numBranch, DNA dna){
+		return numBranch == 0 ? "◯" : "◉";
+	};
 }

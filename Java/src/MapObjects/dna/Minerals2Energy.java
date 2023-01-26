@@ -20,9 +20,10 @@ public class Minerals2Energy extends CommandDo {
         	cell.addHealth(add_hp); // Максимум 1 минрал преобразуется в 4 хп
         	cell.color(AliveCell.ACTION.EAT_MIN,add_hp);
         	
-        } else {  // если минералов меньше, то все минералы переходят в энергию
-        	cell.color(AliveCell.ACTION.EAT_MIN,cell.getMineral());
-        	cell.addHealth(Math.round(10 * cell.get(AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING) * cell.getMineral()));
+        } else if(cell.getMineral() > 0) {  // если минералов меньше, то все минералы переходят в энергию
+        	var add_hp = Math.round(10 * cell.get(AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING) * cell.getMineral());
+        	cell.color(AliveCell.ACTION.EAT_MIN,add_hp);
+        	cell.addHealth(add_hp);
         	cell.setMineral(0);
         }
 	}

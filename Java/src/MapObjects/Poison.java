@@ -26,7 +26,7 @@ public class Poison extends CellObject {
 		PINK(), 
 		/**Безвредный для здоровья, но вызывает мутацию в клетке*/
 		BLACK();
-		private static TYPE[] vals = values();
+		public static TYPE[] vals = values();
 		
 		private String name;
 

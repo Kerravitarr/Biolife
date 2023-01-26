@@ -11,13 +11,30 @@ import main.Point.DIRECTION;
  */
 public class SeeA extends CommandExplore {
 
-	public SeeA() {this("O_O А","Смотреть А");};
-	protected SeeA(String shotName, String longName) {super(shotName, longName,1,OBJECT.size()-1);}
+	/**Абсолютные координаты или относительные*/
+	private final boolean isAbolute;
+
+	public SeeA() {this(true);};
+	protected SeeA(boolean isA) {super(1,OBJECT.size()-1);isAbolute = isA;}
 
 	@Override
 	protected int explore(AliveCell cell) {
-		return cell.see(DIRECTION.toEnum(param(cell,0, DIRECTION.size()))).nextCMD;
+		return cell.see(param(cell, 0, isAbolute)).nextCMD;
+		
 	}
+
 	@Override
-	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));}
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		var dir = param(dna, cell, 0, isAbolute);
+		return isFullMod() ? dir.toString() : dir.toSString();
+	}
+	
+
+	public String getBranch(AliveCell cell, int numBranch, DNA dna){
+		for(var o : OBJECT.myEnumValues) {
+			if(o.nextCMD == numBranch)
+				return o.toString();
+		}
+		return super.getBranch(cell, numBranch, dna);
+	}
 }

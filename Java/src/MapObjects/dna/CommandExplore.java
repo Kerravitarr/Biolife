@@ -21,6 +21,7 @@ public abstract class CommandExplore extends CommandDNA {
 	 * @param countBranch - число возможных ответов функции
 	 */
 	protected CommandExplore(String shotName, String longName,int countBranch) {this(shotName, longName,0,countBranch);}
+	protected CommandExplore(int countBranch) {this(0,countBranch);}
 	/**
 	 * Инициализирует класс исследователя
 	 * @param shotName - короткое имя функции
@@ -29,6 +30,7 @@ public abstract class CommandExplore extends CommandDNA {
 	 * @param countBranch - число возможных ветвей функции
 	 */
 	protected CommandExplore(String shotName, String longName,int countParams, int countBranch) {super(countParams, countBranch, shotName, longName);}
+	protected CommandExplore(int countParams, int countBranch) {super(countParams, countBranch);}
 
 	
 	@Override
