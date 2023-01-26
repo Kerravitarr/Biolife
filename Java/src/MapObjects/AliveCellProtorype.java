@@ -1,6 +1,7 @@
 package MapObjects;
 
 import java.awt.Color;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,7 @@ public abstract class AliveCellProtorype extends CellObject{
 	/**На сколько организм тяготеет к фотосинтезу (0-4)*/
 	protected static final double DEF_PHOTOSIN = 2;
 	/**Столько здоровья требуется клетке для жизни на ход*/
-	protected static final long HP_PER_STEP = 4;
+	public static final long HP_PER_STEP = 4;
 	/**Для изменения цвета*/
 	public enum ACTION {
 		/**Съесть органику - красный*/
@@ -95,17 +96,25 @@ public abstract class AliveCellProtorype extends CellObject{
 			MINERAL_PROCESSING(	360f*4/7),
 			FERMENTATION(		360f*1/7),
 			ASSASSINATION(		360f*0/7),
-			ACCUMULATION(		360f*6/7),
+			ACCUMULATION(		360f*6/7), 
 			;
 			
 			public static final TYPE[] staticValues = TYPE.values();
 			public static int size() {return staticValues.length;}
 			
-			TYPE(float c) {name = Configurations.getProperty(getClass(), super.name()); color = c/360f;}
+			TYPE(float c) {
+				lname = Configurations.getProperty(getClass(), MessageFormat.format("{0}.Long", super.name()));
+				sname = Configurations.getProperty(getClass(), MessageFormat.format("{0}.Shot", super.name()));
+				color = c / 360f;
+			}
 			
-			public String toString() {return name;}
-			
-			private String name;
+			public String toString() {return lname;}
+			/**Возвращает краткое описание типа*/
+			public String toSString() {return sname;}
+			/**Полное имя типа*/
+			private final String lname;
+			/**Краткое имя типа*/
+			private final String sname;
 			/**Цвет специализации [0,1]*/
 			public final float color;
 		}
@@ -124,7 +133,7 @@ public abstract class AliveCellProtorype extends CellObject{
 		
 		/**Копируем специализацию нашего предка*/
 		public Specialization(AliveCell cell) {
-			this.putAll(cell.specialization);
+			this.putAll(cell.getSpecialization());
 			phenotype = cell.phenotype;
 		}
 		
@@ -386,6 +395,31 @@ public abstract class AliveCellProtorype extends CellObject{
 	 * @return число [0,1]
 	 */
 	public double get(Specialization.TYPE type) {
-		return specialization.get(type) / 100d;
+		return getSpecialization().get(type) / 100d;
+	}
+	public Specialization getSpecialization() {
+		return specialization;
+	}
+	public int getFoodTank() {
+		return foodTank;
+	}
+	public void setFoodTank(int foodTank) {
+		this.foodTank = foodTank;
+	}
+
+	/**Добавляет или уменьшает размер танка для еды*/
+	public void addFoodTank(int add) {
+		foodTank += add;
+	}
+	public int getMineralTank() {
+		return mineralTank;
+	}
+	public void setMineralTank(int mineralTank) {
+		this.mineralTank = foodTank;
+	}
+
+	/**Добавляет или уменьшает размер танка для минералов*/
+	public void addMineralTank(int add) {
+		mineralTank += add;
 	}
 }

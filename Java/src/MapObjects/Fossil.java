@@ -20,8 +20,8 @@ public class Fossil extends CellObject {
 
 	public Fossil(JSON poison) {
 		super(poison);
-		setHealth(Math.round((double)poison.get("energy")));
-		 super.color_DO = COLOR_DO;
+		energy = (double)poison.get("energy");
+		super.color_DO = COLOR_DO;
 		repaint();
 	}
 
@@ -29,7 +29,7 @@ public class Fossil extends CellObject {
 	public Fossil(AliveCell cell) {
 		super(cell.getStepCount(), LV_STATUS.LV_WALL);
 		setPos(cell.getPos());
-		energy = Math.abs(cell.getHealth()) + AliveCell.MAX_HP/10.0 + cell.getMineral()/10.0; //Превращается в органику всё, что только может
+		energy = Math.abs(cell.getHealth()) + cell.getFoodTank() + AliveCell.MAX_HP/10.0 + (cell.getMineral() + cell.getMineralTank()) * 10; //Превращается в органику всё, что только может
 	    super.color_DO = COLOR_DO;
 		repaint();
 	}
@@ -78,12 +78,10 @@ public class Fossil extends CellObject {
 
 	@Override
 	public double getHealth() {
-		return Math.round(energy);
+		return energy;
 	}
 	@Override
 	void setHealth(double h) {
-		if(h > 0)
-			energy = h;
 		energy = h;
 	}
 

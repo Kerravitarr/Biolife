@@ -6,7 +6,6 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
 
-import MapObjects.CellObject.CellObjectRemoveException;
 import MapObjects.Poison.TYPE;
 import MapObjects.dna.Birth;
 import MapObjects.dna.CommandList;
@@ -50,6 +49,8 @@ public class AliveCell extends AliveCellProtorype{
     	poisonType =  Poison.TYPE.toEnum(cell.getI("posionType"));
     	poisonPower = cell.getI("posionPower");
     	tolerance = cell.getI("tolerance");
+    	foodTank = cell.get("foodTank");
+    	mineralTank = cell.get("mineralTank");
     	
     	Generation = cell.getI("Generation");
     	specialization = new Specialization(cell.getJ("Specialization"));
@@ -120,6 +121,24 @@ public class AliveCell extends AliveCellProtorype{
         }
         if(getAge() % 50 == 0) {
             color(ACTION.NOTHING, color_cell.r+color_cell.g+color_cell.b);
+        }
+        if(getHealth() < 100) {	//Если мало жизней, достаём заначку!
+        	if(getFoodTank() > 100) {
+        		addFoodTank(-100);
+        		addHealth(100);
+        	} else if(getFoodTank() > 0) {
+        		addHealth(getFoodTank());
+        		setFoodTank(0);
+        	}
+        }
+        if(getMineral() < 100) {	//Если мало жизней, достаём заначку!
+        	if(mineralTank > 100) {
+        		mineralTank -= 100;
+        		addMineral(mineral);
+        	} else if(mineralTank > 0) {
+        		addMineral(mineralTank);
+        		mineralTank = 0;
+        	}
         }
 	}
 
@@ -228,7 +247,7 @@ public class AliveCell extends AliveCellProtorype{
             case 0 ->{ //Мутирует специализация
             	int co = Utils.random(0, 100); //Новое значение специализации
             	int tp = Utils.random(0, Specialization.TYPE.size() - 1); //Какая специализация
-            	specialization.set(Specialization.TYPE.staticValues[tp],co);
+            	getSpecialization().set(Specialization.TYPE.staticValues[tp],co);
                 }
             case 1 -> { //Мутирует геном
                 int ma = Utils.random(0, dna.size-1); //Индекс гена
@@ -467,6 +486,8 @@ public class AliveCell extends AliveCellProtorype{
 		make.add("posionType",getPosionType().ordinal());
 		make.add("posionPower",getPosionPower());
 		make.add("tolerance",tolerance);
+		make.add("foodTank",getFoodTank());
+		make.add("mineralTank",mineralTank);
 
 	    //=================ПАРАМЕТРЫ БОТА============
 		make.add("Generation",Generation);
@@ -484,16 +505,9 @@ public class AliveCell extends AliveCellProtorype{
 		make.add("friends",fr);
 		
 		//===============СПЕЦИАЛИЗАЦИЯ===================
-		make.add("Specialization",specialization.toJSON());
+		make.add("Specialization",getSpecialization().toJSON());
 		
 		return make;
-	}
-
-	/**
-	 * @return тип яда, к которому устойчива клетка
-	 */
-	public Poison.TYPE getPosionType() {
-		return poisonType;
 	}
 
 }
