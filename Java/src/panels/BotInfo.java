@@ -29,12 +29,12 @@ import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 
 import MapObjects.AliveCell;
-import MapObjects.AliveCellProtorype;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Poison;
 import MapObjects.dna.CommandDNA;
 import MapObjects.dna.DNA;
+import Utils.Utils;
 import main.Configurations;
 
 public class BotInfo extends JPanel {
@@ -93,9 +93,9 @@ public class BotInfo extends JPanel {
 					int countVChir = (int) (lenght * maxW / nextRow.textwidth);
 					var pos = JlistRender.counter % (2 * (lenght + timeout));
 					if (pos < lenght + timeout)
-						setText(nextRow.text.substring(Utils.Utils.betwin(0, pos, lenght - countVChir)));
+						setText(nextRow.text.substring(Utils.betwin(0, pos, lenght - countVChir)));
 					else
-						setText(nextRow.text.substring(Utils.Utils.betwin(0, 2 * (lenght + timeout) - (pos + 2 * timeout), lenght - countVChir)));
+						setText(nextRow.text.substring(Utils.betwin(0, 2 * (lenght + timeout) - (pos + 2 * timeout), lenght - countVChir)));
 				} else {
 					setText(nextRow.text);
 				}
@@ -495,7 +495,6 @@ public class BotInfo extends JPanel {
 		
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new WorkTask(), 100, 100, TimeUnit.MILLISECONDS);
 	}
-	
 	public void setCell(CellObject cellObject) {
 		clearText();
 		this.cell=cellObject;
@@ -507,17 +506,23 @@ public class BotInfo extends JPanel {
 			panel_variant.setVisible(true);
 			panel_DNA.setVisible(true);
 			generation.setText(Integer.toString(aliveCell.getGeneration()));
-			var type = AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS;
-			var max = 0d;
-			for(var t : AliveCellProtorype.Specialization.TYPE.staticValues) {
-				if(max < aliveCell.get(t)) {
-					max = aliveCell.get(t);
-					type = t;
-				}
-			}
-			photos.setText(MessageFormat.format("{0} {1}%",type,aliveCell.get(type) * 100));
+			
+			StringBuilder sb = new StringBuilder();
+		    for(var i : Utils.sortByValue(aliveCell.getSpecialization())) {
+		    	if(i.getValue() == 0) continue;
+				if (sb.isEmpty())
+					sb.append(i.getKey().toString());
+				else
+					sb.append(i.getKey().toSString());
+	    		sb.append(' ');
+	    		sb.append(i.getValue());
+	    		sb.append('%');
+	    		sb.append(' ');
+		    }
+			
+			photos.setText(sb.toString());
 			phenotype.setBackground(aliveCell.phenotype);
-			phenotype.setText(MessageFormat.format("R{0} G{0} B{0}", aliveCell.phenotype.getRed(), aliveCell.phenotype.getGreen(), aliveCell.phenotype.getBlue()));
+			phenotype.setText(MessageFormat.format("R{0} G{1} B{2}", aliveCell.phenotype.getRed(), aliveCell.phenotype.getGreen(), aliveCell.phenotype.getBlue()));
 			filogen.setText(aliveCell.getBranch());
 			
 			DefaultListModel<String> model = new DefaultListModel<> ();
@@ -542,11 +547,28 @@ public class BotInfo extends JPanel {
 			if(testCell != null) //Так мы сможем обновлять эту клетку
 				alive = testCell;
 			direction.setText(alive.direction.toSString());
-			if(alive.getDNA_wall() > 0)
-				hp.setText(((int) getCell().getHealth()) + " ⊡" + alive.getDNA_wall());
-			else
-				hp.setText(Integer.toString((int)getCell().getHealth()));
-			mp.setText(Long.toString(alive.getMineral()));
+			{
+				StringBuilder sb = new StringBuilder();
+				sb.append(((int) alive.getHealth()));
+				if(alive.getFoodTank() > 0){
+					sb.append(" +");
+					sb.append(alive.getFoodTank());
+				}
+				if(alive.getDNA_wall() > 0) {
+					sb.append(" ⌧§");
+					sb.append(alive.getDNA_wall());
+				}
+				hp.setText(sb.toString());
+			}
+			{
+				StringBuilder sb = new StringBuilder();
+				sb.append(((int) alive.getMineral()));
+				if(alive.getMineralTank() > 0){
+					sb.append(" +");
+					sb.append(alive.getMineralTank());
+				}
+				mp.setText(sb.toString());
+			}
 			toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
 			buoyancy.setText(String.valueOf(alive.getBuoyancy()));	
 			
@@ -609,8 +631,6 @@ public class BotInfo extends JPanel {
 	 */
 	private void printDNA(AliveCell lcell) {
 		DNA dna = new DNA(lcell.getDna());
-		DefaultListModel<JListRow> model = new DefaultListModel<>();
-		model.setSize(dna.size);
 		var first = dna.get();
 		//Адрес прерывания
 		int interVal = -1;
@@ -636,6 +656,8 @@ public class BotInfo extends JPanel {
 		} else {
 			scrollPane_inter.setVisible(false);
 		}
+		DefaultListModel<JListRow> model = new DefaultListModel<>();
+		model.setSize(dna.size);
 		for (int i = 0; i < dna.size; ) {
 			int cmd = dna.getIndex();
 			CommandDNA cmd_o = dna.get();
@@ -697,10 +719,8 @@ public class BotInfo extends JPanel {
 			case ARG -> {
 				sb.append(" А");
 				sb.append(indexParamOrBrenh);
-				sb.append(" (");
-				var atr = dna.get(dna.getIndex() + 1 + cmd_o.getCountParams(), indexParamOrBrenh);
-				sb.append((dna.getIndex() + atr) % dna.size);
-				sb.append(")");
+				sb.append(" ");
+				sb.append(cmd_o.getBranch(lcell, indexParamOrBrenh, dna));
 			}
 		}
 		
