@@ -4,7 +4,15 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.Stream;
 
 public class Utils {
 
@@ -153,5 +161,23 @@ public class Utils {
 			return min;
 		else
 			return val;
+	}
+	
+	/**
+	 * Сортирует любую карту по значениям
+	 * @param <K>
+	 * @param <V>
+	 * @param map карта, которую надо отсортировать
+	 * @return List, в котором пары отсортированны по значениям в убывающем порядке
+	 */
+	public static <K, V extends Comparable<? super V>> List<Entry<K,V>> sortByValue(Map<K, V> map) {
+		List<Map.Entry<K, V>> list = new LinkedList<>(map.entrySet());
+		Collections.sort(list, new Comparator<Map.Entry<K, V>>() {
+			@Override
+			public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
+				return (o2.getValue()).compareTo(o1.getValue());
+			}
+		});
+		return list;
 	}
 }
