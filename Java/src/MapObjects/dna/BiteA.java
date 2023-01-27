@@ -56,6 +56,7 @@ public class BiteA extends CommandDoInterupted {
 			var hpInOrg = F * target.getHealth() / 4;	
 			if(target.getPoison() != Poison.TYPE.YELLOW)	//Обработанная жёлтым ядом пища - сытнее
 				hpInOrg /= 2;
+			hpInOrg = Math.min(hpInOrg,AliveCellProtorype.MAX_HP - cell.getHealth()); //Нельзя укусить кусок больший, чем сможешь пережевать
 			cell.addHealth(hpInOrg);    //здоровье увеличилось
 			cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
 			target.addHealth(-hpInOrg); //Одну четверть отдали
