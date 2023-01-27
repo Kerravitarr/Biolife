@@ -167,28 +167,19 @@ public abstract class AliveCellProtorype extends CellObject{
 		public void set(TYPE type, int co) {
 			if(get(type) == co) {
 				return;
-			} else if(get(type) < co) {	//Улучшили специализацию
+			} else {
 				var del = co - get(type);
-				this.put(type, co);
-				while(del > 0) {
-					for(var i : entrySet()) {
-						if(i.getKey() == type || i.getValue() == 0) continue;
-						del--;
-						this.put(i.getKey(), i.getValue() - 1);
-						if(del == 0) break;
-					}
+				var summ = 100 - get(type);
+				for(var i : entrySet()) {
+					if(i.getKey() == type) continue;
+					put(i.getKey(), (int) Math.round(((double)(i.getValue() * summ - del * i.getValue())) / summ));
 				}
-			} else { // Ухудшили спциализацию
-				var del = get(type) - co;
-				this.put(type, co);
-				while(del > 0) {
-					for(var i : entrySet()) {
-						if(i.getKey() == type || i.getValue() == 100) continue;
-						del--;
-						this.put(i.getKey(), i.getValue() + 1);
-						if(del == 0) break;
-					}
+				summ = 0;
+				for(var i : entrySet()) {
+					if(i.getKey() != type)
+						summ += i.getValue();
 				}
+				put(type, 100 - summ);
 			}
 			updateColor();
 		}
@@ -395,7 +386,7 @@ public abstract class AliveCellProtorype extends CellObject{
 	 * @return число [0,1]
 	 */
 	public double get(Specialization.TYPE type) {
-		return getSpecialization().get(type) / 100d;
+		return /*1.0 / Specialization.TYPE.size();*/getSpecialization().get(type) / 100d;
 	}
 	public Specialization getSpecialization() {
 		return specialization;
