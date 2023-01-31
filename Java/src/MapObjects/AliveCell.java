@@ -9,7 +9,7 @@ import java.awt.Stroke;
 import MapObjects.Poison.TYPE;
 import MapObjects.dna.Birth;
 import MapObjects.dna.CommandList;
-import MapObjects.dna.CreatePoisonA;
+import MapObjects.dna.CreatePoison;
 import MapObjects.dna.DNA;
 import Utils.JSON;
 import Utils.Utils;
@@ -115,9 +115,7 @@ public class AliveCell extends AliveCellProtorype{
         // если бот находится на глубине ниже половины
         // то он автоматом накапливает минералы, но не более MAX_MP
         if (this.getPos().getY() >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL)) {
-        	double realLv = this.getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
-        	double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
-            this.addMineral(Math.round(Configurations.CONCENTRATION_MINERAL * (realLv / dist) * 10 * get(Specialization.TYPE.MINERALIZATION))); //Эффективный фотосинтез мешает нам переваривать пищу
+            this.addMineral(Math.round(mineralAround()));
         }
         if(getAge() % 50 == 0) {
             color(ACTION.NOTHING, color_cell.r+color_cell.g+color_cell.b);
@@ -267,7 +265,7 @@ public class AliveCell extends AliveCellProtorype{
             case 4 -> { // Смена типа яда на который мы отзываемся
             	poisonType = TYPE.toEnum(Utils.random(0, TYPE.size()));
             	if(poisonType != TYPE.UNEQUIPPED)
-            		poisonPower = Utils.random(1, (int) (CreatePoisonA.HP_FOR_POISON * 2 / 3));
+            		poisonPower = Utils.random(1, (int) (CreatePoison.HP_FOR_POISON * 2 / 3));
             	else
             		poisonPower = 0; //К этому у нас защищённости ни какой
             }

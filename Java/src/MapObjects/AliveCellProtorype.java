@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import MapObjects.AliveCellProtorype.Specialization;
 import MapObjects.dna.DNA;
 import Utils.JSON;
 import Utils.Utils;
@@ -90,22 +91,22 @@ public abstract class AliveCellProtorype extends CellObject{
 	 */
 	public class Specialization extends HashMap<Specialization.TYPE,Integer>{
 		public enum TYPE{
-			PHOTOSYNTHESIS(		360f*2/7),
-			DIGESTION(			360f*3/7),
-			MINERALIZATION(		360f*5/7),
-			MINERAL_PROCESSING(	360f*4/7),
-			FERMENTATION(		360f*1/7),
-			ASSASSINATION(		360f*0/7),
-			ACCUMULATION(		360f*6/7), 
+			PHOTOSYNTHESIS(		118),
+			DIGESTION(			316),
+			MINERALIZATION(		240),
+			MINERAL_PROCESSING(	188),
+			FERMENTATION(		63),
+			ASSASSINATION(		6),
+			ACCUMULATION(		271), 
 			;
 			
 			public static final TYPE[] staticValues = TYPE.values();
 			public static int size() {return staticValues.length;}
 			
-			TYPE(float c) {
+			TYPE(float colorByDegree) {
 				lname = Configurations.getProperty(getClass(), MessageFormat.format("{0}.Long", super.name()));
 				sname = Configurations.getProperty(getClass(), MessageFormat.format("{0}.Shot", super.name()));
-				color = c / 360f;
+				color = colorByDegree / 360f;
 			}
 			
 			public String toString() {return lname;}
@@ -412,5 +413,22 @@ public abstract class AliveCellProtorype extends CellObject{
 	/**Добавляет или уменьшает размер танка для минералов*/
 	public void addMineralTank(int add) {
 		mineralTank += add;
+	}
+	
+	/**Возвращает количество минералов вокруг*/
+	public double mineralAround() {
+		double realLv = getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
+		double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
+		return Configurations.CONCENTRATION_MINERAL * (realLv / dist) * 10 * get(Specialization.TYPE.MINERALIZATION);
+	}
+	/**Возвращает количество солнца вокруг*/
+	public double sunAround() {
+		//Эффективность
+		var eff = get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS);
+		//+5 бонусных частичек света при наличии миниралов
+        double t = 5 * getMineral() / AliveCell.MAX_MP;	
+        //Ну и энергию от солнца не забываем
+        double hlt = Configurations.sun.getEnergy(getPos()) + t;
+		return hlt * eff;
 	}
 }

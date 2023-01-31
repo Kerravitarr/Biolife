@@ -1,8 +1,6 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import MapObjects.AliveCellProtorype;
-import main.Configurations;
 
 /**
  * Фотосинтез.
@@ -18,12 +16,7 @@ public class Photosynthesis extends CommandDo {
 
 	@Override
 	protected void doing(AliveCell cell) {
-		var eff = cell.get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS);
-        //Показывает эффективность нашего фотосинтеза
-        double t = 5 * eff * cell.getMineral() / AliveCell.MAX_MP;
-        // формула вычисления энергии
-        double hlt = Configurations.sun.getEnergy(cell.getPos()) + t;
-        hlt *= cell.get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS);
+        var hlt = cell.sunAround();
         if (hlt > 0) {
         	cell.addHealth(Math.round(hlt));   // прибавляем полученную энергия к энергии бота
         	cell.color(AliveCell.ACTION.EAT_SUN,hlt);
@@ -31,11 +24,7 @@ public class Photosynthesis extends CommandDo {
 	}
 	
 	protected String value(AliveCell cell) {
-        //Показывает эффективность нашего фотосинтеза
-        double t = 5 * cell.getMineral() / AliveCell.MAX_MP;
-        // формула вычисления энергии
-        double hlt = Configurations.sun.getEnergy(cell.getPos()) + t;
-        hlt *= cell.get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS);
+        double hlt = cell.sunAround();
 		if (hlt > 0)
 			return valueFormat.format(hlt);
 		else

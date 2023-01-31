@@ -8,8 +8,10 @@ import MapObjects.AliveCellProtorype;
  * Тоже зависит от специального числа - photosynthesisEffect, но теперь чем оно ближе к 0, тем больше придёт минералов
  */
 public class Minerals2Energy extends CommandDo {
+	
+	private final MessageFormat valueFormat = new MessageFormat("MP -= {0, number, #.#} HP += {0, number, #.#}");
 
-	protected Minerals2Energy() {super("-МП","Ням мин");}
+	protected Minerals2Energy() {super();}
 
 	@Override
 	protected void doing(AliveCell cell) {
@@ -25,6 +27,17 @@ public class Minerals2Energy extends CommandDo {
         	cell.color(AliveCell.ACTION.EAT_MIN,add_hp);
         	cell.addHealth(add_hp);
         	cell.setMineral(0);
+        }
+	}
+	
+
+	protected String value(AliveCell cell) {
+         if(cell.getMineral() > 0) {  // если минералов меньше, то все минералы переходят в энергию
+        	double maxMin = Math.min(10, cell.getMineral());
+        	var add_hp = Math.round(10 * cell.get(AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING) * maxMin);
+        	return valueFormat.format(maxMin,add_hp);
+        } else {
+        	return null;
         }
 	}
 }
