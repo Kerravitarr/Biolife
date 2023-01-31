@@ -7,6 +7,7 @@ import java.awt.Font;
 import java.awt.HeadlessException;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
@@ -141,6 +142,10 @@ public class BioLife extends JFrame {
 			}
 		});
 		setBounds(100, 100, (int) (450*2.5), (int) (300*2.5));
+		
+		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
+		Configurations.setSize((int) sSize.getWidth() / 2, (int) (sSize.getHeight() - 120 )/ 2); //120 - пикселей на верхнюю и нижнюю шапочки
+		
 		
 		JMenuBar menuBar = new JMenuBar();
 		setJMenuBar(menuBar);
