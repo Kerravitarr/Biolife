@@ -1,0 +1,9 @@
+
+*.map
+*.json
+Java/.project
+
+Java/binFiles/
+Java/docsFiles/
+Java/jarFile/BioLife.jar
+Java/.settings/org.eclipse.core.resources.prefs

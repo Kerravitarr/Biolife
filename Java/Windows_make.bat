@@ -17,6 +17,8 @@ javac --release 16 -encoding utf8 -classpath  src\ -d binFiles src\start\BioLife
 @if errorlevel 1 Goto error
 mkdir .\binFiles\locales
 xcopy .\src\locales .\binFiles\locales /e
+mkdir .\binFiles\resources
+xcopy .\src\resources .\binFiles\resources /e
 @CLS
 @echo =======================================
 @echo Step 1 - OK
