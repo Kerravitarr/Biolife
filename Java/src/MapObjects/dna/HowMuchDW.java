@@ -8,7 +8,7 @@ import MapObjects.AliveCell;
  */
 public class HowMuchDW extends CommandExplore {
 	
-	public HowMuchDW() {super("ДНК ▣","ДНК защищена?",1,2);};
+	public HowMuchDW() {super(1,2);};
 
 	@Override
 	protected int explore(AliveCell cell) {
@@ -18,4 +18,8 @@ public class HowMuchDW extends CommandExplore {
 	
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){return String.valueOf(param(dna, 0));}
+	
+	public String getBranch(AliveCell cell, int numBranch, DNA dna){
+		return branchMoreeLees(cell,numBranch,dna);
+	};
 }

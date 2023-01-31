@@ -7,7 +7,7 @@ import MapObjects.AliveCell;
  */
 public class ToWall extends CommandDo {
 	/**Удаляет клетку и на её месте устанавливает стену*/
-	protected ToWall() {super("|||","Окаменеть");}
+	protected ToWall() {super();}
 
 	@Override
 	protected void doing(AliveCell cell) {

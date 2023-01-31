@@ -6,6 +6,7 @@ import static MapObjects.CellObject.OBJECT.ORGANIC;
 import static MapObjects.CellObject.OBJECT.POISON;
 import static MapObjects.CellObject.OBJECT.NOT_POISON;
 import static MapObjects.CellObject.OBJECT.WALL;
+import static MapObjects.CellObject.OBJECT.OWALL;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -16,18 +17,22 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class GiveA extends CommandDoInterupted {
+public class Give extends CommandDoInterupted {
+	
+	/**Абсолютные координаты или относительные*/
+	private final boolean isAbolute;
 
-	public GiveA() {this("➚ A","Отдать A",true);};
+	public Give() {this(true);};
 
-	protected GiveA(String shotName, String longName, boolean isAbsolute) {
-		super(1, shotName, longName);
-		setInterrupt(isAbsolute, NOT_POISON, ORGANIC, POISON, WALL, CLEAN);
+	protected Give(boolean isA) {
+		super(isA, 1);
+		isAbolute = isA;
+		setInterrupt(isA, NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL);
 	}
 
 	@Override
 	protected void doing(AliveCell cell) {
-		give(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
+		give(cell,param(cell, 0, isAbolute));
 	}
 	/**
 	 * Непосредственно отдать
@@ -57,9 +62,14 @@ public class GiveA extends CommandDoInterupted {
 				}
 			}
 			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
-			default -> throw new IllegalArgumentException("Unexpected value: " + see);
+			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
+
 	@Override
-	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));}
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		var dir = param(dna, cell, numParam, isAbolute);
+		return isFullMod() ? dir.toString() : dir.toSString();
+	}
+	
 }

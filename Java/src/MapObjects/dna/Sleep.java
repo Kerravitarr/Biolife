@@ -9,7 +9,7 @@ import MapObjects.AliveCell;
  */
 public class Sleep extends CommandDo {
 
-	protected Sleep() {super("Zzz","Уснуть");}
+	protected Sleep() {super();}
 
 	@Override
 	protected void doing(AliveCell cell) {

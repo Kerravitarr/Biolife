@@ -23,27 +23,23 @@ public abstract class CommandDNA {
 	private final String longName;
 	/**Показывает, что мы должны отображать всё в кратком виде*/
 	private static boolean isFullMod = false;
+	/**Форматирование для вывода параметров*/
+	private static MessageFormat nameFormat = new MessageFormat("{0} {1}");
+	/**Больше параметра*/
+	private static String parametrMoreOrEqual = "≥" + Configurations.getProperty(CommandDNA.class, "parameter");
+	/**Меньше параметра*/
+	private static String parametrLess = "<" + Configurations.getProperty(CommandDNA.class, "parameter");
+	/**Абсолютные координаты или относительные. Для комнад, для которых может быть разночтение*/
+	protected final boolean isAbolute;
 	
-	protected class MessageFormat{
+	/**Класс форматирования сообщений*/
+	protected static class MessageFormat{
 		private final java.text.MessageFormat localFormat;
 
 		public MessageFormat(String pattern) {localFormat = new java.text.MessageFormat(pattern);}
 		public String format(Object ... arguments) {return localFormat.format(arguments);}
 	}
-	
-	/**
-	 * Констурктор класса
-	 * @param countParams - число параметров у функции
-	 * @param countBranch - число ветвей у функции
-	 * @param shotName - краткое имя у функции
-	 * @param longName - полное имя функции
-	 */
-	protected CommandDNA(int countParams,int countBranch,String shotName,String longName) {
-		this.countParams = countParams;
-		this.countBranch = countBranch;
-		this.shotName = shotName;
-		this.longName = longName;
-	}
+
 	/**
 	 * Констурктор класса
 	 * @param countParams - число параметров у функции
@@ -54,6 +50,21 @@ public abstract class CommandDNA {
 		this.countBranch = countBranch;
 		this.shotName = (Configurations.getProperty(this.getClass(), "Shot"));
 		this.longName = (Configurations.getProperty(this.getClass(), "Long"));
+		isAbolute = false;
+	}
+	/**
+	 * Констурктор класса для тех команд, которые могут быть как абсолютные, так и относительные
+	 * @param isAbsolute - команда выполняется в абсолютном или относительном выражении
+	 * @param countParams - число параметров у функции
+	 * @param countBranch - число ветвей у функции
+	 */
+	protected CommandDNA(boolean isAbsolute, int countParams,int countBranch) {
+		this.countParams = countParams;
+		this.countBranch = countBranch;
+		isAbolute = isAbsolute;
+		var suname = isAbolute ? Configurations.getProperty(CommandDNA.class, "absolute") : Configurations.getProperty(CommandDNA.class, "relative");
+		this.shotName = nameFormat.format(Configurations.getProperty(this.getClass(), "Shot"),suname);
+		this.longName = nameFormat.format(Configurations.getProperty(this.getClass(), "Long"),suname);
 	}
 
 	/**
@@ -285,9 +296,9 @@ public abstract class CommandDNA {
 	/**Стандартный ответ, если ветвей 2 и они показывают > или < параметра*/
 	protected String branchMoreeLees(AliveCell cell, int numBranch, DNA dna) {
 		if(numBranch == 0)
-			return "≥П";
+			return parametrMoreOrEqual;
 		else if(numBranch == 1)
-			return "<П";
+			return parametrLess;
 		else 
 			return getBranch(cell,numBranch,dna);
 	}

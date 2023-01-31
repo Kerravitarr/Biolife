@@ -11,10 +11,9 @@ import main.Point;
  */
 public abstract class CommandDo extends CommandDNA {
 
-	protected CommandDo(String shotName,String longName) {this(0,shotName,longName);};
-	protected CommandDo(int countParams,String shotName,String longName) {super(countParams,0,shotName,longName);}
 	protected CommandDo() {this(0);};
 	protected CommandDo(int countParams) {super(countParams,0);}
+	protected CommandDo(boolean isAbsolute,int countParams) {super(isAbsolute, countParams,0);}
 	@Override
 	protected int perform(AliveCell cell) {
 		doing(cell);

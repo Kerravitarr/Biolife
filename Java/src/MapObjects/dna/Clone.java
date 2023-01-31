@@ -16,18 +16,18 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class CloneA extends Birth {
+public class Clone extends CommandDoInterupted {
 	/**Абсолютные координаты или относительные*/
 	private final boolean isAbolute;
-	
-	public CloneA() {this(true);};
-	protected CloneA(boolean isA) {super(2);isAbolute = isA; isInterrupt = true;};
+
+	public Clone(boolean isA) {
+		super(isA, 2);
+		isAbolute = isA;
+		setInterrupt(isA, ENEMY, FRIEND, ORGANIC, WALL, OWALL);
+	};
 	@Override
 	protected void doing(AliveCell cell) {
-		if(isAbolute)
-			clone(cell,DIRECTION.toEnum(param(cell,1, DIRECTION.size())));
-		else
-			clone(cell,relatively(cell,param(cell,0, DIRECTION.size())));
+		clone(cell,param(cell, 0, isAbolute));
 	}
 	/**
 	 * Непосредственно клонироваться и присосаться
@@ -40,30 +40,23 @@ public class CloneA extends Birth {
 		switch (see) {
 			case CLEAN -> {
 				Point point = nextPoint(cell,direction);
-				birth(cell,point,childCMD);
+				Birth.birth(cell,point,childCMD);
 				cell.setFriend((AliveCell) Configurations.world.get(point));
 			}
 			case NOT_POISON, POISON -> {
 				Point point = nextPoint(cell,direction);
-				if(birth(cell,point,childCMD))
+				if(Birth.birth(cell,point,childCMD))
 					cell.setFriend((AliveCell) Configurations.world.get(point));
 			}
 			case ENEMY, FRIEND, ORGANIC, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
-			default -> throw new IllegalArgumentException("Unexpected value: " + see);
+			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
 		if(numParam == 0)
-			return isAbolute ? absoluteDirection(param(dna, numParam, DIRECTION.size())) : relativeDirection(cell, param(dna, numParam, DIRECTION.size()));
+			return isFullMod() ? param(dna, cell, numParam, isAbolute).toString() : param(dna, cell, numParam, isAbolute).toSString();
 		else
-			return "ci = " + String.valueOf((dna.getIndex() + param(cell,1)) % dna.size);
-	}
-	
-	public int getInterrupt(AliveCell cell, DNA dna){
-		if(isAbolute)
-			return getInterruptA(cell, dna, 0,ENEMY, FRIEND, ORGANIC, WALL, OWALL);
-		else
-			return getInterruptR(cell, dna, 0,ENEMY, FRIEND, ORGANIC, WALL, OWALL);
+			return "PCc = " + String.valueOf((dna.getIndex() + param(cell,1)) % dna.size);
 	}
 }

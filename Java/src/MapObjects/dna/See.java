@@ -2,20 +2,18 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
-import main.Point.DIRECTION;
 
 /**
  * Посмотреть, что там в указанном направлении
  * @author Kerravitarr
  *
  */
-public class SeeA extends CommandExplore {
+public class See extends CommandExplore {
 
 	/**Абсолютные координаты или относительные*/
 	private final boolean isAbolute;
 
-	public SeeA() {this(true);};
-	protected SeeA(boolean isA) {super(1,OBJECT.size()-1);isAbolute = isA;}
+	public See(boolean isA) {super(isA, 1,OBJECT.size()-1);isAbolute = isA;}
 
 	@Override
 	protected int explore(AliveCell cell) {
@@ -25,7 +23,7 @@ public class SeeA extends CommandExplore {
 
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		var dir = param(dna, cell, 0, isAbolute);
+		var dir = param(dna, cell, numParam, isAbolute);
 		return isFullMod() ? dir.toString() : dir.toSString();
 	}
 	

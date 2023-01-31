@@ -11,7 +11,7 @@ import main.Point.DIRECTION;
  */
 public class Align_UP extends CommandDo {
 
-	protected Align_UP() {super("↟","Ориентация вверх");}
+	protected Align_UP() {super();}
 
 	@Override
 	protected void doing(AliveCell cell) {

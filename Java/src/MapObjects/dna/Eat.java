@@ -20,20 +20,21 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class EatA extends CommandDoInterupted {
+public class Eat extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 4;
+	/**Абсолютные координаты или относительные*/
+	private final boolean isAbolute;
 
-	public EatA() {this(true);};
-
-	protected EatA(boolean isAbsolute) {
-		super(1);
-		setInterrupt(isAbsolute, CLEAN, NOT_POISON, POISON, WALL,OWALL);
+	public Eat(boolean isA) {
+		super(isA,1);
+		isAbolute = isA;
+		setInterrupt(isA, CLEAN, NOT_POISON, POISON, WALL, OWALL);
 	}
 	
 	@Override
 	protected void doing(AliveCell cell) {
-		eat(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
+		eat(cell,param(cell, 0, isAbolute));
 	}
 	/**
 	 * Непосредственно фукнция поедания
@@ -112,5 +113,8 @@ public class EatA extends CommandDoInterupted {
 		}
 	}
 	@Override
-	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));};
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		var dir = param(dna, cell, numParam, isAbolute);
+		return isFullMod() ? dir.toString() : dir.toSString();
+	}
 }

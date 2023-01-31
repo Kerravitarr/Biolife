@@ -14,20 +14,18 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class StepA extends CommandDoInterupted {
+public class Step extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	protected final int HP_COST = 1;
 
-	public StepA() {this("🐾 A","Шаг A",true);};
-
-	protected StepA(String shotName, String longName, boolean isAbsolute) {
-		super(1, shotName, longName);
-		setInterrupt(isAbsolute, WALL,ORGANIC,FRIEND,ENEMY,OWALL);
+	public Step(boolean isA) {
+		super(isA, 1);
+		setInterrupt(isA, WALL,ORGANIC,FRIEND,ENEMY,OWALL);
 	}
 
 	@Override
 	protected void doing(AliveCell cell) {
-		step(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
+		step(cell,param(cell, 0, isAbolute));
 	}
 	
 	protected void step(AliveCell cell,DIRECTION dir) {
@@ -38,5 +36,8 @@ public class StepA extends CommandDoInterupted {
 	}
 
 	@Override
-	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));}
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		var dir = param(dna, cell, numParam, isAbolute);
+		return isFullMod() ? dir.toString() : dir.toSString();
+	}
 }

@@ -10,7 +10,7 @@ import main.Point.DIRECTION;
  * Создаёт капельку яда
  * @author Kerravitarr
  */
-public class CreatePoisonA extends CommandDo {
+public class CreatePoison extends CommandDo {
 	/**Столько энергии тратит бот на выделение яда*/
 	public static final long HP_FOR_POISON = 20;
 	/**Логорифмическая прогрессия тягучести яда*/
@@ -20,8 +20,7 @@ public class CreatePoisonA extends CommandDo {
 	private final boolean isAbolute;
 	
 	/**Создаёт яд в МСК*/
-	public CreatePoisonA() {this(true);}
-	protected CreatePoisonA(boolean isAbsol) {super(2);isAbolute = isAbsol;}
+	public CreatePoison(boolean isAbsol) {super(isAbsol, 2);isAbolute = isAbsol;}
 	@Override
 	protected void doing(AliveCell cell) {
 		if (cell.getPosionType() != TYPE.UNEQUIPPED) {

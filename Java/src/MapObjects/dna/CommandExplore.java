@@ -16,21 +16,16 @@ public abstract class CommandExplore extends CommandDNA {
 
 	/**
 	 * Cнициализирует класс исследования
-	 * @param shotName - короткое имя функции
-	 * @param longName - полное имя функции
 	 * @param countBranch - число возможных ответов функции
 	 */
-	protected CommandExplore(String shotName, String longName,int countBranch) {this(shotName, longName,0,countBranch);}
 	protected CommandExplore(int countBranch) {this(0,countBranch);}
 	/**
 	 * Инициализирует класс исследователя
-	 * @param shotName - короткое имя функции
-	 * @param longName - полное имя функции
 	 * @param countParams - число параметров у функции
 	 * @param countBranch - число возможных ветвей функции
 	 */
-	protected CommandExplore(String shotName, String longName,int countParams, int countBranch) {super(countParams, countBranch, shotName, longName);}
 	protected CommandExplore(int countParams, int countBranch) {super(countParams, countBranch);}
+	protected CommandExplore(boolean isAbsolute,int countParams, int countBranch) {super(isAbsolute,countParams, countBranch);}
 
 	
 	@Override

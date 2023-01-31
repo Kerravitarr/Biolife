@@ -24,6 +24,6 @@ public class HMMineralTank extends CommandExplore {
 	}
 	
 	public String getBranch(AliveCell cell, int numBranch, DNA dna) {
-		return numBranch == 0 ? "≥П" : "<П";
+		return branchMoreeLees(cell, numBranch, dna);
 	}
 }

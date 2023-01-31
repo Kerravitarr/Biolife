@@ -48,7 +48,7 @@ public class FindNear extends CommandExplore {
 	 * @param type тип, который ожидаем там найти
 	 * @return true, если ожидания совпали с реальностью
 	 */
-	private boolean test(AliveCell cell, Point point, OBJECT type) {
+	public static boolean test(AliveCell cell, Point point, OBJECT type) {
 		var wtype = Configurations.world.test(point);
 		switch (wtype) {
 			case BOT -> {	//Конфигурация мира не умеет отличать друзей от врагов

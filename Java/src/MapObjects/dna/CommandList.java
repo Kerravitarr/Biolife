@@ -86,23 +86,23 @@ public class CommandList {
 			case BLOCK_1+1 -> new Minerals2Energy();
 			case BLOCK_1+2 -> new Birth();
 			case BLOCK_1+3 -> new Destroy();
-			case BLOCK_1+4 -> new CreatePoisonR();
-			case BLOCK_1+5 -> new CreatePoisonA();
+			case BLOCK_1+4 -> new CreatePoison(true);
+			case BLOCK_1+5 -> new CreatePoison(false);
 			case BLOCK_1+6 -> new Sleep();
 			case BLOCK_1+7 -> new Buoyancy_UP();
 			case BLOCK_1+8 -> new Buoyancy_DOWN();
 			case BLOCK_1+9 -> new ToWall();
 				
-			case BLOCK_2 -> new TurnAroundA();
-			case BLOCK_2+1 -> new TurnAroundR();
-			case BLOCK_2+2 -> new StepA();
-			case BLOCK_2+3 -> new StepR();
+			case BLOCK_2 -> new TurnAround(true);
+			case BLOCK_2+1 -> new TurnAround(false);
+			case BLOCK_2+2 -> new Step(true);
+			case BLOCK_2+3 -> new Step(false);
 			case BLOCK_2+4 -> new Align_UP();
 			case BLOCK_2+5 -> new Reversal();
 			case BLOCK_2+6 -> new TurnTo();
 				
-			case BLOCK_3_1 -> new SeeA();
-			case BLOCK_3_1+1 -> new SeeR();
+			case BLOCK_3_1 -> new See(true);
+			case BLOCK_3_1+1 -> new See(false);
 			case BLOCK_3_1+2 -> new HowHigh();
 			case BLOCK_3_1+3 -> new HowMuchHP();
 			case BLOCK_3_1+4 -> new HowMuchMP();
@@ -121,16 +121,16 @@ public class CommandList {
 			case BLOCK_3_2+7-> new HMFoodTank();
 			case BLOCK_3_2+8-> new HMMineralTank();
 				
-			case BLOCK_4 -> new EatA();
-			case BLOCK_4+1 -> new EatR();
-			case BLOCK_4+2 -> new BiteA();
-			case BLOCK_4+3 -> new BiteR();
-			case BLOCK_4+4 -> new CareA();
-			case BLOCK_4+5 -> new CareR();
-			case BLOCK_4+6 -> new GiveA();
-			case BLOCK_4+7 -> new GiveR();
-			case BLOCK_4+8 -> new PullA();
-			case BLOCK_4+9 -> new PullR();
+			case BLOCK_4 -> new Eat(true);
+			case BLOCK_4+1 -> new Eat(false);
+			case BLOCK_4+2 -> new Bite(true);
+			case BLOCK_4+3 -> new Bite(false);
+			case BLOCK_4+4 -> new Care(true);
+			case BLOCK_4+5 -> new Care(false);
+			case BLOCK_4+6 -> new Give(true);
+			case BLOCK_4+7 -> new Give(false);
+			case BLOCK_4+8 -> new Pull(true);
+			case BLOCK_4+9 -> new Pull(false);
 				
 			case BLOCK_5 -> new DNABreakNext();
 			case BLOCK_5+1 -> new DNABreakNow();
@@ -140,16 +140,18 @@ public class CommandList {
 			case BLOCK_5+5 -> new DNAWallBreak();
 			case BLOCK_5+6 -> new Loop();
 			case BLOCK_5+7 -> new ChangeSpecialization();
+			case BLOCK_5+8 -> new DNABreakMy();
 				
-			case BLOCK_6 -> new ClingA();
-			case BLOCK_6+1 -> new ClingR();
-			case BLOCK_6+2 -> new CloneA();
-			case BLOCK_6+3 -> new CloneR();
+			case BLOCK_6 -> new Cling(true);
+			case BLOCK_6+1 -> new Cling(false);
+			case BLOCK_6+2 -> new Clone(true);
+			case BLOCK_6+3 -> new Clone(false);
 			case BLOCK_6+4 -> new AddTankFood();
 			case BLOCK_6+5 -> new AddTankMineral();
 			case BLOCK_6+6 -> new SubTankFood();
 			case BLOCK_6+7 -> new SubTankMineral();
-			default -> new Jump();
-		}; //TODO Проверить - кто вокруг меня? Друзья, враги, кто?
+			
+			default -> new Jump(); //Любая остальная команда - прыжок
+		};
 	}
 }

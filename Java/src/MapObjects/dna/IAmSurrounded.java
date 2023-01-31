@@ -9,7 +9,7 @@ import MapObjects.AliveCell;
  */
 public class IAmSurrounded extends CommandExplore {
 
-	protected IAmSurrounded() {super("∅","Я окружён?", 2);}
+	protected IAmSurrounded() {super(2);}
 
 	@Override
 	protected int explore(AliveCell cell) {

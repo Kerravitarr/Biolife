@@ -15,19 +15,21 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class ClingA extends CommandDoInterupted {
+public class Cling extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 1;
+	/**Абсолютные координаты или относительные*/
+	private final boolean isAbolute;
+	
 	/**Присасывается к чему-то относительно МСК*/
-	public ClingA() {this("□∪□ A","Присосаться A",true);};
-
-	protected ClingA(String shotName, String longName, boolean isAbsolute) {
-		super(1, shotName, longName);
-		setInterrupt(isAbsolute, ORGANIC, CLEAN, NOT_POISON, POISON, WALL);
+	public Cling(boolean isA) {
+		super(isA, 1);
+		isAbolute = isA;
+		setInterrupt(isA, ORGANIC, CLEAN, NOT_POISON, POISON, WALL);
 	}
 	@Override
 	protected void doing(AliveCell cell) {
-		cling(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
+		cling(cell,param(cell, 0, isAbolute));
 	}
 	/**
 	 * Непосредственно присамывание
@@ -48,5 +50,8 @@ public class ClingA extends CommandDoInterupted {
 		}
 	}
 	@Override
-	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));}
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		var dir = param(dna, cell, numParam, isAbolute);
+		return isFullMod() ? dir.toString() : dir.toSString();
+	}
 }

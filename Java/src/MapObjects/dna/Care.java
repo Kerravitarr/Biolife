@@ -17,18 +17,19 @@ import main.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class CareA extends CommandDoInterupted {
+public class Care extends CommandDoInterupted {
+	/**Абсолютные координаты или относительные*/
+	private final boolean isAbolute;
 	
-	public CareA() {this("↹ A", "Поделиться A",true);};
-
-	protected CareA(String shotName, String longName,boolean isAbsolute) {
-		super(1, shotName, longName);
-		setInterrupt(isAbsolute, NOT_POISON, ORGANIC, POISON, WALL, CLEAN);
+	public Care(boolean isA) {
+		super(1);
+		isAbolute = isA;
+		setInterrupt(isA, NOT_POISON, ORGANIC, POISON, WALL, CLEAN);
 	}
 	
 	@Override
 	protected void doing(AliveCell cell) {
-		care(cell,DIRECTION.toEnum(param(cell,0, DIRECTION.size())));
+		care(cell,param(cell, 0, isAbolute));
 	}
 	/**
 	 * Непосредственно подеться
@@ -61,9 +62,12 @@ public class CareA extends CommandDoInterupted {
 				}
 			}
 			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
-			default -> throw new IllegalArgumentException("Unexpected value: " + see);
+			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
 	@Override
-	public String getParam(AliveCell cell, int numParam, DNA dna){return absoluteDirection(param(dna,0, DIRECTION.size()));};
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		var dir = param(dna, cell, numParam, isAbolute);
+		return isFullMod() ? dir.toString() : dir.toSString();
+	}
 }
