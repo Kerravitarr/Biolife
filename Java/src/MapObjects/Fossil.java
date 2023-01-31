@@ -29,7 +29,7 @@ public class Fossil extends CellObject {
 	public Fossil(AliveCell cell) {
 		super(cell.getStepCount(), LV_STATUS.LV_WALL);
 		setPos(cell.getPos());
-		energy = Math.abs(cell.getHealth()) + cell.getFoodTank() + AliveCell.MAX_HP/10.0 + (cell.getMineral() + cell.getMineralTank()) * 10; //Превращается в органику всё, что только может
+		energy = Math.abs(cell.getHealth()) + cell.getFoodTank() + (cell.getMineral() + cell.getMineralTank()) * 10; //Превращается в органику всё, что только может
 	    super.color_DO = COLOR_DO;
 		repaint();
 	}
