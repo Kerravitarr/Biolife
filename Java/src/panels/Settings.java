@@ -33,6 +33,7 @@ public class Settings extends JPanel{
 		/**Показывает, что отсчёт ведётся в обратную сторону*/
 		private final boolean isBack;
 		
+		//TODO - сделать две кнопки - сбросить на деф и ввести значение
 		public ScrollPanel(String text, int min, int max){
 			setLayout(new BorderLayout(0, 0));
 			label = new JLabel(text);
@@ -112,6 +113,9 @@ public class Settings extends JPanel{
 	private final JButton saveButton;
 	private final JButton step_button;
 	private final ScrollPanel sun_size;
+	
+	/**Счётчик, показывающий, когда было сделанно последнее сохранение. Нужен, чтобы два раза подряд не сохраняться*/
+	private long lastSaveCount = 0;
 	
 	/**
 	 * Create the panel.
@@ -294,17 +298,22 @@ public class Settings extends JPanel{
 		if(!js.load(obj)) return;
 		try{
 			Configurations.world.update(obj);
+			lastSaveCount = Configurations.world.step;
 		} catch (java.lang.RuntimeException e1) {
 			e1.printStackTrace();
 			JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
 		} 
 	}
-	
+	//TODO не сохранять, если с последнего сохрания не прошло и шагу
 	public void save() {
 		boolean oldStateWorld = isActiv;				
 		isActiv = false;
-		var js = new JsonSave("BioLife", "map");
-		js.save(Configurations.world.serelization(), true);
+		
+		if(lastSaveCount != Configurations.world.step) {
+			var js = new JsonSave("BioLife", "map");
+			if(js.save(Configurations.world.serelization(), true))
+				lastSaveCount = Configurations.world.step;
+		}
 		isActiv = oldStateWorld;
 	}
 
