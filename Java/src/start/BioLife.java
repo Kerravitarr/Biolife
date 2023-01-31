@@ -1,6 +1,7 @@
 package start;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
@@ -20,8 +21,6 @@ import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.MessageFormat;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.JDialog;
@@ -46,6 +45,7 @@ import main.World;
 import panels.BotInfo;
 import panels.EvolTreeDialog;
 import panels.Legend;
+import panels.Menu;
 import panels.Settings;
 
 public class BioLife extends JFrame {
@@ -101,21 +101,19 @@ public class BioLife extends JFrame {
 		}
 
 	}
-	
+	/**Центральная панель, на которой всё и происходит*/
 	private final JPanel contentPane;
-	BotInfo botInfo = null;
-	Settings settings = null;
-	private World world;
+	
+	private final Menu menu;
+	private final BotInfo botInfo;
+	private final Settings settings;
+	private final World world;
+	private final Legend legend;
+	
 	private JScrollPane scrollPane;
 	private EvolTreeDialog dialog = new EvolTreeDialog();
 	private GifSequenceWriter gifs = null;
 	private JMenuItem startRecord;
-	/**Спящий поток, в котором обрабатываются всякие там нажатия кнопок*/
-	private ExecutorService executor;
-	private final JLabel botInfo_label;
-	private final Legend legend;
-	private final JLabel legend_label;
-	private final JLabel settings_label;
 
 	/**
 	 * Launch the application.
@@ -136,79 +134,73 @@ public class BioLife extends JFrame {
 	 */
 	public BioLife() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				Configurations.settings.save();
-			}
-		});
 		setBounds(100, 100, (int) (450*2.5), (int) (300*2.5));
 		
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
 		Configurations.setSize((int) sSize.getWidth() / 2, (int) (sSize.getHeight() - 120 )/ 2); //120 - пикселей на верхнюю и нижнюю шапочки
 		
-		
-		JMenuBar menuBar = new JMenuBar();
-		setJMenuBar(menuBar);
-		
-		JMenu Menu = new JMenu("Меню");
-		menuBar.add(Menu);
 		contentPane = new JPanel();
 		contentPane.setBackground(Color.WHITE);
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		contentPane.setLayout(new BorderLayout(0, 0));
 		setContentPane(contentPane);
-		
-		executor = Executors.newSingleThreadExecutor();
-		
-		JPanel panel_1 = new JPanel();
-		contentPane.add(panel_1, BorderLayout.EAST);
-		panel_1.setLayout(new BorderLayout(0, 0));
-		settings_label = new JLabel("<html>Н<br>А<br>С<br>Т<br>Р<br>О<br>Й<br>К<br>И<br>&lt;</html>");
-		settings_label.setFont(new Font("Tahoma", Font.PLAIN, 8));
-		settings_label.addMouseListener(new MouseAdapter() {
-			boolean isActive = false;
-			@Override
-			public void mouseClicked(MouseEvent e) {BioLife.this.mouseClicked_settings(isActive=!isActive);}
-		});
-		panel_1.add(settings_label, BorderLayout.WEST);
-
-		JPanel panel = new JPanel();
-		contentPane.add(panel, BorderLayout.SOUTH);
-		panel.setLayout(new BorderLayout(0, 0));
-		
-		legend = new Legend();
-		panel.add(legend, BorderLayout.CENTER);
-		legend_label = new JLabel("Легенда /\\");
-		legend_label.addMouseListener(new MouseAdapter() {
-			boolean isActive = false;
-			@Override
-			public void mouseClicked(MouseEvent e) {BioLife.this.mouseClicked_legend(e,isActive=!isActive);}
-		});
-		legend_label.setHorizontalAlignment(SwingConstants.CENTER);
-		legend_label.setFont(new Font("Tahoma", Font.PLAIN, 8));
-		panel.add(legend_label, BorderLayout.NORTH);
-		
-		JPanel panel_2 = new JPanel();
-		contentPane.add(panel_2, BorderLayout.WEST);
-		panel_2.setLayout(new BorderLayout(0, 0));
-		
-		botInfo_label = new JLabel("<html>И<br>Н<br>Ф<br>О<br>Р<br>М<br>А<br>Ц<br>И<br>Я<br><br>О<br><br>Б<br>О<br>Т<br>Е<br>&GT;</html>");
-		botInfo_label.setFont(new Font("Tahoma", Font.PLAIN, 8));
-		botInfo_label.addMouseListener(new MouseAdapter() {
-			boolean isActive = false;
-			@Override
-			public void mouseClicked(MouseEvent e) {BioLife.this.mouseClicked_botInfo(e,isActive=!isActive);}
-		});
-		panel_2.add(botInfo_label, BorderLayout.EAST);
-
-		botInfo = new BotInfo();
-		panel_2.add(botInfo, BorderLayout.CENTER);
 
 		settings = new Settings();
-		panel_1.add(settings, BorderLayout.CENTER);
-		
+		contentPane.add(makePanel(settings, "Settings", BorderLayout.EAST), BorderLayout.EAST);
+		legend = new Legend();
+		contentPane.add(makePanel(legend, "Legend", BorderLayout.SOUTH), BorderLayout.SOUTH);
+		botInfo = new BotInfo();
+		contentPane.add(makePanel(botInfo,"BotInfo", BorderLayout.WEST), BorderLayout.WEST);
 		world = new World();
+		contentPane.add(makeWorldPanel(), BorderLayout.CENTER);
+		menu = new Menu();
+		contentPane.add(makePanel(menu, "Menu", BorderLayout.NORTH), BorderLayout.NORTH);
+		setJMenuBar(makeMenu());
 		
+		addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {BioLife.this.keyPressed(e);}
+		});
+		
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent e) {
+				Configurations.settings.save();
+			}
+		});
+		
+		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
+	}
+
+	private JMenuBar makeMenu() {
+		JMenuItem restart = new JMenuItem("Рестарт");
+		restart.addActionListener(e->{world.worldGenerate();world.repaint();});
+		//Menu.add(restart);
+
+		JMenuBar menuBar = new JMenuBar();
+		
+		JMenu Menu = new JMenu("Меню");
+		menuBar.add(Menu);
+		
+		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		JMenuItem mntmNewMenuItem = new JMenuItem("Дерево эволюции");
+		mntmNewMenuItem.addActionListener(e->dialog.setVisible(true));
+		Menu.add(mntmNewMenuItem);
+		
+		JMenuItem save_menu = new JMenuItem("Сохранить");
+		save_menu.addActionListener(e->Configurations.settings.save());
+		Menu.add(save_menu);
+		
+		JMenuItem load_menu = new JMenuItem("Загрузить");
+		load_menu.addActionListener(e->Configurations.settings.load());
+		Menu.add(load_menu);
+		
+		startRecord = new JMenuItem("Начать запись");
+		startRecord.addActionListener(e->gifRecord());
+		Menu.add(startRecord);
+		return menuBar;
+	}
+
+	private Component makeWorldPanel() {
 		scrollPane = new JScrollPane(){
 		    @Override
 		    protected void processMouseWheelEvent(MouseWheelEvent e) {
@@ -242,40 +234,45 @@ public class BioLife extends JFrame {
 			}
 		});
 		settings.setListener(scrollPane);
-		contentPane.add(scrollPane, BorderLayout.CENTER);
 		scrollPane.setViewportView(world);
 		var adapter = new MouseMoveAdapter();
 		world.addMouseListener(adapter);
 		world.addMouseMotionListener(adapter);
-		botInfo.setVisible(false);
-		settings.setVisible(false);
-		legend.setVisible(false);
+		return scrollPane;
+	}
+	
+	private Component makePanel(JPanel panel, String name, String borderLayoutConst) {
+		JPanel panel_2 = new JPanel();
+		panel_2.setLayout(new BorderLayout(0, 0));
 		
-		JMenuItem restart = new JMenuItem("Рестарт");
-		restart.addActionListener(e->{world.worldGenerate();world.repaint();});
-		//Menu.add(restart);
-
-		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-		JMenuItem mntmNewMenuItem = new JMenuItem("Дерево эволюции");
-		mntmNewMenuItem.addActionListener(e->dialog.setVisible(true));
-		Menu.add(mntmNewMenuItem);
-		
-		JMenuItem save_menu = new JMenuItem("Сохранить");
-		save_menu.addActionListener(e->Configurations.settings.save());
-		Menu.add(save_menu);
-		
-		JMenuItem load_menu = new JMenuItem("Загрузить");
-		load_menu.addActionListener(e->Configurations.settings.load());
-		Menu.add(load_menu);
-		
-		startRecord = new JMenuItem("Начать запись");
-		startRecord.addActionListener(e->gifRecord());
-		Menu.add(startRecord);
-		this.addKeyListener(new KeyAdapter() {
+		JLabel label = new JLabel();
+		label.setFont(new Font("Tahoma", Font.PLAIN, 8));
+		label.setHorizontalAlignment(SwingConstants.CENTER);
+		label.addMouseListener(new MouseAdapter() {
+			boolean isActive = false;
 			@Override
-			public void keyPressed(KeyEvent e) {BioLife.this.keyPressed(e);}
+			public void mouseClicked(MouseEvent e) {mouseClicked_panel(panel,label,name,isActive=!isActive, borderLayoutConst);}
 		});
-		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
+		panel_2.add(panel, BorderLayout.CENTER);
+		switch (borderLayoutConst) {
+			case BorderLayout.EAST -> panel_2.add(label, BorderLayout.WEST);
+			case BorderLayout.WEST -> panel_2.add(label, BorderLayout.EAST);
+			case BorderLayout.SOUTH -> panel_2.add(label, BorderLayout.NORTH);
+			case BorderLayout.NORTH -> panel_2.add(label, BorderLayout.SOUTH);
+			default ->	throw new IllegalArgumentException("Unexpected value: " + borderLayoutConst);
+		};
+		mouseClicked_panel(panel,label,name,false, borderLayoutConst);
+		return panel_2;
+	}
+	
+	private String toVerticalText(String text) {
+		StringBuilder sb = new StringBuilder(20 + text.length() * 5);
+		sb.append("<html>");
+		for(var i = 0 ; i < text.length() ; i++) {
+			sb.append(text.charAt(i));
+			sb.append("<br>");
+		}
+		return sb.toString();
 	}
 
 	private void gifRecord() throws HeadlessException {
@@ -321,33 +318,21 @@ public class BioLife extends JFrame {
 		}
 	}
 	
-
-	private void mouseClicked_settings(boolean isActive) {
-		settings.setVisible(isActive);
-		if (isActive)
-			settings_label.setText("<html>Н<br>А<br>С<br>Т<br>Р<br>О<br>Й<br>К<br>И<br>&GT;</html>");
-		else {
-			settings_label.setText("<html>Н<br>А<br>С<br>Т<br>Р<br>О<br>Й<br>К<br>И<br>&lt;</html>");
-			BioLife.this.toFront();
-			BioLife.this.requestFocus();
-		}
-	}
-	private void mouseClicked_legend(MouseEvent e, boolean isActive) {
-		legend.setVisible(isActive);
-		if (isActive)
-			legend_label.setText("Легенда \\/");
-		else {
-			legend_label.setText("Легенда /\\");
-			BioLife.this.toFront();
-			BioLife.this.requestFocus();
-		}
-	}
-	private void mouseClicked_botInfo(MouseEvent e, boolean isActive) {
-		botInfo.setVisible(isActive);
-		if (isActive)
-			botInfo_label.setText("<html>И<br>Н<br>Ф<br>О<br>Р<br>М<br>А<br>Ц<br>И<br>Я<br><br>О<br><br>Б<br>О<br>Т<br>Е<br>&lt;</html>");
-		else {
-			botInfo_label.setText("<html>И<br>Н<br>Ф<br>О<br>Р<br>М<br>А<br>Ц<br>И<br>Я<br><br>О<br><br>Б<br>О<br>Т<br>Е<br>&GT;</html>");
+	private void mouseClicked_panel(JPanel panel ,JLabel panel_Label, String name, boolean isActive, String borderLayoutConst) {
+		String symbol =  switch (borderLayoutConst) {
+			case BorderLayout.EAST -> isActive ? "&GT;" : "&lt;";
+			case BorderLayout.WEST -> !isActive ? "&GT;" : "&lt;";
+			case BorderLayout.SOUTH -> isActive ? " \\/;" : " /\\";
+			case BorderLayout.NORTH -> !isActive ? " \\/;" : " /\\";
+			default ->	throw new IllegalArgumentException("Unexpected value: " + borderLayoutConst);
+		};
+		panel.setVisible(isActive);
+		switch (borderLayoutConst) {
+			case BorderLayout.EAST , BorderLayout.WEST -> panel_Label.setText(toVerticalText(Configurations.getProperty(BioLife.class, name)) + symbol);
+			case BorderLayout.SOUTH, BorderLayout.NORTH -> panel_Label.setText(Configurations.getProperty(BioLife.class, name) + symbol);
+		};
+		
+		if (!isActive) {
 			BioLife.this.toFront();
 			BioLife.this.requestFocus();
 		}
@@ -368,16 +353,16 @@ public class BioLife extends JFrame {
 				if ((e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0)
 					Configurations.settings.save();
 				else
-					executor.execute(() -> world.step());
+					Configurations.TIME_OUT_POOL.execute(() -> world.step());
 			}
 			case KeyEvent.VK_W ->
-				executor.execute(() -> {
+				Configurations.TIME_OUT_POOL.execute(() -> {
 					CellObject cell = botInfo.getCell();
 					if (cell != null)
 						cell.step(Math.round(Math.random() * 1000));
 				});
 			case KeyEvent.VK_E ->
-				executor.execute(() -> {
+				Configurations.TIME_OUT_POOL.execute(() -> {
 					CellObject cell = botInfo.getCell();
 					if (cell != null)
 						botInfo.step();

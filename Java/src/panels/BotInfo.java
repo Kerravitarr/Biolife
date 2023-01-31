@@ -9,7 +9,9 @@ import java.awt.event.MouseEvent;
 import java.awt.font.FontRenderContext;
 import java.awt.geom.AffineTransform;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -31,6 +33,7 @@ import javax.swing.border.TitledBorder;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
+import MapObjects.Organic;
 import MapObjects.Poison;
 import MapObjects.dna.CommandDNA;
 import MapObjects.dna.DNA;
@@ -116,13 +119,13 @@ public class BotInfo extends JPanel {
 		private JLabel text = null;
 		/**Панель пролистывания*/
 		private JScrollPane scroll = null;
-		/**Текстовое поле пары*/
+		/**Значение пары*/
 		private JLabel field = null;
 
 		/**Время паузы между встречными движениями*/
 		private static int timeout = 10;
 		
-		public TextPair(String label) {
+		public TextPair(String label, String toolTipText) {
 			setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 			text = new JLabel(label);
 			add(text);
@@ -139,6 +142,7 @@ public class BotInfo extends JPanel {
 			scroll.setViewportView(field);
 			
 	        scrolFieldList.add(this);
+	        setToolTipText(toolTipText);
 		}
 
 		public void clear() {setText("");}
@@ -224,37 +228,43 @@ public class BotInfo extends JPanel {
 		}
 	}
 	
-	private final TextPair photos;
-	private final TextPair state;
-	private final TextPair hp;
-	private final TextPair mp;
-	private final TextPair direction;
-	private final TextPair age;
-	private final TextPair generation;
-	private final TextPair phenotype;
+	private TextPair photos;
+	private TextPair state;
+	private TextPair hp;
+	private TextPair mp;
+	private TextPair direction;
+	private TextPair age;
+	private TextPair generation;
+	private TextPair phenotype;
+	/**Филогинетическое дерево*/
+	private TextPair filogen;
+	/**Позиция*/
+	private TextPair pos;
+	/**Поле токсикации*/
+	private TextPair toxicFIeld;
+	/**Плотность*/
+	private TextPair buoyancy;
+	/**Список тех полей, которые нужно автоматически проматывать*/
+	private final Set<TextPair> scrolFieldList;
+	/**Лист всех полей*/
+	List<TextPair> listFields;
+	
 	private CellObject cell = null;
 	private long oldYear = -1;
 	private int oldIndex = -1;
 	private boolean isFullMod = false;
 	private final JList<JListRow> listDNA;
-	/**Филогинетическое дерево*/
-	private final TextPair filogen;
-	private final TextPair pos;
-	private final TextPair toxicFIeld;
-	private final TextPair buoyancy;
-	private final JPanel panel_variant;
 	/**Панель, на которой написано про ДНК*/
 	private final JPanel panel_DNA;
 	/**Панель со всеми константами*/
-	private final JPanel panelConstant;
+	private JPanel panelConstant;
 	/**Список с прерываниями*/
 	private final JList<String> list_inter;
 	private final JScrollPane scrollPane_inter;
+	/**Главная панель, на которой всё и размещается*/
 	private final JPanel panel;
 	/**Тестовая клетка, для работы с командами без конца*/
 	private TextAL testCell = null;
-	/**Список тех полей, которые нужно автоматически проматывать*/
-	private final Set<TextPair> scrolFieldList;
 	
 	class WorkTask implements Runnable{
 		static boolean updateCounter = false;
@@ -301,15 +311,12 @@ public class BotInfo extends JPanel {
 		panel = new JPanel();
 		panel.setToolTipText(getProperty("main"));
 		add(panel, BorderLayout.CENTER);
+
+		panelConstant = new JPanel();
+		makeParamsPanel();
 		
 		panel_DNA = new JPanel();
-		
-		panelConstant = new JPanel();
-		panelConstant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), getProperty("ConstPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		
-		panel_variant = new JPanel();
-		panel_variant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), getProperty("VarPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		
+				
 		scrollPane_inter = new JScrollPane();
 		scrollPane_inter.setEnabled(false);
 		GroupLayout gl_panel = new GroupLayout(panel);
@@ -320,16 +327,13 @@ public class BotInfo extends JPanel {
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
 						.addComponent(panel_DNA, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
 						.addComponent(scrollPane_inter, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
-						.addComponent(panelConstant, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
-						.addComponent(panel_variant, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE))
+						.addComponent(panelConstant, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
 			gl_panel.createParallelGroup(Alignment.LEADING)
 				.addGroup(gl_panel.createSequentialGroup()
 					.addComponent(panelConstant, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addGap(5)
-					.addComponent(panel_variant, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(scrollPane_inter, GroupLayout.PREFERRED_SIZE, 76, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED)
@@ -349,119 +353,7 @@ public class BotInfo extends JPanel {
 		list_inter.setModel(new DefaultListModel<> ());
 		list_inter.setToolTipText(getProperty("Interrapt"));
 		scrollPane_inter.setViewportView(list_inter);
-		generation = new TextPair(getProperty("LabelGeneration"));
-		mp = new TextPair(getProperty("LabelMp"));
-		direction = new TextPair(getProperty("LabelDirection"));
-		toxicFIeld = new TextPair(getProperty("LabelToxic"));
-		photos = new TextPair(getProperty("LabelPhotos"));
-		phenotype = new TextPair(getProperty("LabelPhenotype"));
-		filogen = new TextPair(getProperty("LabelFilogen"));
-		buoyancy = new TextPair(getProperty("LabelBuoyancy"));
-		
-		generation.setToolTipText(getProperty("fieldGeneration"));
-		mp.setToolTipText(getProperty("fieldMp"));
-		direction.setToolTipText(getProperty("fieldDirection"));
-		toxicFIeld.setToolTipText(getProperty("fieldToxic"));
-		photos.setToolTipText(getProperty("fieldPhotos"));
-		phenotype.setToolTipText(getProperty("fieldPhenotype"));
-		filogen.setToolTipText(getProperty("fieldFilogen"));
-		buoyancy.setToolTipText(getProperty("fieldBuoyancy"));
-		
-		GroupLayout gl_panel_variant = new GroupLayout(panel_variant);
-		gl_panel_variant.setHorizontalGroup(
-			gl_panel_variant.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(generation, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-					.addContainerGap())
-				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(direction, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-					.addContainerGap())
-				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(mp, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-					.addContainerGap())
-				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(toxicFIeld, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-					.addContainerGap())
-				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(phenotype, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-					.addContainerGap())
-				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(photos, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-					.addContainerGap())
-				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(filogen, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-					.addContainerGap())
-				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addContainerGap()
-					.addComponent(buoyancy, GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE)
-					.addContainerGap())
-		);
-		gl_panel_variant.setVerticalGroup(
-			gl_panel_variant.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel_variant.createSequentialGroup()
-					.addComponent(toxicFIeld, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(mp, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(direction, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(generation, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(photos, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(phenotype, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(filogen, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(buoyancy, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(20, Short.MAX_VALUE))
-		);
-		
-		panel_variant.setLayout(gl_panel_variant);
 
-		pos = new TextPair(getProperty("LabelPos"));
-		hp = new TextPair(getProperty("LabelHp"));
-		state = new TextPair(getProperty("LabelState"));
-		age = new TextPair(getProperty("LabelAge"));
-
-		pos.setToolTipText(getProperty("fieldPos"));
-		hp.setToolTipText(getProperty("fieldHp"));
-		state.setToolTipText(getProperty("fieldState"));
-		age.setToolTipText(getProperty("fieldAge"));
-		
-		
-		GroupLayout gl_panel_const = new GroupLayout(panelConstant);
-		gl_panel_const.setHorizontalGroup(
-			gl_panel_const.createParallelGroup(Alignment.TRAILING)
-				.addGroup(gl_panel_const.createSequentialGroup()
-					.addContainerGap()
-					.addGroup(gl_panel_const.createParallelGroup(Alignment.TRAILING)
-						.addComponent(age, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE)
-						.addComponent(state, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE)
-						.addComponent(hp, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE)
-						.addComponent(pos, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE))
-					.addContainerGap())
-		);
-		gl_panel_const.setVerticalGroup(
-			gl_panel_const.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel_const.createSequentialGroup()
-					.addComponent(age, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(state, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(hp, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(pos, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addContainerGap(20, Short.MAX_VALUE))
-		);
-		panelConstant.setLayout(gl_panel_const);
 		panel_DNA.setLayout(new BorderLayout(0, 0));
 		
 		JLabel lblNewLabel_9 = new JLabel(getProperty("DNA_Panel"));
@@ -495,6 +387,49 @@ public class BotInfo extends JPanel {
 		
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new WorkTask(), 100, 100, TimeUnit.MILLISECONDS);
 	}
+	private void makeParamsPanel() {
+		panelConstant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), getProperty("ConstPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		
+		listFields = new ArrayList<>();
+
+		listFields.add(pos = new TextPair(getProperty("LabelPos"), getProperty("fieldPos")));
+		listFields.add(hp = new TextPair(getProperty("LabelHp"), getProperty("fieldHp")));
+		listFields.add(state = new TextPair(getProperty("LabelState"), getProperty("fieldState")));
+		listFields.add(age = new TextPair(getProperty("LabelAge"), getProperty("fieldAge")));	
+		listFields.add(generation = new TextPair(getProperty("LabelGeneration"), getProperty("fieldGeneration")));
+		listFields.add(mp = new TextPair(getProperty("LabelMp"), getProperty("fieldMp")));
+		listFields.add(direction = new TextPair(getProperty("LabelDirection"), getProperty("fieldDirection")));
+		listFields.add(toxicFIeld = new TextPair(getProperty("LabelToxic"), getProperty("fieldToxic")));
+		listFields.add(photos = new TextPair(getProperty("LabelPhotos"), getProperty("fieldPhotos")));
+		listFields.add(phenotype = new TextPair(getProperty("LabelPhenotype"), getProperty("fieldPhenotype")));
+		listFields.add(filogen = new TextPair(getProperty("LabelFilogen"), getProperty("fieldFilogen")));
+		listFields.add(buoyancy = new TextPair(getProperty("LabelBuoyancy"), getProperty("fieldBuoyancy")));
+		
+
+		GroupLayout gl_panel_const = new GroupLayout(panelConstant);
+		var hGroupe = gl_panel_const.createParallelGroup(Alignment.TRAILING);
+		for(var i : listFields) {
+			hGroupe.addComponent(i, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE);
+		}
+		gl_panel_const.setHorizontalGroup(
+			gl_panel_const.createParallelGroup(Alignment.TRAILING)
+				.addGroup(gl_panel_const.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(hGroupe)
+					.addContainerGap())
+		);
+		var wGroupe = gl_panel_const.createSequentialGroup();
+		for(var i : listFields) {
+			wGroupe.addComponent(i, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+			.addPreferredGap(ComponentPlacement.RELATED);
+		}
+		
+		gl_panel_const.setVerticalGroup(
+			gl_panel_const.createParallelGroup(Alignment.LEADING)
+				.addGroup(wGroupe)
+		);
+		panelConstant.setLayout(gl_panel_const);
+	}
 	public void setCell(CellObject cellObject) {
 		clearText();
 		this.cell=cellObject;
@@ -503,7 +438,6 @@ public class BotInfo extends JPanel {
 
 		setDinamicHaracteristiks();
 		if (getCell() instanceof AliveCell aliveCell) {
-			panel_variant.setVisible(true);
 			panel_DNA.setVisible(true);
 			generation.setText(Integer.toString(aliveCell.getGeneration()));
 			
@@ -531,9 +465,8 @@ public class BotInfo extends JPanel {
 			for(int i = 0 ; i < dna.interrupts.length ; i++)
 				model.add(i,OBJECT.get(i) + " - " + String.valueOf(dna.interrupts[i]));
 			list_inter.setModel(model);
-		} else if (getCell() instanceof Poison){
-			panel_variant.setVisible(true);
 		}
+		updateVisibleParams();
 	}
 
 	/**
@@ -578,11 +511,17 @@ public class BotInfo extends JPanel {
 		} else if (getCell() instanceof Poison poison) {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 			toxicFIeld.setText(poison.getType().name());
+		} else if (getCell() instanceof Organic org) {
+			hp.setText(String.valueOf((int)getCell().getHealth()));
+			if(org.getPoison() != Poison.TYPE.UNEQUIPPED)
+				toxicFIeld.setText(org.getPoison() + ":" + org.getPoisonCount());
+			else
+				toxicFIeld.clear();
 		} else {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 		}
 		panelConstant.repaint();
-		panel_variant.repaint();
+		updateVisibleParams();
 	}
 	
 	private void clearText() {
@@ -599,12 +538,18 @@ public class BotInfo extends JPanel {
 		toxicFIeld.clear();
 		buoyancy.clear();
 		listDNA.setModel(new DefaultListModel<>());
-		panel_variant.setVisible(false);
 		panel_DNA.setVisible(false);
 		scrollPane_inter.setVisible(false);
 		oldYear = -1;
 		isFullMod = false;
+		updateVisibleParams();
 		CommandDNA.setFullMod(isFullMod);
+	}
+	
+	private void updateVisibleParams() {
+		for(var i : listFields) {
+			i.setVisible(i.field.getText().length() != 0);
+		}
 	}
 
 	/**
