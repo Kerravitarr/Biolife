@@ -114,11 +114,7 @@ public class Configurations {
 	/**Загрузка конфигурации мира*/
 	public static void load(JSON configWorld) {
 		List<Integer> map = configWorld.getA("MAP_CELLS");
-		if(map.get(0) != MAP_CELLS.width || map.get(1) != MAP_CELLS.height) {
-			MAP_CELLS.width = map.get(0);
-			MAP_CELLS.height = map.get(1);
-			worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
-		}
+		setSize(map.get(0),map.get(1));
 		DIRTY_WATER = configWorld.get("DIRTY_WATER");
 		AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
 		LEVEL_MINERAL = configWorld.get("LEVEL_MINERAL");
@@ -129,6 +125,19 @@ public class Configurations {
 		SUN_POSITION = configWorld.get("SUN_POSITION");
 		BASE_SUN_POWER = configWorld.get("BASE_SUN_POWER");
 		ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
+	}
+	
+	/**
+	 * Сохраняет новые размеры мира
+	 * @param width ширина мира, в кубиках
+	 * @param height высота мира, тоже в кубиках
+	 */
+	public static void setSize(int width, int height) {
+		if(width != MAP_CELLS.width || height != MAP_CELLS.height) {
+			MAP_CELLS.width = width;
+			MAP_CELLS.height = height;
+			worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
+		}
 	}
 	
 	/**
