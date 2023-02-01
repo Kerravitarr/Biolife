@@ -617,21 +617,36 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public void mouseEntered(MouseEvent e) {}
 	@Override
 	public void mouseExited(MouseEvent e) {}
+	
+	/**
+	 * Пересчитыавет координаты мировые в пикселях в координаты ячейки
+	 * @param x мировая координата х
+	 * @param y мировая координата у
+	 * @return точку в реальном пространстве или null, если эта точка за гранью
+	 */
+	private Point recalculation(int x, int y) {
+		if(x < Configurations.border.width || x > getWidth() - Configurations.border.width)
+			return null;
+		if(y < Configurations.border.height || y > getHeight() - Configurations.border.height)
+			return null;
+		x -= Configurations.border.width;
+		y -= Configurations.border.height;
+		x = (int) Math.round(x/Configurations.scale-0.5);
+		y = (int) Math.round(y/Configurations.scale-0.5);
+		return new Point(x,y);
+	}
+	
 	@Override
 	public void mouseClicked(MouseEvent e) {
+		if(Configurations.menu.isVisible()) {
+			Point point = recalculation(e.getX(),e.getY());
+			if(point != null)
+				Configurations.menu.setCell(get(point));
+		}
 		if(Configurations.info.isVisible()) {
-			int realX = e.getX();
-			if(realX < Configurations.border.width || realX > getWidth() - Configurations.border.width)
-				return;
-			int realY = e.getY();
-			if(realY < Configurations.border.height || realY > getHeight() - Configurations.border.height)
-				return;
-			realX -= Configurations.border.width;
-			realY -= Configurations.border.height;
-			realX = (int) Math.round(realX/Configurations.scale-0.5);
-			realY = (int) Math.round(realY/Configurations.scale-0.5);
-			Point point = new Point(realX,realY);
-			Configurations.info.setCell(get(point));
+			Point point = recalculation(e.getX(),e.getY());
+			if(point != null)
+				Configurations.info.setCell(get(point));
 		}
 	}
 

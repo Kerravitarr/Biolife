@@ -1,6 +1,7 @@
 package main;
 
 import java.awt.Dimension;
+import java.awt.Image;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Locale;
@@ -11,11 +12,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+
 import MapObjects.CellObject;
 import MapObjects.Geyser;
 import MapObjects.Sun;
 import Utils.JSON;
 import panels.BotInfo;
+import panels.Menu;
 import panels.Settings;
 
 /**
@@ -52,7 +57,7 @@ public class Configurations {
 	public static double AGGRESSIVE_ENVIRONMENT = 0.25;
 	/**Как глубоко лежат минералы. При этом 1.0 - ни где, а 0.0 - везде... Ну да, так получилось :)*/
 	public static double LEVEL_MINERAL = 0.30;
-	/**Концентрация минералов*/
+	/**Концентрация минералов. Другими словами - количество всасываемых минералов в секунду при максимальной специализации*/
 	public static double CONCENTRATION_MINERAL = 1;
 	/**Сколько ходов до разложения органики*/
 	public static int TIK_TO_EXIT = 4;
@@ -82,6 +87,8 @@ public class Configurations {
 	public static BotInfo info = null;
 	/**Настройки мира*/
 	public static Settings settings = null;
+	/**Меню мира со всеми его кнопочками*/
+	public static Menu menu = null;
 	
 	//Общие классы для программы
 	/**ГСЧ для симуляции*/
@@ -162,5 +169,33 @@ public class Configurations {
 			System.err.println(MessageFormat.format("Не найдено свойство {0}.{1}", cls.getTypeName(),name));
 			throw e;
 		}
+	}
+	
+
+	/**
+	 * Сохраняет иконки для кнопки.
+	 * @param button кнопка, которой нужны иконки
+	 * @param name название кнопок
+	 */
+	public static void setIcon(JButton button, String name) {
+		var name_const = MessageFormat.format("resources/{0}.png", name);
+		var constResource = Configurations.class.getClassLoader().getResource(name_const);
+		if(constResource == null) {
+			System.err.println("Не смогли загрузить фотографию " + name_const);
+		}
+		var icon_const = constResource == null ? null : new ImageIcon(constResource);
+		var name_select = MessageFormat.format("resources/{0}_active.png", name);
+		var selectResource = Configurations.class.getClassLoader().getResource(name_select);
+		if(selectResource == null) {
+			System.err.println("Не смогли загрузить фотографию " + name_select);
+		}
+		var icon_select = selectResource == null ? null : new ImageIcon(selectResource);
+
+		if(icon_const == null)
+			button.setText(name);
+		else
+			button.setIcon(new ImageIcon(icon_const.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
+		if(icon_select != null)
+			button.setRolloverIcon(new ImageIcon(icon_select.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
 	}
 }
