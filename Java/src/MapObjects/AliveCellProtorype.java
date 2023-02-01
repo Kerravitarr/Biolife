@@ -34,9 +34,9 @@ public abstract class AliveCellProtorype extends CellObject{
 	/**Начальный уровень минералов клеток*/
 	protected static final int START_MP = 5;
 	/**Сколько нужно жизней для размножения, по умолчанию*/
-	public static final int MAX_HP = 999;
+	public static final int MAX_HP = 9999;
 	/**Сколько можно сохранить минералов*/
-	public static final int MAX_MP = 999;
+	public static final int MAX_MP = 9999;
 	/**На сколько организм тяготеет к фотосинтезу (0-4)*/
 	protected static final double DEF_PHOTOSIN = 2;
 	/**Столько здоровья требуется клетке для жизни на ход*/
@@ -119,16 +119,20 @@ public abstract class AliveCellProtorype extends CellObject{
 			/**Цвет специализации [0,1]*/
 			public final float color;
 		}
+		/**Максимальная специализация*/
+		private static final int MAX_SPECIALIZATION = 100;
+		/**Ведущая специализация*/
+		private TYPE main = TYPE.PHOTOSYNTHESIS;
 		
 		Specialization() {
 			super(TYPE.size()); 
 			for(var i : TYPE.staticValues)
-				put(i, 100 / TYPE.size());
+				put(i, MAX_SPECIALIZATION / TYPE.size());
 			var summ = 0;
 			for(var i : this.values())
 				summ += i;
-			put(TYPE.PHOTOSYNTHESIS, get(TYPE.PHOTOSYNTHESIS) + (100 - summ));
-			set(TYPE.PHOTOSYNTHESIS,50);
+			put(TYPE.PHOTOSYNTHESIS, get(TYPE.PHOTOSYNTHESIS) + (MAX_SPECIALIZATION - summ));
+			set(TYPE.PHOTOSYNTHESIS,MAX_SPECIALIZATION / 2);
 			updateColor();
 		}
 		
@@ -170,17 +174,26 @@ public abstract class AliveCellProtorype extends CellObject{
 				return;
 			} else {
 				var del = co - get(type);
-				var summ = 100 - get(type);
+				var summ = MAX_SPECIALIZATION - get(type);
+				var max = 0;
 				for(var i : entrySet()) {
 					if(i.getKey() == type) continue;
-					put(i.getKey(), (int) Math.round(((double)(i.getValue() * summ - del * i.getValue())) / summ));
+					var nVal = (int) Utils.betwin(0.0, Math.round(((double)(i.getValue() * summ - del * i.getValue())) / summ), MAX_SPECIALIZATION );
+					if(nVal >= max) {
+						max = nVal;
+						main = i.getKey();
+					}
+					put(i.getKey(), nVal );
 				}
 				summ = 0;
 				for(var i : entrySet()) {
 					if(i.getKey() != type)
 						summ += i.getValue();
 				}
-				put(type, 100 - summ);
+				var nVal = MAX_SPECIALIZATION - summ;
+				if(nVal >= max)
+					main = type;
+				put(type, nVal);
 			}
 			updateColor();
 		}
@@ -387,7 +400,7 @@ public abstract class AliveCellProtorype extends CellObject{
 	 * @return число [0,1]
 	 */
 	public double get(Specialization.TYPE type) {
-		return /*1.0 / Specialization.TYPE.size();*/getSpecialization().get(type) / 100d;
+		return getSpecialization().get(type) / ((double) Specialization.MAX_SPECIALIZATION);
 	}
 	public Specialization getSpecialization() {
 		return specialization;

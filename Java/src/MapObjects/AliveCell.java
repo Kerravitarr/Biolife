@@ -241,7 +241,7 @@ public class AliveCell extends AliveCellProtorype{
 	 */
 	protected void mutation() {
 		setGeneration(getGeneration() + 1);
-        switch (Utils.random(0, 6)) { // К сожалению 0 и 1 вырезаны.
+        switch (Utils.random(0, 9)) { // К сожалению 0 и 1 вырезаны.
             case 0 ->{ //Мутирует специализация
             	int co = Utils.random(0, 100); //Новое значение специализации
             	int tp = Utils.random(0, Specialization.TYPE.size() - 1); //Какая специализация
@@ -252,29 +252,54 @@ public class AliveCell extends AliveCellProtorype{
                 int mc = Utils.random(0, CommandList.COUNT_COMAND); //Его значение
                 dna = dna.update(ma, mc);
             	}
-            case 2 -> { //Один геном дублируется
+            case 2 -> { //Дупликация - один ген удваивается
             	if(dna.size + 1 <= MAX_MINDE_SIZE) {
-                	int mc = Utils.random(0, dna.size - 1); //Ген, который будет дублироваться
+                	int mc = Utils.random(0, dna.size - 1); //Индекс гена, который будет дублироваться
             		dna = dna.doubling(mc);
             	}
             }
-            case 3 -> { //Геном укорачивается на один ген
-            	int mc = Utils.random(0, dna.size - 1); //Ген, который будет удалён
+            case 3 -> { //Делеция - один ген удалился
+            	int mc = Utils.random(0, dna.size - 1); //Индекс гена, который будет удалён
             	dna = dna.compression(mc);
             }
-            case 4 -> { // Смена типа яда на который мы отзываемся
+            case 4 -> { //Инверсия - два подряд идущих гена меняются местами
+            	int mn = Utils.random(0, dna.size - 1); //Индекс гена, который будет обменян со следующим
+            	var f = dna.get(dna.getPC(),mn);
+            	var s = dna.get(dna.getPC(),mn + 1);
+            	dna = dna.update(mn, s);
+            	dna = dna.update(mn + 1, f);
+            }
+            case 5 -> { //Изометрия - отзеркаливание гена на следующий
+            	int mn = Utils.random(0, dna.size - 1); //Индекс гена, c которым будем работать
+            	dna = dna.update(mn + 1, CommandList.COUNT_COMAND - dna.get(dna.getPC(),mn));
+            }
+            case 6 -> { //Транслокация - смена местоприбывания гена
+            	int iStart = Utils.random(0, dna.size - 1); //Индекс гена сейчас
+            	int iStop = Utils.random(0, dna.size - 1); //Индекс гена который хочу
+            	var f = dna.get(dna.getPC(),iStart);//Сам путешественник
+            	if(dna.getIndex(iStart) > dna.getIndex(iStop)) {
+                	dna = dna.doubling(dna.getIndex(iStop));	//Создали площадку
+                	dna = dna.update(iStop, f); //Переместили сюда новый ген
+            		dna = dna.compression(dna.getIndex(iStart + 1)); //Удалили его предыдущую форму
+            	} else {
+                	dna = dna.doubling(dna.getIndex(iStop + 1));	//Создали площадку
+                	dna = dna.update(iStop + 1, f); //Переместили сюда новый ген
+                	dna = dna.compression(dna.getIndex(iStart)); //Удалили его предыдущую форму
+            	}
+            }
+            case 7 -> { // Смена типа яда на который мы отзываемся
             	poisonType = TYPE.toEnum(Utils.random(0, TYPE.size()));
             	if(poisonType != TYPE.UNEQUIPPED)
             		poisonPower = Utils.random(1, (int) (CreatePoison.HP_FOR_POISON * 2 / 3));
             	else
             		poisonPower = 0; //К этому у нас защищённости ни какой
             }
-            case 5 -> { //Мутирует вектор прерываний
+            case 8 -> { //Мутирует вектор прерываний
                 int ma = Utils.random(0, dna.interrupts.length-1); //Индекс в векторе
                 int mc = Utils.random(0, dna.size-1); //Его значение
                 dna.interrupts[ma] = mc;
             }
-            case 6 -> { //Мутирует наша невосприимчивость
+            case 9 -> { //Мутирует наша невосприимчивость
             	tolerance = Utils.random(0, dna.size - 1);
             }
         }

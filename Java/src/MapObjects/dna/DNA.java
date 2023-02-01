@@ -13,7 +13,7 @@ public class DNA {
 	/**Мозг*/
 	public final int [] mind;
 	/**Номер выполняемой инструкции*/
-	private int instruction;
+	private int pc;
 	
 	/**
 	 * Вектор прерываний:
@@ -30,7 +30,7 @@ public class DNA {
 		for (int i = 0; i < mind.length; i++) {
 			mind[i] = CommandList.BLOCK_1; // У клетки по базе только одна функция - фотосинтез
 		}
-		instruction = 0;
+		pc = 0;
 		for (int i = 0; i < interrupts.length; i++)
 			interrupts[i] = 0;
 	}
@@ -38,9 +38,8 @@ public class DNA {
 	public DNA(DNA dna){
 		this.size=dna.size;
 		this.mind=dna.mind;
-		this.instruction=dna.instruction;
-		for (int i = 0; i < this.interrupts.length; i++)
-			this.interrupts[i] = dna.interrupts[i];
+		this.pc=dna.pc;
+    	System.arraycopy(dna.interrupts, 0, interrupts, 0, interrupts.length);
 	}
 	public DNA(JSON dna) {
 		this.size=dna.getI("size");
@@ -48,21 +47,26 @@ public class DNA {
     	mind = new int[size];
     	for (int i = 0; i < size; i++) 
 			mind[i] = mindL.get(i);
-		this.instruction=dna.getI("instruction");
+		this.pc=dna.getI("instruction");
     	List<Integer> interruptsL = dna.getA("interrupts");
     	for (int i = 0; i < interrupts.length; i++) 
     		interrupts[i] = interruptsL.get(i);
 	}
-	/**А вот теперь ссылаться поздно - нам нужно поменять данные*/
-	private DNA(DNA dna, int index, int value) {
+	/**
+	 * Создаёт новую ДНК на основе существующей с заменой гена на новое значени
+	 * ДНК[PC + offset] = value
+	 * @param dna существующая ДНК
+	 * @param offset смещение, относительно PC, в которое кладётся новая инструкция
+	 * @param value новая инструкция
+	 */
+	private DNA(DNA dna, int offset, int value) {
 		this.size=dna.size;
 		this.mind = new int[dna.size];
     	System.arraycopy(dna.mind, 0, mind, 0, size);
-		this.instruction=dna.instruction;
-    	for (int i = 0; i < interrupts.length; i++) 
-			this.interrupts[i] = dna.interrupts[i];
+		this.pc=dna.pc;
+    	System.arraycopy(dna.interrupts, 0, interrupts, 0, interrupts.length);
 		//Изменение гена
-		this.mind[getIndex(index)] = value;
+		this.mind[getIndex(offset)] = value;
 	}
 	
 	/**
@@ -72,23 +76,27 @@ public class DNA {
 	protected void interrupt(AliveCell cell, int num) {
 		if(activInterrupt) return;
 		activInterrupt = true;
-		int stackInstr = instruction; // Кладём в стек PC
-		instruction = interrupts[num];
+		int stackInstr = pc; // Кладём в стек PC
+		pc = interrupts[num];
 		for (int cyc = 0; (cyc < 15); cyc++)
 			if(get().execute(cell)) break; // Выполняем программу прерывания
-		instruction = stackInstr; // Возвращаем из стека PC
+		pc = stackInstr; // Возвращаем из стека PC
 		activInterrupt = false;
 	}
-	
+	/**
+	 * Возвращает индекс инструкции по смещению, относительно текущего положения PC
+	 * @param offset Смещение инструкции
+	 * @return PC += offset
+	 */
 	public int getIndex(int offset) {
-		int ret = (instruction + offset) % size;
+		int ret = (pc + offset) % size;
         if(ret < 0)
         	ret += size;
         return ret;
 	};
 	/**Возвращает текущую инстуркцию*/
 	public CommandDNA get() {
-		return CommandList.list[mind[instruction]];
+		return CommandList.list[mind[pc]];
 	}
 	/**Возвращает инстуркцию по смещению*/
 	public CommandDNA get(int index) {
@@ -99,65 +107,79 @@ public class DNA {
 	 * @param offset - смещение
 	 */
 	public void next(int offset) {
-        instruction = getIndex(offset);
+        pc = getIndex(offset);
 	}
+
 	/**
-	 * Обновляет значение гена в геноме
-	 * @param index индекс в гене, причём 0 - под процессором
-	 * @param value - значение, на которое надо заменить
-	 * @return ДНК с обнавлёнными значениями
+	 * Создаёт новую ДНК на основе существующей с заменой гена на новое значени
+	 * ДНК[PC + offset] = value
+	 * @param dna существующая ДНК
+	 * @param offset смещение, относительно PC, в которое кладётся новая инструкция
+	 * @param value новая инструкция
 	 */
-	public DNA update(int index, int value) {
-		return new DNA(this,index,value);
+	public DNA update(int offset, int value) {
+		return new DNA(this,offset,value);
 	}
 	public JSON toJSON() {
 		JSON make = new JSON();
 		make.add("size", size);
 		make.add("mind", mind);
-		make.add("instruction", instruction);
+		make.add("instruction", pc);
 		make.add("interrupts", interrupts);
 		return make;
 	}
 	/**
 	 * Создаёт новую ДНК с удвоенным геном по адресу
 	 * @param index - удваиваемый индекс, абсолютный
-	 * @return
+	 * @return Новую ДНК в которой ДНК[index] = ДНК[index+1] удваивается
 	 */
 	public DNA doubling(int index) {
 		DNA ret = new DNA(size+1);
     	System.arraycopy(mind, 0, ret.mind, 0, index+1);
     	ret.mind[index+1] = ret.mind[index]; //Дублирование гена
     	System.arraycopy(mind, index+1, ret.mind, index+2, size - 1 - index);
-    	if(ret.instruction > index) {
+    	ret.pc = pc;
+    	if(ret.pc > index)
     		ret.next(1); // Наш тактовый счётчик идёт дальше
-    		for (int i = 0; i < interrupts.length; i++) {
-				if(interrupts[i] > index) interrupts[i] = (interrupts[i]+1)%ret.size; // И все прерывания тоже сдвигаются
-			}
-    	}
+		for (int i = 0; i < interrupts.length; i++) {
+			if(interrupts[i] >= index) interrupts[i] = Math.max(0,interrupts[i]-1); // И все прерывания тоже сдвигаются
+			else interrupts[i] = interrupts[i];
+		}
 		return ret;
 	}
 	/**
 	 * Сжимает ДНК, удаляя из неё один ген
-	 * @param index - удаляемый индекс, абсолютный
-	 * @return
+	 * @param index - удаляемый индекс
+	 * @return Новую ДНК в которой ДНК[index] удаляется
 	 */
 	public DNA compression(int index) {
 		DNA ret = new DNA(size-1);
     	System.arraycopy(mind, 0, ret.mind, 0, index);
     	System.arraycopy(mind, index+1, ret.mind, index, size - 1 - index);
-    	if(ret.instruction >= index) {
+    	ret.pc = pc;
+    	if(ret.pc >= index)
     		ret.next(-1);
-    		for (int i = 0; i < interrupts.length; i++) {
-				if(interrupts[i] >= index) interrupts[i] = Math.max(0,interrupts[i]-1); // И все прерывания тоже сдвигаются
-			}
-    	}
+		for (int i = 0; i < interrupts.length; i++) {
+			if(interrupts[i] >= index) interrupts[i] = Math.max(0,interrupts[i]-1); // И все прерывания тоже сдвигаются
+			else interrupts[i] = interrupts[i];
+		}
 		return ret;
 	}
-	public int getIndex() {
-		return instruction;
+	/**
+	 * Возвращает текущий индекс инструкции
+	 * @return PC
+	 */
+	public int getPC() {
+		return pc;
 	}
-	public int get(int instruction, int index) {
-		int pos = (instruction+index) % size;
+	/**
+	 * Возвращает код инструкции в абсоютном выражении
+	 * @param PC программный счётчик
+	 * @param offset смещение, относительно PC
+	 * @return ДНК[PC + offset]
+	 */
+	public int get(int PC, int offset) {
+		int pos = (PC+offset) % size;
 		if(pos < 0)
 			pos += size;
 		return mind[pos];
