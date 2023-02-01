@@ -23,7 +23,7 @@ public class DNACopy extends DNABreak {
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				bot.addHealth(HP_COST_MANY);	//Так как они поменяны местами, и траты их надо поменять местами!
 				cell.addHealth(-HP_COST_MANY);
-				breakDNAMany(bot,cell,bot.getDna().getIndex(),bot.getDna().size);
+				breakDNAMany(bot,cell,bot.getDna().getPC(),bot.getDna().size);
 			}
 			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> {
 				cell.getDna().interrupt(cell, see.nextCMD);

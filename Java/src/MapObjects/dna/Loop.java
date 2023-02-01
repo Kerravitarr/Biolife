@@ -25,13 +25,13 @@ public class Loop extends CommandDNA {
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){
 		var val = param(dna, 0);
-		var npc = (dna.getIndex() + 2 - val) % dna.size;
+		var npc = (dna.getPC() + 2 - val) % dna.size;
 		if(npc < 0) 
 			npc += dna.size;
 		return paramFormat.format(val,npc);
 	};
 	public String value(AliveCell cell, DNA dna) {
-		var npc = (dna.getIndex() + 2 - param(dna, 0)) % dna.size;
+		var npc = (dna.getPC() + 2 - param(dna, 0)) % dna.size;
 		if (npc < 0)
 			npc += dna.size;
 		return Integer.toString(npc);

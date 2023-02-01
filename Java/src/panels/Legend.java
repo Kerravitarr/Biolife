@@ -268,27 +268,18 @@ public class Legend extends JPanel{
 		panel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		add(panel, BorderLayout.NORTH);
 		
-		JRadioButton doing = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelDoing"));
-		doing.setSelected(true);
-		panel.add(doing);
+		{
+			var f = makeRB("LabelDoing",Graph.MODE.DOING);
+			f.setSelected(true);
+			panel.add(f);
+		}
+		panel.add(makeRB("LabelHp",Graph.MODE.HP));
+		panel.add(makeRB("LabelAge",Graph.MODE.YEAR));
+		panel.add(makeRB("LabelGeneration",Graph.MODE.GENER));
+		panel.add(makeRB("LabelPhenotype",Graph.MODE.PHEN));
+		panel.add(makeRB("LabelMp",Graph.MODE.MINERALS));
+		panel.add(makeRB("LabelPoison",Graph.MODE.POISON));
 		
-		JRadioButton hp = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelHp"));
-		panel.add(hp);
-		
-		JRadioButton year = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelAge"));
-		panel.add(year);
-		
-		JRadioButton generation = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelGeneration"));
-		panel.add(generation);
-		
-		JRadioButton phenotype = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelPhenotype"));
-		panel.add(phenotype);
-		
-		JRadioButton mineral = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelMp"));
-		panel.add(mineral);
-		
-		JRadioButton poison = new JRadioButton(Configurations.getHProperty(Legend.class,"LabelPoison"));
-		panel.add(poison);
 
 		graph = new Graph();
 		add(graph, BorderLayout.CENTER);
@@ -302,21 +293,6 @@ public class Legend extends JPanel{
 				.addGap(0, Graph.HEIGHT, Short.MAX_VALUE)
 		);
 		graph.setLayout(gl_Graph);
-
-		doing.addActionListener(e->action(e,Graph.MODE.DOING));
-		hp.addActionListener(e->action(e,Graph.MODE.HP));
-		year.addActionListener(e->action(e,Graph.MODE.YEAR));
-		generation.addActionListener(e->action(e,Graph.MODE.GENER));
-		phenotype.addActionListener(e->action(e,Graph.MODE.PHEN));
-		mineral.addActionListener(e->action(e,Graph.MODE.MINERALS));
-		poison.addActionListener(e->action(e,Graph.MODE.POISON));
-
-		for(var i : panel.getComponents()) {
-			if(i instanceof JRadioButton rb) {
-				rb.setFont(new Font("Tahoma", Font.PLAIN, 11));
-				rb.setFocusable(false);
-			}
-		}
 	}
 
 	private void action(ActionEvent e, MODE doing) {
@@ -327,6 +303,14 @@ public class Legend extends JPanel{
 		}
 		Graph.mode = doing;
 		graph.updateSrin = !World.isActiv;
+	}
+	
+	private JRadioButton makeRB(String name, Graph.MODE mode) {
+		JRadioButton jrbuton = new JRadioButton(Configurations.getHProperty(Legend.class,name));
+		jrbuton.addActionListener(e->action(e,mode));
+		jrbuton.setFont(new Font("Tahoma", Font.PLAIN, 11));
+		jrbuton.setFocusable(false);
+		return jrbuton;
 	}
 	
 	

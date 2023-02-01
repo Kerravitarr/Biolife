@@ -79,7 +79,7 @@ public abstract class CommandDNA {
 			cell.getDna().next(1 + getCountParams() + branch);
 		}else {
 			var dna = cell.getDna();
-			var PC = dna.getIndex() + 1 + getCountParams();
+			var PC = dna.getPC() + 1 + getCountParams();
 			dna.next(dna.get(PC, branch)); // Сдвижка определеяется параметром из ДНК
 		}
 		return isDoing();
@@ -121,7 +121,7 @@ public abstract class CommandDNA {
 	 * @return значение параметра [0,CommandList.COUNT_COMAND]
 	 */
 	protected static int param(DNA dna, int numParam) {
-		return dna.get(dna.getIndex(),  1 +numParam);
+		return dna.get(dna.getPC(),  1 +numParam);
 	}
 	/**
 	 * Возвращает параметр ДНК
@@ -288,8 +288,8 @@ public abstract class CommandDNA {
 		System.err.println("Забыл подписать ветвь для " + toString() + " " + this.getClass());
 		StringBuilder sb = new StringBuilder();
 		sb.append(" (");
-		var atr = dna.get(dna.getIndex() + 1 + this.getCountParams(), numBranch);
-		sb.append((dna.getIndex() + atr) % dna.size);
+		var atr = dna.get(dna.getPC() + 1 + this.getCountParams(), numBranch);
+		sb.append((dna.getPC() + atr) % dna.size);
 		sb.append(")");
 		return sb.toString();
 	};

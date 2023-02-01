@@ -57,6 +57,6 @@ public class Clone extends CommandDoInterupted {
 		if(numParam == 0)
 			return isFullMod() ? param(dna, cell, numParam, isAbolute).toString() : param(dna, cell, numParam, isAbolute).toSString();
 		else
-			return "PCc = " + String.valueOf((dna.getIndex() + param(cell,1)) % dna.size);
+			return "PCc = " + String.valueOf((dna.getPC() + param(cell,1)) % dna.size);
 	}
 }

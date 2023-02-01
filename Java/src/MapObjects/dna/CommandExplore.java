@@ -48,6 +48,6 @@ public abstract class CommandExplore extends CommandDNA {
 	 */
 	public String value(AliveCell cell, DNA dna) {
 		var ofset = explore(cell);
-        return valueFormat.format(ofset,(dna.get(dna.getIndex() + 1 + getCountParams(), ofset)) % dna.size);
+        return valueFormat.format(ofset,(dna.get(dna.getPC() + 1 + getCountParams(), ofset)) % dna.size);
 	}
 }

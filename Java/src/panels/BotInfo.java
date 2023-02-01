@@ -215,7 +215,7 @@ public class BotInfo extends JPanel {
 				if (interDNA != null) return;
 				interDNA = new DNA(dna); // Копируем для прерывания
 				int newIndex = interDNA.interrupts[cmd.getInterrupt(this, getDna())];
-				while(interDNA.getIndex() != newIndex) //Топорное решение, но первое что пришло в голову
+				while(interDNA.getPC() != newIndex) //Топорное решение, но первое что пришло в голову
 					interDNA.next(1);
 				printDNA(this); 
 			}
@@ -267,7 +267,6 @@ public class BotInfo extends JPanel {
 	private TextAL testCell = null;
 	
 	class WorkTask implements Runnable{
-		static boolean updateCounter = false;
 		@Override
 		public void run() {
 			if(isVisible() && getCell() != null && !getCell().aliveStatus(AliveCell.LV_STATUS.GHOST)) {
@@ -275,19 +274,16 @@ public class BotInfo extends JPanel {
 				if(getCell() instanceof AliveCell lcell) {
 					/**Индекс с которого идёт пеерсчёт*/
 					long age = lcell.getAge();
-					if(age != oldYear || oldIndex != lcell.getDna().getIndex()) {
+					if(age != oldYear || oldIndex != lcell.getDna().getPC()) {
 						oldYear = age;
-						oldIndex = lcell.getDna().getIndex();
+						oldIndex = lcell.getDna().getPC();
 						testCell = null;
 						printDNA(lcell); 
 					} else {
 						listDNA.repaint();
 					}
-					if(!updateCounter) {
-						updateCounter = true;
-						JlistRender.counter++;
-					}
 				}
+				JlistRender.counter++;
 			} else {
 				if(cell != null) {
 					cell = null;
@@ -504,10 +500,6 @@ public class BotInfo extends JPanel {
 			}
 			toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
 			buoyancy.setText(String.valueOf(alive.getBuoyancy()));	
-			
-			for(var i : scrolFieldList) 
-				i.scrol();
-			WorkTask.updateCounter = false;
 		} else if (getCell() instanceof Poison poison) {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 			toxicFIeld.setText(poison.getType().name());
@@ -520,6 +512,8 @@ public class BotInfo extends JPanel {
 		} else {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 		}
+		for(var i : scrolFieldList) 
+			i.scrol();
 		panelConstant.repaint();
 		updateVisibleParams();
 	}
@@ -604,7 +598,7 @@ public class BotInfo extends JPanel {
 		DefaultListModel<JListRow> model = new DefaultListModel<>();
 		model.setSize(dna.size);
 		for (int i = 0; i < dna.size; ) {
-			int cmd = dna.getIndex();
+			int cmd = dna.getPC();
 			CommandDNA cmd_o = dna.get();
 			addDNA(lcell, dna, model, interVal, i++, cmd, cmd_o, cmd_o.isInterrupt() ? JListRow.TYPE.CMD_I : (cmd_o.isDoing() ? JListRow.TYPE.CMD_D : JListRow.TYPE.CMD));
 			

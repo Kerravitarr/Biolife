@@ -31,7 +31,7 @@ public class DNAInsert extends DNABreak {
 				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				int length_DNA = param(cell,0, cell.getDna().size); // Сколько копируем
-				breakDNAMany(cell,bot,cell.getDna().getIndex(),length_DNA);
+				breakDNAMany(cell,bot,cell.getDna().getPC(),length_DNA);
 			}
 			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
@@ -44,6 +44,6 @@ public class DNAInsert extends DNABreak {
 	}
 
 	public String value(AliveCell cell, DNA dna) {
-		return valueFormat.format((param(dna, 0, dna.size) + dna.getIndex()) % dna.size);
+		return valueFormat.format((param(dna, 0, dna.size) + dna.getPC()) % dna.size);
 	}
 }

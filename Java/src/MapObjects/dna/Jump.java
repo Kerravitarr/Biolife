@@ -23,10 +23,10 @@ public class Jump extends CommandDNA {
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){
 		var value = param(dna, numParam);
-		return paramFormat.format(value,(value+dna.getIndex())%dna.size);
+		return paramFormat.format(value,(value+dna.getPC())%dna.size);
 	};
 	
 	public String value(AliveCell cell, DNA dna) {
-        return Integer.toString((param(dna, 0) + dna.getIndex()) % dna.size);
+        return Integer.toString((param(dna, 0) + dna.getPC()) % dna.size);
 	}
 }
