@@ -50,12 +50,11 @@ import panels.Settings;
 
 public class BioLife extends JFrame {
 	private class UpdateScrinTask implements Runnable {
-		DecimalFormat df = new DecimalFormat("###,###");
 
 		@Override
 		public void run() {
-			String title = MessageFormat.format(Configurations.bundle.getString("BioLife.title"), world.fps.FPS(), df.format(world.step),
-					world.sps.FPS(), df.format(world.countLife), df.format(world.countOrganic), df.format(world.countPoison), df.format(world.countWall));
+			String title = MessageFormat.format(Configurations.bundle.getString("BioLife.title"), world.fps.FPS(), world.step,
+					world.sps.FPS(), world.countLife, world.countOrganic, world.countPoison, world.countWall);
 			setTitle(title);
 			if (dialog.isVisible())
 				dialog.repaint();
@@ -137,7 +136,7 @@ public class BioLife extends JFrame {
 		setBounds(100, 100, (int) (450*2.5), (int) (300*2.5));
 		
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
-		Configurations.setSize((int) sSize.getWidth() / 2, (int) (sSize.getHeight() - 120 )/ 2); //120 - пикселей на верхнюю и нижнюю шапочки
+		Configurations.setSize((int) sSize.getWidth() / 5, (int) (sSize.getHeight() - 120 ) / 5); //120 - пикселей на верхнюю и нижнюю шапочки
 		
 		contentPane = new JPanel();
 		contentPane.setBackground(Color.WHITE);
@@ -155,7 +154,7 @@ public class BioLife extends JFrame {
 		contentPane.add(makeWorldPanel(), BorderLayout.CENTER);
 		menu = new Menu();
 		contentPane.add(makePanel(menu, "Menu", BorderLayout.NORTH), BorderLayout.NORTH);
-		setJMenuBar(makeMenu());
+		//setJMenuBar(makeMenu());
 		
 		addKeyListener(new KeyAdapter() {
 			@Override
@@ -169,35 +168,6 @@ public class BioLife extends JFrame {
 		});
 		
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
-	}
-
-	private JMenuBar makeMenu() {
-		JMenuItem restart = new JMenuItem("Рестарт");
-		restart.addActionListener(e->{world.worldGenerate();world.repaint();});
-		//Menu.add(restart);
-
-		JMenuBar menuBar = new JMenuBar();
-		
-		JMenu Menu = new JMenu("Меню");
-		menuBar.add(Menu);
-		
-		dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-		JMenuItem mntmNewMenuItem = new JMenuItem("Дерево эволюции");
-		mntmNewMenuItem.addActionListener(e->dialog.setVisible(true));
-		Menu.add(mntmNewMenuItem);
-		
-		JMenuItem save_menu = new JMenuItem("Сохранить");
-		save_menu.addActionListener(e->Configurations.settings.save());
-		Menu.add(save_menu);
-		
-		JMenuItem load_menu = new JMenuItem("Загрузить");
-		load_menu.addActionListener(e->Configurations.settings.load());
-		Menu.add(load_menu);
-		
-		startRecord = new JMenuItem("Начать запись");
-		startRecord.addActionListener(e->gifRecord());
-		Menu.add(startRecord);
-		return menuBar;
 	}
 
 	private Component makeWorldPanel() {
