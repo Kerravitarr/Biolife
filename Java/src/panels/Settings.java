@@ -1,10 +1,20 @@
 package panels;
 
+import static main.World.isActiv;
+
 import java.awt.Adjustable;
 import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.event.AdjustmentEvent;
 import java.awt.event.AdjustmentListener;
 import java.awt.event.ComponentEvent;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.GroupLayout;
 import javax.swing.GroupLayout.Alignment;
 import javax.swing.JButton;
@@ -13,18 +23,164 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollBar;
+import javax.swing.JTextField;
 import javax.swing.LayoutStyle.ComponentPlacement;
+import javax.swing.SwingConstants;
+import javax.swing.border.EtchedBorder;
+import javax.swing.border.TitledBorder;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 
 import Utils.JSON;
 import Utils.JsonSave;
-
-import javax.swing.SwingConstants;
 import main.Configurations;
 import main.World;
 
-import static main.World.isActiv;
-
 public class Settings extends JPanel{
+	
+	private static class Slider extends JPanel{
+		/**Описание ползунка*/
+		private final JLabel label;
+		/**Ползунок*/
+		private final JScrollBar scroll;
+		/**Сброс по умолчанию*/
+		private final JButton reset;
+		/**Ввести значение*/
+		private final JButton insert;
+		/**Показывает, что отсчёт ведётся в обратную сторону*/
+		private final boolean isBack;
+		/**Размер кнопок*/
+		private static final Dimension BUT_SIZE = new Dimension(20,15);
+		
+		/**Фильтр вводимых значений*/
+		class MyDocumentFilter extends DocumentFilter {
+			private final Integer min;
+			private final Integer max;
+			MyDocumentFilter(Integer mi, Integer ma){
+				min = mi; max = ma;
+			}
+
+			@Override
+			public void insertString(DocumentFilter.FilterBypass fp, int offset, String string, AttributeSet aset)throws BadLocationException {
+				if (isValid(string))
+					super.insertString(fp, offset, string, aset);
+				else
+					java.awt.Toolkit.getDefaultToolkit().beep();
+			}
+
+			@Override
+			public void replace(DocumentFilter.FilterBypass fp, int offset, int length, String string,AttributeSet aset) throws BadLocationException {
+				if (isValid(string))
+					super.replace(fp, offset, length, string, aset);
+				else
+					java.awt.Toolkit.getDefaultToolkit().beep();
+			}
+			
+			private boolean isValid(String string) {
+				int len = string.length();
+				boolean isValidInteger = true;
+				for (int i = 0; i < len; i++) {
+					if (!Character.isDigit(string.charAt(i))) {
+						isValidInteger = false;
+						break;
+					}
+				}
+				if (isValidInteger && (min != null || max != null)) {
+					var val = Integer.parseInt(string);
+					if (min != null && max != null)
+						isValidInteger = min <= val && val <= max;
+					else if (min != null)
+						isValidInteger = min <= val;
+					else
+						isValidInteger = val <= max;
+				}
+				return isValidInteger;
+			}
+		}
+		
+		@SuppressWarnings("null")
+		public Slider(String name,String toolTipText, int minS, int defVal, int maxS, Integer min, Integer max) {
+			setLayout(new BorderLayout(0, 0));
+			label = new JLabel(name);
+			label.setHorizontalAlignment(SwingConstants.CENTER);
+			label.setToolTipText(toolTipText);
+			add(label, BorderLayout.NORTH);
+			
+			isBack = minS > maxS;
+			
+			scroll = new JScrollBar();
+			scroll.setVisibleAmount (0); // Значение экстента равно 0
+			if(isBack) {
+				scroll.setMinimum(maxS);
+				scroll.setMaximum(minS);
+			}else {
+				scroll.setMinimum(minS);
+				scroll.setMaximum(maxS);
+			}
+			scroll.setOrientation(JScrollBar.HORIZONTAL);
+			scroll.setToolTipText(toolTipText);
+			add(scroll, BorderLayout.CENTER);
+			
+			reset = new JButton();
+			Configurations.setIcon(reset, "reset");
+			reset.setPreferredSize (BUT_SIZE);
+			reset.setBorderPainted(false);
+			reset.setFocusPainted(false);
+			reset.setContentAreaFilled(false);
+			reset.addActionListener( e -> setValue(defVal));
+			reset.setToolTipText(Configurations.getProperty(Settings.class,"resetSlider"));
+			reset.setFocusable(false);
+			
+			insert = new JButton();
+			Configurations.setIcon(insert, "insert");
+			insert.setPreferredSize (BUT_SIZE);
+			insert.setBorderPainted(false);
+			insert.setFocusPainted(false);
+			insert.setContentAreaFilled(false);
+			insert.setToolTipText(Configurations.getProperty(Settings.class,"insertSlider"));
+			insert.setFocusable(false);
+			
+			JPanel resetAndInsert = new JPanel();
+			resetAndInsert.setLayout(new BorderLayout(0, 0));
+			resetAndInsert.add(insert, BorderLayout.EAST);
+			resetAndInsert.add(reset, BorderLayout.WEST);
+			add(resetAndInsert, BorderLayout.EAST);
+			
+			JPanel insertValue = new JPanel();
+	        insertValue.setLayout(new BorderLayout(0, 0));
+	        
+	        String labelInsertText = Configurations.getProperty(Settings.class,"insertLabel");
+	        if(min == null && max == null) 
+	        	labelInsertText += " N∈R";
+	        else if(min != null && max == null)
+	        	labelInsertText += " N≥" + min.toString();
+	        else if(min == null && max != null)
+	        	labelInsertText += " N≤" + max.toString();
+	        else
+	        	labelInsertText += " N∈[" + min.toString() + "," + max.toString() +"]";
+	        var tlabel = new JLabel(labelInsertText);
+	        insertValue.add(tlabel, BorderLayout.NORTH);
+	        var tField = new JTextField(10);
+			((AbstractDocument) tField.getDocument()).setDocumentFilter(new MyDocumentFilter(min,max));
+	        insertValue.add(tField, BorderLayout.CENTER);
+			insert.addActionListener( e -> {
+				JOptionPane.showMessageDialog(this, insertValue,Configurations.getProperty(Settings.class,"insertSlider"), JOptionPane.QUESTION_MESSAGE);
+				System.out.println(tField.getText());
+			});
+			
+			setValue(defVal);
+		}
+		
+		public void setValue(int val) {
+			if(isBack)
+				val = scroll.getMaximum() - val + scroll.getMinimum();
+			setToolTipText("Значение: "  + String.valueOf(100*(val-scroll.getMinimum())/(scroll.getMaximum()-scroll.getMinimum()))+"%");
+			scroll.setValue(val);
+		}
+	}
+	
 	public static class ScrollPanel extends JPanel {
 		/**Описание ползунка*/
 		private final JLabel label;
@@ -106,13 +262,13 @@ public class Settings extends JPanel{
 	private final ScrollPanel const_SP;
 	private final ScrollPanel scale;
 	JComponent listener = null;
-	private final JButton play;
 	private final ScrollPanel sun_speed;
 	private final ScrollPanel scroll_SP;
-	private final JButton load_button;
-	private final JButton saveButton;
 	private final JButton step_button;
 	private final ScrollPanel sun_size;
+	
+	/**Лист всех настроек*/
+	List<Slider> listFields;
 	
 	/**Счётчик, показывающий, когда было сделанно последнее сохранение. Нужен, чтобы два раза подряд не сохраняться*/
 	private long lastSaveCount = 0;
@@ -129,6 +285,7 @@ public class Settings extends JPanel{
 		
 		JPanel panel = new JPanel();
 		add(panel, BorderLayout.CENTER);
+		//add(makeParamsPanel());
 		
 		const_SP = new ScrollPanel("Постоянная освещённость",1,30);
 		scroll_SP = new ScrollPanel("Движущаяся освещённость",1,30);
@@ -146,10 +303,6 @@ public class Settings extends JPanel{
 		sun_speed.setValue(Configurations.SUN_SPEED);
 		sun_size = new ScrollPanel("Размер солнца",1,Configurations.SUN_PARTS*2);
 		
-		play = new JButton();
-		play.setToolTipText("Для простоты можно нажать пробел на клавиатуре");
-		saveButton = new JButton("Сохранить мир");
-		load_button = new JButton("Загрузить мир");
 		step_button = new JButton("Шаг");
 		step_button.setToolTipText("Для простоты можно нажать S на клавиатуре");
 		step_button.addActionListener(e-> Configurations.world.step());
@@ -161,9 +314,6 @@ public class Settings extends JPanel{
 					.addContainerGap()
 					.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
 						.addComponent(const_SP, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(saveButton, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(load_button, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(play, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(step_button, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(scrollBar_7, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
 						.addComponent(scrollBar_6, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
@@ -202,14 +352,7 @@ public class Settings extends JPanel{
 					.addPreferredGap(ComponentPlacement.RELATED)
 					.addComponent(scale, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
 					.addPreferredGap(ComponentPlacement.RELATED, 129, Short.MAX_VALUE)
-					.addComponent(step_button)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(play)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(load_button)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(saveButton)
-					.addContainerGap())
+					.addComponent(step_button))
 		);
 		
 		panel.setLayout(gl_panel);
@@ -217,10 +360,6 @@ public class Settings extends JPanel{
 	}
 	
 	public void updateScrols() {
-		if(isActiv)
-			play.setText("Пауза");
-		else
-			play.setText("Пуск");
 		sun_speed.setValue(Configurations.SUN_SPEED );
 		scroll_SP.setValue(Configurations.ADD_SUN_POWER);
 		sun_size.setMaximum(Configurations.SUN_PARTS*2);
@@ -283,14 +422,46 @@ public class Settings extends JPanel{
 				Configurations.world.dispatchEvent(new ComponentEvent(Configurations.world, ComponentEvent.COMPONENT_RESIZED));
 			}
 		});
-		play.addActionListener(e->{
-			isActiv = !play.getText().equals("Пауза");
-			updateScrols();
-		});
-		load_button.addActionListener(e->load());
-		saveButton.addActionListener(e->save());
+	}
+	
+	private JPanel makeParamsPanel() {
+		JPanel panelConstant = new JPanel();
+		panelConstant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), Configurations.getHProperty(Settings.class,"mainPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
+		
+		listFields = new ArrayList<>();
+
+		listFields.add(new Slider(Configurations.getHProperty(Settings.class,"constSunL"), Configurations.getHProperty(Settings.class,"constSunT"), 1,Configurations.BASE_SUN_POWER,30, 1 , null));
+		
+
+		GroupLayout gl_panel_const = new GroupLayout(panelConstant);
+		var hGroupe = gl_panel_const.createParallelGroup(Alignment.TRAILING);
+		for(var i : listFields) {
+			hGroupe.addComponent(i, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE);
+		}
+		gl_panel_const.setHorizontalGroup(
+			gl_panel_const.createParallelGroup(Alignment.TRAILING)
+				.addGroup(gl_panel_const.createSequentialGroup()
+					.addContainerGap()
+					.addGroup(hGroupe)
+					.addContainerGap())
+		);
+		var wGroupe = gl_panel_const.createSequentialGroup();
+		for(var i : listFields) {
+			wGroupe.addComponent(i, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
+			.addPreferredGap(ComponentPlacement.RELATED);
+		}
+		
+		gl_panel_const.setVerticalGroup(
+			gl_panel_const.createParallelGroup(Alignment.LEADING)
+				.addGroup(wGroupe)
+		);
+		panelConstant.setLayout(gl_panel_const);
+		return panelConstant;
 	}
 
+	/**
+	 * Функция загрузки - предложит окно и всё сама сделает
+	 */
 	public void load() {
 		isActiv = false;
 		var js = new JsonSave("BioLife", "map");
@@ -304,7 +475,9 @@ public class Settings extends JPanel{
 			JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
 		} 
 	}
-	//TODO не сохранять, если с последнего сохрания не прошло и шагу
+	/**
+	 * Функция сохранения - предложит окно и всё сама сделает
+	 */
 	public void save() {
 		boolean oldStateWorld = isActiv;				
 		isActiv = false;
