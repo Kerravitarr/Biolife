@@ -35,32 +35,31 @@ public class Configurations {
 	
 	//Карта
 	/**Количиство ячеек карты*/
-	//public static Dimension MAP_CELLS = new Dimension(500/4,200/4);
-	public static Dimension MAP_CELLS = new Dimension(500,200);
+	public static Dimension MAP_CELLS = new Dimension(0,0);
 	/**Сам мир*/
 	public static CellObject [][] worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 	/**Базовая освещённость карты, то есть сколько света падает постоянно*/
-	public static int BASE_SUN_POWER = 8;
+	public static int BASE_SUN_POWER = 0;
 	/**Освещённость карты*/
-	public static int ADD_SUN_POWER = 8;
+	public static int ADD_SUN_POWER = 0;
 	//Скорость движения солнца в тиках мира
 	public static int SUN_SPEED = 15;
 	//Положение солнца в частях экрана
 	public static int SUN_POSITION = 0;
 	/**"Ширина" солнечного света в частях экрана*/
-	public static int SUN_LENGHT = 30;
-	/**На сколько частей нужно поделить экран для солнца*/
-	public static final int SUN_PARTS = 60;
+	public static int SUN_LENGHT = 0;
 	/**Уровень загрязнения воды*/
-	public static double DIRTY_WATER = 19;
+	public static int DIRTY_WATER = 0;
 	/**Степень мутагенности воды*/
 	public static double AGGRESSIVE_ENVIRONMENT = 0.25;
 	/**Как глубоко лежат минералы. При этом 1.0 - ни где, а 0.0 - везде... Ну да, так получилось :)*/
-	public static double LEVEL_MINERAL = 0.30;
+	public static double LEVEL_MINERAL = 0;
 	/**Концентрация минералов. Другими словами - количество всасываемых минералов в секунду при максимальной специализации*/
-	public static double CONCENTRATION_MINERAL = 1;
+	public static double CONCENTRATION_MINERAL = 0;
 	/**Сколько ходов до разложения органики*/
 	public static int TIK_TO_EXIT = 4;
+	
+	public static int SUN_PARTS = 30;
 	
 	//Отображение карты на экране
 	/**Масштаб*/
@@ -121,7 +120,7 @@ public class Configurations {
 	/**Загрузка конфигурации мира*/
 	public static void load(JSON configWorld) {
 		List<Integer> map = configWorld.getA("MAP_CELLS");
-		setSize(map.get(0),map.get(1));
+		makeWorld(map.get(0),map.get(1));
 		DIRTY_WATER = configWorld.get("DIRTY_WATER");
 		AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
 		LEVEL_MINERAL = configWorld.get("LEVEL_MINERAL");
@@ -135,16 +134,23 @@ public class Configurations {
 	}
 	
 	/**
-	 * Сохраняет новые размеры мира
+	 * Создаёт новый мир.
+	 * Если длина и высота мира изменяются - все объекты мира удаляются!
 	 * @param width ширина мира, в кубиках
 	 * @param height высота мира, тоже в кубиках
 	 */
-	public static void setSize(int width, int height) {
+	public static void makeWorld(int width, int height) {
 		if(width != MAP_CELLS.width || height != MAP_CELLS.height) {
 			MAP_CELLS.width = width;
 			MAP_CELLS.height = height;
 			worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 		}
+		BASE_SUN_POWER = 8;
+		ADD_SUN_POWER = BASE_SUN_POWER;
+		DIRTY_WATER = (int) (height - (height * 0.33) / BASE_SUN_POWER); //33% карты сверху - освщеено
+		LEVEL_MINERAL = 1 - 0.33;	//33% снизу в минералах
+		CONCENTRATION_MINERAL = 10;
+		SUN_LENGHT = height / 10;
 	}
 	
 	/**
@@ -171,6 +177,20 @@ public class Configurations {
 		}
 	}
 	
+	/**
+	 * Создаёт кнопку с иконкой. Кнопка 15х15
+	 * @param name имя иконки
+	 * @return кнопку, у которой две иконки и выключены основные флаги
+	 */
+	public static JButton makeIconButton(String name) {
+		var button = new JButton();
+		Configurations.setIcon(button, name);
+		button.setBorderPainted(false);
+		button.setFocusPainted(false);
+		button.setContentAreaFilled(false);
+		button.setFocusable(false);
+		return button;
+	}
 
 	/**
 	 * Сохраняет иконки для кнопки.
@@ -197,5 +217,7 @@ public class Configurations {
 			button.setIcon(new ImageIcon(icon_const.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
 		if(icon_select != null)
 			button.setRolloverIcon(new ImageIcon(icon_select.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
+		else if(icon_const != null)
+			button.setRolloverIcon(new ImageIcon(icon_const.getImage().getScaledInstance(10, 10, Image.SCALE_SMOOTH)));
 	}
 }

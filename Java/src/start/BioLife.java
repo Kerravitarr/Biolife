@@ -136,7 +136,7 @@ public class BioLife extends JFrame {
 		setBounds(100, 100, (int) (450*2.5), (int) (300*2.5));
 		
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
-		Configurations.setSize((int) sSize.getWidth() / 5, (int) (sSize.getHeight() - 120 ) / 5); //120 - пикселей на верхнюю и нижнюю шапочки
+		Configurations.makeWorld((int) sSize.getWidth() / 5, (int) (sSize.getHeight() - 120 ) / 5); //120 - пикселей на верхнюю и нижнюю шапочки
 		
 		contentPane = new JPanel();
 		contentPane.setBackground(Color.WHITE);
