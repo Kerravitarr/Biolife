@@ -1,6 +1,9 @@
 package MapObjects;
 
+import java.awt.Color;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 
 import Utils.ColorRec;
 import Utils.Utils;
@@ -13,129 +16,82 @@ import main.Point;
  *
  */
 public class Sun {
-	/**Одна часть экрана*/
-	private static class Part{
-		public Part(int startX, int lenght) {
-			this.startX=startX;
-			this.endX=startX+lenght;
-		}
-		int startX;
-		int endX;
-		double power = 0;
-		//Строки в этой части
-		ColorRec[] rows;
-		
-		/**На сколько подпунктов делить ячейки, на сколько плавно будут смотреться переходы*/
-		static final double sizeDraw = 2;
-		
-		public void paint(Graphics g) {
-			for (ColorRec colorRec : rows)
-				colorRec.paint(g);
-		}
-		@Override
-		public String toString() {
-			return "x0: " + startX + " endx: " + endX + " pw: " + power;
-		}
-		public synchronized void resize(int w, int h) {
-			ColorRec[] rowsL = new ColorRec[(int) Math.round(Configurations.DIRTY_WATER*sizeDraw)];
-			int lenghtY = h-Configurations.border.height*2;
-	        int heightSun = (int) Math.ceil(lenghtY/(Configurations.DIRTY_WATER*sizeDraw));
-	        int startXPx = Point.getRx(startX);
-	        int endPx = Point.getRx(endX);
-			for (int i = 0; i < Configurations.DIRTY_WATER*sizeDraw; i++) {
-				float sunPower = (float) ((240 - Math.max(0, (power - i/sizeDraw)/(power+1))*60)/360);
-				rowsL[i] = new ColorRec(startXPx,Configurations.border.height + i*heightSun, endPx-startXPx, heightSun,Utils.getHSBColor(sunPower, 1, 1,0.7));
-			}
-			rows = rowsL;
-		}
-		public double getEnergy(Point pos) {
-			return  power - (Configurations.DIRTY_WATER * pos.getY() / Configurations.MAP_CELLS.height);
-		}
-		public synchronized void repaint() {
-			for (int i = 0; i < rows.length; i++) {
-				float sunPower = (float) ((240 - Math.max(0, (power - i/sizeDraw)/(power+1))*60)/360);
-				rows[i].setColor(Utils.getHSBColor(sunPower, 1, 1,0.7));
-			}
-		}
-	}
 	
-	Part[] cr;
+	private int w;
+	private int h;
+	/**Цвет ясного неба*/
+	private final Color SunColor = Utils.getHSBColor(180d / 360, 1, 1, 0.7);
+	/**Цвет солнца*/
+	private final Color MoveColor = Utils.getHSBColor(180d / 360, 1, 1, 0.01);
+	/**Цвет полного мрака*/
+	private final Color DirColor = Utils.getHSBColor(240d / 360, 1, 1, 0.7);
 	
 	public Sun(int width, int height){
 		Configurations.sun = this;
-		cr = new Part[Configurations.SUN_PARTS];
-		int startX = 0;
-		for (int i = 0; i < Configurations.SUN_PARTS; i++) {
-			int lenght = (i+1) * Configurations.MAP_CELLS.width / Configurations.SUN_PARTS - startX;
-			cr[i] = new Part(startX,lenght);	
-			startX = (i+1) * Configurations.MAP_CELLS.width / Configurations.SUN_PARTS;
-		}
-		startX= 0;
 		resize(width, height);
 	}
 
 	public void resize(int width, int height) {
-		setPowers();
-		for (Part part : cr)
-			part.resize(width,height);
+		w = width;
+		h = height;
 	}
 
 	public double getEnergy(Point pos) {
-		for (Part pa : cr) {
-			if(pa.startX <= pos.getX() && pos.getX() <= pa.endX) {
-				return pa.getEnergy(pos);
-			}
+		double E = Configurations.BASE_SUN_POWER;
+		if(Configurations.DIRTY_WATER != Configurations.MAP_CELLS.height)
+			E -= ((double) pos.getY()) / (Configurations.MAP_CELLS.height - Configurations.DIRTY_WATER);
+		double delX = Math.abs(Point.subtractionX(Configurations.SUN_POSITION, pos.getX()));
+		if(delX <= Configurations.SUN_LENGHT) {
+			E += Configurations.ADD_SUN_POWER * (1d - delX / Configurations.SUN_LENGHT);
 		}
-		return 0;
+		return E;
 	}
 
-	public void paint(Graphics g) {
-		for (Part colorRec : cr)
-			colorRec.paint(g);
-	}
-	
-	public void repaint() {
-		setPowers();
-		for (Part part : cr)
-			part.repaint();
+	/**
+	 * Отрисовывает себя кому угодно
+	 * @param g
+	 */
+	public void paint(Graphics2D g2d) {
+		var minH = Point.getRy(0);
+		var minW = Point.getRx(0);
+		
+		//Рисуем основной фон воды
+		g2d.setColor(DirColor);
+		g2d.fillRect(minW, minH, w - minW * 2, h - minH * 2);
+		
+		//Настоящее солнце
+		var PS1 = Configurations.SUN_POSITION;
+		// Его копия
+		var PS2 = PS1 + (PS1 < Configurations.MAP_CELLS.width / 2 ? (Configurations.MAP_CELLS.width) : (-Configurations.MAP_CELLS.width));
+		//Рисуем солнце
+		int x[]={Point.getRx(PS1 - Configurations.SUN_LENGHT),Point.getRx(PS1),Point.getRx(PS1 + Configurations.SUN_LENGHT)};
+		int y[]={Point.getRy(0),Point.getRy((Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER) * (Configurations.MAP_CELLS.height - Configurations.DIRTY_WATER)),Point.getRy(0)};
+		GradientPaint gp = new GradientPaint(x[1], y[0], SunColor, x[1], y[1], DirColor);
+		g2d.setPaint(gp);
+		g2d.fillPolygon(x,y,3);
+		//Рисуем его копию
+		int x2[]={Point.getRx(PS2 - Configurations.SUN_LENGHT),Point.getRx(PS2),Point.getRx(PS2 + Configurations.SUN_LENGHT)};
+		gp = new GradientPaint(x2[1], y[0], SunColor, x2[1], y[1], DirColor);
+		g2d.setPaint(gp);
+		g2d.fillPolygon(x2,y,3);
+		
+		
+		//Рисуем основное освещение
+		var maxh = Point.getRy(Configurations.BASE_SUN_POWER * (Configurations.MAP_CELLS.height - Configurations.DIRTY_WATER));
+		//Освещённая часть мира
+		gp = new GradientPaint(w, minH, SunColor, w, maxh, DirColor);
+		g2d.setPaint(gp);
+		g2d.fillRect(minW, minH, w - minW * 2, maxh - minH);
+		
+		
 	}
 
 	/**Шаг мира для пересчёта*/
 	public void step(long step) {
 		if(step % Configurations.SUN_SPEED == 0) {
 			Configurations.SUN_POSITION++;
-			if(Configurations.SUN_POSITION >= Configurations.SUN_PARTS)
-				Configurations.SUN_POSITION -= Configurations.SUN_PARTS;
-			repaint();
-		}
-	}
-
-	private void setPowers() {
-		for (int i = 0; i < Configurations.SUN_PARTS / 2 + 1; i++) {
-			int pos = Configurations.SUN_POSITION + i;
-			while (pos >= Configurations.SUN_PARTS)
-				pos -= Configurations.SUN_PARTS;
-			
-			if (i > Configurations.SUN_LENGHT/2) {
-				cr[pos].power = 0;
-			} else {
-				cr[pos].power = Configurations.ADD_SUN_POWER * Math.cos((1.0 * i / Configurations.SUN_LENGHT) * Math.PI);
-			}
-			cr[pos].power+= Configurations.BASE_SUN_POWER;
-			
-			if(i != 0) {
-				pos = Configurations.SUN_POSITION - i;
-				while (pos < 0)
-					pos += Configurations.SUN_PARTS;
-				
-				if (i > Configurations.SUN_LENGHT/2) {
-					cr[pos].power = 0;
-				} else {
-					cr[pos].power = Configurations.ADD_SUN_POWER * Math.cos((1.0 * i / Configurations.SUN_LENGHT) * Math.PI);
-				}
-				cr[pos].power+= Configurations.BASE_SUN_POWER;
-			}
-			
+			if(Configurations.SUN_POSITION >= Configurations.MAP_CELLS.width)
+				Configurations.SUN_POSITION -= Configurations.MAP_CELLS.width;
 		}
 	}
 
