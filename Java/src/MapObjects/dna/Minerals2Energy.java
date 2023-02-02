@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
+import Utils.MyMessageFormat;
 
 /**
  * Преобразует мениралы в энергию
@@ -9,7 +10,7 @@ import MapObjects.AliveCellProtorype;
  */
 public class Minerals2Energy extends CommandDo {
 	
-	private final MessageFormat valueFormat = new MessageFormat("MP -= {0, number, #.#} HP += {0, number, #.#}");
+	private final MyMessageFormat valueFormat = new MyMessageFormat("MP -= {0, number, #.#} HP += {0, number, #.#}");
 
 	protected Minerals2Energy() {super();}
 

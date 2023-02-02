@@ -519,18 +519,9 @@ public class BotInfo extends JPanel {
 	}
 	
 	private void clearText() {
-		generation.clear();
-		age.clear();
-		state.clear();
-		hp.clear();
-		mp.clear();
-		direction.clear();
-		photos.clear();
-		phenotype.clear();
-		filogen.clear();
-		pos.clear();
-		toxicFIeld.clear();
-		buoyancy.clear();
+		for(var i : listFields) {
+			i.clear();
+		}
 		listDNA.setModel(new DefaultListModel<>());
 		panel_DNA.setVisible(false);
 		scrollPane_inter.setVisible(false);

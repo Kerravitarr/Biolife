@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import Utils.MyMessageFormat;
 
 /**
  * Является безусловным переходом на следующую команду
@@ -9,7 +10,7 @@ import MapObjects.AliveCell;
  */
 public class Jump extends CommandDNA {
 
-	private final MessageFormat paramFormat = new MessageFormat("{0} ({1})");
+	private final MyMessageFormat paramFormat = new MyMessageFormat("{0} ({1})");
 
 	public Jump() {super(1,0);}
 

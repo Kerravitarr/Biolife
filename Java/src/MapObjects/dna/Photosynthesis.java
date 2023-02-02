@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import Utils.MyMessageFormat;
 
 /**
  * Фотосинтез.
@@ -10,7 +11,7 @@ import MapObjects.AliveCell;
  */
 public class Photosynthesis extends CommandDo {
 	
-	private final MessageFormat valueFormat = new MessageFormat("HP += {0, number, #.#}");
+	private final MyMessageFormat valueFormat = new MyMessageFormat("HP += {0, number, #.#}");
 
 	protected Photosynthesis() {super();}
 

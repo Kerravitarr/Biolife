@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
+import Utils.MyMessageFormat;
 import main.Configurations;
 import main.Point;
 
@@ -15,8 +16,8 @@ import main.Point;
  */
 public class DNABreakNext extends DNABreak {
 	
-	private final MessageFormat param1Format = new MessageFormat("PC += {0}");
-	private final MessageFormat param2Format = new MessageFormat("CMD = {0}");
+	private final MyMessageFormat param1Format = new MyMessageFormat("PC += {0}");
+	private final MyMessageFormat param2Format = new MyMessageFormat("CMD = {0}");
 	/**Ломает ДНК того, на кого смотит на определённый*/
 	public DNABreakNext() {super(2);};
 	@Override

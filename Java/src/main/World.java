@@ -3,6 +3,7 @@ import static main.Configurations.geysers;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.HeadlessException;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -309,7 +310,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		//Небо
 		colors[0].paint(g);
 		//Вода
-		Configurations.sun.paint(g);
+		Configurations.sun.paint((Graphics2D) g);
         //Минералы
 		colors[1].paint(g);
 		colors[1+1].paint(g);

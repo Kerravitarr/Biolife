@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import Utils.MyMessageFormat;
 
 /**
  * Сдвигает программный счётчик не вперёд, как обычно,
@@ -10,7 +11,7 @@ import MapObjects.AliveCell;
  */
 public class Loop extends CommandDNA {
 	
-	private final MessageFormat paramFormat = new MessageFormat("{0} ({1})");
+	private final MyMessageFormat paramFormat = new MyMessageFormat("{0} ({1})");
 
 	public Loop() {super(1,0);};
 	@Override

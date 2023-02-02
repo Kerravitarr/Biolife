@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
+import Utils.MyMessageFormat;
 import main.Configurations;
 import main.Point;
 
@@ -11,8 +12,8 @@ import main.Point;
  *
  */
 public class DNAInsert extends DNABreak {
-	private final MessageFormat paramFormat = new MessageFormat("L = {0}");
-	private final MessageFormat valueFormat = new MessageFormat("PC = {0}");
+	private final MyMessageFormat paramFormat = new MyMessageFormat("L = {0}");
+	private final MyMessageFormat valueFormat = new MyMessageFormat("PC = {0}");
 
 	public DNAInsert() {super(1);};
 	@Override

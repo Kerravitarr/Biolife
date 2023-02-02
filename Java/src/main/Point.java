@@ -148,4 +148,37 @@ public class Point{
     }
 	public int getX() {return x;}
 	public int getY() {return y;}
+	
+	/**
+	 * Вычисляет расстояние между двумя точками
+	 * @param next следующая точка
+	 * @return расстояние
+	 */
+	public double hypotenuse(Point next) {
+		var delx = subtractionX(x,next.x);
+		var dely = y - next.y;
+		return Math.sqrt(delx*delx+dely*dely);
+	}
+	/**
+	 * Функция нахождения минимального расстояния между двумя точками по Х
+	 * @param xf первая точка по Х
+	 * @param xs вторая точка по У
+	 * @return Расстояние между двумя точками. Куда надо двигаться, чтобы попасть из первой во вторую быстрее всего
+	 */
+	public static int subtractionX(int xf, int xs) {
+		var del = xf - xs;
+		var cdel = Configurations.MAP_CELLS.width - del;
+		return Math.abs(del) < Math.abs(cdel) ? del : cdel;
+	}
+	
 }
+
+
+
+
+
+
+
+
+
+

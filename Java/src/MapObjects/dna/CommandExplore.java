@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import Utils.MyMessageFormat;
 
 /**
  * Общий класс для функций исследований.
@@ -12,7 +13,7 @@ import MapObjects.AliveCell;
  */
 public abstract class CommandExplore extends CommandDNA {
 	
-	private final MessageFormat valueFormat = new MessageFormat("A{0} PC += {1}");
+	private final MyMessageFormat valueFormat = new MyMessageFormat("A{0} PC += {1}");
 
 	/**
 	 * Cнициализирует класс исследования

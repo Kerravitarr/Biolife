@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import Utils.MyMessageFormat;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -24,21 +25,13 @@ public abstract class CommandDNA {
 	/**Показывает, что мы должны отображать всё в кратком виде*/
 	private static boolean isFullMod = false;
 	/**Форматирование для вывода параметров*/
-	private static MessageFormat nameFormat = new MessageFormat("{0} {1}");
+	private static MyMessageFormat nameFormat = new MyMessageFormat("{0} {1}");
 	/**Больше параметра*/
 	private static String parametrMoreOrEqual = "≥" + Configurations.getProperty(CommandDNA.class, "parameter");
 	/**Меньше параметра*/
 	private static String parametrLess = "<" + Configurations.getProperty(CommandDNA.class, "parameter");
 	/**Абсолютные координаты или относительные. Для комнад, для которых может быть разночтение*/
 	protected final boolean isAbolute;
-	
-	/**Класс форматирования сообщений*/
-	protected static class MessageFormat{
-		private final java.text.MessageFormat localFormat;
-
-		public MessageFormat(String pattern) {localFormat = new java.text.MessageFormat(pattern);}
-		public String format(Object ... arguments) {return localFormat.format(arguments);}
-	}
 
 	/**
 	 * Констурктор класса

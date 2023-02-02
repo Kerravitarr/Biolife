@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
+import Utils.MyMessageFormat;
 
 /**
  * Перевести жирки в еду
@@ -11,7 +12,7 @@ import MapObjects.AliveCellProtorype;
 public class SubTankMineral extends CommandDo {
 	/**Цена операции. А вы думали, бесплатно всё будет?*/
 	private final int HP_COST = 1;
-	private final MessageFormat valueFormat = new MessageFormat("MP += {0} 🛢 {1} = {2}");
+	private final MyMessageFormat valueFormat = new MyMessageFormat("MP += {0} 🛢 {1} = {2}");
 
 	public SubTankMineral() {super(1);}
 

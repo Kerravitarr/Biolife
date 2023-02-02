@@ -34,9 +34,9 @@ public abstract class AliveCellProtorype extends CellObject{
 	/**Начальный уровень минералов клеток*/
 	protected static final int START_MP = 5;
 	/**Сколько нужно жизней для размножения, по умолчанию*/
-	public static final int MAX_HP = 9999;
+	public static final int MAX_HP = 999;
 	/**Сколько можно сохранить минералов*/
-	public static final int MAX_MP = 9999;
+	public static final int MAX_MP = 999;
 	/**На сколько организм тяготеет к фотосинтезу (0-4)*/
 	protected static final double DEF_PHOTOSIN = 2;
 	/**Столько здоровья требуется клетке для жизни на ход*/
@@ -432,7 +432,7 @@ public abstract class AliveCellProtorype extends CellObject{
 	public double mineralAround() {
 		double realLv = getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
 		double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
-		return Configurations.CONCENTRATION_MINERAL * (realLv / dist) * 10 * get(Specialization.TYPE.MINERALIZATION);
+		return Configurations.CONCENTRATION_MINERAL * (realLv / dist) * get(Specialization.TYPE.MINERALIZATION);
 	}
 	/**Возвращает количество солнца вокруг*/
 	public double sunAround() {

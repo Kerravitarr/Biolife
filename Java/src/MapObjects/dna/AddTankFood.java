@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
+import Utils.MyMessageFormat;
 
 /**
  * Запасти немного еды в жирки
@@ -11,7 +12,7 @@ import MapObjects.AliveCellProtorype;
 public class AddTankFood extends CommandDo {
 	/**Цена операции. А вы думали, бесплатно всё будет?*/
 	private final int HP_COST = 1;
-	private final MessageFormat valueFormat = new MessageFormat("HP -= {0} 🛢 {1} = {2}");
+	private final MyMessageFormat valueFormat = new MyMessageFormat("HP -= {0} 🛢 {1} = {2}");
 
 	public AddTankFood() {super(1);}
 

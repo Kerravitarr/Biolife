@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
+import Utils.MyMessageFormat;
 import main.Configurations;
 import main.Point;
 
@@ -14,7 +15,7 @@ import main.Point;
  *
  */
 public class DNABreakNow extends DNABreak {
-	private final MessageFormat paramFormat = new MessageFormat("CMD = {0}");
+	private final MyMessageFormat paramFormat = new MyMessageFormat("CMD = {0}");
 	/**Подменяет команду у того, на кого смотрит на параметр*/
 	public DNABreakNow() {super(1);};
 	@Override

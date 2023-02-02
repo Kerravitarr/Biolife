@@ -3,6 +3,7 @@ package MapObjects.dna;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
+import Utils.MyMessageFormat;
 import main.Point.DIRECTION;
 
 /**
@@ -11,7 +12,7 @@ import main.Point.DIRECTION;
  *
  */
 public class TurnTo extends CommandDo {
-	private final MessageFormat valueFormat = new MessageFormat("D = {0}");
+	private final MyMessageFormat valueFormat = new MyMessageFormat("D = {0}");
 
 	public TurnTo() {super(1);};
 	@Override

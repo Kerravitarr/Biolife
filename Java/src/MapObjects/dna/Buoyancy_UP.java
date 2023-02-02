@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import Utils.MyMessageFormat;
 
 /**
  * Функция уменьшает плотность клетки, заставляя последюю всплывать
@@ -12,7 +13,7 @@ public class Buoyancy_UP extends CommandDo {
 	private final int HP_COST = 1;
 	/**На сколько меняется плавучесть*/
 	private final int DEL = 1;
-	private final MessageFormat valueFormat = new MessageFormat("HP -= {0} W {1}= {2}");
+	private final MyMessageFormat valueFormat = new MyMessageFormat("HP -= {0} W {1}= {2}");
 	/**Тип команды*/
 	private final boolean isUp;
 
