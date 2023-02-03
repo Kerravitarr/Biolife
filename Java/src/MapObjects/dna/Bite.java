@@ -54,7 +54,7 @@ public class Bite extends CommandDoInterupted {
 					cell.toxinDamage(target.getPoison(),target.getPoisonCount());
 				}
 				var F = cell.get(AliveCellProtorype.Specialization.TYPE.DIGESTION);//Эффективность пищеварения - поглащения отработанной пищи
-				var hpInOrg = F * target.getHealth() / 4;	
+				var hpInOrg = Math.min(AliveCellProtorype.MAX_HP * F, target.getHealth() / 4);	
 				if(target.getPoison() != Poison.TYPE.YELLOW)	//Обработанная жёлтым ядом пища - сытнее
 					hpInOrg /= 2;
 				hpInOrg = Math.min(hpInOrg,AliveCellProtorype.MAX_HP - cell.getHealth()); //Нельзя укусить кусок больший, чем сможешь пережевать
@@ -76,7 +76,7 @@ public class Bite extends CommandDoInterupted {
 				if (min0 * F * 2 >= (min1/2) && (cell.getHealth()/2 < hl)) {
 					cell.setMineral(min0 - min1/2); // количество минералов у бота уменьшается на количество минералов у жертвы
 					// типа, стесал свои зубы о панцирь жертвы
-					var cl = F * hl / 2;           // количество энергии у бота прибавляется лишь чуть чуть, мы же кусили
+					var cl = Math.min(AliveCellProtorype.MAX_HP * F, target.getHealth() / 4);   // количество энергии у бота прибавляется лишь чуть чуть, мы же кусили
 					cell.addHealth(cl);
 					target.addHealth(-cl);
 					cell.color(AliveCell.ACTION.EAT_ORG,cl);

@@ -9,6 +9,10 @@ import Utils.MyMessageFormat;
  * Тоже зависит от специального числа - photosynthesisEffect, но теперь чем оно ближе к 0, тем больше придёт минералов
  */
 public class Minerals2Energy extends CommandDo {
+	/**Сколько ХП дадут за 1 минерал*/
+	private static final long MIN_PER_HP = 10;
+	/**Сколько максимально минералов можно переработать*/
+	private static final long MAX_MIN = (AliveCellProtorype.MAX_HP / MIN_PER_HP) / 4;
 	
 	private final MyMessageFormat valueFormat = new MyMessageFormat("MP -= {0, number, #.#} HP += {0, number, #.#}");
 
@@ -16,26 +20,18 @@ public class Minerals2Energy extends CommandDo {
 
 	@Override
 	protected void doing(AliveCell cell) {
-		double maxMin = 10;
-        if (cell.getMineral() > maxMin) {   // максимальное количество минералов, которые можно преобразовать в энергию = 10
-        	cell.setMineral(Math.round(cell.getMineral() - maxMin));
-        	var add_hp = Math.round(10 * cell.get(AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING) * maxMin);
-        	cell.addHealth(add_hp); // Максимум 1 минрал преобразуется в 4 хп
-        	cell.color(AliveCell.ACTION.EAT_MIN,add_hp);
-        	
-        } else if(cell.getMineral() > 0) {  // если минералов меньше, то все минералы переходят в энергию
-        	var add_hp = Math.round(10 * cell.get(AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING) * cell.getMineral());
-        	cell.color(AliveCell.ACTION.EAT_MIN,add_hp);
-        	cell.addHealth(add_hp);
-        	cell.setMineral(0);
-        }
+		var min = Math.min(cell.getMineral(), MAX_MIN);
+    	var add_hp = Math.round(MIN_PER_HP * cell.get(AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING) * min);
+    	cell.color(AliveCell.ACTION.EAT_MIN,add_hp);
+    	cell.addHealth(add_hp);
+    	cell.addMineral(-min);
 	}
 	
 
 	protected String value(AliveCell cell) {
          if(cell.getMineral() > 0) {  // если минералов меньше, то все минералы переходят в энергию
-        	double maxMin = Math.min(10, cell.getMineral());
-        	var add_hp = Math.round(10 * cell.get(AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING) * maxMin);
+        	double maxMin = Math.min(MAX_MIN, cell.getMineral());
+        	var add_hp = Math.round(MIN_PER_HP * cell.get(AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING) * maxMin);
         	return valueFormat.format(maxMin,add_hp);
         } else {
         	return null;

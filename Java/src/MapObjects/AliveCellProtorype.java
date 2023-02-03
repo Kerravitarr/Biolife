@@ -396,11 +396,15 @@ public abstract class AliveCellProtorype extends CellObject{
 	
 	/**
 	 * Возвращает процент специализированности в данном типе
+	 * Не в основной специализации эффективность не бывает выше 10%
 	 * @param type тип специализации
 	 * @return число [0,1]
 	 */
 	public double get(Specialization.TYPE type) {
-		return getSpecialization().get(type) / ((double) Specialization.MAX_SPECIALIZATION);
+		if(type == getSpecialization().main)
+			return getSpecialization().get(type) / ((double) Specialization.MAX_SPECIALIZATION);
+		else
+			return Math.min(getSpecialization().get(type), 10) / ((double) Specialization.MAX_SPECIALIZATION);
 	}
 	public Specialization getSpecialization() {
 		return specialization;

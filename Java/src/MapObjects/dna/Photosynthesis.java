@@ -18,7 +18,9 @@ public class Photosynthesis extends CommandDo {
 	@Override
 	protected void doing(AliveCell cell) {
         var hlt = cell.sunAround();
-        if (hlt > 0) {
+		if (hlt > 0) {
+			if (cell.getMineral() > 0)
+				cell.addMineral(-1);
         	cell.addHealth(Math.round(hlt));   // прибавляем полученную энергия к энергии бота
         	cell.color(AliveCell.ACTION.EAT_SUN,hlt);
         }

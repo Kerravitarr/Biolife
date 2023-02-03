@@ -34,7 +34,7 @@ public class CreatePoison extends CommandDo {
 	 */
 	protected void addPosion(AliveCell cell,DIRECTION direction) {
 		var stream = (int) Math.round(Math.exp(param(cell,0, MAX_STREAM)));
-		var energy =  Math.min(Poison.MAX_TOXIC, cell.getPosionPower()) * cell.get(AliveCellProtorype.Specialization.TYPE.FERMENTATION);
+		var energy =  Math.min(Poison.MAX_TOXIC * cell.get(AliveCellProtorype.Specialization.TYPE.FERMENTATION), cell.getPosionPower());
 		cell.addHealth(-HP_FOR_POISON); 
     	Poison.createPoison(nextPoint(cell,direction), cell.getPosionType(), cell.getStepCount(), energy, stream);
 	}

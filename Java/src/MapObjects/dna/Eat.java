@@ -11,6 +11,7 @@ import MapObjects.AliveCellProtorype;
 import MapObjects.Fossil;
 import MapObjects.Organic;
 import MapObjects.Poison;
+import MapObjects.CellObject.CellObjectRemoveException;
 import main.Configurations;
 import main.Point;
 import main.Point.DIRECTION;
@@ -52,12 +53,15 @@ public class Eat extends CommandDoInterupted {
 					cell.toxinDamage(target.getPoison(),target.getPoisonCount());
 				}
 				var F = cell.get(AliveCellProtorype.Specialization.TYPE.DIGESTION);//Эффективность пищеварения - поглащения отработанной пищи
-				var hpInOrg = F * target.getHealth();	
+				var hpInOrg = Math.min(AliveCellProtorype.MAX_HP * F, target.getHealth());	
 				if(target.getPoison() != Poison.TYPE.YELLOW)	//Обработанная жёлтым ядом пища - сытнее
 					hpInOrg /= 2;
 				cell.addHealth(hpInOrg);    //здоровье увеличилось
 				cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
-				target.remove_NE();
+				if(target.getHealth() <= hpInOrg)
+					target.remove_NE();
+				else
+					target.addHealth(-hpInOrg); //Мы как бы и съесть задумали... Но на самом деле только кусили
 			}
 			case ENEMY, FRIEND -> {
 				//--------- дошли до сюда, значит впереди живой бот -------------------
@@ -72,8 +76,14 @@ public class Eat extends CommandDoInterupted {
 				if (min0 * F * 2 >= min1) {
 					cell.addMineral(-min1);		 // количество минералов у бота уменьшается на количество минералов у жертвы
 					// типа, стесал свои зубы о панцирь жертвы
-					target.remove_NE(); 		// удаляем жертву из списков
-					double cl = F * hl;         // количество энергии у бота прибавляется
+					double cl = Math.min(AliveCellProtorype.MAX_HP * F, hl);         // количество энергии у бота прибавляется
+					try {target.bot2Organic();} catch (CellObjectRemoveException e) {}	//Создаём органику
+					var organic = (Organic)Configurations.world.get(point);
+					if(organic.getHealth() <= cl)
+						organic.remove_NE();
+					else
+						organic.addHealth(-cl); //Мы как бы и съесть задумали... Но на самом деле только кусили
+					
 					cell.addHealth(cl);
 					cell.color(AliveCell.ACTION.EAT_ORG,cl);
 					return;
@@ -85,8 +95,13 @@ public class Eat extends CommandDoInterupted {
 					//------ если здоровья в 2 раза больше, чем минералов у жертвы  ------
 					//------ то здоровьем проламываем минералы ---------------------------
 					if (cell.getHealth() * F * 2 >= 2 * min1) {
-						target.remove_NE(); // удаляем жертву из списков
-						double cl = Math.max(0,(F * hl) - 2 * min1); // вычисляем, сколько энергии смог получить бот
+						double cl = Math.max(0,Math.min(AliveCellProtorype.MAX_HP * F, hl) - 2 * min1); // вычисляем, сколько энергии смог получить бот
+						try {target.bot2Organic();} catch (CellObjectRemoveException e) {}	//Создаём органику
+						var organic = (Organic)Configurations.world.get(point);
+						if(organic.getHealth() <= cl)
+							organic.remove_NE();
+						else
+							organic.addHealth(-cl); //Мы как бы и съесть задумали... Но на самом деле только кусили
 						cell.addHealth(cl);
 						cell.color(AliveCell.ACTION.EAT_ORG,cl);
 						return;                             // возвращаем 5
