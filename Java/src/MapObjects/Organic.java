@@ -54,7 +54,7 @@ public class Organic extends CellObject {
 		if(poison != Poison.TYPE.UNEQUIPPED) {
 			if (getAge() >= nextDouble) { // Вязкость яда
 				DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
-				var nen = poisonCount /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
+				var nen = poisonCount / 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
 				if(Poison.createPoison(getPos().next(dir),poison,getStepCount(), nen, getStream())) {
 					poisonCount = nen;
 				}
@@ -132,7 +132,7 @@ public class Organic extends CellObject {
 	}
 
 	public int getStream() {
-		return (int) (Poison.MAX_STREAM * getHealth() / AliveCell.MAX_HP);
+		return (int) Math.min(Poison.MAX_STREAM, Poison.MAX_STREAM * getHealth() / AliveCell.MAX_HP);
 	}
 
 
