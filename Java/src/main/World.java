@@ -2,6 +2,7 @@ package main;
 import static main.Configurations.geysers;
 
 import java.awt.Color;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.HeadlessException;
@@ -144,7 +145,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	/**Счётчик стенок*/
 	public int countWall = 0;
 	/**Все цвета, которые мы должны отобразить на поле*/
-	ColorRec [] colors;
+	private final ColorRec [] colors = new ColorRec[2];
 	/**Это мы, наш поток, в нём мы рисуем всё и всяк*/
 	@SuppressWarnings("unused")
 	private final AutostartThread worldThread;
@@ -224,8 +225,6 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		cellsTask.add(new WorldTask(firstList.toArray(Point[]::new),secondList.toArray(Point[]::new)));
 		
 		recalculate();
-
-		Configurations.settings.updateScrols();
 	}
 	/**
 	 * Один маленький шажок для мира и один огронмый шаг для клеток
@@ -308,18 +307,17 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 
 	private void paintField(Graphics g) {
 		//Небо
-		colors[0].paint(g);
+		colors[0].paint((Graphics2D) g);
 		//Вода
 		Configurations.sun.paint((Graphics2D) g);
         //Минералы
-		colors[1].paint(g);
-		colors[1+1].paint(g);
+		colors[1].paint((Graphics2D) g);
 		//Гейзеры
 		for(Geyser gz : Configurations.geysers)
 			gz.paint(g);
 
 		//Земля
-		colors[1+2].paint(g);
+		colors[1].paint((Graphics2D)g);
 		//Вспомогательное построение
 		//paintLine(g);
 		//paintProc(g);
@@ -414,6 +412,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			isActiv = false;
 			repaint_stop = 5;
 		}
+		//Пересчёт размера мира
 		double hDel = ((double) getHeight()) * (1 - (Configurations.UP_border + Configurations.DOWN_border)) / (Configurations.MAP_CELLS.height);
 		double wDel = ((double) getWidth()) / (Configurations.MAP_CELLS.width);
 		Configurations.scale = Math.min(hDel, wDel);
@@ -423,17 +422,37 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		for(Geyser gz : Configurations.geysers)
 			gz.updateScreen(getWidth(),getHeight());
 		Configurations.sun.resize(getWidth(), getHeight());
-				
-		colors = new ColorRec[2 + 2];
-		var width = Configurations.border.width;
-		var height = Configurations.border.height;
-		colors[0] = new ColorRec(width, 0, getWidth() - width * 2, height, new Color(224, 255, 255, 255)); // небо
-		int lenghtY = getHeight() - height * 2;
-		colors[1] = new ColorRec(width, (int) (height + lenghtY * Configurations.LEVEL_MINERAL), getWidth() - width * 2, (int) (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2), Utils.getHSBColor(270.0 / 360, 0.5, 1.0, 0.5));
-		colors[1 + 1] = new ColorRec(width, (int) (getHeight() - height - (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2)), getWidth() - width * 2, (int) (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2), Utils.getHSBColor(300.0 / 360, 0.5, 1.0, 0.5));
-		colors[1 + 2] = new ColorRec(width, getHeight() - height, getWidth() - width * 2, height, new Color(139, 69, 19, 255));
+		
+		updateScrin();
+		
 		if(oActiv && !isActiv)
 			isActiv = true;
+	}
+
+	/**Пересчитывает позиции всех объектов*/
+	public void updateScrin() {
+		//Верхнее небо
+		int xs[] = new int[4];
+		int ys[] = new int[4];
+		//Минералы
+		int xm[] = new int[4];
+		int ym[] = new int[4];
+		//Дно
+		int xb[] = new int[4];
+		int yb[] = new int[4];
+		
+		xs[0] = xs[1] = xm[0] = xm[1] = xb[0] = xb[1] = Point.getRx(0);
+		xs[2] = xs[3] = xm[2] = xm[3] = xb[2] = xb[3] = Point.getRx(Configurations.MAP_CELLS.width);
+		
+		ys[0] = ys[3] = 0;
+		ys[1] = ys[2] = Point.getRy(0);
+		ym[0] = ym[3] = Point.getRy((int) (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL));
+		ym[1] = ym[2] = yb[0] = yb[3] = Point.getRy(Configurations.MAP_CELLS.height - 1);
+		yb[1] = yb[2] = getHeight();
+		
+		colors[0] = new ColorRec(xs,ys, new Color(224, 255, 255, 255));
+		colors[1] = new ColorRec(xm,ym, new GradientPaint(getWidth(), ym[0], Utils.getHSBColor(240d / 360, 1, 1, 0.7), getWidth(), ym[1], Utils.getHSBColor(300.0 / 360, 1d, 1d, 0.7)));
+		colors[1] = new ColorRec(xb,yb, new Color(139, 69, 19, 255));
 	}
 
 	public synchronized JSON serelization() {
