@@ -143,6 +143,20 @@ public class BotInfo extends JPanel {
 			
 	        scrolFieldList.add(this);
 	        setToolTipText(toolTipText);
+	        
+			var adapter = new MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					if(e.getButton() == MouseEvent.BUTTON1)
+						JlistRender.counter = -10;
+					else if(e.getButton() == MouseEvent.BUTTON3)
+						JlistRender.counter += 10;
+				}
+			};
+			addMouseListener(adapter);
+			text.addMouseListener(adapter);
+			scroll.addMouseListener(adapter);
+			field.addMouseListener(adapter);
 		}
 
 		public void clear() {setText("");}
@@ -489,7 +503,7 @@ public class BotInfo extends JPanel {
 				}
 				hp.setText(sb.toString());
 			}
-			{
+			if(alive.getMineral() > 0){
 				StringBuilder sb = new StringBuilder();
 				sb.append(((int) alive.getMineral()));
 				if(alive.getMineralTank() > 0){
@@ -497,9 +511,17 @@ public class BotInfo extends JPanel {
 					sb.append(alive.getMineralTank());
 				}
 				mp.setText(sb.toString());
+			} else {
+				mp.clear();
 			}
-			toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
-			buoyancy.setText(String.valueOf(alive.getBuoyancy()));	
+			if(alive.getPosionPower() > 0)
+				toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
+			else
+				toxicFIeld.clear();
+			if(alive.getBuoyancy() > 0)
+				buoyancy.setText(String.valueOf(alive.getBuoyancy()));	
+			else
+				buoyancy.clear();
 		} else if (getCell() instanceof Poison poison) {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 			toxicFIeld.setText(poison.getType().name());
