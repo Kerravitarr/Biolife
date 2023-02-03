@@ -22,11 +22,20 @@ public class AddTankMineral extends CommandDo {
 		var A = 10 * cell.get(AliveCellProtorype.Specialization.TYPE.ACCUMULATION);
 		//Сколько хотим запсти
 		var val = param(cell, 0, AliveCell.MAX_MP * A);
+		addMineral(cell, val);
+	}
+	/**
+	 * Закладывает минералы в желудок
+	 * @param cell кто кладёт
+	 * @param val сколько класть
+	 */
+	public static void addMineral(AliveCell cell,int val) {
 		if(val <= 0) return;
 		//Сколько можем запасти
 		val = (int) Math.min(cell.getMineral(), val);
 		if(val <= 0) return;
 		//Сколько у нас места осталось
+		var A = 10 * cell.get(AliveCellProtorype.Specialization.TYPE.ACCUMULATION);
 		val = (int) Math.min(val, AliveCell.MAX_MP * A - cell.getMineralTank());
 		if(val <= 0) return;
 		cell.addMineralTank(val);

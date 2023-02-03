@@ -7,10 +7,14 @@ import java.awt.Graphics2D;
 import java.awt.Stroke;
 
 import MapObjects.Poison.TYPE;
+import MapObjects.dna.AddTankFood;
+import MapObjects.dna.AddTankMineral;
 import MapObjects.dna.Birth;
 import MapObjects.dna.CommandList;
 import MapObjects.dna.CreatePoison;
 import MapObjects.dna.DNA;
+import MapObjects.dna.SubTankFood;
+import MapObjects.dna.SubTankMineral;
 import Utils.JSON;
 import Utils.Utils;
 import main.Configurations;
@@ -94,50 +98,49 @@ public class AliveCell extends AliveCellProtorype{
 	
 	@Override
 	public void step() {
+		//Работа ДНК
 		for (int cyc = 0; (cyc < 15); cyc++)
 			if(dna.get().execute(this))
 				break;
-		if(getBuoyancy() < 0 && getAge() % (getBuoyancy()+101) == 0)
-			moveD(DIRECTION.DOWN);
-		else if(getBuoyancy() > 0 && getAge() % (101-getBuoyancy()) == 0)
-			moveD(DIRECTION.UP);
-        
+		//Всплытие/погружение
+		if(getBuoyancy() != 0) {
+			if(getBuoyancy() < 0 && getAge() % (getBuoyancy()+101) == 0)
+				moveD(DIRECTION.DOWN);
+			else if(getBuoyancy() > 0 && getAge() % (101-getBuoyancy()) == 0)
+				moveD(DIRECTION.UP);
+		}
+        //Трата энергии на ход
 		if(isSleep) {
 			setSleep(false);
 	        addHealth(-1);          //Спать куда эффективнее
 		} else {
 	        addHealth(- HP_PER_STEP); //Пожили - устали
 		}
+		//Излишки в желудок
+		if(getHealth() > MAX_HP - 100) 
+			AddTankFood.addFood(this, (int) (getHealth() - (MAX_HP - 100)));
+		if(getMineral() > MAX_MP - 100)
+			AddTankMineral.addMineral(this, (int) (getMineral() - (MAX_MP - 100)));
+		
+		
+		//Если жизней много - делимся
         if (this.getHealth() > MAX_HP)
         	Birth.birth(this);
+        //Если есть друзья - делимся с ними едой
     	if(!getFriends().isEmpty())
 			clingFriends();
-        // если бот находится на глубине ниже половины
-        // то он автоматом накапливает минералы, но не более MAX_MP
-        if (this.getPos().getY() >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL)) {
+        //Если есть минералы - получаем их
+        if (this.getPos().getY() >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL))
             this.addMineral(Math.round(mineralAround()));
-        }
-        if(getAge() % 50 == 0) {
+        //Меняем цвет, если бездельничаем
+        if(getAge() % 50 == 0)
             color(ACTION.NOTHING, color_cell.r+color_cell.g+color_cell.b);
-        }
-        if(getHealth() < 100) {	//Если мало жизней, достаём заначку!
-        	if(getFoodTank() > 100) {
-        		addFoodTank(-100);
-        		addHealth(100);
-        	} else if(getFoodTank() > 0) {
-        		addHealth(getFoodTank());
-        		setFoodTank(0);
-        	}
-        }
-        if(getMineral() < 100) {	//Если мало жизней, достаём заначку!
-        	if(mineralTank > 100) {
-        		mineralTank -= 100;
-        		addMineral(mineral);
-        	} else if(mineralTank > 0) {
-        		addMineral(mineralTank);
-        		mineralTank = 0;
-        	}
-        }
+        //Если мало жизней, достаём заначку!
+        if(getHealth() < 100)
+        	SubTankFood.sub(this, 100);
+        //Если мало минералов, достаём заначку!
+        if(getMineral() < 100)
+        	SubTankMineral.sub(this, 100);
 	}
 
 	/**Поделиться с друзьями всем, что имеем*/
@@ -240,8 +243,12 @@ public class AliveCell extends AliveCellProtorype{
 	 * Создаёт одну из мутаций
 	 */
 	protected void mutation() {
+		if(DNA_wall > 0) {	//Защита ДНК в действии!
+			DNA_wall = 0;
+			return;
+		}
 		setGeneration(getGeneration() + 1);
-        switch (Utils.random(0, 9)) { // К сожалению 0 и 1 вырезаны.
+        switch (Utils.random(0, 9)) {
             case 0 ->{ //Мутирует специализация
             	int co = Utils.random(0, 100); //Новое значение специализации
             	int tp = Utils.random(0, Specialization.TYPE.size() - 1); //Какая специализация

@@ -22,6 +22,14 @@ public class SubTankMineral extends CommandDo {
 		var A = 10 * cell.get(AliveCellProtorype.Specialization.TYPE.ACCUMULATION);
 		//Сколько хотим взять
 		var val = param(cell, 0, AliveCell.MAX_MP * A);
+		sub(cell,val);
+	}
+	/**
+	 * Забирает из желудка столько минералов, сколько получится
+	 * @param cell кто
+	 * @param val сколько
+	 */
+	public static void sub(AliveCell cell, int val) {
 		if(val <= 0) return;
 		//Сколько можем взять
 		val = (int) Math.min(val, cell.getMineralTank());
