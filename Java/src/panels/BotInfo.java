@@ -510,6 +510,10 @@ public class BotInfo extends JPanel {
 					sb.append(" +");
 					sb.append(alive.getMineralTank());
 				}
+				if(alive.mineralAround() > 0){
+					sb.append(" →← ");
+					sb.append(alive.mineralAround());
+				}
 				mp.setText(sb.toString());
 			} else {
 				mp.clear();
