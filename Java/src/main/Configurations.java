@@ -50,16 +50,29 @@ public class Configurations {
 	public static int SUN_LENGHT = 0;
 	/**Уровень загрязнения воды*/
 	public static int DIRTY_WATER = 0;
-	/**Степень мутагенности воды*/
-	public static double AGGRESSIVE_ENVIRONMENT = 0.25;
 	/**Как глубоко лежат минералы. При этом 1.0 - ни где, а 0.0 - везде... Ну да, так получилось :)*/
 	public static double LEVEL_MINERAL = 0;
 	/**Концентрация минералов. Другими словами - количество всасываемых минералов в секунду при максимальной специализации*/
-	public static double CONCENTRATION_MINERAL = 0;
+	public static int CONCENTRATION_MINERAL = 0;
+	/**Степень мутагенности воды*/
+	public static double AGGRESSIVE_ENVIRONMENT = 0;
 	/**Сколько ходов до разложения органики*/
-	public static int TIK_TO_EXIT = 4;
+	public static int TIK_TO_EXIT;
 	
-	public static int SUN_PARTS = 30;
+	//Те-же переменные, только их значения по умолчанию.
+	//Значения по умолчанию рассчитываются исходя из размеров мира
+	//И не могут меняться пока мир неизменен
+	public static int DBASE_SUN_POWER = BASE_SUN_POWER;
+	public static int DADD_SUN_POWER = ADD_SUN_POWER;
+	public static int DSUN_LENGHT = SUN_LENGHT;
+	public static int DSUN_SPEED = SUN_SPEED;
+	public static int DDIRTY_WATER = DIRTY_WATER;
+	
+	public static double DLEVEL_MINERAL = LEVEL_MINERAL;
+	public static int DCONCENTRATION_MINERAL = CONCENTRATION_MINERAL;
+	
+	public static double DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT;
+	public static int DTIK_TO_EXIT = TIK_TO_EXIT;
 	
 	//Отображение карты на экране
 	/**Масштаб*/
@@ -145,12 +158,54 @@ public class Configurations {
 			MAP_CELLS.height = height;
 			worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 		}
-		BASE_SUN_POWER = 8;
-		ADD_SUN_POWER = BASE_SUN_POWER;
-		DIRTY_WATER = (int) (height - (height * 0.33) / BASE_SUN_POWER); //33% карты сверху - освщеено
-		LEVEL_MINERAL = 1 - 0.33;	//33% снизу в минералах
-		CONCENTRATION_MINERAL = 10;
-		SUN_LENGHT = height / 10;
+		//Освещение
+		setBASE_SUN_POWER(DBASE_SUN_POWER = 10);
+		setADD_SUN_POWER(DADD_SUN_POWER = 2);
+		setSUN_LENGHT(DSUN_LENGHT = width / 10);
+		setSUN_SPEED(DSUN_SPEED = width / 10);
+		SUN_POSITION = width / 2;
+		setDIRTY_WATER(DDIRTY_WATER = (int) (height - (height * 0.33) / BASE_SUN_POWER)); //33% карты сверху - освщеено
+		
+		DLEVEL_MINERAL = LEVEL_MINERAL = 1 - 0.33;	//33% снизу в минералах
+		DCONCENTRATION_MINERAL = CONCENTRATION_MINERAL = 20;
+		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 0.25;
+		TIK_TO_EXIT = DTIK_TO_EXIT = 50;
+	}
+	
+	public static void setBASE_SUN_POWER(int val) {
+		Configurations.BASE_SUN_POWER =  val;
+		if(sun != null)
+			sun.updateScrin();
+	}
+	public static void setADD_SUN_POWER(int val) {
+		Configurations.ADD_SUN_POWER =  val;
+		if(sun != null)
+			sun.updateScrin();
+	}
+	public static void setSUN_LENGHT(int val) {
+		Configurations.SUN_LENGHT =  val;
+		if(sun != null)
+			sun.updateScrin();
+	}
+	public static void setSUN_SPEED(int val) {
+		Configurations.SUN_SPEED =  val;
+		if(sun != null)
+			sun.updateScrin();
+	}
+	public static void setDIRTY_WATER(int val) {
+		Configurations.DIRTY_WATER =  val;
+		if(sun != null)
+			sun.updateScrin();
+	}
+	public static void setCONCENTRATION_MINERAL(int val) {
+		Configurations.CONCENTRATION_MINERAL =  val;
+		if(sun != null)
+			sun.updateScrin();
+	}
+	public static void setLEVEL_MINERAL(double val) {
+		Configurations.LEVEL_MINERAL =  val;
+		if(sun != null)
+			sun.updateScrin();
 	}
 	
 	/**

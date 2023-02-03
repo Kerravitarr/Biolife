@@ -88,8 +88,18 @@ public class Settings extends JPanel{
 		public interface AdjustmentListener extends EventListener {
 		    public void adjustmentValueChanged(int nVal);
 		}
-		
-		public Slider(String nameO, int minS, int defVal, int maxS, Integer mi, Integer ma, AdjustmentListener list) {
+		/**
+		 * Создаёт панельку настройки
+		 * @param nameO имя параметра (по нему берутся навазния)
+		 * @param minS минимальное значение слайдера
+		 * @param defVal значение по умолчанию
+		 * @param maxS максимальное значение слайдера
+		 * @param mi манимально возможное значение
+		 * @param nowVal текущее значение
+		 * @param ma максимально возможное значение
+		 * @param list слушатель, который сработает, когда значение изменится
+		 */
+		public Slider(String nameO, int minS, int defVal, int maxS, Integer mi,int nowVal, Integer ma, AdjustmentListener list) {
 			setLayout(new BorderLayout(0, 0));
 			label = new JLabel(Configurations.getHProperty(Settings.class,nameO + "L"));
 			label.setHorizontalAlignment(SwingConstants.CENTER);
@@ -126,8 +136,8 @@ public class Settings extends JPanel{
 			listener = list;
 			min = mi;
 			max = ma;
-			value = defVal == 0 ? 1 : 0;
-			setValue(defVal);
+			value = nowVal == 0 ? 1 : 0;
+			setValue(nowVal);
 		}
 		
 		public void setValue(int val) {
@@ -140,6 +150,10 @@ public class Settings extends JPanel{
 				listener.adjustmentValueChanged(val);
 			}
 			isSetValue = false;
+		}
+		
+		public int getValue() {
+			return value;
 		}
 		
 		private void showConfirmDialog() {
@@ -165,6 +179,9 @@ public class Settings extends JPanel{
 			reset.addActionListener( e -> tText.setText(Integer.toString(value)));
 			reset.setToolTipText(Configurations.getHProperty(Settings.class,"resetSlider"));
 	        insertValue.add(reset, BorderLayout.EAST);
+
+			javax.swing.UIManager.put("OptionPane.okButtonText"   , Configurations.getProperty(Settings.class,"okButtonText")   );
+			javax.swing.UIManager.put("OptionPane.cancelButtonText", Configurations.getProperty(Settings.class,"cancelButtonText"));
 			
 			var ret = JOptionPane.showConfirmDialog(this, insertValue,Configurations.getProperty(Settings.class,"insertSlider"), JOptionPane.OK_CANCEL_OPTION);
 			if(ret == JOptionPane.OK_OPTION) {
@@ -244,14 +261,10 @@ public class Settings extends JPanel{
 			return scroll.getValue();
 		}
 	}
-	
-	private final ScrollPanel scrollBar_7;
-	private final ScrollPanel scrollBar_6;
-	private final ScrollPanel scale;
 	JComponent listener = null;
-	private final ScrollPanel sun_speed;
-	private final JButton step_button;
 	
+	/**Масштаб*/
+	private Slider scale;
 	/**Лист всех настроек*/
 	List<Slider> listFields;
 	
@@ -264,83 +277,14 @@ public class Settings extends JPanel{
 	public Settings() {
 		Configurations.settings = this;
 		
-		javax.swing.UIManager.put("OptionPane.okButtonText"   , Configurations.getProperty(Settings.class,"okButtonText")   );
-		javax.swing.UIManager.put("OptionPane.cancelButtonText", Configurations.getProperty(Settings.class,"cancelButtonText"));
-		
 		setLayout(new BorderLayout(0, 0));
-		
-		JLabel lblNewLabel = new JLabel("Настройки");
-		add(lblNewLabel, BorderLayout.NORTH);
-		
-		JPanel panel = new JPanel();
-		//add(panel, BorderLayout.CENTER);
+		construct();
+	}
+	
+	/**Создаёт панель настроек со всем необходимым*/
+	private void construct() {
+		removeAll();
 		add(makeParamsPanel());
-		
-		scrollBar_6 = new ScrollPanel("Скорость разложения",100,1);
-		scrollBar_7 = new ScrollPanel("Частота кадров",100,0);
-		scrollBar_7.setBlockIncrement(20);
-		scale = new ScrollPanel("Масштаб",10,100);
-		scale.setValue(10);
-		sun_speed = new ScrollPanel("Скорость солнца",200,1);
-		sun_speed.setValue(Configurations.SUN_SPEED);
-		
-		step_button = new JButton("Шаг");
-		step_button.setToolTipText("Для простоты можно нажать S на клавиатуре");
-		step_button.addActionListener(e-> Configurations.world.step());
-		
-		GroupLayout gl_panel = new GroupLayout(panel);
-		gl_panel.setHorizontalGroup(
-			gl_panel.createParallelGroup(Alignment.TRAILING)
-				.addGroup(gl_panel.createSequentialGroup()
-					.addContainerGap()
-					.addGroup(gl_panel.createParallelGroup(Alignment.TRAILING)
-						.addComponent(step_button, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(scrollBar_7, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(scrollBar_6, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(sun_speed, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE)
-						.addComponent(scale, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 177, Short.MAX_VALUE))
-					.addContainerGap())
-		);
-		gl_panel.setVerticalGroup(
-			gl_panel.createParallelGroup(Alignment.LEADING)
-				.addGroup(gl_panel.createSequentialGroup()
-					.addComponent(sun_speed, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(scrollBar_6, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(scrollBar_7, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED)
-					.addComponent(scale, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-					.addPreferredGap(ComponentPlacement.RELATED, 129, Short.MAX_VALUE)
-					.addComponent(step_button))
-		);
-		
-		panel.setLayout(gl_panel);
-		setListeners();
-	}
-	
-	public void updateScrols() {
-		sun_speed.setValue(Configurations.SUN_SPEED );
-		scrollBar_7.setValue(World.msTimeout);
-		scrollBar_6.setValue(Configurations.TIK_TO_EXIT);
-	}
-	
-	public final void setListeners() {
-		sun_speed.addAdjustmentListener(e->{
-			Configurations.SUN_SPEED =  e.getValue();
-		});
-		scrollBar_6.addAdjustmentListener(e->{
-			Configurations.TIK_TO_EXIT = e.getValue();
-		});
-		scrollBar_7.addAdjustmentListener(e->{
-			World.msTimeout = e.getValue();
-		});
-		scale.addAdjustmentListener(e->{
-			if(listener != null) {
-				listener.dispatchEvent(new ComponentEvent(listener, ComponentEvent.COMPONENT_RESIZED));
-				Configurations.world.dispatchEvent(new ComponentEvent(Configurations.world, ComponentEvent.COMPONENT_RESIZED));
-			}
-		});
 	}
 	
 	private JPanel makeParamsPanel() {
@@ -349,28 +293,40 @@ public class Settings extends JPanel{
 		
 		listFields = new ArrayList<>();
 
-		listFields.add(new Slider("constSun", 1, Configurations.BASE_SUN_POWER, 30, 1, null, e -> {
-			Configurations.BASE_SUN_POWER =  e;
+		listFields.add(new Slider("constSun", 1, Configurations.DBASE_SUN_POWER, 30, 1,Configurations.BASE_SUN_POWER,  null, e -> Configurations.setBASE_SUN_POWER(e)));
+		listFields.add(new Slider("scrollSun", 0, Configurations.DADD_SUN_POWER, 30, 0,Configurations.ADD_SUN_POWER, null, e -> Configurations.setADD_SUN_POWER(e)));
+		listFields.add(new Slider("sunSize", 
+				1, Configurations.DSUN_LENGHT, Configurations.MAP_CELLS.width / 2,
+				1, Configurations.SUN_LENGHT, Configurations.MAP_CELLS.width / 2, e -> Configurations.setSUN_LENGHT(e)));
+		listFields.add(new Slider("sunSpeed", 1, Configurations.DSUN_SPEED, 1000, 1, Configurations.SUN_SPEED, Integer.MAX_VALUE, e -> Configurations.setSUN_SPEED(e)));
+		listFields.add(new Slider("dirtiness",
+				0, Configurations.DDIRTY_WATER, Configurations.MAP_CELLS.height,
+				0, Configurations.DIRTY_WATER, Configurations.MAP_CELLS.height, e -> Configurations.setDIRTY_WATER(e)));
+		
+		listFields.add(new Slider("mineralHeight",
+				0, (int) ((1 - Configurations.DLEVEL_MINERAL) * 100), 100,
+				0, (int) ((1 - Configurations.LEVEL_MINERAL) * 100), 100, e -> Configurations.setLEVEL_MINERAL(1 - e/100d)));
+		listFields.add(new Slider("mineralСoncentration", 0, Configurations.DCONCENTRATION_MINERAL, 400, 0,Configurations.CONCENTRATION_MINERAL, null, e -> Configurations.setCONCENTRATION_MINERAL(e)));
+		
+		listFields.add( new Slider("timeLifeOrg", 1, Configurations.DTIK_TO_EXIT, 100, 1, Configurations.TIK_TO_EXIT,null, e -> {
+			Configurations.TIK_TO_EXIT = e;
 		}));
-		listFields.add(new Slider("scrollSun", 0, Configurations.ADD_SUN_POWER, 30, 0, null, e -> {
-			Configurations.ADD_SUN_POWER =  e;
-		}));
-		listFields.add(new Slider("dirtiness", 0, Configurations.DIRTY_WATER, Configurations.MAP_CELLS.height, 0, Configurations.MAP_CELLS.height, e -> {
-			Configurations.DIRTY_WATER =  e;
-		}));
-		listFields.add(new Slider("mutagenicity", 0, (int) (Configurations.AGGRESSIVE_ENVIRONMENT * 100), 100, 0, 100, e -> {
+		
+		listFields.add(new Slider("mutagenicity",
+				0, (int) (Configurations.DAGGRESSIVE_ENVIRONMENT * 100), 100,
+				0, (int) (Configurations.AGGRESSIVE_ENVIRONMENT * 100), 100, e -> {
 			Configurations.AGGRESSIVE_ENVIRONMENT =  e/100d;
 		}));
-		listFields.add(new Slider("mineralHeight", 0, (int) ((1 - Configurations.LEVEL_MINERAL) * 100), 100, 0, 100, e -> {
-			Configurations.LEVEL_MINERAL = 1 - e/100d;
-			worldRecalculate();
+		
+		listFields.add( new Slider("sleepFrame", 0, 0, 25, 0, World.msTimeout,null, e -> {
+				World.msTimeout = e;
 		}));
-		listFields.add(new Slider("mineralСoncentration", 0, (int) (Configurations.CONCENTRATION_MINERAL*10), 40, 0, null, e -> {
-			Configurations.CONCENTRATION_MINERAL = e/10d;
-			worldRecalculate();
-		}));
-		listFields.add(new Slider("sunSize", 1, Configurations.SUN_LENGHT, Configurations.MAP_CELLS.width * 2, 1, Configurations.MAP_CELLS.width * 2, e -> {
-			Configurations.SUN_LENGHT = e;
+		
+		listFields.add(scale = new Slider("scale", 0, 0, 100, 0, 0,null, e -> {
+			if(listener != null) {
+				listener.dispatchEvent(new ComponentEvent(listener, ComponentEvent.COMPONENT_RESIZED));
+				Configurations.world.dispatchEvent(new ComponentEvent(Configurations.world, ComponentEvent.COMPONENT_RESIZED));
+			}
 		}));
 		
 
@@ -399,11 +355,6 @@ public class Settings extends JPanel{
 		panelConstant.setLayout(gl_panel_const);
 		return panelConstant;
 	}
-	
-	private void worldRecalculate() {
-		if(Configurations.world != null)
-			Configurations.world.recalculate();
-	}
 
 	/**
 	 * Функция загрузки - предложит окно и всё сама сделает
@@ -416,6 +367,9 @@ public class Settings extends JPanel{
 		try{
 			Configurations.world.update(obj);
 			lastSaveCount = Configurations.world.step;
+			construct();
+			repaint();
+			revalidate();
 		} catch (java.lang.RuntimeException e1) {
 			e1.printStackTrace();
 			JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);

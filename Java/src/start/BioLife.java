@@ -182,12 +182,12 @@ public class BioLife extends JFrame {
 		scrollPane.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
-				var newW = (scrollPane.getWidth() * settings.getScale()) / 10  - 10;
-				var newH = (scrollPane.getHeight() * settings.getScale()) / 10  - 10;
+				int newW = (int) (scrollPane.getWidth() * (1 + (settings.getScale() / 100d))) - 10;
+				int newH = (int) (scrollPane.getHeight() * (1 + (settings.getScale() / 100d))) - 10;
 				var horizont = scrollPane.getHorizontalScrollBar();
 				var vertical = scrollPane.getVerticalScrollBar();
 				
-				if(settings.getScale() > 10) {
+				if(settings.getScale() > 0) {
 					newH = (int) ((newW * (1 + (Configurations.UP_border + Configurations.DOWN_border)) * Configurations.MAP_CELLS.height) / Configurations.MAP_CELLS.width);
 					
 					horizont.setUnitIncrement(Math.max(1, newW / 100));
@@ -309,7 +309,7 @@ public class BioLife extends JFrame {
 	}
 	private void mouseWheel(MouseWheelEvent e) {
 		if (e.isControlDown()) {
-			settings.addScale(-e.getWheelRotation());
+			settings.addScale(-e.getWheelRotation() * 10);
         }
 	}
 	private void keyPressed(KeyEvent e) {
@@ -317,7 +317,6 @@ public class BioLife extends JFrame {
 		switch (e.getKeyCode()) {
 			case KeyEvent.VK_SPACE -> {
 				World.isActiv = !World.isActiv;
-				settings.updateScrols();
 			}
 			case KeyEvent.VK_S -> {
 				if ((e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0)
