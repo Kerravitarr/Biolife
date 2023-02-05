@@ -50,6 +50,7 @@ public class Point{
 		/**
 		 * Превращает направление в символ
 		 */
+		@Override
 		public String toString() {
 			switch (this) {
 				case DOWN->{return "↓";}
@@ -163,12 +164,27 @@ public class Point{
 	 * Функция нахождения минимального расстояния между двумя точками по Х
 	 * @param xf первая точка по Х
 	 * @param xs вторая точка по У
-	 * @return Расстояние между двумя точками. Куда надо двигаться, чтобы попасть из первой во вторую быстрее всего
+	 * @return Расстояние между двумя точками.
 	 */
 	public static int subtractionX(int xf, int xs) {
-		var del = xf - xs;
-		var cdel = Configurations.MAP_CELLS.width - del;
+		var del = xs - xf;
+		var cdel = del + (xf <= xs ?  - Configurations.MAP_CELLS.width : + Configurations.MAP_CELLS.width);
 		return Math.abs(del) < Math.abs(cdel) ? del : cdel;
+	}
+	
+	/**
+	 * Возвращает направление от f к s
+	 * @param f первая клетка
+	 * @param s вторая клетка
+	 * @return направление стрелки от f к s
+	 */
+	public static DIRECTION direction(Point f, Point s){
+		var dy = s.y - f.y;
+		var dx = subtractionX(f.x, s.x);
+		for(var d : DIRECTION.myEnumValues)
+			if(d.addX == dx && dy == d.addY)
+				return d;
+		throw new IllegalArgumentException("Расстояние между точками не должно быть больше 1!");
 	}
 	
 }
