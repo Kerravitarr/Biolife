@@ -171,7 +171,7 @@ public class Settings extends JPanel{
 	        	labelInsertText += " N∈[" + min.toString() + "," + max.toString() +"]";
 	        var tlabel = new JLabel(labelInsertText);
 	        insertValue.add(tlabel, BorderLayout.NORTH);
-	        var tText = new JTextField(new RangeFilter(),Integer.toString(value),25);
+	        var tText = new JTextField(new RangeFilter(),Integer.toString(value),10);
 	        insertValue.add(tText, BorderLayout.CENTER);
 			
 	        var reset = Configurations.makeIconButton("reset");
@@ -313,12 +313,10 @@ public class Settings extends JPanel{
 		}));
 		
 		listFields.add(new Slider("mutagenicity",
-				0, (int) (Configurations.DAGGRESSIVE_ENVIRONMENT * 100), 100,
-				0, (int) (Configurations.AGGRESSIVE_ENVIRONMENT * 100), 100, e -> {
-			Configurations.AGGRESSIVE_ENVIRONMENT =  e/100d;
-		}));
+				0, Configurations.DAGGRESSIVE_ENVIRONMENT, 100,
+				0, Configurations.AGGRESSIVE_ENVIRONMENT, 100, e -> Configurations.AGGRESSIVE_ENVIRONMENT = e));
 		
-		listFields.add( new Slider("sleepFrame", 0, 0, 25, 0, World.msTimeout,null, e -> {
+		listFields.add( new Slider("sleepFrame", 0, 0, 5, 0, World.msTimeout,null, e -> {
 				World.msTimeout = e;
 		}));
 		

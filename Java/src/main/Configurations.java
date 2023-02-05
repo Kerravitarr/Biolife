@@ -54,8 +54,8 @@ public class Configurations {
 	public static double LEVEL_MINERAL = 0;
 	/**Концентрация минералов. Другими словами - количество всасываемых минералов в секунду при максимальной специализации*/
 	public static int CONCENTRATION_MINERAL = 0;
-	/**Степень мутагенности воды*/
-	public static double AGGRESSIVE_ENVIRONMENT = 0;
+	/**Степень мутагенности воды [0,100]*/
+	public static int AGGRESSIVE_ENVIRONMENT = 0;
 	/**Сколько ходов до разложения органики*/
 	public static int TIK_TO_EXIT;
 	
@@ -71,7 +71,7 @@ public class Configurations {
 	public static double DLEVEL_MINERAL = LEVEL_MINERAL;
 	public static int DCONCENTRATION_MINERAL = CONCENTRATION_MINERAL;
 	
-	public static double DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT;
+	public static int DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT;
 	public static int DTIK_TO_EXIT = TIK_TO_EXIT;
 	
 	//Отображение карты на экране
@@ -162,13 +162,13 @@ public class Configurations {
 		setBASE_SUN_POWER(DBASE_SUN_POWER = 10);
 		setADD_SUN_POWER(DADD_SUN_POWER = 2);
 		setSUN_LENGHT(DSUN_LENGHT = width / 10);
-		setSUN_SPEED(DSUN_SPEED = width / 10);
+		setSUN_SPEED(DSUN_SPEED = 100); //Раз в 100 шагов сдвигается
 		SUN_POSITION = width / 2;
 		setDIRTY_WATER(DDIRTY_WATER = (int) (height - (height * 0.33) / BASE_SUN_POWER)); //33% карты сверху - освщеено
 		
 		DLEVEL_MINERAL = LEVEL_MINERAL = 1 - 0.33;	//33% снизу в минералах
 		DCONCENTRATION_MINERAL = CONCENTRATION_MINERAL = 20;
-		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 0.25;
+		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 25;
 		TIK_TO_EXIT = DTIK_TO_EXIT = 50;
 	}
 	
@@ -227,8 +227,9 @@ public class Configurations {
 		try {
 			return Configurations.bundle.getString(MessageFormat.format("{0}.{1}", cls.getTypeName(),name));
 		} catch (MissingResourceException e) {
-			System.err.println(MessageFormat.format("Не найдено свойство {0}.{1}", cls.getTypeName(),name));
-			throw e;
+			var err = MessageFormat.format("Не найдено свойство {0}.{1}", cls.getTypeName(),name);
+			System.err.println(err);
+			return err;
 		}
 	}
 	

@@ -6,13 +6,12 @@ import java.awt.Graphics;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.LockSupport;
-import java.util.stream.Stream;
+import main.Configurations;
 
 public class Utils {
 
@@ -20,10 +19,11 @@ public class Utils {
 	 * Метод получения псевдослучайного целого числа [min,max];
 	 * @param min минимальное значение, включительно
 	 * @param max максимальное значение, включительно
+	 * @return [min,max]
 	 */
 	public static int random(int min, int max) {
 		max -= min;
-		return (int) (Math.random() * ++max) + min;
+		return min + Configurations.rnd.nextInt(max+1);
 	}
 
 	/**
