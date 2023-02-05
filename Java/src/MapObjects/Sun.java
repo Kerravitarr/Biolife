@@ -120,24 +120,25 @@ public class Sun {
 		yw[1] = yw[2] = ym[1] = ym[2] = Point.getRy(Configurations.MAP_CELLS.height);
 		
 		//Части без солнца
-		fon = new ColorRec[7];
+		var lfon = new ColorRec[7];
 		GradientPaint gp;
 		//Заполнение
-		fon[0] = new ColorRec(xw,yw, dirColor);
+		lfon[0] = new ColorRec(xw,yw, dirColor);
 		//Солнышки
 		gp = new GradientPaint(w, yl[0], sunColor, w, yl[1], sunColorAlf);
-		fon[1] = new ColorRec(xl,yl, gp);
-		fon[2] = new ColorRec(xc,yc, gp);
-		fon[3] = new ColorRec(xr,yr, gp);
+		lfon[1] = new ColorRec(xl,yl, gp);
+		lfon[2] = new ColorRec(xc,yc, gp);
+		lfon[3] = new ColorRec(xr,yr, gp);
 		//Cолнца
 		gp = new GradientPaint(w, ys1[0], sunColor, w, ys1[1], sunColorAlf);
-		fon[4] = new ColorRec(xs1,ys1, gp);
-		fon[5] = new ColorRec(xs2,ys2, gp);
+		lfon[4] = new ColorRec(xs1,ys1, gp);
+		lfon[5] = new ColorRec(xs2,ys2, gp);
 		
 		//Минералы
 		gp = new GradientPaint(w, ym[0], minColorAlf, w, ym[1], minColor);
 			
-		fon[6] = new ColorRec(xm,ym, gp);
+		lfon[6] = new ColorRec(xm,ym, gp);
+		fon = lfon;
 	}
 
 }
