@@ -33,7 +33,6 @@ public class Organic extends CellObject {
 	/**
      * Загрузка клетки
      * @param cell - JSON объект, который содержит всю информацюи о клетке
-     * @param tree - Дерево эволюции 
      */
     public Organic(JSON cell) {
     	super(cell);
@@ -78,9 +77,36 @@ public class Organic extends CellObject {
 	 * @return
 	 */
 	private int getTimeToNextDouble() {
-		return (int) Math.round(getAge() + getStream() * (2 - energy / Poison.MAX_TOXIC));
+		return (int) Math.round(getAge() + getStream() * (2 - poisonCount / Poison.MAX_TOXIC));
 	}
 	
+	@Override
+	public boolean move(DIRECTION direction) {
+		var pos = getPos().next(direction);
+		switch (Configurations.world.test(pos)) {
+			case WALL, CLEAN, OWALL, BOT, POISON, ENEMY, NOT_POISON, FRIEND -> {
+				return super.move(direction);
+			}
+			case ORGANIC -> {
+				var org = (Organic) Configurations.world.get(pos);
+				if(org.getHealth() + getHealth() < AliveCellProtorype.MAX_HP){ //Маленькие кусочки слипаются
+					org.addHealth(getHealth());
+					if(poison != Poison.TYPE.UNEQUIPPED)
+						org.toxinDamage(poison, (int) poisonCount);
+					destroy(); //Мы слепились со следующей и всё, пошли отсюда
+					return false;
+				} else if(org.getHealth() < getHealth()){
+					Configurations.world.swap(this, pos);
+					return true;
+				} else {
+					return false;
+				}
+			}
+		}
+		throw new IllegalArgumentException("Unexpected value: " + Configurations.world.test(getPos().next(direction)));
+	}
+
+	@Override
 	public boolean toxinDamage(TYPE type, int damag) {
 		if (getPoison() == type) { // Наш яд, впитываем
 			poisonCount = getPoisonCount() + damag;
@@ -92,6 +118,7 @@ public class Organic extends CellObject {
 				poisonCount = damag - getPoisonCount();
 			}
 		}
+		nextDouble = Math.min(nextDouble,getTimeToNextDouble());
         return false;
 	}
 
