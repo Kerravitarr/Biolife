@@ -10,6 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import MapObjects.AliveCell;
 import MapObjects.Poison;
 import Utils.JSON;
+import javax.swing.JOptionPane;
 
 //@Deprecated
 public class EvolutionTree {
@@ -291,7 +292,11 @@ public class EvolutionTree {
 				var child = node.getChild();
 				if(child == null)
 					continue;
-				else if (child.isEmpty())// У нас нет детей, всё, удаляем у родителя
+				else if (child.isEmpty() && node.perrent == null){// У нас нет детей, всё, удаляем у родителя
+					java.awt.Toolkit.getDefaultToolkit().beep();
+					Configurations.world.stop();
+					JOptionPane.showMessageDialog(null,	"Симуляция завершена, не осталось выживших",	"BioLife", JOptionPane.WARNING_MESSAGE);
+				}else if (child.isEmpty())// У нас нет детей, всё, удаляем у родителя
 					node.perrent.remove(node); 
 				else if(child.size() == 1) 
 					node.merge();
