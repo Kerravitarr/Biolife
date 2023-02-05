@@ -37,6 +37,7 @@ import MapObjects.Organic;
 import MapObjects.Poison;
 import MapObjects.dna.CommandDNA;
 import MapObjects.dna.DNA;
+import Utils.MyMessageFormat;
 import Utils.Utils;
 import main.Configurations;
 
@@ -258,6 +259,8 @@ public class BotInfo extends JPanel {
 	private TextPair toxicFIeld;
 	/**Плотность*/
 	private TextPair buoyancy;
+	/**Слизь*/
+	private TextPair mucosa;
 	/**Список тех полей, которые нужно автоматически проматывать*/
 	private final Set<TextPair> scrolFieldList;
 	/**Лист всех полей*/
@@ -271,7 +274,7 @@ public class BotInfo extends JPanel {
 	/**Панель, на которой написано про ДНК*/
 	private final JPanel panel_DNA;
 	/**Панель со всеми константами*/
-	private JPanel panelConstant;
+	private final JPanel panelConstant;
 	/**Список с прерываниями*/
 	private final JList<String> list_inter;
 	private final JScrollPane scrollPane_inter;
@@ -279,6 +282,8 @@ public class BotInfo extends JPanel {
 	private final JPanel panel;
 	/**Тестовая клетка, для работы с командами без конца*/
 	private TextAL testCell = null;
+	/**Форматирование чисел*/
+	private static final MyMessageFormat numberFormat = new MyMessageFormat("{0,number,###,###}");
 	
 	class WorkTask implements Runnable{
 		@Override
@@ -414,6 +419,7 @@ public class BotInfo extends JPanel {
 		listFields.add(phenotype = new TextPair(getProperty("LabelPhenotype"), getProperty("fieldPhenotype")));
 		listFields.add(filogen = new TextPair(getProperty("LabelFilogen"), getProperty("fieldFilogen")));
 		listFields.add(buoyancy = new TextPair(getProperty("LabelBuoyancy"), getProperty("fieldBuoyancy")));
+		listFields.add(mucosa = new TextPair(getProperty("LabelMucosa"), getProperty("fieldMucosa")));
 		
 
 		GroupLayout gl_panel_const = new GroupLayout(panelConstant);
@@ -485,7 +491,7 @@ public class BotInfo extends JPanel {
 	private void setDinamicHaracteristiks() {
 		pos.setText(cell.getPos().toString());
 		state.setText(getCell().getAlive().toString());
-		age.setText(String.valueOf(getCell().getAge()));
+		age.setText(numberFormat.format(getCell().getAge()));
 		if (getCell() instanceof AliveCell alive) {
 			if(testCell != null) //Так мы сможем обновлять эту клетку
 				alive = testCell;
@@ -512,7 +518,7 @@ public class BotInfo extends JPanel {
 				}
 				if(alive.mineralAround() > 0){
 					sb.append(" →← ");
-					sb.append(alive.mineralAround());
+					sb.append((int) alive.mineralAround());
 				}
 				mp.setText(sb.toString());
 			} else {
@@ -526,6 +532,10 @@ public class BotInfo extends JPanel {
 				buoyancy.setText(String.valueOf(alive.getBuoyancy()));	
 			else
 				buoyancy.clear();
+			if(alive.getMucosa() > 0)
+				mucosa.setText(String.valueOf(alive.getMucosa()));
+			else
+				mucosa.clear();
 		} else if (getCell() instanceof Poison poison) {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 			toxicFIeld.setText(poison.getType().name());
