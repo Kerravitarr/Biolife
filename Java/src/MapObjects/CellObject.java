@@ -214,7 +214,7 @@ public abstract class CellObject {
 	}
 	/**
 	 * Перемещает бота в абсолютном направлении
-	 * @param direction
+	 * @param direction направление, в котором следует двигаться
 	 * @return true, если клетка сходила куда её попросили и 
 	 * 			false, если движение по каким либо причинам невозможно
 	 * @throws CellObjectRemoveException если объект во времядвижения того. Умер

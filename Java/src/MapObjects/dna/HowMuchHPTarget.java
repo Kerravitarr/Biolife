@@ -28,12 +28,12 @@ public class HowMuchHPTarget extends CommandExplore {
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
 		return String.valueOf(param(dna, 0, AliveCell.MAX_HP));
 	}
+	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna) {
-		if(numBranch == 0)
-			return "≥П";
-		else if(numBranch == 1)
-			return "<П";
-		else
-			return "∅";
+		return switch (numBranch) {
+			case 0 -> "≥П";
+			case 1 -> "<П";
+			default -> "∅";
+		};
 	}
 }

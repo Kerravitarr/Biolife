@@ -20,19 +20,20 @@ public class Minerals2Energy extends CommandDo {
 
 	@Override
 	protected void doing(AliveCell cell) {
-		var min = Math.min(cell.getMineral(), MAX_MIN);
-    	var add_hp = Math.round(MIN_PER_HP * cell.get(AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING) * min);
+		var min = Math.min(cell.getMineral(), cell.specMax(MAX_MIN, AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING));
+    	var add_hp = cell.specNormalize(Math.round(MIN_PER_HP * min), AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING);
     	cell.color(AliveCell.ACTION.EAT_MIN,add_hp);
     	cell.addHealth(add_hp);
-    	cell.addMineral(-min);
+    	cell.addMineral((long) -min);
 	}
 	
 
+	@Override
 	protected String value(AliveCell cell) {
          if(cell.getMineral() > 0) {  // если минералов меньше, то все минералы переходят в энергию
-        	double maxMin = Math.min(MAX_MIN, cell.getMineral());
-        	var add_hp = Math.round(MIN_PER_HP * cell.get(AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING) * maxMin);
-        	return valueFormat.format(maxMin,add_hp);
+			var min = Math.min(cell.getMineral(), cell.specMax(MAX_MIN, AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING));
+			var add_hp = cell.specNormalize(Math.round(MIN_PER_HP * min), AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING);
+        	return valueFormat.format(min,add_hp);
         } else {
         	return null;
         }

@@ -44,6 +44,7 @@ public class DNAInsert extends DNABreak {
 		return paramFormat.format(param(dna,0, dna.size));
 	}
 
+	@Override
 	public String value(AliveCell cell, DNA dna) {
 		return valueFormat.format((param(dna, 0, dna.size) + dna.getPC()) % dna.size);
 	}

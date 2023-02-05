@@ -286,14 +286,20 @@ public abstract class CommandDNA {
 		sb.append(")");
 		return sb.toString();
 	};
-	/**Стандартный ответ, если ветвей 2 и они показывают > или < параметра*/
+	/**
+	 * Стандартный ответ, если ветвей 2 и они показывают > или < параметра
+	 * @param cell клетка
+	 * @param numBranch номер параметра
+	 * @param dna ДНК клетки
+	 * @return текст с подписью, где первая ветвь - равен или больше параметра, а вторая ветвь - меньше параметра
+	 *			V >= П ? 0 : 1;
+	 */
 	protected String branchMoreeLees(AliveCell cell, int numBranch, DNA dna) {
-		if(numBranch == 0)
-			return parametrMoreOrEqual;
-		else if(numBranch == 1)
-			return parametrLess;
-		else 
-			return getBranch(cell,numBranch,dna);
+		return switch (numBranch) {
+			case 0 -> parametrMoreOrEqual;
+			case 1 -> parametrLess;
+			default -> getBranch(cell,numBranch,dna);
+		};
 	}
 	/**
 	 * Переводит значение в абсолютное направление

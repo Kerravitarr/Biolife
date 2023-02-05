@@ -12,16 +12,15 @@ import Utils.MyMessageFormat;
 public class SubTankMineral extends CommandDo {
 	/**Цена операции. А вы думали, бесплатно всё будет?*/
 	private final int HP_COST = 1;
-	private final MyMessageFormat valueFormat = new MyMessageFormat("MP += {0} 🛢 {1} = {2}");
+	private final MyMessageFormat valueFormat = new MyMessageFormat("MP += {0} 🛢 = {1}");
 
 	public SubTankMineral() {super(1);}
 
 	@Override
 	protected void doing(AliveCell cell) {
 		cell.addHealth(-HP_COST);
-		var A = 10 * cell.get(AliveCellProtorype.Specialization.TYPE.ACCUMULATION);
 		//Сколько хотим взять
-		var val = param(cell, 0, AliveCell.MAX_MP * A);
+		var val = param(cell, 0, AddTankMineral.TANK_SIZE);
 		sub(cell,val);
 	}
 	/**
@@ -40,14 +39,13 @@ public class SubTankMineral extends CommandDo {
 
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){
-		var A = 10 * cell.get(AliveCellProtorype.Specialization.TYPE.ACCUMULATION);
-		return Integer.toString(param(dna, 0, AliveCell.MAX_MP * A));
+		return Integer.toString(param(dna, 0, AddTankMineral.TANK_SIZE));
 	};
 	
+	@Override
 	public String value(AliveCell cell) {
-		var A = 10 * cell.get(AliveCellProtorype.Specialization.TYPE.ACCUMULATION);
 		//Сколько хотим взять
-		var val = param(cell, 0, AliveCell.MAX_MP * A);
+		var val = param(cell, 0, AddTankMineral.TANK_SIZE);
 		//Сколько можем взять
 		val = (int) Math.min(val, cell.getMineralTank());
 		val = Math.max(0, val);

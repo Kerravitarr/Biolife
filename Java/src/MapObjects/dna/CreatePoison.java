@@ -16,11 +16,8 @@ public class CreatePoison extends CommandDo {
 	/**Логорифмическая прогрессия тягучести яда*/
 	private static final int MAX_STREAM = (int) Math.round(Math.log(Poison.MAX_STREAM));
 	
-	/**Абсолютные координаты или относительные*/
-	private final boolean isAbolute;
-	
 	/**Создаёт яд в МСК*/
-	public CreatePoison(boolean isAbsol) {super(isAbsol, 2);isAbolute = isAbsol;}
+	public CreatePoison(boolean isAbsol) {super(isAbsol, 2);}
 	@Override
 	protected void doing(AliveCell cell) {
 		if (cell.getPosionType() != TYPE.UNEQUIPPED) {
@@ -34,7 +31,8 @@ public class CreatePoison extends CommandDo {
 	 */
 	protected void addPosion(AliveCell cell,DIRECTION direction) {
 		var stream = (int) Math.round(Math.exp(param(cell,0, MAX_STREAM)));
-		var energy =  Math.min(Poison.MAX_TOXIC * cell.get(AliveCellProtorype.Specialization.TYPE.FERMENTATION), cell.getPosionPower());
+		var max = cell.specMax(Poison.MAX_TOXIC, AliveCellProtorype.Specialization.TYPE.FERMENTATION);
+		var energy = cell.specNormalize(Math.min(max, cell.getPosionPower()), AliveCellProtorype.Specialization.TYPE.FERMENTATION);
 		cell.addHealth(-HP_FOR_POISON); 
     	Poison.createPoison(nextPoint(cell,direction), cell.getPosionType(), cell.getStepCount(), energy, stream);
 	}
