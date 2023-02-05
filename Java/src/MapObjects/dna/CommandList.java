@@ -100,6 +100,8 @@ public class CommandList {
 			case BLOCK_2+4 -> new Align_UP();
 			case BLOCK_2+5 -> new Reversal();
 			case BLOCK_2+6 -> new TurnTo();
+			case BLOCK_2+7 -> new Swap(true);
+			case BLOCK_2+8 -> new Swap(false);
 				
 			case BLOCK_3_1 -> new See(true);
 			case BLOCK_3_1+1 -> new See(false);
@@ -110,6 +112,8 @@ public class CommandList {
 			case BLOCK_3_1+6 -> new HowMuchSun();
 			case BLOCK_3_1+7 -> new HowMuchMinerals();
 			case BLOCK_3_1+8 -> new HowMuchHPTarget();
+			case BLOCK_3_1+9 -> new HMMucosa();
+			case BLOCK_3_1+10 -> new HMMucosaTarget();
 				
 			case BLOCK_3_2+0 -> new HowMuchMPTarget();
 			case BLOCK_3_2+1 -> new IAmMulticellular();
@@ -150,6 +154,8 @@ public class CommandList {
 			case BLOCK_6+5 -> new AddTankMineral();
 			case BLOCK_6+6 -> new SubTankFood();
 			case BLOCK_6+7 -> new SubTankMineral();
+			case BLOCK_6+8 -> new AddMucosa();
+			case BLOCK_6+9 -> new SubMucosa();
 			
 			default -> new Jump(); //Любая остальная команда - прыжок
 		};

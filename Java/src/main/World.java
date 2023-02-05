@@ -400,10 +400,44 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			Configurations.worldMap[cell.getPos().getX()][cell.getPos().getY()] = null;
 		}
 	}
+	/**
+	 * Перемещает клетку в новую позицию
+	 * @param cell клетка
+	 * @param target её новая позиция
+	 */
 	public void move(CellObject cell,Point target) {
 		clean(cell);
 		cell.setPos(target);
 		add(cell);
+	}
+	/**
+	 * Меняет текущее местоположение клетки и желаемую цель местами
+	 * @param cell клетка
+	 * @param target с какой позицией она хочет обменяться местами
+	 */
+	public void swap(CellObject cell,Point target) {
+		var t = get(target);
+		if(t == null){
+			move(cell,target);
+		} else {
+			var d = Point.direction(target, cell.getPos());
+			clean(cell);
+			if(t.move(d)){	//Если перемещение удачное
+				clean(t);
+				add(cell);	//Тогда цель уже в нужной позиции, осталость клетку поменять
+				if(cell.move(d.inversion())){
+					add(t);	//Если клетка сдвинулась тоже - возвращаем цель и выходим
+				} else {
+					clean(cell); //Иначе удаляем клетку
+					add(t);
+					t.move(d.inversion()); //Откатываем цель ((клетку удаляем, потому что цель на месте клетки сейчас))
+					add(cell);	//И возваращем клетку на свободное место
+				}
+			} else {
+				add(cell);
+			}
+		}
+		
 	}
 
 	public synchronized void recalculate() {
