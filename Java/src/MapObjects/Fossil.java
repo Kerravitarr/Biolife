@@ -17,6 +17,8 @@ public class Fossil extends CellObject {
     private static final Color COLOR_DO = new Color(64, 56, 56,200);
 	/**Сколько у нас энергии*/
 	private double energy = 0;
+	/**Стены не бессмертны, напротив, эроизия разлагает их*/
+	private static final int MAX_AGE = 1_000_000;
 
 	public Fossil(JSON poison) {
 		super(poison);
@@ -39,6 +41,8 @@ public class Fossil extends CellObject {
 	void step() {
 		if (energy <= 1) { // Наша энергия
 			destroy();
+		} else if(getAge() > MAX_AGE){
+			energy--;
 		}
 	}
 	
