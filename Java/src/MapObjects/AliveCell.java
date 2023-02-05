@@ -55,6 +55,7 @@ public class AliveCell extends AliveCellProtorype{
     	tolerance = cell.getI("tolerance");
     	foodTank = cell.get("foodTank");
     	mineralTank = cell.get("mineralTank");
+    	mucosa = cell.get("mucosa");
     	
     	Generation = cell.getI("Generation");
     	specialization = new Specialization(cell.getJ("Specialization"));
@@ -81,6 +82,7 @@ public class AliveCell extends AliveCellProtorype{
 	    cell.DNA_wall = cell.DNA_wall / 2; //Забирается половина защиты ДНК
 	    poisonType = cell.getPosionType();
 		poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
+		mucosa = (cell.mucosa = (int) (cell.mucosa / 2.1)); //Делится слизистой оболочкой
 	
 		specialization = new Specialization(cell);
 	    direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));   // направление, куда повернут новорожденный, генерируется случайно
@@ -92,7 +94,7 @@ public class AliveCell extends AliveCellProtorype{
 	    repaint();
 	    
 	    //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
-	    if (Math.random() < Configurations.AGGRESSIVE_ENVIRONMENT) 
+	    if (Utils.random(0, 100) < Configurations.AGGRESSIVE_ENVIRONMENT) 
 	        mutation();
 	}    
 	
@@ -141,6 +143,9 @@ public class AliveCell extends AliveCellProtorype{
         //Если мало минералов, достаём заначку!
         if(getMineral() < 100)
         	SubTankMineral.sub(this, 100);
+		//Слизь постепенно раствоярется
+        if(mucosa > 0 && getAge() % 50 == 0)
+			mucosa--;
 	}
 
 	/**Поделиться с друзьями всем, что имеем*/
@@ -518,6 +523,7 @@ public class AliveCell extends AliveCellProtorype{
 		make.add("tolerance",tolerance);
 		make.add("foodTank",getFoodTank());
 		make.add("mineralTank",mineralTank);
+		make.add("mucosa", getMucosa());
 
 	    //=================ПАРАМЕТРЫ БОТА============
 		make.add("Generation",Generation);

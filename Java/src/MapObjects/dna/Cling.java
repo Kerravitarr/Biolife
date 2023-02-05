@@ -43,7 +43,9 @@ public class Cling extends CommandDoInterupted {
 			case ENEMY, FRIEND -> {
 				//--------- дошли до сюда, значит впереди живой бот -------------------
 				Point point = nextPoint(cell,direction);
-				cell.setFriend((AliveCell) Configurations.world.get(point));
+				var target = (AliveCell) Configurations.world.get(point);
+				if(target.getMucosa() == 0)	//Если клетка в слизи, то к ней не присосаться 
+					cell.setFriend(target);
 			}
 			case ORGANIC, CLEAN, NOT_POISON, POISON, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
