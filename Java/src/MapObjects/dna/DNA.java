@@ -32,7 +32,7 @@ public class DNA {
 		}
 		pc = 0;
 		for (int i = 0; i < interrupts.length; i++)
-			interrupts[i] = 0;
+			interrupts[i] = i;
 	}
 	/**ДНК у нас неизменяемая, поэтому при копировании мы можем сослаться на старую версию*/
 	public DNA(DNA dna){
