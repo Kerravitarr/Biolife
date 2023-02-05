@@ -132,7 +132,7 @@ public abstract class AliveCellProtorype extends CellObject{
 			for(var i : this.values())
 				summ += i;
 			put(TYPE.PHOTOSYNTHESIS, get(TYPE.PHOTOSYNTHESIS) + (MAX_SPECIALIZATION - summ));
-			set(TYPE.PHOTOSYNTHESIS,MAX_SPECIALIZATION / 2);
+			set(TYPE.PHOTOSYNTHESIS,50);
 			updateColor();
 		}
 		
@@ -147,8 +147,15 @@ public abstract class AliveCellProtorype extends CellObject{
 	    	List<Integer> keys = json.getA("keys");
 	    	List<Integer> vals = json.getA("vals");
 	    	
+			var max = 0;
 	    	for(int i = 0 ; i < keys.size() ; i++) {
-	    		put(TYPE.staticValues[keys.get(i)],vals.get(i));
+				var key = TYPE.staticValues[keys.get(i)];
+				var val = vals.get(i);
+				if (val >= max) {
+					max = val;
+					main = key;
+				}
+	    		put(key,vals.get(i));
 	    	}
 
 			updateColor();
@@ -242,6 +249,8 @@ public abstract class AliveCellProtorype extends CellObject{
     protected int mineralTank = 0;
     /**Специализация бота*/
     protected Specialization specialization;
+    /**Слизистая оболочка клетки. Если клетка в слизи, то к неё не присосаться*/
+    protected int mucosa = 0;
     
     //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
     /**Поколение (мутационное). Другими словами - как далеко клетка ушла от изначальной*/
@@ -393,19 +402,71 @@ public abstract class AliveCellProtorype extends CellObject{
 	public void DNAupdate(int ma, int mc) {
 		dna = dna.update(ma, mc);
 	}
-	
-	/**
-	 * Возвращает процент специализированности в данном типе
-	 * Не в основной специализации эффективность не бывает выше 10%
-	 * @param type тип специализации
-	 * @return число [0,1]
-	 */
-	public double get(Specialization.TYPE type) {
-		if(type == getSpecialization().main)
-			return getSpecialization().get(type) / ((double) Specialization.MAX_SPECIALIZATION);
-		else
-			return Math.min(getSpecialization().get(type), 10) / ((double) Specialization.MAX_SPECIALIZATION);
+	private double specMax(Specialization.TYPE type) {
+		var spec = specialization.get(type);
+		if(type != specialization.main)
+			spec = Math.min(10, spec);
+		return (0.25 * Specialization.MAX_SPECIALIZATION + 0.8 * spec) / Specialization.MAX_SPECIALIZATION;
 	}
+	/**
+	 * Возвращает предельное значение параметра, в зависимости от специализации
+	 * @param maxVal истиное максимальное значение
+	 * @param type специализация
+	 * @return [0,maxVal] в зависимости от специализации
+	 */
+	public double specMax(double maxVal, Specialization.TYPE type) {
+		return maxVal * specMax(type);
+	}
+	/**
+	 * Возвращает предельное значение параметра, в зависимости от специализации
+	 * @param maxVal истиное максимальное значение
+	 * @param type специализация
+	 * @return [0,maxVal] в зависимости от специализации
+	 */
+	public int specMax(int maxVal, Specialization.TYPE type) {
+		return (int) (maxVal * specMax(type));
+	}
+	/**
+	 * Возвращает предельное значение параметра, в зависимости от специализации
+	 * @param maxVal истиное максимальное значение
+	 * @param type специализация
+	 * @return [0,maxVal] в зависимости от специализации
+	 */
+	public long specMax(long maxVal, Specialization.TYPE type) {
+		return (long) (maxVal * specMax(type));
+	}
+	
+	public double specNormalize(Specialization.TYPE type){
+		return 0.5 + specMax(type) / 2 ;
+	}
+	/**
+	 * Нормализует значение в зависимости от специализации
+	 * @param val значение 
+	 * @param type специализация
+	 * @return [val/2,val] в зависимости от специализации
+	 */
+	public double specNormalize(double val, Specialization.TYPE type){
+		return val * specNormalize(type);
+	}
+	/**
+	 * Нормализует значение в зависимости от специализации
+	 * @param val значение 
+	 * @param type специализация
+	 * @return [val/2,val] в зависимости от специализации
+	 */
+	public int specNormalize(int val, Specialization.TYPE type){
+		return (int) (val * specNormalize(type));
+	}
+	/**
+	 * Нормализует значение в зависимости от специализации
+	 * @param val значение 
+	 * @param type специализация
+	 * @return [val/2,val] в зависимости от специализации
+	 */
+	public long specNormalize(long val, Specialization.TYPE type){
+		return (long) (val * specNormalize(type));
+	}
+	
 	public Specialization getSpecialization() {
 		return specialization;
 	}
@@ -432,20 +493,40 @@ public abstract class AliveCellProtorype extends CellObject{
 		mineralTank += add;
 	}
 	
-	/**Возвращает количество минералов вокруг*/
+	/**
+	 * Возвращает количество минералов вокруг
+	 * @return Количество минералов, которое клетка может получить из окружающей среды
+	 */
 	public double mineralAround() {
 		double realLv = getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
 		double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
-		return Configurations.CONCENTRATION_MINERAL * (realLv / dist) * get(Specialization.TYPE.MINERALIZATION);
+		var max = specMax(Configurations.CONCENTRATION_MINERAL, AliveCellProtorype.Specialization.TYPE.MINERALIZATION) * (realLv / dist);
+		return specNormalize(max, Specialization.TYPE.MINERALIZATION);
 	}
-	/**Возвращает количество солнца вокруг*/
+	/**
+	 * Возвращает количество солнца вокруг
+	 * @return количество солнца, которое может получить клетка. [0, Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER + 5]
+	 */
 	public double sunAround() {
-		//Эффективность
-		var eff = get(AliveCellProtorype.Specialization.TYPE.PHOTOSYNTHESIS);
 		//+5 бонусных частичек света при наличии миниралов
         double t = 5 * getMineral() / AliveCell.MAX_MP;	
         //Ну и энергию от солнца не забываем
-        double hlt = Configurations.sun.getEnergy(getPos()) + t;
-		return hlt * eff;
+		var max = specMax(Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER + 5, Specialization.TYPE.PHOTOSYNTHESIS);
+        double hlt = Math.min(max, Configurations.sun.getEnergy(getPos()) + t);
+		return specNormalize(hlt, Specialization.TYPE.PHOTOSYNTHESIS);
+	}
+
+	/**
+	 * @return the mucosa
+	 */
+	public int getMucosa() {
+		return mucosa;
+	}
+
+	/**
+	 * @param mucosa the mucosa to set
+	 */
+	public void setMucosa(int mucosa) {
+		this.mucosa = mucosa;
 	}
 }
