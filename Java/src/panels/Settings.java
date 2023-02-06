@@ -327,6 +327,8 @@ public class Settings extends JPanel{
 			}
 		}));
 		
+		listFields.add( new Slider("sunForm", -50, Configurations.DSUN_FORM, 50, null, Configurations.SUN_FORM,null, e -> Configurations.setSUN_FORM(e)));
+		
 
 		GroupLayout gl_panel_const = new GroupLayout(panelConstant);
 		var hGroupe = gl_panel_const.createParallelGroup(Alignment.TRAILING);

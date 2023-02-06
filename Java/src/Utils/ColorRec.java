@@ -60,9 +60,14 @@ public class ColorRec{
 		if(xp.length != yp.length)
 			throw new IllegalArgumentException("Длина вектора х и у различны!");
 	}
+
 	public void paint(Graphics g) {
-		g.setColor(color);
-		g.fillRect(x,y,width,height);
+		if (g instanceof Graphics2D g2d) {
+			paint(g2d);
+		} else {
+			g.setColor(color);
+			g.fillRect(x, y, width, height);
+		}
 	}
 
 	public void paint(Graphics2D g) {

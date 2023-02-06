@@ -20,6 +20,7 @@ import MapObjects.Geyser;
 import MapObjects.Sun;
 import Utils.JSON;
 import panels.BotInfo;
+import panels.EvolTreeDialog;
 import panels.Menu;
 import panels.Settings;
 
@@ -42,12 +43,14 @@ public class Configurations {
 	public static int BASE_SUN_POWER = 0;
 	/**Освещённость карты*/
 	public static int ADD_SUN_POWER = 0;
-	//Скорость движения солнца в тиках мира
+	/**Скорость движения солнца в тиках мира*/
 	public static int SUN_SPEED = 15;
-	//Положение солнца в частях экрана
+	/**Положение солнца в частях экрана*/
 	public static int SUN_POSITION = 0;
 	/**"Ширина" солнечного света в частях экрана*/
 	public static int SUN_LENGHT = 0;
+	/**Форма солнца*/
+	public static int SUN_FORM = 0;
 	/**Уровень загрязнения воды*/
 	public static int DIRTY_WATER = 0;
 	/**Как глубоко лежат минералы. При этом 1.0 - ни где, а 0.0 - везде... Ну да, так получилось :)*/
@@ -66,6 +69,7 @@ public class Configurations {
 	public static int DADD_SUN_POWER = ADD_SUN_POWER;
 	public static int DSUN_LENGHT = SUN_LENGHT;
 	public static int DSUN_SPEED = SUN_SPEED;
+	public static int DSUN_FORM = SUN_FORM;
 	public static int DDIRTY_WATER = DIRTY_WATER;
 	
 	public static double DLEVEL_MINERAL = LEVEL_MINERAL;
@@ -101,6 +105,8 @@ public class Configurations {
 	public static Settings settings = null;
 	/**Меню мира со всеми его кнопочками*/
 	public static Menu menu = null;
+	/**Дерево эволюции*/
+	public static EvolTreeDialog evolTreeDialog = null;
 	
 	//Общие классы для программы
 	/**ГСЧ для симуляции*/
@@ -128,6 +134,7 @@ public class Configurations {
 		configWorld.add("SUN_SPEED", SUN_SPEED);
 		configWorld.add("SUN_LENGHT", SUN_LENGHT);
 		configWorld.add("SUN_POSITION", SUN_POSITION);
+		configWorld.add("SUN_FORM", SUN_FORM);
 		return configWorld;
 	}
 	/**Загрузка конфигурации мира*/
@@ -144,6 +151,7 @@ public class Configurations {
 		SUN_POSITION = configWorld.get("SUN_POSITION");
 		BASE_SUN_POWER = configWorld.get("BASE_SUN_POWER");
 		ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
+		SUN_FORM = configWorld.get("SUN_FORM");
 	}
 	
 	/**
@@ -160,9 +168,10 @@ public class Configurations {
 		}
 		//Освещение
 		setBASE_SUN_POWER(DBASE_SUN_POWER = 10);
-		setADD_SUN_POWER(DADD_SUN_POWER = 2);
-		setSUN_LENGHT(DSUN_LENGHT = width / 10);
+		setADD_SUN_POWER(DADD_SUN_POWER = DBASE_SUN_POWER);
+		setSUN_LENGHT(DSUN_LENGHT = width / 5);
 		setSUN_SPEED(DSUN_SPEED = 100); //Раз в 100 шагов сдвигается
+		setSUN_FORM(DSUN_FORM = -3);
 		SUN_POSITION = width / 2;
 		setDIRTY_WATER(DDIRTY_WATER = (int) (height - (height * 0.33) / BASE_SUN_POWER)); //33% карты сверху - освщеено
 		
@@ -207,6 +216,12 @@ public class Configurations {
 		if(sun != null)
 			sun.updateScrin();
 	}
+	public static void setSUN_FORM(int val) {
+		Configurations.SUN_FORM =  val;
+		if(sun != null)
+			sun.updateScrin();
+	}
+	
 	
 	/**
 	 * Возвращает строку описания для определённого класса

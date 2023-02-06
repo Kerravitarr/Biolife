@@ -99,12 +99,22 @@ public class Point{
 	public int getRx() {
 		return getRx(x);
 	}
+	/**
+	 * Переводит координаты клетки в координаты экрана
+	 * @param x координата в масштабах клетки
+	 * @return x координата в масштабе окна, пк
+	 */
 	public static int getRx(int x) {
 		return (int) Math.round(x*Configurations.scale + pixelXDel);
 	}
 	public int getRy() {
 		return getRy(y);
 	}
+	/**
+	 * Переводит координаты клетки в координаты экрана
+	 * @param y координата в масштабах клетки
+	 * @return x координата в масштабе окна, пк
+	 */
 	public static int getRy(int y) {
 		return (int) Math.round(y*Configurations.scale + pixelYDel);
 	}

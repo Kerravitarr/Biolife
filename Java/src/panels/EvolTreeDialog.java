@@ -167,6 +167,7 @@ public class EvolTreeDialog extends JDialog {
 	 * Create the dialog.
 	 */
 	public EvolTreeDialog() {
+		Configurations.evolTreeDialog = this;
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowDeactivated(WindowEvent e) {
