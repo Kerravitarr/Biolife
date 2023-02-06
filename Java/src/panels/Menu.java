@@ -2,15 +2,10 @@ package panels;
 
 import java.awt.Cursor;
 import java.awt.Dimension;
-import java.awt.Image;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.text.MessageFormat;
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
@@ -55,7 +50,7 @@ public class Menu extends JPanel {
 		add(makeButton("search", e-> System.out.println(e)));
 		add(start = makeButton("play", e->{World.isActiv = !World.isActiv;} ));
 		add(makeButton("record", e-> System.out.println(e)));
-		add(makeButton("graph", e-> System.out.println(e)));
+		add(makeButton("graph", e-> Configurations.evolTreeDialog.setVisible(true)));
 		add(makeButton("cursor", e-> toDefault()));
 		add(makeButton("kill", e-> remove()));
 		
@@ -91,7 +86,7 @@ public class Menu extends JPanel {
 		var isA = World.isActiv;
 		if(isA != startButtonIsStart) {
 			startButtonIsStart = isA;
-			Configurations.setIcon(start,isA ? "play" : "pause");
+			Configurations.setIcon(start,isA ? "pause" : "play");
 		}
 	}
 
