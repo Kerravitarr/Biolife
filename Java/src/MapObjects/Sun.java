@@ -4,6 +4,8 @@ import java.awt.Color;
 import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.util.ArrayList;
+import java.util.List;
 
 import Utils.ColorRec;
 import Utils.Utils;
@@ -17,6 +19,12 @@ import main.Point;
  */
 public class Sun {
 	
+	private final class PointsPair{
+		private final int  []x;
+		private final int  []y;
+		PointsPair(int []x,int []y){this.x = x; this.y = y;}
+	}
+	
 	private int w;
 	/**Цвет солнца*/
 	private final Color sunColor = Utils.getHSBColor(180d / 360, 1, 1, 0.7);
@@ -29,6 +37,12 @@ public class Sun {
 	
 	/**Фоновое изображение воды*/
 	private ColorRec []fon;
+	
+	/**Абсолютные координаты солнца. То есть к ним достаточно просто прибавить положение солнца*/
+	private double[] sunY;
+	private int O_ADD_SUN_POWER = 0;
+	private int O_BASE_SUN_POWER = 0;
+	private int O_SUN_FORM = 0;
 	
 	
 	public Sun(int width, int height){
@@ -73,7 +87,23 @@ public class Sun {
 	
 	/**Пересчитывает позиции всех объектов*/
 	public void updateScrin() {
-		
+		//Копирование параметров, чтобы они не поменялись во время расчётов
+		var SUN_LENGHT = Configurations.SUN_LENGHT;
+		var ADD_SUN_POWER = Configurations.ADD_SUN_POWER;
+		var SUN_FORM = Configurations.SUN_FORM;
+		var BASE_SUN_POWER = Configurations.BASE_SUN_POWER;
+		if(sunY == null || sunY.length != SUN_LENGHT || O_ADD_SUN_POWER != ADD_SUN_POWER || O_SUN_FORM != SUN_FORM || O_BASE_SUN_POWER != BASE_SUN_POWER) {
+			sunY = new double[SUN_LENGHT];
+			O_ADD_SUN_POWER = ADD_SUN_POWER;
+			O_SUN_FORM = SUN_FORM;
+			O_BASE_SUN_POWER = BASE_SUN_POWER;
+			
+			for(var i = 0 ; i < SUN_LENGHT ; i++) {
+				sunY[i] = Configurations.BASE_SUN_POWER + O_ADD_SUN_POWER * Math.pow(1 - i / ((double) SUN_LENGHT), O_SUN_FORM == 0 ? 1 : (O_SUN_FORM > 0 ? O_SUN_FORM + 1 : -(1d / (O_SUN_FORM - 1))));
+			}
+			//Теперь у нас есть зависимость Y(|x|) = f(ADD_SUN_POWER)
+			//Это функция для половины солнца, от центра в сторону увелчиения Х
+		}
 		//Первое солнце
 		var PS1 = Configurations.SUN_POSITION > Configurations.MAP_CELLS.width / 2 ? (Configurations.SUN_POSITION - Configurations.MAP_CELLS.width) : Configurations.SUN_POSITION;
 		//Второе солнце
@@ -82,14 +112,12 @@ public class Sun {
 		int xl[] = new int[4];
 		int yl[] = new int[4];
 		//Первое солнце
-		int xs1[] = new int[3];
-		int ys1[] = new int[3];
+		var s1 = makeSun(PS1,SUN_LENGHT);
 		//Центарльная часть
 		int xc[] = new int[4];
 		int yc[] = new int[4];
 		//Второе солнце
-		int xs2[] = new int[3];
-		int ys2[] = new int[3];
+		var s2 = makeSun(PS2,SUN_LENGHT);
 		//Правая часть без солнца
 		int xr[] = new int[4];
 		int yr[] = new int[4];
@@ -100,24 +128,31 @@ public class Sun {
 		int xm[] = new int[4];
 		int ym[] = new int[4];
 		
-		xw[0] = xw[1] = xl[0] = xl[1] = xm[0] = xm[1] = Point.getRx(0);
-		xl[3] = xs1[0] = Point.getRx(PS1 - Configurations.SUN_LENGHT);
-		xs1[1] = Point.getRx(PS1);
-		xl[2] = Point.getRx(PS1 - Configurations.SUN_LENGHT * Configurations.ADD_SUN_POWER / (Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER));
-		xs1[2] = xc[0] = Point.getRx(PS1 + Configurations.SUN_LENGHT);
-		xc[1] = Point.getRx(PS1 + Configurations.SUN_LENGHT * Configurations.ADD_SUN_POWER / (Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER));
-		xs2[0] = xc[3] = Point.getRx(PS2 - Configurations.SUN_LENGHT);
-		xs2[1] = Point.getRx(PS2);
-		xc[2] = Point.getRx(PS2 - Configurations.SUN_LENGHT * Configurations.ADD_SUN_POWER / (Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER));
-		xs2[2] = xr[0] = Point.getRx(PS2 + Configurations.SUN_LENGHT);
-		xr[1] = Point.getRx(PS2 + Configurations.SUN_LENGHT * Configurations.ADD_SUN_POWER / (Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER));
-		xw[2] = xw[3] = xr[2] = xr[3] = xm[2] = xm[3] = Point.getRx(Configurations.MAP_CELLS.width);
+		xm[0] = xm[1] = xw[0] = xw[1] = xl[0] = xl[1] = Point.getRx(0);
+		xl[2] = s1.x[1];
+		xl[3] = s1.x[0];
+		xc[0] = s1.x[s1.x.length - 1];
+		xc[1] = s1.x[s1.x.length - 2];
+		xc[2] = s2.x[1];
+		xc[3] = s2.x[0];
+		xr[0] = s2.x[s2.x.length - 1];
+		xr[1] = s2.x[s2.x.length - 2];
+		xm[2] = xm[3] = xw[2] = xw[3] = xr[2] = xr[3] = Point.getRx(Configurations.MAP_CELLS.width);
 		
-		yw[0] = yw[3] = yl[0] = yl[3] = ys1[0] = ys1[2] = yc[0] = yc[3] = ys2[0] = ys2[2] = yr[0] = yr[3] = Point.getRy(0);
-		yl[1] = yl[2] = yc[1] = yc[2] = yr[1] = yr[2] = Point.getRy(Configurations.BASE_SUN_POWER * (Configurations.MAP_CELLS.height - Configurations.DIRTY_WATER));
-		ys1[1] = ys2[1] = Point.getRy((Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER) * (Configurations.MAP_CELLS.height - Configurations.DIRTY_WATER));
+		yw[0] = yw[3] = yl[0] = yl[3] = yr[0] = yr[3] = Point.getRy(0);
+		yl[1] = yl[2] = yr[1] = yr[2] = Point.getRy(Configurations.BASE_SUN_POWER * (Configurations.MAP_CELLS.height - Configurations.DIRTY_WATER));
+		yl[2] = s1.y[1];
+		yl[3] = s1.y[0];
+		yc[0] = s1.y[s1.y.length - 1];
+		yc[1] = s1.y[s1.y.length - 2];
+		yc[2] = s2.y[1];
+		yc[3] = s2.y[0];
+		yr[0] = s2.y[s2.y.length - 1];
+		yr[1] = s2.y[s2.y.length - 2];
 		ym[0] = ym[3] = Point.getRy((int) (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL));
 		yw[1] = yw[2] = ym[1] = ym[2] = Point.getRy(Configurations.MAP_CELLS.height);
+		
+		
 		
 		//Части без солнца
 		var lfon = new ColorRec[7];
@@ -130,15 +165,37 @@ public class Sun {
 		lfon[2] = new ColorRec(xc,yc, gp);
 		lfon[3] = new ColorRec(xr,yr, gp);
 		//Cолнца
-		gp = new GradientPaint(w, ys1[0], sunColor, w, ys1[1], sunColorAlf);
-		lfon[4] = new ColorRec(xs1,ys1, gp);
-		lfon[5] = new ColorRec(xs2,ys2, gp);
+		gp = new GradientPaint(w, s1.y[0], sunColor, w, s1.y[s1.y.length/2], sunColorAlf);
+		lfon[4] = new ColorRec(s1.x,s1.y, gp);
+		lfon[5] = new ColorRec(s2.x,s2.y, gp);
 		
 		//Минералы
 		gp = new GradientPaint(w, ym[0], minColorAlf, w, ym[1], minColor);
 			
 		lfon[6] = new ColorRec(xm,ym, gp);
 		fon = lfon;
+	}
+	
+	private PointsPair makeSun(int PS, int SUN_LENGHT) {
+		int []x =  new int[SUN_LENGHT * 2 + 2];
+		int []y =  new int[SUN_LENGHT * 2 + 2];
+		int pos = 0;
+		x[pos] = Point.getRx((PS - SUN_LENGHT));
+		y[pos++] = Point.getRy(0);
+		var dry = (Configurations.MAP_CELLS.height - Configurations.DIRTY_WATER);
+		for(var i = 1 ; i < SUN_LENGHT + 1; i++) {
+			x[pos] = Point.getRx(i + (PS - SUN_LENGHT));
+			var yp = sunY[SUN_LENGHT - i] * dry;
+			y[pos++] = Point.getRy((int) yp);
+		}
+		for(var i = 0 ; i < SUN_LENGHT; i++) {
+			x[pos] = Point.getRx(i + (PS));
+			var yp = sunY[i] * dry;
+			y[pos++] = Point.getRy((int) yp);
+		}
+		x[pos] = Point.getRx((PS + SUN_LENGHT));
+		y[pos++] = y[0];
+		return new PointsPair(x,y);
 	}
 
 }
