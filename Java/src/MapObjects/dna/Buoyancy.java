@@ -4,11 +4,11 @@ import MapObjects.AliveCell;
 import Utils.MyMessageFormat;
 
 /**
- * Функция уменьшает плотность клетки, заставляя последюю всплывать
+ * Функция изменяет плотность клетки, заставляя последюю всплывать
  * @author Kerravitarr
  *
  */
-public class Buoyancy_UP extends CommandDo {
+public class Buoyancy extends CommandDo {
 	/**Цена операции*/
 	private final int HP_COST = 1;
 	/**На сколько меняется плавучесть*/
@@ -17,8 +17,7 @@ public class Buoyancy_UP extends CommandDo {
 	/**Тип команды*/
 	private final boolean isUp;
 
-	public Buoyancy_UP() {this(true);}
-	protected Buoyancy_UP(boolean isUp) {super(1);this.isUp = isUp;}
+	public Buoyancy(boolean isUp) {super(1, isUp ? "UP" : "DOWN");this.isUp = isUp;}
 
 	@Override
 	protected void doing(AliveCell cell) {

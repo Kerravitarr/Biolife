@@ -26,6 +26,7 @@ public abstract class CommandExplore extends CommandDNA {
 	 * @param countBranch - число возможных ветвей функции
 	 */
 	protected CommandExplore(int countParams, int countBranch) {super(countParams, countBranch);}
+	protected CommandExplore(int countParams, int countBranch, String propName) {super(countParams, countBranch,propName);}
 	protected CommandExplore(boolean isAbsolute,int countParams, int countBranch) {super(isAbsolute,countParams, countBranch);}
 
 	
