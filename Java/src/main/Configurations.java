@@ -65,18 +65,18 @@ public class Configurations {
 	//Те-же переменные, только их значения по умолчанию.
 	//Значения по умолчанию рассчитываются исходя из размеров мира
 	//И не могут меняться пока мир неизменен
-	public static int DBASE_SUN_POWER = BASE_SUN_POWER;
-	public static int DADD_SUN_POWER = ADD_SUN_POWER;
-	public static int DSUN_LENGHT = SUN_LENGHT;
-	public static int DSUN_SPEED = SUN_SPEED;
-	public static int DSUN_FORM = SUN_FORM;
-	public static int DDIRTY_WATER = DIRTY_WATER;
+	public static int DBASE_SUN_POWER = Configurations.BASE_SUN_POWER;
+	public static int DADD_SUN_POWER = Configurations.ADD_SUN_POWER;
+	public static int DSUN_LENGHT = Configurations.SUN_LENGHT;
+	public static int DSUN_SPEED = Configurations.SUN_SPEED;
+	public static int DSUN_FORM = Configurations.SUN_FORM;
+	public static int DDIRTY_WATER = Configurations.DIRTY_WATER;
 	
-	public static double DLEVEL_MINERAL = LEVEL_MINERAL;
-	public static int DCONCENTRATION_MINERAL = CONCENTRATION_MINERAL;
+	public static double DLEVEL_MINERAL = Configurations.LEVEL_MINERAL;
+	public static int DCONCENTRATION_MINERAL = Configurations.CONCENTRATION_MINERAL;
 	
-	public static int DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT;
-	public static int DTIK_TO_EXIT = TIK_TO_EXIT;
+	public static int DAGGRESSIVE_ENVIRONMENT = Configurations.AGGRESSIVE_ENVIRONMENT;
+	public static int DTIK_TO_EXIT = Configurations.TIK_TO_EXIT;
 	
 	//Отображение карты на экране
 	/**Масштаб*/
