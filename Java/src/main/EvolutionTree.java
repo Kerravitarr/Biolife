@@ -27,7 +27,7 @@ public class EvolutionTree {
 		/**Число живых потомков*/
 		private final AtomicInteger countAliveCell;
 		/**Наш родитель, общий предок, если хотите*/
-		Node perrent = null;
+		private Node perrent = null;
 		
 		//ПРИМЕЧАТЕЛЬНЫЕ ТОЧКИ
 		//ДНК клетки, образующей узел
@@ -106,7 +106,7 @@ public class EvolutionTree {
 			child.remove(node);
 			node.child = null;
 			if(countAliveCell.get() == 0 && child.isEmpty())
-				perrent.remove(this);
+				getPerrent().remove(this);
 			else if(countAliveCell.get() == 0 && child.size() == 1)
 				merge();
 		}
@@ -117,26 +117,22 @@ public class EvolutionTree {
 			if(child == null)
 				return;
 			Node margeNode = child.get(0);
-			if(perrent != null) {
-				perrent.getChild().add(margeNode); 
-				margeNode.perrent = perrent;
+			if(getPerrent() != null) {
+				getPerrent().getChild().add(margeNode); 
+				margeNode.perrent = getPerrent();
 				margeNode.generation = getGeneration();
-				perrent.remove(this);
-				if(perrent.child == null)
+				getPerrent().remove(this);
+				if(getPerrent().child == null)
 					return;
 				
 				HashMap<Long, Integer> map = new HashMap<>();
-				for (Node node : perrent.child) {
+				for (Node node : getPerrent().child) {
 					if(!map.containsKey(node.generation)) {
 						map.put(node.generation, 0);
 					} else {
 						throw new RuntimeException("ЖОПА");
 					}
 				}
-			} else {
-				root = margeNode; 
-				root.perrent = null;
-				root.generation = 0;
 			}
 		}
 		
@@ -167,8 +163,8 @@ public class EvolutionTree {
 			return make;
 		}
 		public String getBranch() {
-			if(perrent != null)
-				return perrent.getBranch() + ">" + getGeneration();
+			if(getPerrent() != null)
+				return getPerrent().getBranch() + ">" + getGeneration();
 			else
 				return "0";
 		}
@@ -238,6 +234,13 @@ public class EvolutionTree {
 		public int countAliveCell() {
 			return countAliveCell.get();
 		}
+
+		/**
+		 * @return the perrent
+		 */
+		public Node getPerrent() {
+			return perrent;
+		}
 	}
 	
 	/**Корень эволюционного дерева, адам*/
@@ -292,12 +295,12 @@ public class EvolutionTree {
 				var child = node.getChild();
 				if(child == null)
 					continue;
-				else if (child.isEmpty() && node.perrent == null){// У нас нет детей, всё, удаляем у родителя
+				else if (child.isEmpty() && node.getPerrent() == null){// У нас нет детей, всё, удаляем у родителя
 					java.awt.Toolkit.getDefaultToolkit().beep();
 					Configurations.world.stop();
 					JOptionPane.showMessageDialog(null,	"Симуляция завершена, не осталось выживших",	"BioLife", JOptionPane.WARNING_MESSAGE);
 				}else if (child.isEmpty())// У нас нет детей, всё, удаляем у родителя
-					node.perrent.remove(node); 
+					node.getPerrent().remove(node); 
 				else if(child.size() == 1) 
 					node.merge();
 			}

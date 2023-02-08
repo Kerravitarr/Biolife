@@ -1,10 +1,15 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JDialog.java to edit this template
+ */
 package panels;
 
 import MapObjects.CellObject;
+import Utils.SeveralClicksMouseAdapter;
 import Utils.Utils;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -12,84 +17,94 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
 import javax.swing.GroupLayout;
-import javax.swing.GroupLayout.Alignment;
-import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 import main.Configurations;
 import main.EvolutionTree;
-import main.EvolutionTree.Node;
 import main.Point;
+import main.World;
 
-public class EvolTreeDialog extends JDialog {
-	static final int DEL_X = 23;
-	static final int MIN_X = DEL_X * 2;
-	static final int MIN_Y = 60;
-	
-	public class NodeJpanel extends JPanel{
-		Node node = null;
-		NodeJpanel(Node node){
+/**
+ *
+ * @author rjhjk
+ */
+public class EvolTreeDialog extends javax.swing.JDialog {	
+	private class NodeJpanel extends JPanel{
+		private final EvolutionTree.Node node;
+		private final Color modeColor;
+		private static final Color bColor = new Color(0,0,0,0);
+		NodeJpanel(EvolutionTree.Node node, double color, int realWidth){
 			this.node = node;
+			modeColor = Utils.getHSBColor(color, 1.0, 1.0, 1.0);
 			addMouseListener(new MouseAdapter() {
 				@Override
 			    public void mouseClicked(MouseEvent e) {
-			    	EvolutionTree.root.setSelected(true);
-			    	NodeJpanel.this.node.setSelected(false);
-			    	CellUpdate();
-		    		activNode = NodeJpanel.this;
+					System.out.println("Кликов: " + e.getClickCount() + ". Событие: " + e.toString());
+					if(e.getClickCount() == 2){
+						if(node.getPerrent() == null){
+							rootNode = node;
+						} else {
+							rootNode = node.getPerrent();
+						}
+						DrawPanelEvoTree.isNeedUpdate = true;
+						repaint();
+					} else {
+						EvolutionTree.root.setSelected(true);
+						NodeJpanel.this.node.setSelected(false);
+						CellUpdate();
+						activNode = NodeJpanel.this;
+					}
 			    }
 			});
+			setBackground(bColor);
 		}
 
 		@Override
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
-			if(getHeight() >= 10) {
-				g.setColor(Color.BLACK);
-				Utils.centeredText(g, getWidth()/2, getHeight()/2, 10, NodeJpanel.this.node.getGeneration()+"");
-				if(!NodeJpanel.this.node.isSelected())
-					Utils.drawCircle(g, getWidth()/2, getHeight()/2, 10);
-			}
+			g.setColor(modeColor);
+			Utils.centeredText(g, getWidth()/2, getHeight()/2, delY / 3, NodeJpanel.this.node.getGeneration()+"");
+			if(!NodeJpanel.this.node.isSelected())
+				Utils.drawCircle(g, getWidth()/2, getHeight()/2, 10);
 		}
 	}
-	
+	/**Панель, на которой  рисуется дерево эволюции*/
 	public class DrawPanelEvoTree extends JPanel {
-		boolean isNeedUpdate = false;
-		
-		/**
-		 * Create the panel.
-		 */
+		/**Нужно пересчитать дерево*/
+		static boolean isNeedUpdate = false;
 		public DrawPanelEvoTree() {
 			GroupLayout groupLayout = new GroupLayout(this);
 			groupLayout.setHorizontalGroup(
-				groupLayout.createParallelGroup(Alignment.LEADING)
+				groupLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
 					.addGap(0, 450, Short.MAX_VALUE)
 			);
 			groupLayout.setVerticalGroup(
-				groupLayout.createParallelGroup(Alignment.LEADING)
+				groupLayout.createParallelGroup(GroupLayout.Alignment.LEADING)
 					.addGap(0, 300, Short.MAX_VALUE)
 			);
 			setLayout(groupLayout);
-			
 		}
 	
 		
 		@Override
 		public void paintComponent(Graphics g) {
-			if(isNeedUpdate) {
+			int xStart = xCenter;
+			int xEnd = (int) (getWidth() * scale) + xCenter;
+			var root = rootNode.getPerrent() == null ? rootNode : rootNode;
+			var yStart = (getHeight() + yCenter - delY * 2) - (rootNode.getPerrent() == null ? 0 :  - delY);
+			if(isNeedUpdate || World.isActiv) {
 				isNeedUpdate = false;
-				int maxY = getHeight() - MIN_Y;
-
 				removeAll();
-				addNode(EvolutionTree.root,MIN_X,MIN_Y,maxY);
+				repaint();
+				try{
+					addNode(root,xStart,xEnd, (int) (yStart - delY),0,0.8);	
+				}catch(java.lang.NullPointerException e){} //Нормально всё, асинхронность выполнения и всё прочее
 			}
 			super.paintComponent(g);
 			
-			int maxY = getHeight() - MIN_Y;
-			
-			paint(g,EvolutionTree.root,MIN_X,MIN_Y,maxY);
+			paint(g,root,xStart,xEnd, (int) (yStart),0,0.8);
 			try{
-				printText(g);
+				//printText(g);
 			}catch(java.lang.NullPointerException e){
 				activNode = null;
 			}
@@ -101,7 +116,7 @@ public class EvolTreeDialog extends JDialog {
 		 * @throws java.lang.NullPointerException - может выбрасывать исключение, когда клетка удаляется 
 		 */
 		private void printText(Graphics g) throws java.lang.NullPointerException{
-			if(activNode != null) {
+			/*if(activNode != null) {
 				if(activNode.node.countAliveCell() > 0){
 					g.drawString("Примечательные точки узла("+activNode.node.countAliveCell()+"клеток):", MIN_X, 10);
 				}else{
@@ -124,49 +139,94 @@ public class EvolTreeDialog extends JDialog {
 						+ activNode.node.phenotype.getBlue() + "]", MIN_X, 40);
 				g.setColor(oldC);
 				g.drawString("Устойчивость к яду: " + activNode.node.poisonType, MIN_X, 55);
-			}
+			}*/
 		}
 		
-		@Override
-	    public void repaint() {
-			super.repaint();
-			isNeedUpdate = true;
-	    }
-	    private void addNode(Node root, int xPos, int minY, int maxY) {
-	    	NodeJpanel rootJ = new NodeJpanel(root);
+		/**
+		 * Собирает дерево из узлов
+		 * @param root сам изображаемый узел
+		 * @param xStart начало отрезка узла
+		 * @param xEnd конец отрезка узла
+		 * @param yPos позиция по оси y
+		 */
+	    private void addNode(EvolutionTree.Node root, int xStart, int xEnd, int yPos, double colorStart, double colorEnd) {
+			var delX = (xEnd - xStart);
+			NodeJpanel rootJ = new NodeJpanel(root, colorStart + (colorEnd - colorStart) / 2, delX);
 	    	add(rootJ);
-	    	rootJ.setBounds(xPos - DEL_X / 2, minY + (maxY-minY)/2 - DEL_X / 2, Math.min((maxY-minY)/2,DEL_X), Math.min((maxY-minY)/2,DEL_X));
-	    	
-			List<Node> childs = root.getChild();
-			if(childs.isEmpty() || maxY-minY < 10) return;
-			double step = (maxY-minY) / childs.size();
+			var centerX = xStart + delX / 2;
+			//Сохраняем положение
+			rootJ.setBounds(centerX - delY / 2, yPos + delY / 2, delY, delY);
+			rootJ.addMouseListener(new SeveralClicksMouseAdapter() {
+			    public void mouseSeveralClick(MouseEvent e) {
+					System.out.println("Кликов: " + e.getClickCount() + ". Событие: " + e.toString());
+			    }
+			});
+
+			List<EvolutionTree.Node> childs = root.getChild();
+			if(childs.isEmpty() || (xEnd - xStart) < 10) return;
+			var step = ((double) delX) / childs.size();
+			var stepColor = (colorEnd - colorStart) / childs.size();
 			
 			for(int i = 0 ; i < childs.size() ; i++) {
-				addNode(childs.get(i),xPos + DEL_X,(int)Math.round(minY + step * i),(int)Math.round(minY + step * (i + 1)));
+				addNode(childs.get(i), 
+						(int) Math.round(xStart + step * i), 
+						(int) Math.round(xStart + step * (i + 1)), 
+						yPos - delY, 
+						colorStart + stepColor * i, 
+						colorStart + stepColor * (i + 1));
 			}
 		}
-	
-		private void paint(Graphics g, Node root, int xPos, int minY, int maxY) {
-			List<Node> childs = root.getChild();
+
+		/**
+		 * Рисует линии между узлами
+		 * @param g
+		 * @param root сам изображаемый узел
+		 * @param xStart начало отрезка узла
+		 * @param xEnd конец отрезка узла
+		 * @param yPos позиция по оси y
+		 */
+		private void paint(Graphics g, EvolutionTree.Node root, int xStart, int xEnd, int yPos, double colorStart, double colorEnd) {
+			List<EvolutionTree.Node> childs = root.getChild();
 			if(childs.isEmpty()) return;
-			double step = (maxY-minY) / childs.size();
+			var delX = (xEnd - xStart);
+			var step = ((double) delX) / childs.size();
+			var stepColor = (colorEnd - colorStart) / childs.size();
+			var centerX = xStart + delX / 2;
 			
 			for(int i = 0 ; i < childs.size() ; i++) {
-				g.drawLine(xPos, minY + (maxY-minY)/2, xPos + DEL_X, (int)Math.round(minY  +  step * (2 * i + 1)/2));
-				paint(g,childs.get(i),xPos + DEL_X,(int)Math.round(minY + step * i),(int)Math.round(minY + step * (i + 1)));
+				var center = (xStart + step * i) + ((xStart + step * (i + 1)) - (xStart + step * i)) / 2;
+				g.drawLine(centerX, yPos, (int) center, yPos - delY);
+				paint(g,childs.get(i), 
+						(int) Math.round(xStart + step * i), 
+						(int) Math.round(xStart + step * (i + 1)), 
+						yPos - delY, 
+						colorStart + stepColor * i, 
+						colorStart + stepColor * (i + 1));
 			}
 		}
 		
 	}
 
-	private static final JPanel contentPanel = new JPanel();
-	private final DrawPanelEvoTree draw;
-	private NodeJpanel activNode = null;;
-
-	/**
-	 * Create the dialog.
-	 */
+	
+	/**Сколько пунктов по оси Y должно пройти*/
+	static final int DEF_DEL_Y = 40;
+	private NodeJpanel activNode = null;
+	/**Масштаб дерева*/
+	private double scale = 1;
+	/**Смещение дерева по оси Х*/
+	private int xCenter = 0;
+	/**Смещение дерева по оси У*/
+	private int yCenter = 0;
+	/**С каким шагом дерево поднимается по оси Y*/
+	private final int delY = (int) (DEF_DEL_Y * scale);
+	/**Ключевой узел, от которого рисуем*/
+	private EvolutionTree.Node rootNode = EvolutionTree.root;
+	
+	/** Creates new form E */
 	public EvolTreeDialog() {
+		super((Frame) null, false);
+		initComponents();
+		
 		Configurations.evolTreeDialog = this;
 		addWindowListener(new WindowAdapter() {
 			@Override
@@ -182,21 +242,14 @@ public class EvolTreeDialog extends JDialog {
 	    		activNode = null;
 		    }
 		});
-		setBounds(100, 100, 450, 300);
-		getContentPane().setLayout(new BorderLayout());
-		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
-		getContentPane().add(contentPanel, BorderLayout.CENTER);
-		contentPanel.setLayout(new BorderLayout(0, 0));
-		{
-			draw = new DrawPanelEvoTree();
-			contentPanel.add(draw, BorderLayout.CENTER);
-		}
+		
+        //buttonWidth.setText(Configurations.getProperty(EvolTreeDialog.class, "addW"));
+       // buttonWidth.setToolTipText("Расширить дерево");
 	}
 	
 	@Override
     public void repaint() {
     	super.repaint();
-    	draw.repaint();
     }
 
 	private static void CellUpdate() {
@@ -209,4 +262,70 @@ public class EvolTreeDialog extends JDialog {
 		}
 	}
 
+	/** This method is called from within the constructor to
+	 * initialize the form.
+	 * WARNING: Do NOT modify this code. The content of this method is
+	 * always regenerated by the Form Editor.
+	 */
+	@SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jEditorPane1 = new javax.swing.JEditorPane();
+        jPanelTree = new DrawPanelEvoTree();
+
+        jScrollPane1.setViewportView(jEditorPane1);
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        setAlwaysOnTop(true);
+
+        jPanelTree.setBackground(new java.awt.Color(153, 153, 153));
+        jPanelTree.setToolTipText("");
+        jPanelTree.addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                jPanelTreeComponentResized(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanelTreeLayout = new javax.swing.GroupLayout(jPanelTree);
+        jPanelTree.setLayout(jPanelTreeLayout);
+        jPanelTreeLayout.setHorizontalGroup(
+            jPanelTreeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 423, Short.MAX_VALUE)
+        );
+        jPanelTreeLayout.setVerticalGroup(
+            jPanelTreeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 365, Short.MAX_VALUE)
+        );
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanelTree, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanelTree, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void jPanelTreeComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_jPanelTreeComponentResized
+        ((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
+    }//GEN-LAST:event_jPanelTreeComponentResized
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JEditorPane jEditorPane1;
+    private javax.swing.JPanel jPanelTree;
+    private javax.swing.JScrollPane jScrollPane1;
+    // End of variables declaration//GEN-END:variables
 }
