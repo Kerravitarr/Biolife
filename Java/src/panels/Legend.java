@@ -40,7 +40,7 @@ public class Legend extends JPanel{
 					case HP -> {
 						values = new Graph.Value[10];
 						for (int i = 0; i < values.length; i++) {
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * AliveCell.MAX_HP / values.length) + "", new Color((int) (255.0 * i / values.length), 0, 0));
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * AliveCell.MAX_HP / values.length) + "", Utils.getHSBColor(0, 1, 1, (0.25 + 3d*i / (4d*values.length))));
 						}
 					}
 					case YEAR -> {
@@ -48,8 +48,8 @@ public class Legend extends JPanel{
 						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 								CellObject cell = Configurations.world.get(new Point(x, y));
-								if (cell != null && cell instanceof AliveCell)
-									maxAge = Math.max(maxAge, ((AliveCell) cell).getAge());
+								if (cell != null && cell instanceof AliveCell acell)
+									maxAge = Math.max(maxAge, acell.getAge());
 							}
 						}
 						var rmaxAge = maxAge;
@@ -113,7 +113,7 @@ public class Legend extends JPanel{
 						}
 						values = new Graph.Value[10];
 						for (int i = 0; i < values.length; i++) {
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, Integer.toString((int) (i * maxMP / values.length)), new Color(0, 0, (int) (255.0 * i / values.length)));
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, Integer.toString((int) (i * maxMP / values.length)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d*i / (4d*values.length))));
 						}
 					}
 					case POISON -> {
@@ -122,6 +122,9 @@ public class Legend extends JPanel{
 							var rg = (int) (255.0 * i / values.length);
 							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * Poison.MAX_TOXIC / values.length) + "", new Color(rg, rg, rg));
 						}
+					}
+					case EVO_TREE -> {
+						values = new Graph.Value[0];
 					}
 				}
 				if (updateSrin) {
@@ -163,7 +166,7 @@ public class Legend extends JPanel{
 		static final int HEIGHT = 40;
 		static final int BORDER = 50;
 		
-		public enum MODE {	DOING,HP,YEAR,PHEN, GENER, MINERALS, POISON}
+		public enum MODE {DOING,HP,YEAR,PHEN, GENER, MINERALS, POISON, EVO_TREE}
 		static MODE mode = MODE.DOING;
 		/**Максимальный возраст объекта на экране*/
 		static long maxAge = 0;
@@ -220,20 +223,11 @@ public class Legend extends JPanel{
 		}
 		/**
 		 * Превращает покаление клетки в конкретный цвет
-		 * @param age покаление
+		 * @param gen покаление
 		 * @return Цвет
 		 */
 		public static Color generationToColor(long gen) {
-			return AgeToColor(gen,1.0);
-		}
-		/**
-		 * Превращает покаление клетки в конкретный цвет
-		 * @param gen покаление
-		 * @param alpha прозрачность цвета
-		 * @return Цвет
-		 */
-		public static Color generationToColor(long gen, double alpha) {
-			return Utils.getHSBColor(Utils.betwin(0.0, ((double)(gen - minGenDef))/(maxGenDef-minGenDef), 1.0), 1, 1,alpha);
+			return Utils.getHSBColor(Utils.betwin(0.0, ((double)(gen - minGenDef))/(maxGenDef-minGenDef), 1.0), 1, 1,1);
 		}
 		/**
 		 * Превращает возраст клетки в конкретный цвет
@@ -241,16 +235,11 @@ public class Legend extends JPanel{
 		 * @return Цвет
 		 */
 		public static Color AgeToColor(long age) {
-			return AgeToColor(age,1.0);
+			return Utils.getHSBColor(Utils.betwin(0.0, ((double)age)/maxAge, 1.0), 1, 1,1);
 		}
-		/**
-		 * Превращает возраст клетки в конкретный цвет
-		 * @param age возраст, в тиках
-		 * @param alpha прозрачность цвета
-		 * @return Цвет
-		 */
-		public static Color AgeToColor(long age, double alpha) {
-			return Utils.getHSBColor(Utils.betwin(0.0, ((double)age)/maxAge, 1.0), 1, 1,alpha);
+		
+		public static Color HPtToColor(double hp){
+			return Utils.getHSBColor(0, 1, 1, Utils.betwin(0, (0.25 + 3d * hp / (4d * AliveCell.MAX_HP)), 1.0));
 		}
 	}
 
@@ -269,16 +258,17 @@ public class Legend extends JPanel{
 		add(panel, BorderLayout.NORTH);
 		
 		{
-			var f = makeRB("LabelDoing",Graph.MODE.DOING);
+			var f = makeRB("Doing",Graph.MODE.DOING);
 			f.setSelected(true);
 			panel.add(f);
 		}
-		panel.add(makeRB("LabelHp",Graph.MODE.HP));
-		panel.add(makeRB("LabelAge",Graph.MODE.YEAR));
-		panel.add(makeRB("LabelGeneration",Graph.MODE.GENER));
-		panel.add(makeRB("LabelPhenotype",Graph.MODE.PHEN));
-		panel.add(makeRB("LabelMp",Graph.MODE.MINERALS));
-		panel.add(makeRB("LabelPoison",Graph.MODE.POISON));
+		panel.add(makeRB("Hp",Graph.MODE.HP));
+		panel.add(makeRB("Age",Graph.MODE.YEAR));
+		panel.add(makeRB("Generation",Graph.MODE.GENER));
+		panel.add(makeRB("Phenotype",Graph.MODE.PHEN));
+		panel.add(makeRB("Mp",Graph.MODE.MINERALS));
+		//panel.add(makeRB("Poison",Graph.MODE.POISON));
+		panel.add(makeRB("EvoTree",Graph.MODE.EVO_TREE));
 		
 
 		graph = new Graph();
@@ -306,7 +296,8 @@ public class Legend extends JPanel{
 	}
 	
 	private JRadioButton makeRB(String name, Graph.MODE mode) {
-		JRadioButton jrbuton = new JRadioButton(Configurations.getHProperty(Legend.class,name));
+		JRadioButton jrbuton = new JRadioButton(Configurations.getHProperty(Legend.class,"Label" + name));
+		jrbuton.setToolTipText(Configurations.getHProperty(Legend.class,"ToolTip" + name));
 		jrbuton.addActionListener(e->action(e,mode));
 		jrbuton.setFont(new Font("Tahoma", Font.PLAIN, 11));
 		jrbuton.setFocusable(false);

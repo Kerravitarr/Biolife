@@ -329,12 +329,12 @@ public abstract class AliveCellProtorype extends CellObject{
 	@Override
 	public void repaint() {
 		switch (Legend.Graph.getMode()) {
-			case MINERALS -> color_DO = new Color(0,0,(int) Utils.betwin(0, (255.0*mineral/MAX_MP),255),evolutionNode.getAlpha());
-			case GENER -> color_DO =Legend.Graph.generationToColor(Generation,evolutionNode.getAlpha()/255.0);
-			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge(),evolutionNode.getAlpha()/255.0);
-			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,health)/MAX_HP)),0,0,evolutionNode.getAlpha());
-			case PHEN -> color_DO = new Color(phenotype.getRed(), phenotype.getGreen(), phenotype.getBlue(),evolutionNode.getAlpha());
-			case DOING -> color_DO = new Color(color_DO.getRed(), color_DO.getGreen(), color_DO.getBlue(),evolutionNode.getAlpha());
+			case MINERALS -> color_DO = new Color(0,0,(int) Utils.betwin(0, (255.0*mineral/MAX_MP),255));
+			case GENER -> color_DO = Legend.Graph.generationToColor(Generation);
+			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge());
+			case HP -> color_DO = Legend.Graph.HPtToColor(health);
+			case PHEN -> color_DO = new Color(phenotype.getRed(), phenotype.getGreen(), phenotype.getBlue());
+			case DOING -> {/*color_DO = color_DO*/}
 			case POISON -> {
 				var rg = (int) Utils.betwin(0, getPosionPower() / Poison.MAX_TOXIC, 1.0) * 255;
 				switch (getPosionType()) {
@@ -344,6 +344,7 @@ public abstract class AliveCellProtorype extends CellObject{
 					case UNEQUIPPED -> color_DO = Color.BLACK;
 				}
 			}
+			case EVO_TREE -> color_DO = evolutionNode.getColor();
 		}
 	}
 
@@ -400,13 +401,13 @@ public abstract class AliveCellProtorype extends CellObject{
 	}
 
 	public void DNAupdate(int ma, int mc) {
-		dna = dna.update(ma, mc);
+		setDna(getDna().update(ma, mc));
 	}
 	private double specMax(Specialization.TYPE type) {
 		var spec = specialization.get(type);
 		if(type != specialization.main)
 			spec = Math.min(10, spec);
-		return (0.25 * Specialization.MAX_SPECIALIZATION + 0.8 * spec) / Specialization.MAX_SPECIALIZATION;
+		return (0.25 * Specialization.MAX_SPECIALIZATION + 0.75 * spec) / Specialization.MAX_SPECIALIZATION;
 	}
 	/**
 	 * Возвращает предельное значение параметра, в зависимости от специализации
@@ -528,5 +529,12 @@ public abstract class AliveCellProtorype extends CellObject{
 	 */
 	public void setMucosa(int mucosa) {
 		this.mucosa = mucosa;
+	}
+
+	/**
+	 * @param dna the dna to set
+	 */
+	public void setDna(DNA dna) {
+		this.dna = dna;
 	}
 }

@@ -366,6 +366,7 @@ public class Settings extends JPanel{
 		if(!js.load(obj)) return;
 		try{
 			Configurations.world.update(obj);
+			Configurations.evolTreeDialog.restart();
 			lastSaveCount = Configurations.world.step;
 			construct();
 			repaint();

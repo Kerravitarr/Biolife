@@ -16,8 +16,10 @@ import javax.swing.JOptionPane;
 public class EvolutionTree {
 
 	static public class Node{
+		private static final Color DEFAULT_COLOR = new Color(255,255,255,50);
+		
 		/**Время, когда узел появился*/
-		long time = 0;
+		private final long time;
 		//Поколение в этой ветке
 		long generation = 0;
 		//Потомки нашего узла
@@ -38,17 +40,17 @@ public class EvolutionTree {
 		public Poison.TYPE poisonType = null;
 		
 		//====================СПЕЦ ПЕРЕМЕННЫЕ. Нужны для дерева эволюции
-		//Показывает, нужно ли обновлять цвета у ботов
-		boolean isSelected = false;
+		//Показывает цвет узла
+		private Color colorNode = Color.BLACK;
 		
-		private Node() {
+		private Node(long t) {
 			this.branshCount = new AtomicInteger(0);
 			this.countAliveCell = new AtomicInteger(0);
+			time = t;
 		}
 		
-		public Node(JSON node, Node aThis) {
-			this();
-			time = node.getL("time");
+		public Node(JSON node, Node aThis, long version) {
+			this(node.getL("time"));
 			generation = node.getL("generation");
 			branshCount.set(node.get("branshCount"));
 			countAliveCell.set(0);
@@ -62,7 +64,7 @@ public class EvolutionTree {
 	    		DNA_mind[i] = mindL.get(i);
 			
 			for(var i : node.getAJ("Nodes")) {
-				child.add(new Node(i,this));
+				child.add(new Node(i,this,version));
 			}
 		}
 		/**
@@ -72,11 +74,10 @@ public class EvolutionTree {
 		 * @return новый узел
 		 */
 		public Node newNode(AliveCell cell,long time) {
-			Node node = new Node();
+			Node node = new Node(time);
 			node.generation = branshCount.incrementAndGet();
 			node.countAliveCell.set(1);
-			node.isSelected = isSelected();
-			node.time = time;
+			node.colorNode = colorNode;
 			
 			node.setChild(cell);
 			node.perrent = this;
@@ -101,7 +102,10 @@ public class EvolutionTree {
 			if(countAliveCell.decrementAndGet() <= 0 && child.size() <= 1)
 				removeNode.add(this);
 		}
-		/**Наш ребёнок сказал нам, что умер. Если это был последний наш ребёнок, то всё - сворачиваем лавочку*/
+		/**
+		 * Наш ребёнок сказал нам, что умер. Если это был последний наш ребёнок, то всё - сворачиваем лавочку
+		 * @param node наш ребёнок
+		 */
 		private void remove(Node node) {
 			child.remove(node);
 			node.child = null;
@@ -207,24 +211,25 @@ public class EvolutionTree {
 			return ret;
 		}
 
-		public int getAlpha() {
-			return isSelected() ? 124 : 255;
+		/**
+		 * Сохраняет цвет всех детей узла
+		 * @param c цвет
+		 */
+		public void setColor(Color c) {
+			colorNode = c;
 		}
 
 		/**
-		 * @param isSelected the isSelected to set
+		 * @return цвет узла
 		 */
-		public void setSelected(boolean isSelected) {
-			this.isSelected = isSelected;
+		public Color getColor() {
+			return colorNode;
+		}
+		/**Сбрасывает цвет для узла и всех его потомков*/
+		public void resetColor(){
+			this.colorNode = DEFAULT_COLOR;
 			for (var node : child)
-				node.setSelected(this.isSelected());
-		}
-
-		/**
-		 * @return the isSelected
-		 */
-		public boolean isSelected() {
-			return isSelected;
+				node.resetColor();
 		}
 
 		/**
@@ -244,13 +249,13 @@ public class EvolutionTree {
 	}
 	
 	/**Корень эволюционного дерева, адам*/
-	public static Node root = new Node();
+	public static Node root = new Node(0);
 	/***/
 	private static Set<Node> removeNode = new java.util.concurrent.CopyOnWriteArraySet <>();
 	
 	public EvolutionTree() {};
-	public EvolutionTree(JSON json) {
-		root = new Node(json.getJ("Node"), null);
+	public EvolutionTree(JSON json, long version) {
+		root = new Node(json.getJ("Node"), null,version);
 	}
 
 	@Override
@@ -295,13 +300,15 @@ public class EvolutionTree {
 				var child = node.getChild();
 				if(child == null)
 					continue;
-				else if (child.isEmpty() && node.getPerrent() == null){// У нас нет детей, всё, удаляем у родителя
+				else if (child.isEmpty()){// У нас нет детей, всё, удаляем у родителя
+				if(node.getPerrent() == null) { //Ой. У нас и родителя нет... Упс
 					java.awt.Toolkit.getDefaultToolkit().beep();
 					Configurations.world.stop();
-					JOptionPane.showMessageDialog(null,	"Симуляция завершена, не осталось выживших",	"BioLife", JOptionPane.WARNING_MESSAGE);
-				}else if (child.isEmpty())// У нас нет детей, всё, удаляем у родителя
-					node.getPerrent().remove(node); 
-				else if(child.size() == 1) 
+					JOptionPane.showMessageDialog(null, "Симуляция завершена, не осталось выживших", "BioLife", JOptionPane.WARNING_MESSAGE);
+				} else {
+					node.getPerrent().remove(node);
+				}
+				}else if(child.size() == 1) 
 					node.merge();
 			}
 			removeNode.clear();
