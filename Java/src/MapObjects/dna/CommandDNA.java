@@ -139,22 +139,22 @@ public abstract class CommandDNA {
 	/**
 	 * Возвращает параметр ДНК
 	 * @param cell - клетка, параметр который возвращаем
-	 * @param index - номер параметра
+	 * @param numParam - номер параметра
 	 * @param maxVal - максимальное значение, которым ограничивается параметр
 	 * @return значение параметра, от 0 до maxVal, включетльно
 	 */
-	protected static int param(AliveCell cell, int index, double maxVal) {
-		return param(cell.getDna(),index,maxVal);
+	protected static int param(AliveCell cell, int numParam, double maxVal) {
+		return param(cell.getDna(),numParam,maxVal);
 	}
 	/**
 	 * Возвращает параметр ДНК как направление смотрения
 	 * @param cell - клетка, параметр который возвращаем
-	 * @param index - номер параметра
+	 * @param numParam - номер параметра
 	 * @param isAbsolute - абсолютное-ли значение направления нам требуется?
 	 * @return значение параметра, от 0 до maxVal, включетльно
 	 */
-	protected static DIRECTION param(AliveCell cell, int index, boolean isAbsolute) {
-		var par = param(cell,index, DIRECTION.size() - 1);
+	protected static DIRECTION param(AliveCell cell, int numParam, boolean isAbsolute) {
+		var par = param(cell,numParam, DIRECTION.size() - 1);
 		return isAbsolute ? DIRECTION.toEnum(par) : cell.direction.next(par);
 	}
 	/**

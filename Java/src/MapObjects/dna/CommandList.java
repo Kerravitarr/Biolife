@@ -105,7 +105,7 @@ public class CommandList {
 			case BLOCK_3_2 + 8 -> new See(false);
 			case BLOCK_3_2 + 9 -> new WhoIsNearby();
 
-			case BLOCK_4 -> new Eat(true);
+			case BLOCK_4 + 0 -> new Eat(true);
 			case BLOCK_4 + 1 -> new Eat(false);
 			case BLOCK_4 + 2 -> new Bite(true);
 			case BLOCK_4 + 3 -> new Bite(false);
@@ -116,17 +116,19 @@ public class CommandList {
 			case BLOCK_4 + 8 -> new Pull(true);
 			case BLOCK_4 + 9 -> new Pull(false);
 
-			case BLOCK_5 -> new DNABreakNext();
-			case BLOCK_5 + 1 -> new DNABreakNow();
-			case BLOCK_5 + 2 -> new DNAInsert();
-			case BLOCK_5 + 3 -> new DNACopy();
+			case BLOCK_5 + 0 -> new DNABreak(true, true);
+			case BLOCK_5 + 1 -> new DNABreak(true, false);
+			case BLOCK_5 + 2 -> new DNABreak(false, true);
+			case BLOCK_5 + 3 -> new DNABreak(false, false);
 			case BLOCK_5 + 4 -> new DNAStrengthen();
 			case BLOCK_5 + 5 -> new DNAWallBreak();
 			case BLOCK_5 + 6 -> new Loop();
 			case BLOCK_5 + 7 -> new ChangeSpecialization();
-			case BLOCK_5 + 8 -> new DNABreakMy();
+			case BLOCK_5 + 8 -> new DNAFind(false);
+			case BLOCK_5 + 9 -> new DNAFind(true);
+			case BLOCK_5 + 10 -> new ViralLysis();
 
-			case BLOCK_6 -> new Cling(true);
+			case BLOCK_6 + 0 -> new Cling(true);
 			case BLOCK_6 + 1 -> new Cling(false);
 			case BLOCK_6 + 2 -> new Clone(true);
 			case BLOCK_6 + 3 -> new Clone(false);

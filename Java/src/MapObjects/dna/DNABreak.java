@@ -1,121 +1,188 @@
 package MapObjects.dna;
 
-import static MapObjects.CellObject.OBJECT.CLEAN;
 import static MapObjects.CellObject.OBJECT.NOT_POISON;
+
+import MapObjects.AliveCell;
+import MapObjects.AliveCellProtorype;
+import MapObjects.CellObject;
+import static MapObjects.CellObject.OBJECT.CLEAN;
+import static MapObjects.CellObject.OBJECT.FRIEND;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
 import static MapObjects.CellObject.OBJECT.OWALL;
 import static MapObjects.CellObject.OBJECT.POISON;
 import static MapObjects.CellObject.OBJECT.WALL;
-
-import MapObjects.AliveCell;
-import panels.Legend;
+import static MapObjects.dna.CommandDNA.nextPoint;
+import static MapObjects.dna.CommandDNA.param;
+import Utils.MyMessageFormat;
+import main.Configurations;
+import main.Point;
 
 /**
  * TODO
- * Команды ДНК:
- * Вставить ген
- * Заменить ген
  * Сравнить ген
- * Вставить кусок ДНК
- * Заменить кусок ДНК
  * Родить потомка с фрагментом ДНК
  * 
  */
 /**
  * Базовая основа команды, которая изменяет ДНК.
- * Изменить можно только ДНК того, на кого смотришь
+ * Все эти команды "бесплатны", так как вирсная клетка умирает после своих телодвижений
  * @author Kerravitarr
  *
  */
-public abstract class DNABreak extends CommandDo {
-	/**Цена энергии на ход*/
-	protected final int HP_COST_ONE = 2;
-	protected final int HP_COST_MANY = 8;
-
+public class DNABreak extends CommandDo {
+	/**Цена энергии на ход, только для вставки одного значения*/
+	private final int HP_COST = 100;
+	private final MyMessageFormat oneParam0ormat = new MyMessageFormat("🔍CMD = {0}");
+	private final MyMessageFormat oneParam1ormat = new MyMessageFormat("CMD = {0}");
+	private final MyMessageFormat manyParam1ormat = new MyMessageFormat("L = {0}");
+	private final MyMessageFormat manyParam2ormat = new MyMessageFormat("PC -= {0}");
+	
+	private final String manyValueFormatS = Configurations.getProperty(Destroy.class,  "Shot");
+	private final String manyValueFormatL = Configurations.getProperty(Destroy.class,  "Long");
+	private final MyMessageFormat manyValueFormat = new MyMessageFormat("HP -= {0}");
+	
+	/**Операция вставки? Или обновления*/
+	private final boolean isInsert;
+	/**Одиночная команда? Или для ряда чисел*/
+	private final boolean isOne;
 	/**
 	 * Констурктор класса
-	 * @param countParams - число параметров у функции
+	 * @param isO - одиноная команда или множественная
+	 * @param isIns - вставить или обновить
 	 */
-	public DNABreak(int countParams) {
-		super(countParams);
+	public DNABreak(boolean isO, boolean isIns) {
+		super(isO ? 2 : 3, isO && isIns ? "OneInsert" : (!isO && isIns ? "ManyInsert" : (isO && !isIns ? "OneUpdate" : "ManyUpdate")));
 		isInterrupt = true;
+		isOne = isO;
+		isInsert = isIns;
 	}
-
-	/**
-	 * Изменить код своей ДНК
-	 * @param who кто я
-	 * @param index какой индекс
-	 * @param comand на какую команду
-	 */
-	protected void breakDNA(AliveCell who, int index, int comand) {
-		breakDNAOne(who,who,false,index,comand);
-	}
-
-	/**
-	 * Ломает чью-то ДНК
-	 * @param who кто ломает
-	 * @param target кому ломает
-	 * @param index какой индекс, начиная с PC, в ДНК подвергается изменению
-	 * @param comand какая новая команда
-	 */
-	protected void breakDNAOne(AliveCell who,AliveCell target, int index, int comand) {
-		breakDNAOne(who,target,false,index,comand);
-	}
-	/**
-	 * Ломает чью-то ДНК
-	 * @param who кто ломает
-	 * @param target кому ломает
-	 * @param breakWall сломать-ли стену перед этим
-	 * @param index какой индекс, начиная с PC, в ДНК подвергается изменению
-	 * @param comand какая новая команда
-	 */
-	protected void breakDNAOne(AliveCell who,AliveCell target, boolean breakWall, int index, int comand) {
-		who.addHealth(-HP_COST_ONE); // бот теряет на этом 2 энергии в независимости от результата
-		if (breakWall && target.getDNA_wall() > 0) {
-			target.setDNA_wall(target.getDNA_wall()-1);
-		} else {
-			if(target.getDna().get(0,target.getDna().getIndex(index)) != comand) {
-				target.DNAupdate(index, comand);
-				target.setGeneration(target.getGeneration() + 1);
-				target.evolutionNode = target.evolutionNode.newNode(target, who.getStepCount());
+	
+	@Override
+	protected void doing(AliveCell cell) {
+		CellObject.OBJECT see = cell.see(cell.direction);
+		switch (see) {
+			case ENEMY, FRIEND -> {
+				Point point = nextPoint(cell,cell.direction);
+				AliveCell bot = (AliveCell) Configurations.world.get(point);
+				if(isOne){
+					int cmdStart = param(cell,0); // После какого гена мы устраиваем подлянку
+					int mc = param(cell,1); //Какой ген меняем
+					if(isInsert)
+						insertCmd(cell,bot, true,cmdStart,mc);
+					else
+						updateCmd(cell,bot, true,cmdStart,mc);
+					//Теряет бот на этом колосальное количество энергии
+					cell.addHealth( - HP_COST);
+				} else {
+					int cmdStart = param(cell,0); // После какого гена мы устраиваем подлянку
+					int length_DNA = param(cell,1, cell.getDna().size - 1) + 1; // Сколько вставляем
+					int pref = param(cell,2); //Сколько генов отступаем назад
+					int[] cmds = new int[length_DNA];
+					var dna = cell.getDna();
+					for(int i = 0 ; i < length_DNA ; i++){
+						cmds[i] = dna.get(0, dna.getPC() - pref + i);
+					}
+					if(isInsert)
+						insertCmds(cell,bot, true,cmdStart,cmds);
+					else
+						updateCmds(cell,bot, true,cmdStart,cmds);
+					//Мы сделали достаточно, закругляемся на этом
+					cell.destroy();
+				}
 			}
+			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
+			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
-		if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
-			who.color(AliveCell.ACTION.BREAK_DNA,10);
-	}
-	/**
-	 * Ломает чью-то ДНК. Да не просто ломает, а прям огромный кусок заменяет!
-	 * @param who кто ломает
-	 * @param target кому ломает
-	 * @param PC Начиная с какой команды у who вставлять ДНК
-	 * @param lenght сколько подменять ДНК
-	 */
-	protected void breakDNAMany(AliveCell who,AliveCell target, int PC, int lenght) {
-		breakDNAMany(who,target,false,PC,lenght);
 	}
 	
 	/**
-	 * Ломает чью-то ДНК. Да не просто ломает, а прям огромный кусок заменяет!
+	 * Ищет позицию в ДНК следующую сразу за cmd
+	 * @param dna ДНК в которой ищем
+	 * @param cmd команда, которую ищем
+	 * @return индекс команды в формате ДНК[dna.getPC() + find(cmd) + 1];
+	 *			или -1, если команда не найдена
+	 */
+	public static int findPos(DNA dna, int cmd){
+		for (var i = 0; i < dna.size; i++) {
+			if (dna.get(dna.getPC(), i) == cmd) {
+				return (dna.getPC() + i + 1) % dna.size;
+			}
+		}
+		return -1;
+	}
+	/**Обновляет поколение target за счёт who*/
+	private void updateGeneration(AliveCell who, AliveCell target){
+			target.setGeneration(target.getGeneration() + 1);
+			target.evolutionNode = target.evolutionNode.newNode(target, who.getStepCount());
+	}
+	
+	/**
+	 * Вставляет дополнительную инструкцию в ДНК жертвы
 	 * @param who кто ломает
 	 * @param target кому ломает
-	 * @param breakWall сломать-ли стену перед этим?
-	 * @param PC Начиная с какой команды у who вставлять ДНК
-	 * @param lenght сколько подменять ДНК
+	 * @param breakWall сломать-ли стену перед этим
+	 * @param cmdStart после какой команды вставить свою команду
+	 * @param comand какую команду вставить
 	 */
-	protected void breakDNAMany(AliveCell who,AliveCell target, boolean breakWall, int PC, int lenght) {
-		who.addHealth(-HP_COST_MANY); // бот теряет на этом 2 энергии в независимости от результата
+	protected void insertCmd(AliveCell who,AliveCell target, boolean breakWall, int cmdStart, int comand) {
+		insertCmds(who,target,breakWall,cmdStart,new int[]{comand});
+	}
+	/**
+	 * Вставляет несколько дополнительных инструкций в ДНК жертвы
+	 * @param who кто ломает
+	 * @param target кому ломает
+	 * @param breakWall сломать-ли стену перед этим
+	 * @param cmdStart после какой команды вставить свою команду
+	 * @param comands список вставляеых команд
+	 */
+	protected void insertCmds(AliveCell who,AliveCell target, boolean breakWall, int cmdStart, int[] comands) {
 		if (breakWall && target.getDNA_wall() > 0) {
 			target.setDNA_wall(target.getDNA_wall()-1);
 		} else {
-			var bot_dna = who.getDna();
-			for (int i = 0; i < lenght; i++)
-				target.DNAupdate(i, bot_dna.get(PC,2 + i));
-			target.setGeneration(target.getGeneration() + 1);
-			target.evolutionNode = target.evolutionNode.newNode(target, who.getStepCount());
+			var dna = target.getDna();
+			var index = findPos(dna,cmdStart);
+			if(index == -1 || dna.size + comands.length >= AliveCellProtorype.MAX_MINDE_SIZE) return;
+			dna = dna.doubling(index, comands.length);
+			for(var iCmd = 0 ; iCmd < comands.length ; iCmd++)
+				dna.criticalUpdate(index - dna.getPC() + iCmd, comands[iCmd]);
+			target.setDna(dna);
+			updateGeneration(target,who);
 		}
-		if (Legend.Graph.getMode() == Legend.Graph.MODE.DOING)
-			who.color(AliveCell.ACTION.BREAK_DNA,10);
 	}
+	/**
+	 * Обновляет инструкцию в ДНК жертвы
+	 * @param who кто ломает
+	 * @param target кому ломает
+	 * @param breakWall сломать-ли стену перед этим
+	 * @param cmdStart после какой команды вставить свою команду
+	 * @param comand какую команду вставить
+	 */
+	protected void updateCmd(AliveCell who,AliveCell target, boolean breakWall, int cmdStart, int comand) {
+		updateCmds(who,target,breakWall,cmdStart,new int[]{comand});
+	}
+	/**
+	 * Обновляет несколько инструкций в ДНК жертвы
+	 * @param who кто ломает
+	 * @param target кому ломает
+	 * @param breakWall сломать-ли стену перед этим
+	 * @param cmdStart после какой команды вставить свою команду
+	 * @param comands последовательность команд
+	 */
+	protected void updateCmds(AliveCell who,AliveCell target, boolean breakWall, int cmdStart, int[] comands) {
+		if (breakWall && target.getDNA_wall() > 0) {
+			target.setDNA_wall(target.getDNA_wall()-1);
+		} else {
+			var dna = target.getDna();
+			var index = findPos(dna,cmdStart);
+			if(index == -1) return;
+			dna = dna.update(index - dna.getPC(), comands[0]); //Создаёт копию ДНК
+			for(var iCmd = 0 ; iCmd < comands.length ; iCmd++)
+				dna.criticalUpdate(index - dna.getPC() + iCmd, comands[iCmd]);
+			target.setDna(dna);
+			updateGeneration(target,who);
+		}
+	}
+
 	
 	@Override
 	public int getInterrupt(AliveCell cell, DNA dna){
@@ -124,5 +191,32 @@ public abstract class DNABreak extends CommandDo {
 			return see.nextCMD;
 		else
 			return -1;
+	}
+	
+	@Override
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		if(isOne){
+			return switch (numParam) {
+				case 0 -> oneParam0ormat.format(CommandList.list[param(dna, numParam)]);
+				case 1 -> oneParam1ormat.format(CommandList.list[param(dna, numParam)]);
+				default-> super.getParam(cell, numParam, dna);
+			};
+		} else {
+			return switch (numParam) {
+				case 0 -> oneParam0ormat.format(CommandList.list[param(dna, numParam)]);
+				case 1 -> manyParam1ormat.format(param(dna,0, dna.size - 1) + 1);
+				case 2 -> manyParam2ormat.format(param(dna,0, dna.size));
+				default-> super.getParam(cell, numParam, dna);
+			};
+		}
+	}
+	
+	@Override
+	public String value(AliveCell cell, DNA dna) {
+		if (isOne) {
+			return manyValueFormat.format(HP_COST);
+		} else {
+			return isFullMod() ? manyValueFormatL : manyValueFormatS;
+		}
 	}
 }

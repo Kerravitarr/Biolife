@@ -41,7 +41,7 @@ public class AliveCell extends AliveCellProtorype {
      * @param cell - JSON объект, который содержит всю информацюи о клетке
      * @param tree - Дерево эволюции
      */
-    public AliveCell(JSON cell, EvolutionTree tree) {
+    public AliveCell(JSON cell, EvolutionTree tree, long version) {
         super(cell);
         dna = new DNA(cell.getJ("DNA"));
         health = cell.get("health");
@@ -66,8 +66,8 @@ public class AliveCell extends AliveCellProtorype {
 
     /**
      * Копирование клетки
-     *
      * @param cell - её родитель
+     * @param newPos - где она окажется
      */
     public AliveCell(AliveCell cell, Point newPos) {
         super(cell.getStepCount(), LV_STATUS.LV_ALIVE);
@@ -87,10 +87,47 @@ public class AliveCell extends AliveCellProtorype {
         specialization = new Specialization(cell);
         direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size() - 1));   // направление, куда повернут новорожденный, генерируется случайно
 
-        dna = new DNA(cell.dna);
+        dna = new DNA(cell.getDna());
 
         setGeneration(cell.Generation);
-        color_DO = new Color(255, 255, 255, evolutionNode.getAlpha());
+        color_DO = new Color(255, 255, 255);
+        repaint();
+
+        //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
+        if (Utils.random(0, 100) < Configurations.AGGRESSIVE_ENVIRONMENT) {
+            mutation();
+        }
+    }
+	/**
+     * Создание вирусной клетки
+     * @param cell - её родитель
+     * @param newPos - где она окажется
+     * @param HP - сколько у неё будет здоровья
+     * @param ndna - какая у неё теперь ДНК
+     */
+    public AliveCell(AliveCell cell, Point newPos, double HP, DNA ndna) {
+        super(cell.getStepCount(), LV_STATUS.LV_ALIVE);
+        setPos(newPos);
+        evolutionNode = cell.evolutionNode.clone();
+
+        setHealth(HP);
+        cell.addHealth(-HP);
+        setMineral(cell.getMineral() / 2); // забирается половина минералов у предка
+        cell.setMineral(cell.getMineral() / 2);
+        DNA_wall = cell.DNA_wall / 2;
+        cell.DNA_wall = cell.DNA_wall / 2; //Забирается половина защиты ДНК
+        poisonType = cell.getPosionType();
+        poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
+        mucosa = (cell.mucosa = (int) (cell.mucosa / 2.1)); //Делится слизистой оболочкой
+
+        specialization = new Specialization(cell);
+        direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size() - 1));   // направление, куда повернут новорожденный, генерируется случайно
+
+        dna = ndna;
+
+        setGeneration(0); //Вирусные клетки имеют нулевое поколение
+       evolutionNode = evolutionNode.newNode(this, getStepCount());
+        color_DO = new Color(255, 255, 255);
         repaint();
 
         //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
@@ -103,7 +140,7 @@ public class AliveCell extends AliveCellProtorype {
     public void step() {
         //Работа ДНК
         for (int cyc = 0; (cyc < 15); cyc++) {
-            if (dna.get().execute(this)) {
+            if (getDna().get().execute(this)) {
                 break;
             }
         }
@@ -275,7 +312,6 @@ public class AliveCell extends AliveCellProtorype {
             DNA_wall = 0;
             return;
         }
-        setGeneration(getGeneration() + 1);
         switch (Utils.random(0, 9)) {
             case 0 -> { //Мутирует специализация
                 int co = Utils.random(0, 100); //Новое значение специализации
@@ -283,43 +319,44 @@ public class AliveCell extends AliveCellProtorype {
                 getSpecialization().set(Specialization.TYPE.staticValues[tp], co);
             }
             case 1 -> { //Мутирует геном
-                int ma = Utils.random(0, dna.size - 1); //Индекс гена
+                int ma = Utils.random(0, getDna().size - 1); //Индекс гена
                 int mc = Utils.random(0, CommandList.COUNT_COMAND); //Его значение
-                dna = dna.update(ma, mc);
+                setDna(getDna().update(ma, mc));
             }
             case 2 -> { //Дупликация - один ген удваивается
-                if (dna.size + 1 <= MAX_MINDE_SIZE) {
-                    int mc = Utils.random(0, dna.size - 1); //Индекс гена, который будет дублироваться
-                    dna = dna.doubling(mc);
+                if (getDna().size + 1 <= MAX_MINDE_SIZE) {
+                    int mc = Utils.random(0, getDna().size - 1); //Индекс гена, который будет дублироваться
+                    setDna(getDna().doubling(mc));
                 }
             }
             case 3 -> { //Делеция - один ген удалился
-                int mc = Utils.random(0, dna.size - 1); //Индекс гена, который будет удалён
-                dna = dna.compression(mc);
+				if(getDna().size == 1) return ;	//Да, у виросов бывает, что и не бывает
+				int mc = Utils.random(0, getDna().size - 1); //Индекс гена, который будет удалён
+				setDna(getDna().compression(mc));
             }
             case 4 -> { //Инверсия - два подряд идущих гена меняются местами
-                int mn = Utils.random(0, dna.size - 1); //Индекс гена, который будет обменян со следующим
-                var f = dna.get(dna.getPC(), mn);
-                var s = dna.get(dna.getPC(), mn + 1);
-                dna = dna.update(mn, s);
-                dna = dna.update(mn + 1, f);
+                int mn = Utils.random(0, getDna().size - 1); //Индекс гена, который будет обменян со следующим
+                var f = getDna().get(getDna().getPC(), mn);
+                var s = getDna().get(getDna().getPC(), mn + 1);
+                setDna(getDna().update(mn, s));
+                setDna(getDna().update(mn + 1, f));
             }
             case 5 -> { //Изометрия - отзеркаливание гена на следующий
-                int mn = Utils.random(0, dna.size - 1); //Индекс гена, c которым будем работать
-                dna = dna.update(mn + 1, CommandList.COUNT_COMAND - dna.get(dna.getPC(), mn));
+                int mn = Utils.random(0, getDna().size - 1); //Индекс гена, c которым будем работать
+                setDna(getDna().update(mn + 1, CommandList.COUNT_COMAND - getDna().get(getDna().getPC(), mn)));
             }
             case 6 -> { //Транслокация - смена местоприбывания гена
-                int iStart = Utils.random(0, dna.size - 1); //Индекс гена сейчас
-                int iStop = Utils.random(0, dna.size - 1); //Индекс гена который хочу
-                var f = dna.get(dna.getPC(), iStart);//Сам путешественник
-                if (dna.getIndex(iStart) > dna.getIndex(iStop)) {
-                    dna = dna.doubling(dna.getIndex(iStop));	//Создали площадку
-                    dna = dna.update(iStop, f); //Переместили сюда новый ген
-                    dna = dna.compression(dna.getIndex(iStart + 1)); //Удалили его предыдущую форму
+                int iStart = Utils.random(0, getDna().size - 1); //Индекс гена сейчас
+                int iStop = Utils.random(0, getDna().size - 1); //Индекс гена который хочу
+                var f = getDna().get(getDna().getPC(), iStart);//Сам путешественник
+                if (getDna().getIndex(iStart) > getDna().getIndex(iStop)) {
+                    setDna(getDna().doubling(getDna().getIndex(iStop)));	//Создали площадку
+                    setDna(getDna().update(iStop, f)); //Переместили сюда новый ген
+                    setDna(getDna().compression(getDna().getIndex(iStart + 1))); //Удалили его предыдущую форму
                 } else {
-                    dna = dna.doubling(dna.getIndex(iStop + 1));	//Создали площадку
-                    dna = dna.update(iStop + 1, f); //Переместили сюда новый ген
-                    dna = dna.compression(dna.getIndex(iStart)); //Удалили его предыдущую форму
+                    setDna(getDna().doubling(getDna().getIndex(iStop + 1)));	//Создали площадку
+                    setDna(getDna().update(iStop + 1, f)); //Переместили сюда новый ген
+                    setDna(getDna().compression(getDna().getIndex(iStart))); //Удалили его предыдущую форму
                 }
             }
             case 7 -> { // Смена типа яда на который мы отзываемся
@@ -331,14 +368,15 @@ public class AliveCell extends AliveCellProtorype {
                 }
             }
             case 8 -> { //Мутирует вектор прерываний
-                int ma = Utils.random(0, dna.interrupts.length - 1); //Индекс в векторе
-                int mc = Utils.random(0, dna.size - 1); //Его значение
+                int ma = Utils.random(0, getDna().interrupts.length - 1); //Индекс в векторе
+                int mc = Utils.random(0, getDna().size - 1); //Его значение
                 dna.interrupts[ma] = mc;
             }
             case 9 -> { //Мутирует наша невосприимчивость
-                tolerance = Utils.random(0, dna.size - 1);
+                tolerance = Utils.random(0, getDna().size - 1);
             }
         }
+        setGeneration(getGeneration() + 1);
         evolutionNode = evolutionNode.newNode(this, getStepCount());
     }
 
@@ -418,7 +456,7 @@ public class AliveCell extends AliveCellProtorype {
     @Override
     protected boolean isRelative(CellObject cell0) {
         if (cell0 instanceof AliveCell bot0) {
-           return bot0.dna.equals(this.dna, this.tolerance);
+           return bot0.getDna().equals(this.getDna(), this.tolerance);
         } else {
             return false;
         }
@@ -555,7 +593,7 @@ public class AliveCell extends AliveCellProtorype {
 
     @Override
     public JSON toJSON(JSON make) {
-        make.add("DNA", dna.toJSON());
+        make.add("DNA", getDna().toJSON());
         make.add("health", health);
         make.add("mineral", mineral);
         make.add("buoyancy", buoyancy);
