@@ -65,6 +65,10 @@ public class DNABreak extends CommandDo {
 				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				if(isOne){
+					if(cell.getHealth() + cell.getFoodTank() < HP_COST){
+						bot.addHealth(cell.getHealth() + cell.getFoodTank());
+						cell.destroy();
+					}
 					int cmdStart = param(cell,0); // После какого гена мы устраиваем подлянку
 					int mc = param(cell,1); //Какой ген меняем
 					if(isInsert)
@@ -72,7 +76,8 @@ public class DNABreak extends CommandDo {
 					else
 						updateCmd(cell,bot, true,cmdStart,mc);
 					//Теряет бот на этом колосальное количество энергии
-					cell.addHealth( - HP_COST);
+					bot.addHealth(HP_COST);
+					cell.addHealth(-HP_COST);
 				} else {
 					int cmdStart = param(cell,0); // После какого гена мы устраиваем подлянку
 					int length_DNA = param(cell,1, cell.getDna().size - 1) + 1; // Сколько вставляем
@@ -86,6 +91,7 @@ public class DNABreak extends CommandDo {
 						insertCmds(cell,bot, true,cmdStart,cmds);
 					else
 						updateCmds(cell,bot, true,cmdStart,cmds);
+					bot.addHealth(cell.getHealth() + cell.getFoodTank());
 					//Мы сделали достаточно, закругляемся на этом
 					cell.destroy();
 				}
