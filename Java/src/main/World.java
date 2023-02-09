@@ -539,12 +539,13 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		
 		sb.event();
 		
+		var version = json.getL("VERSION");
 		JSON configWorld = json.getJ("configWorld");
-		Configurations.load(configWorld);
+		Configurations.load(configWorld,version);
 		step = configWorld.getL("step");
 		sb.event();
 		
-		Configurations.tree = new EvolutionTree(json.getJ("EvoTree"));
+		Configurations.tree = new EvolutionTree(json.getJ("EvoTree"),version);
 		sb.event();
 		
 		List<JSON> cells = json.getAJ("Cells");		
@@ -554,11 +555,11 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 				switch (LV_STATUS.values()[(int)cell.get("alive")]) {
 					case LV_ALIVE -> {
 						//if(loadR(cell,359,76,10))
-							add(new AliveCell(cell,Configurations.tree));
+							add(new AliveCell(cell,Configurations.tree,version));
 					}
-					case LV_ORGANIC -> add(new Organic(cell));
-					case LV_POISON -> add(new Poison(cell));
-					case LV_WALL -> add(new Fossil(cell));
+					case LV_ORGANIC -> add(new Organic(cell,version));
+					case LV_POISON -> add(new Poison(cell,version));
+					case LV_WALL -> add(new Fossil(cell,version));
 					default -> System.err.println("Ошибка загрузки строки: \n" + cell);
 				}
 			} catch (java.lang.RuntimeException e1) {
@@ -585,9 +586,6 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		    		new_name.setFriend(aliveCell);
 			}
 		}
-		//Очищаем память
-		cells.clear();
-		json.clear();
 		sb.event();
 		
 		Configurations.tree.updatre();

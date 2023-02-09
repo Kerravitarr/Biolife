@@ -538,7 +538,7 @@ public class BotInfo extends JPanel {
 				mucosa.clear();
 		} else if (getCell() instanceof Poison poison) {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
-			toxicFIeld.setText(poison.getType().name());
+			toxicFIeld.setText(poison.getType().toString());
 		} else if (getCell() instanceof Organic org) {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 			if(org.getPoison() != Poison.TYPE.UNEQUIPPED)

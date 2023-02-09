@@ -1,11 +1,13 @@
 package MapObjects;
 
+import static MapObjects.AliveCellProtorype.MAX_MP;
 import java.awt.Color;
 import java.awt.Graphics;
 
 import Utils.JSON;
 import Utils.Utils;
 import main.Point.DIRECTION;
+import panels.Legend;
 
 /**
  * Ороговевшая клетка. Она превратилась в стену и теперь защищает других от себя
@@ -14,13 +16,13 @@ import main.Point.DIRECTION;
  */
 public class Fossil extends CellObject {
 	/**Цвет стены*/
-    private static final Color COLOR_DO = new Color(64, 56, 56,200);
+    private static final Color COLOR_DO = Color.BLACK;
 	/**Сколько у нас энергии*/
 	private double energy = 0;
 	/**Стены не бессмертны, напротив, эроизия разлагает их*/
 	private static final int MAX_AGE = 1_000_000;
 
-	public Fossil(JSON poison) {
+	public Fossil(JSON poison, long version) {
 		super(poison);
 		energy = (double)poison.get("energy");
 		super.color_DO = COLOR_DO;
@@ -69,9 +71,11 @@ public class Fossil extends CellObject {
 		g.setColor(super.color_DO);
 		
 		int r = (int) Math.round(getPos().getRr()*1);
-		int rx = getPos().getRx();
-		int ry = getPos().getRy();
-		Utils.fillSquare(g,rx,ry,r);
+		int xCenter = getPos().getRx();
+		int yCenter = getPos().getRy();
+		
+		g.fillRect(xCenter-r/2, yCenter-r/6,r, r/3);
+		g.fillRect(xCenter-r/6, yCenter-r/2,r/3, r);
 	}
 
 	@Override
@@ -100,5 +104,11 @@ public class Fossil extends CellObject {
 	}
 
 	@Override
-	public void repaint() {	}
+	public void repaint() {
+		switch (Legend.Graph.getMode()) {
+			case HP -> color_DO = Legend.Graph.HPtToColor(getHealth());
+			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge());
+			default -> color_DO = COLOR_DO;
+		}
+	}
 }

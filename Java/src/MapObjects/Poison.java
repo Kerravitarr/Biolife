@@ -44,6 +44,7 @@ public class Poison extends CellObject {
 			return vals.length;
 		}
 		
+		@Override
 		public String toString() {return name;}
 	};
 	/**Сколько у нас энергии*/
@@ -57,7 +58,7 @@ public class Poison extends CellObject {
 	/**Вязкость яда*/
 	private int stream = 150;
 
-	public Poison(JSON poison) {
+	public Poison(JSON poison, long version) {
 		super(poison);
 		setHealth(Math.round((double)poison.get("energy")));
 		type = TYPE.toEnum(poison.getI("type"));
@@ -258,7 +259,8 @@ public class Poison extends CellObject {
 	@Override
 	public void repaint() {
 		switch (Legend.Graph.getMode()) {
-			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,getHealth())/MAX_TOXIC)),0,0,255);
+			case HP -> color_DO = Legend.Graph.HPtToColor(getHealth());
+			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge());
 			default -> {
 				switch (getType()) {
 					case YELLOW -> color_DO = (Color.YELLOW);

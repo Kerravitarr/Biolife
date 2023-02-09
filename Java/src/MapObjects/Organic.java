@@ -6,6 +6,9 @@ import java.awt.Graphics;
 import MapObjects.Poison.TYPE;
 import Utils.JSON;
 import Utils.Utils;
+import java.awt.BasicStroke;
+import java.awt.Graphics2D;
+import java.awt.Stroke;
 import main.Configurations;
 import main.Point.DIRECTION;
 import panels.Legend;
@@ -34,7 +37,7 @@ public class Organic extends CellObject {
      * Загрузка клетки
      * @param cell - JSON объект, который содержит всю информацюи о клетке
      */
-    public Organic(JSON cell) {
+    public Organic(JSON cell, long version) {
     	super(cell);
     	energy = cell.get("energy");
     	poison = TYPE.toEnum(cell.getI("poison"));
@@ -53,7 +56,8 @@ public class Organic extends CellObject {
 		if(poison != Poison.TYPE.UNEQUIPPED) {
 			if (getAge() >= nextDouble) { // Вязкость яда
 				DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
-				var nen = poisonCount / 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
+				poisonCount *= 0.99;	//1% выветривается
+				var nen = poisonCount / 2; // Половину своей энергии отдаём новой калпе
 				if(Poison.createPoison(getPos().next(dir),poison,getStepCount(), nen, getStream())) {
 					poisonCount = nen;
 				}
@@ -123,13 +127,20 @@ public class Organic extends CellObject {
 	}
 
 	@Override
-	public void paint(Graphics g) {
-		g.setColor(ORGANIC_COLOR);
+	public void paint(Graphics g) {	
+		g.setColor(color_DO);
 		
 		int r = getPos().getRr();
-		int rx = getPos().getRx();
-		int ry = getPos().getRy();
-		Utils.fillCircle(g,rx,ry,r);
+		int xCenter = getPos().getRx();
+		int yCenter = getPos().getRy();
+		if (g instanceof Graphics2D g2d) {
+			Stroke old = g2d.getStroke();
+			g2d.setStroke(new BasicStroke(r/3));
+			Utils.drawCircle(g, xCenter, yCenter, r * 2 / 3);
+			g2d.setStroke(old);
+		} else {
+			Utils.fillCircle(g,xCenter,yCenter,r);
+		}
 	}
 
 	@Override
@@ -176,6 +187,8 @@ public class Organic extends CellObject {
 				}
 				
 			}
+			case HP -> color_DO = Legend.Graph.HPtToColor(getHealth());
+			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge());
 			default -> color_DO = ORGANIC_COLOR;
 		}
 	}

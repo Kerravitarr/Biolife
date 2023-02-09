@@ -32,7 +32,7 @@ import panels.Settings;
  */
 public class Configurations {
 	/**Версия приложения. Нужна на тот случай, если вдруг будет загружаться старое приложение*/
-	public static final String VERSION = "2.0";
+	public static final long VERSION = 3;
 	
 	//Карта
 	/**Количиство ячеек карты*/
@@ -138,7 +138,7 @@ public class Configurations {
 		return configWorld;
 	}
 	/**Загрузка конфигурации мира*/
-	public static void load(JSON configWorld) {
+	public static void load(JSON configWorld, long version) {
 		List<Integer> map = configWorld.getA("MAP_CELLS");
 		makeWorld(map.get(0),map.get(1));
 		DIRTY_WATER = configWorld.get("DIRTY_WATER");
