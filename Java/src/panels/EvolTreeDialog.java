@@ -31,6 +31,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		public void run() {
 			if (Legend.Graph.getMode() != Legend.Graph.MODE.EVO_TREE) return;
 			
+			EvolutionTree.root.resetColor();
 			if(rootNode.getPerrent() != null)
 				colorNode(rootNode.getPerrent());
 			colorNode(rootNode,0.0,0.8);
