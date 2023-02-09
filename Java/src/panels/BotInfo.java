@@ -540,7 +540,10 @@ public class BotInfo extends JPanel {
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 			toxicFIeld.setText(poison.getType().toString());
 		} else if (getCell() instanceof Organic org) {
-			hp.setText(String.valueOf((int)getCell().getHealth()));
+			if(org.getPermissionEat())
+				hp.setText("++" + String.valueOf((int)getCell().getHealth()));
+			else
+				hp.setText(String.valueOf((int)getCell().getHealth()));
 			if(org.getPoison() != Poison.TYPE.UNEQUIPPED)
 				toxicFIeld.setText(org.getPoison() + ":" + org.getPoisonCount());
 			else
