@@ -36,8 +36,8 @@ import Utils.FPScounter;
 import Utils.JSON;
 import Utils.StreamProgressBar;
 import Utils.Utils;
+import java.util.concurrent.TimeUnit;
 import main.Point.DIRECTION;
-import panels.Legend;
 
 public class World extends JPanel implements Runnable,ComponentListener,MouseListener{	
 	/**Симуляция запущена?*/
@@ -94,18 +94,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			CellObject cell = get(point);
 			if(cell != null && cell.canStep(step)) {
 				try {
-					cell.step(step);
-					switch (Legend.Graph.getMode()) {
-						case HP,MINERALS,YEAR -> {
-							if (cell.getAge() % 100 == 0) // Перекрашиваем клетку иногда
-								cell.repaint();
-						}
-						default->{
-							if (cell.getAge() % 1000 == 0) // Перекрашиваем клетку иногда
-								cell.repaint();
-							}
-					}
-					
+					cell.step(step);					
 				} catch (Exception e) {
 					isError = true;
 					isActiv = false;
@@ -119,6 +108,48 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 							+ "Вы можете сохранить мир и перезагрузить программу.",	"BioLife", JOptionPane.ERROR_MESSAGE);
 				}
 			}
+		}
+	}
+	/**Задача выполняемая ежесекундно, для всяких там работ с картой*/
+	private class UpdateScrinTask implements Runnable {
+		@Override
+		public void run() {
+			int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
+			var maxOrg = Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL; //Высота минирализации
+			var minH = Configurations.MAP_CELLS.height - maxOrg;  //В координатах мира
+			for (CellObject[] cellByY : Configurations.worldMap) {
+				var coByH = 0;
+				var coByHd = 0;
+				for (CellObject cell2 : cellByY) {
+					if(cell2 == null) continue;
+					cell2.repaint();
+					if(cell2.aliveStatus(LV_STATUS.LV_ALIVE))
+						localCl++;
+					else if(cell2.aliveStatus(LV_STATUS.LV_POISON))
+						localCP++;
+					else if(cell2.aliveStatus(LV_STATUS.LV_WALL))
+						localCW++;
+					else if(cell2.getPos().getY() > minH)
+						coByHd++;
+					else
+						coByH++;
+				}
+				if(coByHd > maxOrg / 4){	//Если среди миниралов много органики - схлопываем её
+					for(var i = 1 ; ;i++){
+						if (cellByY[Configurations.MAP_CELLS.height - i] instanceof Organic org) {
+							if(!org.getPermissionEat()){
+								org.setPermissionEat();
+								break;
+							}
+						}
+					}
+				}
+				localCO += coByH + coByHd;
+			}
+			countLife = localCl;
+			countOrganic = localCO;
+			countPoison = localCP;
+			countWall = localCW;
 		}
 	}
 	
@@ -174,6 +205,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		addComponentListener(this);
 		addMouseListener(this);
 		worldThread = new AutostartThread(this);
+		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
 	}
 	public void stop(){
 		isStart = false;
@@ -268,26 +300,12 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		if(isActiv && (msTimeout > 1 && timeoutStep % (msTimeout - 1) == 0)) {
 			step();
 		}
-		int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
-		for (CellObject[] cell : Configurations.worldMap) {
-			for (CellObject cell2 : cell) {
-				if(cell2 != null) {
-					cell2.paint(g);
-					if(cell2.aliveStatus(LV_STATUS.LV_ALIVE))
-						localCl++;
-					else if(cell2.aliveStatus(LV_STATUS.LV_POISON))
-						localCP++;
-					else if(cell2.aliveStatus(LV_STATUS.LV_WALL))
-						localCW++;
-					else
-						localCO++;
-				}
+		for (CellObject[] cellByY : Configurations.worldMap) {
+			for (CellObject cell2 : cellByY) {
+				if(cell2 == null) continue;
+				cell2.paint(g);
 			}
 		}
-		countLife = localCl;
-		countOrganic = localCO;
-		countPoison = localCP;
-		countWall = localCW;
 		if(Configurations.info.getCell() != null) {
 			g.setColor(Color.GRAY);
 			g.drawLine(Configurations.info.getCell().getPos().getRx(), Configurations.border.height, Configurations.info.getCell().getPos().getRx(), getHeight()-Configurations.border.height);
