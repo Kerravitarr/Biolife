@@ -24,6 +24,8 @@ public class Organic extends CellObject {
     private double poisonCount = 0;
 	/**Когда следующее деление*/
 	public int nextDouble;
+	/**Нам разрешил скушать того, кто сверху!*/
+	private boolean eatUp = false;
     
 
 	public Organic(AliveCell cell) {
@@ -56,11 +58,11 @@ public class Organic extends CellObject {
 		if(poison != Poison.TYPE.UNEQUIPPED) {
 			if (getAge() >= nextDouble) { // Вязкость яда
 				DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
-				poisonCount *= 0.99;	//1% выветривается
 				var nen = poisonCount / 2; // Половину своей энергии отдаём новой калпе
 				if(Poison.createPoison(getPos().next(dir),poison,getStepCount(), nen, getStream())) {
 					poisonCount = nen;
 				}
+				poisonCount = Math.min(poisonCount, Poison.MAX_TOXIC);
 	 			nextDouble = getTimeToNextDouble();
 	 			if(poisonCount <= 1)
 	 				poison = Poison.TYPE.UNEQUIPPED;
@@ -93,7 +95,8 @@ public class Organic extends CellObject {
 			}
 			case ORGANIC -> {
 				var org = (Organic) Configurations.world.get(pos);
-				if(org.getHealth() + getHealth() < AliveCellProtorype.MAX_HP){ //Маленькие кусочки слипаются
+				if(org.eatUp || eatUp || org.getHealth() + getHealth() < AliveCellProtorype.MAX_HP){ //Маленькие кусочки слипаются
+					org.eatUp = false;
 					org.addHealth(getHealth());
 					if(poison != Poison.TYPE.UNEQUIPPED)
 						org.toxinDamage(poison, (int) poisonCount);
@@ -201,5 +204,13 @@ public class Organic extends CellObject {
 	public int getPoisonCount() {
 		return (int) poisonCount;
 	}
+	
+	/**
+	 * Разрешает клетке объединиться с любой другой клеткой
+	 */
+	public void setPermissionEat(){
+		eatUp = true;
+	}
+	public boolean getPermissionEat(){return eatUp;};
 
 }
