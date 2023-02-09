@@ -31,32 +31,47 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		public void run() {
 			if (Legend.Graph.getMode() != Legend.Graph.MODE.EVO_TREE) return;
 			
-			for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-				for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-					CellObject cell = Configurations.world.get(new Point(x,y));
-					if(cell != null)
-						cell.repaint();
-				}
+			if(rootNode.getPerrent() != null)
+				colorNode(rootNode.getPerrent());
+			colorNode(rootNode,0.0,0.8);
+		}
+		/**
+		 * Раскрашивает дерево потомков
+		 * @param root сам изображаемый узел
+		 */
+	    private void colorNode(EvolutionTree.Node root, double colorStart, double colorEnd) {
+			var delColor = (colorEnd - colorStart);
+			if(delColor > 0.5)
+				root.setColor(Utils.getHSBColor(1.0, 0.0, 1.0, 1.0));
+			else
+				root.setColor(Utils.getHSBColor(colorStart + delColor / 2, 1.0, 1.0, 1.0));
+
+			List<EvolutionTree.Node> childs = root.getChild();		
+			var stepColor = delColor / childs.size();
+			
+			for(int i = 0 ; i < childs.size() ; i++) {
+				colorNode(childs.get(i),colorStart + stepColor * i,colorStart + stepColor * (i + 1));
 			}
+		}
+		/**
+		 * Раскрашивает дерево потомков
+		 * @param root сам изображаемый узел
+		 */
+	    private void colorNode(EvolutionTree.Node root) {
+			root.setColor(Utils.getHSBColor(1.0, 0.0, 1.0, 1.0));
+			if(root.getPerrent() != null)
+				colorNode(root.getPerrent());
 		}
 	}
 	private class NodeJpanel extends JPanel{
 		private final EvolutionTree.Node node;
-		private final Color modeColor;
 		private static final Color bColor = new Color(0,0,0,0);
-		NodeJpanel(EvolutionTree.Node node, double color){
-			this.node = node;
-			modeColor = Utils.getHSBColor(color, 1.0, 1.0, 1.0);
-			init();
-		}
 		NodeJpanel(EvolutionTree.Node node){
 			this.node = node;
-			modeColor = Utils.getHSBColor(1.0, 0, 1.0, 1.0);
 			init();
 		}
 		
 		private void init(){
-			node.setColor(modeColor);
 			addMouseListener(new MouseAdapter() {
 				@Override
 			    public void mouseClicked(MouseEvent e) {
@@ -71,7 +86,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		@Override
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
-			g.setColor(modeColor);
+			g.setColor(node.getColor());
 			Utils.centeredText(g, getWidth()/2, getHeight()/2, DEF_DEL_Y / 3, String.valueOf(NodeJpanel.this.node.getGeneration()));
 		}
 	}
@@ -104,8 +119,8 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 				repaint();
 				try{
 					if(rootNode.getPerrent() != null)
-						addNode(rootNode.getPerrent(),xStart,xEnd, yStart);
-					addNode(rootNode,xStart,xEnd, yStart - DEF_DEL_Y,0,0.8);	
+						addRNode(rootNode.getPerrent(),xStart,xEnd, yStart);
+					addNode(rootNode,xStart,xEnd, yStart - DEF_DEL_Y);	
 				}catch(Exception e){} //Нормально всё, асинхронность выполнения и всё прочее
 			}
 			super.paintComponent(g);
@@ -161,41 +176,6 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		 * @param xEnd конец отрезка узла
 		 * @param yPos позиция по оси y
 		 */
-	    private void addNode(EvolutionTree.Node root, int xStart, int xEnd, int yPos, double colorStart, double colorEnd) {
-			var delX = (xEnd - xStart);
-			var delColor = (colorEnd - colorStart);
-			NodeJpanel rootJ;
-			if(delColor > 0.5)
-				rootJ = new NodeJpanel(root);
-			else
-				rootJ = new NodeJpanel(root, colorStart + delColor / 2);
-			var centerX = xStart + delX / 2;
-			//Сохраняем положение
-			rootJ.setBounds(centerX - DEF_DEL_Y / 2, yPos + DEF_DEL_Y / 2, DEF_DEL_Y, DEF_DEL_Y);
-
-			List<EvolutionTree.Node> childs = root.getChild();
-			if(!childs.isEmpty() && (xEnd - xStart) >= 10)
-				add(rootJ);
-			
-			var step = ((double) delX) / childs.size();
-			var stepColor = delColor / childs.size();
-			
-			for(int i = 0 ; i < childs.size() ; i++) {
-				addNode(childs.get(i), 
-						(int) Math.round(xStart + step * i), 
-						(int) Math.round(xStart + step * (i + 1)), 
-						yPos - DEF_DEL_Y, 
-						colorStart + stepColor * i, 
-						colorStart + stepColor * (i + 1));
-			}
-		}
-		/**
-		 * Собирает дерево родителя из узлов
-		 * @param root сам изображаемый узел
-		 * @param xStart начало отрезка узла
-		 * @param xEnd конец отрезка узла
-		 * @param yPos позиция по оси y
-		 */
 	    private void addNode(EvolutionTree.Node root, int xStart, int xEnd, int yPos) {
 			var delX = (xEnd - xStart);
 			NodeJpanel rootJ = new NodeJpanel(root);
@@ -207,14 +187,30 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 			if(!childs.isEmpty() && (xEnd - xStart) >= 10)
 				add(rootJ);
 			
-			/*var step = ((double) delX) / childs.size();
+			var step = ((double) delX) / childs.size();
 			
 			for(int i = 0 ; i < childs.size() ; i++) {
 				addNode(childs.get(i), 
 						(int) Math.round(xStart + step * i), 
 						(int) Math.round(xStart + step * (i + 1)), 
 						yPos - DEF_DEL_Y);
-			}*/
+			}
+		}
+		/**
+		 * Собирает дерево родителя из узлов
+		 * @param root сам изображаемый узел
+		 * @param xStart начало отрезка узла
+		 * @param xEnd конец отрезка узла
+		 * @param yPos позиция по оси y
+		 */
+	    private void addRNode(EvolutionTree.Node root, int xStart, int xEnd, int yPos) {
+			var delX = (xEnd - xStart);
+			NodeJpanel rootJ = new NodeJpanel(root);
+			var centerX = xStart + delX / 2;
+			//Сохраняем положение
+			rootJ.setBounds(centerX - DEF_DEL_Y / 2, yPos + DEF_DEL_Y / 2, DEF_DEL_Y, DEF_DEL_Y);
+
+			add(rootJ);
 		}
 
 		/**
