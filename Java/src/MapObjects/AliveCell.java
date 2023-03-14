@@ -58,8 +58,8 @@ public class AliveCell extends AliveCellProtorype {
 
         Generation = cell.getI("Generation");
         specialization = new Specialization(cell.getJ("Specialization"));
-
-        evolutionNode = tree.getNode(cell.get("GenerationTree"));
+		if(tree != null) 
+			evolutionNode = tree.getNode(cell.get("GenerationTree"));
 
         color_DO = new Color(255, 255, 255);
     }
@@ -90,7 +90,6 @@ public class AliveCell extends AliveCellProtorype {
         dna = new DNA(cell.getDna());
 
         setGeneration(cell.Generation);
-        color_DO = new Color(255, 255, 255);
         repaint();
 
         //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
@@ -108,7 +107,6 @@ public class AliveCell extends AliveCellProtorype {
     public AliveCell(AliveCell cell, Point newPos, double HP, DNA ndna) {
         super(cell.getStepCount(), LV_STATUS.LV_ALIVE);
         setPos(newPos);
-        evolutionNode = cell.evolutionNode.clone();
 
         setHealth(HP);
         cell.addHealth(-HP);
@@ -126,8 +124,8 @@ public class AliveCell extends AliveCellProtorype {
         dna = ndna;
 
         setGeneration(0); //Вирусные клетки имеют нулевое поколение
-       evolutionNode = evolutionNode.newNode(this, getStepCount());
-        color_DO = new Color(255, 255, 255);
+        evolutionNode = cell.evolutionNode.clone();
+        evolutionNode = evolutionNode.newNode(this, getStepCount());
         repaint();
 
         //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
@@ -608,7 +606,10 @@ public class AliveCell extends AliveCellProtorype {
 
         //=================ПАРАМЕТРЫ БОТА============
         make.add("Generation", Generation);
-        make.add("GenerationTree", evolutionNode.getBranch());
+		if(evolutionNode != null)	//Для клеток дерева эволюции.
+			make.add("GenerationTree", evolutionNode.getBranch());
+		else
+			make.add("GenerationTree", "");
 
         //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
         make.add("phenotype", Integer.toHexString(phenotype.getRGB()));

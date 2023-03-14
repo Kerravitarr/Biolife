@@ -77,7 +77,7 @@ public class DNABreak extends CommandDo {
 						updateCmd(cell,bot, true,cmdStart,mc);
 					//Теряет бот на этом колосальное количество энергии
 					bot.addHealth(HP_COST);
-					cell.addHealth(-HP_COST);
+					cell.destroy();
 				} else {
 					int cmdStart = param(cell,0); // После какого гена мы устраиваем подлянку
 					int length_DNA = param(cell,1, cell.getDna().size - 1) + 1; // Сколько вставляем

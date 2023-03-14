@@ -29,17 +29,18 @@ public class ViralLysis extends CommandDo {
 		int pref = param(cell,1); //Сколько генов отступаем назад
 		int PC = param(cell,2); //Какое положение занимает указатель в ДНК
 		int HP = param(cell,3,AliveCellProtorype.MAX_HP); //Сколько ХП дать новой клетке
-		HP = (int) Math.min(HP, cell.getHealth());
+		HP = (int) Math.min(HP, cell.getHealth() - HP_FOR_DOUBLE);
         Point n = findEmptyDirection(cell);    // проверим, окружен ли бот
         if (n == null)          	// если бот окружен, то он в муках погибает
         	return ;//Ну что-ж, не в этот раз
+		cell.addHealth(-HP_FOR_DOUBLE);      // бот затрачивает энергии на создание копии
+		
 		var dnaChild = new DNA(length_DNA);
 		var dnaPerrent = cell.getDna();
 		for(var i = 0 ; i < length_DNA ; i++){
 			dnaChild.criticalUpdate(i, dnaPerrent.get(0, dnaPerrent.getPC() - pref + i));
 		}
 		dnaChild.next(PC);
-		cell.addHealth(-HP_FOR_DOUBLE);      // бот затрачивает энергии на создание копии
 		if (Configurations.world.test(n).isPosion) {
 			Poison posion = (Poison) Configurations.world.get(n);
 			posion.remove_NE(); //Не беспокойтесь. Всё нормально. Мы временно
@@ -53,7 +54,6 @@ public class ViralLysis extends CommandDo {
 			}
 		} else {
 			Configurations.world.add(new AliveCell(cell,n, HP, dnaChild));
-			//isBirth = true;
 		}
 		dnaPerrent.next(Math.max(0, length_DNA - pref)); //Мы отматываем на дополнительные несколько команд
 	}
