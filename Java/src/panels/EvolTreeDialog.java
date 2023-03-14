@@ -4,33 +4,67 @@
  */
 package panels;
 
-import MapObjects.CellObject;
 import Utils.Utils;
 import java.awt.Color;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.swing.GroupLayout;
 import javax.swing.JPanel;
 import main.Configurations;
 import main.EvolutionTree;
-import main.Point;
-import main.World;
 
 /**
  *
  * @author rjhjk
  */
 public class EvolTreeDialog extends javax.swing.JDialog {	
+	/**Класс счётчика, который переключается, только после всех пришедших сигналов входных*/
+	private class SameStepCounter{
+		private final int allCount;
+		private final HashMap<Integer,Boolean> flags;
+		private int count = 0;
+		private int countT = 0;
+		public SameStepCounter(int a){allCount = a;flags = new HashMap<>(allCount);for(var i = 0 ; i < allCount ; i++) flags.put(i, false);}
+		public void step(int numBranch){
+			if(!flags.get(numBranch)){
+				flags.put(numBranch, true);
+				countT++;
+			}
+			if(countT == allCount){
+				for(var i = 0 ; i < allCount ; i++)
+					flags.put(i, false);
+				countT = 0;
+				count++;
+			}
+		}
+		public int get(){return count;};
+	}
+	
 	/**Задача по обновлению экрана*/
 	private class UpdateScrinTask implements Runnable {
+		/**Пара чисел, для вычисления количества детей и узлов*/
+		private class Pair{	private int countAllChild,countChildCell; Pair(int cac, int ccc){countAllChild = cac; countChildCell = ccc;}}
+		private Pair rootPair = new Pair(0,0);
+		//Специальный счётчик, который нужен для обновления инфы по клетке
+		private SameStepCounter counter = new SameStepCounter(2);
 		@Override
-		public void run() {
-			if (Legend.Graph.getMode() != Legend.Graph.MODE.EVO_TREE) return;
-			
+		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
+		
+		public void runE() {
+			if (Legend.Graph.getMode() == Legend.Graph.MODE.EVO_TREE){
+				updateColor();
+			}
+			if(EvolTreeDialog.this.isVisible()){
+				rootPair = countPair(rootNode);
+			}
+			counter.step(0);
+		}
+		public void updateColor(){
 			EvolutionTree.root.resetColor();
 			if(rootNode.getPerrent() != null)
 				colorNode(rootNode.getPerrent());
@@ -63,7 +97,18 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 			if(root.getPerrent() != null)
 				colorNode(root.getPerrent());
 		}
+
+		private Pair countPair(EvolutionTree.Node root) {
+			var next = new Pair(root.getChild().size(), root.countAliveCell());
+			for(var i : root.getChild()){
+				var add = countPair(i);
+				next.countAllChild += add.countAllChild;
+				next.countChildCell += add.countChildCell;
+			}
+			return next;
+		}
 	}
+	/**Одоин отображающийся узел*/
 	private class NodeJpanel extends JPanel{
 		private final EvolutionTree.Node node;
 		private static final Color bColor = new Color(0,0,0,0);
@@ -88,7 +133,11 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
 			g.setColor(node.getColor());
-			Utils.centeredText(g, getWidth()/2, getHeight()/2, DEF_DEL_Y / 3, String.valueOf(NodeJpanel.this.node.getGeneration()));
+			Utils.centeredText(g, getWidth()/2, getHeight()/2, DEF_DEL_Y / 2, String.valueOf(NodeJpanel.this.node.getGeneration()));
+		}
+		@Override
+		public String toString(){
+			return node.getBranch();
 		}
 	}
 	/**Панель, на которой  рисуется дерево эволюции*/
@@ -111,28 +160,29 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		
 		@Override
 		public void paintComponent(Graphics g) {
+			relaintFun.counter.step(1);
 			int xStart = 0;
 			int xEnd = getWidth();
-			var yStart = getHeight() - DEF_DEL_Y * 2;
-			if(isNeedUpdate || World.isActiv) {
-				isNeedUpdate = false;
+			var yStart = getHeight() - DEF_DEL_Y * 3;
+			if(isNeedUpdate || Configurations.world.isActiv()) {
 				removeAll();
-				repaint();
 				try{
 					if(rootNode.getPerrent() != null)
 						addRNode(rootNode.getPerrent(),xStart,xEnd, yStart);
 					addNode(rootNode,xStart,xEnd, yStart - DEF_DEL_Y);	
+					isNeedUpdate = false;
 				}catch(Exception e){} //Нормально всё, асинхронность выполнения и всё прочее
+				repaint();
 			}
 			super.paintComponent(g);
 			
 			try{
 				if(rootNode.getPerrent() != null)
-					paint(g,rootNode,xStart,xEnd, yStart - DEF_DEL_Y);
+					paint(g,xStart,xEnd, yStart + DEF_DEL_Y);
 				paint(g,rootNode,xStart,xEnd, yStart,0,0.8);
 			}catch(Exception e){} //Нормально всё, асинхронность выполнения и всё прочее
 			try{
-				//printText(g);
+				printText(g);
 			}catch(java.lang.NullPointerException e){
 				restart();
 			}
@@ -144,30 +194,35 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		 * @throws java.lang.NullPointerException - может выбрасывать исключение, когда клетка удаляется 
 		 */
 		private void printText(Graphics g) throws java.lang.NullPointerException{
-			/*if(activNode != null) {
-				if(activNode.node.countAliveCell() > 0){
-					g.drawString("Примечательные точки узла("+activNode.node.countAliveCell()+"клеток):", MIN_X, 10);
-				}else{
-					g.drawString("Примечательные точки узла:", MIN_X, 10);
-					if(activNode.node.getChild().isEmpty())
-						activNode.node.remove();
-				}
-				String DNA_s = "";
-				for(int i : activNode.node.DNA_mind) {
-					if(!DNA_s.isEmpty())
-						DNA_s+= ", ";
-					DNA_s += i + "";
-				}
-				g.drawString("ДНК (" + activNode.node.DNA_mind.length + "): " + DNA_s, MIN_X, 25);
-				Color oldC = g.getColor();
-				g.setColor(activNode.node.phenotype);
-				g.drawString("Фенотип: " + "[r="
-						+ activNode.node.phenotype.getRed() + ",g="
-						+ activNode.node.phenotype.getGreen() + ",b="
-						+ activNode.node.phenotype.getBlue() + "]", MIN_X, 40);
-				g.setColor(oldC);
-				g.drawString("Устойчивость к яду: " + activNode.node.poisonType, MIN_X, 55);
-			}*/
+			var yStart = getHeight() - DEF_DEL_Y;
+			g.setColor(Color.BLACK);
+			String text = switch ((relaintFun.counter.get() / 2) % 7) {
+				default -> String.format("Полное название узла: %s", rootNode.getBranch());
+				case 1 -> String.format("Дочерних узлов: %d",rootNode.getChild().size());
+				case 2 -> String.format("Всего узлов в ветви: %d, живых клеток в ветви: %d",relaintFun.rootPair.countAllChild, relaintFun.rootPair.countChildCell);
+				case 3 -> String.format("Дата основания: %d шаг",rootNode.getTimeFounder());
+				case 4 -> String.format("Основатель прожил: %d шагов",rootNode.getFounder().getAge());
+				case 5 -> String.format("Устойчивость к яду: %s",rootNode.getFounder().getPosionType().toString());
+				case 6 -> String.format("Длина ДНК: %d",rootNode.getFounder().getDna().size);
+				/*case 7 -> {
+					StringBuilder sb = new StringBuilder();
+					for(var i : Utils.sortByValue(rootNode.getFounder().getSpecialization())) {
+						if(i.getValue() == 0) continue;
+						if (sb.isEmpty())
+							sb.append(i.getKey().toString());
+						else
+							sb.append(i.getKey().toSString());
+						sb.append(' ');
+						sb.append(i.getValue());
+						sb.append('%');
+						sb.append(' ');
+					}
+
+					sb.toString();
+					
+				} */
+			};
+			g.drawString(text, 0, yStart);
 		}
 		
 		/**
@@ -183,10 +238,10 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 			var centerX = xStart + delX / 2;
 			//Сохраняем положение
 			rootJ.setBounds(centerX - DEF_DEL_Y / 2, yPos + DEF_DEL_Y / 2, DEF_DEL_Y, DEF_DEL_Y);
+			add(rootJ);
 
 			List<EvolutionTree.Node> childs = root.getChild();
-			if(!childs.isEmpty() && (xEnd - xStart) >= 10)
-				add(rootJ);
+			if(childs.isEmpty() || xEnd - xStart < 10) return;
 			
 			var step = ((double) delX) / childs.size();
 			
@@ -234,7 +289,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 			for(int i = 0 ; i < childs.size() ; i++) {
 				var center = (xStart + step * i) + ((xStart + step * (i + 1)) - (xStart + step * i)) / 2;
 				if(delColor > 0.5)
-					g.setColor(Utils.getHSBColor(0, 0, 1.0, 1.0));
+					g.setColor(Color.WHITE);
 				else
 					g.setColor(Utils.getHSBColor(colorStart + delColor / 2, 1.0, 1.0, 1.0));
 				g.drawLine(centerX, yPos, (int) center, yPos - DEF_DEL_Y);
@@ -247,12 +302,10 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 			}
 		}
 		
-		private void paint(Graphics g, EvolutionTree.Node root, int xStart, int xEnd, int yPos) {
-			List<EvolutionTree.Node> childs = root.getChild();
-			if(childs.isEmpty()) return;
+		private void paint(Graphics g, int xStart, int xEnd, int yPos) {
 			var delX = (xEnd - xStart);
-			var step = ((double) delX) / childs.size();
 			var centerX = xStart + delX / 2;
+			g.setColor(Color.WHITE);
 			g.drawLine(centerX, yPos, centerX, yPos - DEF_DEL_Y);
 		}
 		
@@ -263,6 +316,8 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 	static final int DEF_DEL_Y = 25;
 	/**Ключевой узел, от которого рисуем*/
 	private EvolutionTree.Node rootNode = EvolutionTree.root;
+	/**Закрашивалка узлов*/
+	private final UpdateScrinTask relaintFun;
 	
 	/** Creates new form E */
 	public EvolTreeDialog() {
@@ -271,7 +326,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		
 		Configurations.evolTreeDialog = this;
 		
-		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
+		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(relaintFun = new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
 	}
 	
 	@Override
@@ -288,6 +343,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 	private void setRootNode(EvolutionTree.Node newNode){
 		EvolutionTree.root.resetColor();
 		rootNode = newNode;
+		relaintFun.updateColor();
 		DrawPanelEvoTree.isNeedUpdate = true;
 		repaint();
 	}
@@ -311,7 +367,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setAlwaysOnTop(true);
 
-        jPanelTree.setBackground(new java.awt.Color(0, 51, 204));
+        jPanelTree.setBackground(new java.awt.Color(204, 204, 204));
         jPanelTree.addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentResized(java.awt.event.ComponentEvent evt) {
                 jPanelTreeComponentResized(evt);
