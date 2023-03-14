@@ -60,9 +60,10 @@ public class Organic extends CellObject {
 				DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
 				var nen = poisonCount / 2; // Половину своей энергии отдаём новой калпе
 				if(Poison.createPoison(getPos().next(dir),poison,getStepCount(), nen, getStream())) {
-					poisonCount = nen;
+					poisonCount = nen;	
 				}
-				poisonCount = Math.min(poisonCount, Poison.MAX_TOXIC);
+				//Так как мы ядовиты, то по чуть чуть растворяемся, то есть становимся ещё более ядовиты
+				poisonCount = Math.min(poisonCount * 1.05, Poison.MAX_TOXIC);
 	 			nextDouble = getTimeToNextDouble();
 	 			if(poisonCount <= 1)
 	 				poison = Poison.TYPE.UNEQUIPPED;
@@ -95,7 +96,7 @@ public class Organic extends CellObject {
 			}
 			case ORGANIC -> {
 				var org = (Organic) Configurations.world.get(pos);
-				if(org.eatUp || eatUp || org.getHealth() + getHealth() < AliveCellProtorype.MAX_HP){ //Маленькие кусочки слипаются
+				if(org.eatUp || eatUp || org.getHealth() + getHealth() < AliveCellProtorype.MAX_HP || getHealth() > AliveCellProtorype.MAX_HP * 10){ //Маленькие кусочки слипаются
 					org.eatUp = false;
 					org.addHealth(getHealth());
 					if(poison != Poison.TYPE.UNEQUIPPED)
@@ -125,6 +126,7 @@ public class Organic extends CellObject {
 				poisonCount = damag - getPoisonCount();
 			}
 		}
+		poisonCount = Math.min(poisonCount, Poison.MAX_TOXIC * 10);
 		nextDouble = Math.min(nextDouble,getTimeToNextDouble());
         return false;
 	}
