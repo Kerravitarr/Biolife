@@ -287,7 +287,9 @@ public class BotInfo extends JPanel {
 	
 	class WorkTask implements Runnable{
 		@Override
-		public void run() {
+		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
+		
+		public void runE() {
 			if(isVisible() && getCell() != null && !getCell().aliveStatus(AliveCell.LV_STATUS.GHOST)) {
 				setDinamicHaracteristiks();
 				if(getCell() instanceof AliveCell lcell) {
