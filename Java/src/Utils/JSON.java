@@ -13,14 +13,16 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import Utils.JsonSave.Serialization;
+import Utils.JsonSave.SerializationOld;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 
 /**
  * Класс, который отвечает за стиль JSON
  * @author Илья
  *
  */
-public class JSON implements Serialization{
+public class JSON implements SerializationOld{
 	/**Перечисление разных состояний парсинга файла*/
 	private enum JSON_TOKEN{
 		BEGIN_OBJECT("{"), END_OBJECT("}"), BEGIN_ARRAY("["), END_ARRAY("]"), NULL("null"), NUMBER("number"),

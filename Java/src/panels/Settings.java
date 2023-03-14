@@ -1,7 +1,5 @@
 package panels;
 
-import static main.World.isActiv;
-
 import java.awt.Adjustable;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -298,7 +296,7 @@ public class Settings extends JPanel{
 		listFields.add(new Slider("sunSize", 
 				1, Configurations.DSUN_LENGHT, Configurations.MAP_CELLS.width / 2,
 				1, Configurations.SUN_LENGHT, Configurations.MAP_CELLS.width / 2, e -> Configurations.setSUN_LENGHT(e)));
-		listFields.add(new Slider("sunSpeed", 1, Configurations.DSUN_SPEED, 1000, 1, Configurations.SUN_SPEED, Integer.MAX_VALUE, e -> Configurations.setSUN_SPEED(e)));
+		listFields.add(new Slider("sunSpeed", 1, Configurations.DSUN_SPEED, 200, 1, Configurations.SUN_SPEED, Integer.MAX_VALUE, e -> Configurations.setSUN_SPEED(e)));
 		listFields.add(new Slider("dirtiness",
 				0, Configurations.DDIRTY_WATER, Configurations.MAP_CELLS.height,
 				0, Configurations.DIRTY_WATER, Configurations.MAP_CELLS.height, e -> Configurations.setDIRTY_WATER(e)));
@@ -360,12 +358,18 @@ public class Settings extends JPanel{
 	 * Функция загрузки - предложит окно и всё сама сделает
 	 */
 	public void load() {
-		isActiv = false;
-		var js = new JsonSave("BioLife", "map");
-		var obj = new JSON();
-		if(!js.load(obj)) return;
+		Configurations.world.stop();
+		var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
 		try{
-			Configurations.world.update(obj);
+			var filename = js.load();
+			if(filename == null) return;
+			else if(filename.contains(".zbmap")){//Новый стандарт
+				js.load(filename, new JsonSave.Serialization[]{new Configurations(), Configurations.tree, Configurations.world.serelization()});
+			} else { //Старый стандарт
+				var obj = new JSON();
+				if(!js.load(filename, obj)) return;
+				Configurations.world.update(obj);
+			}
 			Configurations.evolTreeDialog.restart();
 			lastSaveCount = Configurations.world.step;
 			construct();
@@ -380,15 +384,20 @@ public class Settings extends JPanel{
 	 * Функция сохранения - предложит окно и всё сама сделает
 	 */
 	public void save() {
-		boolean oldStateWorld = isActiv;				
-		isActiv = false;
+		boolean oldStateWorld = Configurations.world.isActiv();				
+		Configurations.world.stop();
+		while(Configurations.world.isActiv())
+			Utils.Utils.pause(1);
 		
 		if(lastSaveCount != Configurations.world.step) {
-			var js = new JsonSave("BioLife", "map");
-			if(js.save(Configurations.world.serelization(), true))
+			var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
+			if(js.save(new JsonSave.Serialization[]{new Configurations(), Configurations.tree, Configurations.world.serelization()}, true))
 				lastSaveCount = Configurations.world.step;
 		}
-		isActiv = oldStateWorld;
+		if (oldStateWorld)
+			Configurations.world.start();
+		else
+			Configurations.world.stop();
 	}
 
 	public void setListener(JComponent scrollPane) {

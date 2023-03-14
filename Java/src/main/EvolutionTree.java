@@ -10,10 +10,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 import MapObjects.AliveCell;
 import MapObjects.Poison;
 import Utils.JSON;
+import Utils.JsonSave;
 import javax.swing.JOptionPane;
 
 //@Deprecated
-public class EvolutionTree {
+public class EvolutionTree extends JsonSave.JSONSerialization{
 
 	static public class Node{
 		private static final Color DEFAULT_COLOR = new Color(255,255,255,50);
@@ -21,7 +22,7 @@ public class EvolutionTree {
 		/**Время, когда узел появился*/
 		private final long time;
 		//Поколение в этой ветке
-		long generation = 0;
+		long generation;
 		//Потомки нашего узла
 		List<Node> child = new java.util.concurrent.CopyOnWriteArrayList<>();
 		/**Счётчик ветвей*/
@@ -29,40 +30,31 @@ public class EvolutionTree {
 		/**Число живых потомков*/
 		private final AtomicInteger countAliveCell;
 		/**Наш родитель, общий предок, если хотите*/
-		private Node perrent = null;
+		private Node perrent;
 		
-		//ПРИМЕЧАТЕЛЬНЫЕ ТОЧКИ
-		//ДНК клетки, образующей узел
-		public int [] DNA_mind = null;
-		//Цвет
-		public Color phenotype = null;
-		/**Устойчивость к яду*/
-		public Poison.TYPE poisonType = null;
+		//Клетка, создавшая узел:
+		private AliveCell founder;
 		
 		//====================СПЕЦ ПЕРЕМЕННЫЕ. Нужны для дерева эволюции
 		//Показывает цвет узла
 		private Color colorNode = Color.BLACK;
 		
-		private Node(long t) {
+		private Node(long t, Node perrentNode, long gener) {
 			this.branshCount = new AtomicInteger(0);
 			this.countAliveCell = new AtomicInteger(0);
 			time = t;
+			perrent = perrentNode;
+			generation = gener;
 		}
 		
 		public Node(JSON node, Node aThis, long version) {
-			this(node.getL("time"));
-			generation = node.getL("generation");
+			this(node.getL("time"), aThis, node.getL("generation"));
 			branshCount.set(node.get("branshCount"));
-			countAliveCell.set(0);
-			phenotype = new Color((Long.decode("0x"+node.get("phenotype"))).intValue(),true);
-			poisonType = Poison.TYPE.toEnum(node.get("poisonType"));
-			perrent = aThis;
-
-	    	List<Integer> mindL = node.getA("DNA");
-	    	DNA_mind = new int[mindL.size()];
-	    	for (int i = 0; i < DNA_mind.length; i++) 
-	    		DNA_mind[i] = mindL.get(i);
-			
+			if(version >= 4){
+				founder = new AliveCell(node.getJ("founder"), null, version);
+			} else {
+				founder = new AliveCell();
+			}
 			for(var i : node.getAJ("Nodes")) {
 				child.add(new Node(i,this,version));
 			}
@@ -74,24 +66,21 @@ public class EvolutionTree {
 		 * @return новый узел
 		 */
 		public Node newNode(AliveCell cell,long time) {
-			Node node = new Node(time);
-			node.generation = branshCount.incrementAndGet();
+			Node node = new Node(time, this, branshCount.incrementAndGet());
 			node.countAliveCell.set(1);
 			node.colorNode = colorNode;
 			
-			node.setChild(cell);
-			node.perrent = this;
+			node.founder = cell;
 			child.add(node);
 			remove(); //Мы больше не служим нашему родителю!
 			return node;
+			//return this;
 		}
-
-		private void setChild(AliveCell cell) {
-			DNA_mind = cell.getDna().mind;
-			phenotype = new Color(cell.phenotype.getRGB());
-			poisonType = cell.getPosionType();
-		}
-		/**Не создаёт ветки эволюции, просто помечает, что существует ещё один потомок у этой ветки эволюции*/
+		/**
+		 * Не создаёт ветки эволюции, просто помечает, что существует ещё один потомок у этой ветки эволюции
+		 * То есть клонирует текущий узел, говоря, что он у нас теперь имеет ещё одного живого потомка
+		 * @return текущий узел, который знает, что у него новый потомок
+		 */
 		@Override
 		public Node clone() {
 			countAliveCell.incrementAndGet();
@@ -109,34 +98,40 @@ public class EvolutionTree {
 		private void remove(Node node) {
 			child.remove(node);
 			node.child = null;
-			if(countAliveCell.get() == 0 && child.isEmpty())
-				getPerrent().remove(this);
-			else if(countAliveCell.get() == 0 && child.size() == 1)
+			if(countAliveCell.get() == 0 && child.isEmpty()){
+				if(perrent != null)
+					getPerrent().remove(this);
+			}else if(countAliveCell.get() == 0 && child.size() == 1)
 				merge();
 		}
 		/**
-		 * Сливает нас с нашим предком сверху
+		 * Мы - тупиковый узел. Нас больше нет.
+		 * Поэтому наш потомок становится потомком нашего родителя
+		 * А мы, как лохи, просто исчезаем
 		 */
 		private void merge() {
 			if(child == null)
 				return;
-			Node margeNode = child.get(0);
+			Node newNodePerrent = child.get(0);
 			if(getPerrent() != null) {
-				getPerrent().getChild().add(margeNode); 
-				margeNode.perrent = getPerrent();
-				margeNode.generation = getGeneration();
+				getPerrent().getChild().add(newNodePerrent); 
+				//Мы меняем ему родителя. Теперь это не мы, а наш родитель
+				newNodePerrent.perrent = getPerrent();
+				//У родителя и поколение другое предназаначено для этого дитятки
+				newNodePerrent.generation = getGeneration();
+				//Удаляем у родителя нас
 				getPerrent().remove(this);
 				if(getPerrent().child == null)
 					return;
-				
-				HashMap<Long, Integer> map = new HashMap<>();
+				//Тестовый код. Теперь он уже не нужен, вроде как
+				/*HashMap<Long, Integer> map = new HashMap<>();
 				for (Node node : getPerrent().child) {
 					if(!map.containsKey(node.generation)) {
 						map.put(node.generation, 0);
 					} else {
 						throw new RuntimeException("ЖОПА");
 					}
-				}
+				}*/
 			}
 		}
 		
@@ -155,9 +150,7 @@ public class EvolutionTree {
 			make.add("branshCount", branshCount.get());
 			make.add("countAliveCell", countAliveCell.get());
 			make.add("branch", getBranch());
-			make.add("phenotype",Integer.toHexString(phenotype.getRGB()));
-			make.add("DNA", DNA_mind);
-			make.add("poisonType", poisonType.ordinal());
+			make.add("founder",founder.toJSON());
 			
 			JSON[] nodes = new JSON[getChild().size()];
 			for (int i = 0; i < nodes.length; i++) {
@@ -246,27 +239,38 @@ public class EvolutionTree {
 		public Node getPerrent() {
 			return perrent;
 		}
+		/**Возвращает ту клетку, которая основаала наш узел*/
+		public AliveCell getFounder(){
+			return founder;
+		}
+		/**Возвращает время основания*/
+		public long getTimeFounder(){
+			return time;
+		}
 	}
 	
 	/**Корень эволюционного дерева, адам*/
-	public static Node root = new Node(0);
+	public static Node root = new Node(0, null, 0);
 	/***/
 	private static Set<Node> removeNode = new java.util.concurrent.CopyOnWriteArraySet <>();
 	
 	public EvolutionTree() {};
-	public EvolutionTree(JSON json, long version) {
-		root = new Node(json.getJ("Node"), null,version);
-	}
 
 	@Override
 	public String toString() {
 		return root.toString();
 	}
 
-	public JSON toJSON() {
+	public String getName() {
+		return "EVOLUTION_TREE";
+	}
+	public JSON getJSON() {
 		JSON make = new JSON();
 		make.add("Node", root.toJSON());
 		return make;
+	}
+	public void setJSON(JSON json, long version) {
+		root = new Node(json.getJ("Node"), null,version);
 	}
 	/**
 	 * Функция, используемая при загрузке. Заодно помогает понять у какой ветви сколько потомков
@@ -293,7 +297,10 @@ public class EvolutionTree {
 				node.remove();
 		}
 	}
-
+	/**
+	 * Перестраивает всё дерево эволюции для текущего шага.
+	 * Удаляет нужные узлы, сливает остальные и т.д.
+	 */
 	public void step() {
 		if(!removeNode.isEmpty()) {
 			for(var node :removeNode) {
@@ -317,6 +324,6 @@ public class EvolutionTree {
 
 	public void setAdam(AliveCell adam) {
 		root.countAliveCell.set(1);
-		root.setChild(adam);
+		root.founder = adam;
 	}
 }

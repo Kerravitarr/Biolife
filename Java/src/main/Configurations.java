@@ -19,6 +19,7 @@ import MapObjects.CellObject;
 import MapObjects.Geyser;
 import MapObjects.Sun;
 import Utils.JSON;
+import Utils.JsonSave;
 import panels.BotInfo;
 import panels.EvolTreeDialog;
 import panels.Menu;
@@ -30,9 +31,9 @@ import panels.Settings;
  * @author Илья
  *
  */
-public class Configurations {
+public class Configurations extends JsonSave.JSONSerialization{
 	/**Версия приложения. Нужна на тот случай, если вдруг будет загружаться старое приложение*/
-	public static final long VERSION = 3;
+	public static final long VERSION = 5;
 	
 	//Карта
 	/**Количиство ячеек карты*/
@@ -120,8 +121,12 @@ public class Configurations {
 	public static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
 	
 	
+	@Override
+	public String getName() {
+		return "CONFIG_WORLD";
+	}
 	/**Сохраняет конфигурацию мира*/
-	public static JSON toJSON() {
+	public JSON getJSON() {
 		JSON configWorld = new JSON();
 		configWorld.add("BASE_SUN_POWER", BASE_SUN_POWER);
 		configWorld.add("ADD_SUN_POWER", ADD_SUN_POWER);
@@ -138,7 +143,7 @@ public class Configurations {
 		return configWorld;
 	}
 	/**Загрузка конфигурации мира*/
-	public static void load(JSON configWorld, long version) {
+	public void setJSON(JSON configWorld, long version) {
 		List<Integer> map = configWorld.getA("MAP_CELLS");
 		makeWorld(map.get(0),map.get(1));
 		DIRTY_WATER = configWorld.get("DIRTY_WATER");
