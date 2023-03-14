@@ -329,7 +329,7 @@ public abstract class AliveCellProtorype extends CellObject{
 	@Override
 	public void repaint() {
 		switch (Legend.Graph.getMode()) {
-			case MINERALS -> color_DO = new Color(0,0,(int) Utils.betwin(0, (255.0*mineral/MAX_MP),255));
+			case MINERALS -> color_DO = Legend.Graph.MPtToColor(getMineral());
 			case GENER -> color_DO = Legend.Graph.generationToColor(Generation);
 			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge());
 			case HP -> color_DO = Legend.Graph.HPtToColor(health);
