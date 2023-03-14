@@ -25,6 +25,10 @@ import javax.swing.JPanel;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.LV_STATUS;
+import static MapObjects.CellObject.LV_STATUS.LV_ALIVE;
+import static MapObjects.CellObject.LV_STATUS.LV_ORGANIC;
+import static MapObjects.CellObject.LV_STATUS.LV_POISON;
+import static MapObjects.CellObject.LV_STATUS.LV_WALL;
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Fossil;
 import MapObjects.Geyser;
@@ -34,6 +38,7 @@ import MapObjects.Sun;
 import Utils.ColorRec;
 import Utils.FPScounter;
 import Utils.JSON;
+import Utils.JsonSave;
 import Utils.StreamProgressBar;
 import Utils.Utils;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +46,7 @@ import main.Point.DIRECTION;
 
 public class World extends JPanel implements Runnable,ComponentListener,MouseListener{	
 	/**Симуляция запущена?*/
-	public static boolean isActiv = true;
+	private boolean isActiv = true;
 	/**Произошла авария?*/
 	public static boolean isError = false;
 	/**Сколько кадров отрисовывать перед ходом. Если = 0, то как можно меньше. Если = 1, то считать всё на одном процессоре, если >1, то ФПС будет во столько раз больше ППС*/
@@ -56,7 +61,6 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			return worker;
 		}
 	};
-	
 	class WorldTask implements Callable<Boolean>{
 		class WorkThread{
 			public WorkThread(Point[] cells) {
@@ -112,6 +116,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	}
 	/**Задача выполняемая ежесекундно, для всяких там работ с картой*/
 	private class UpdateScrinTask implements Runnable {
+		/**Специальная переменная, которая следит, чтобы обновления клеток проходили только во время симуляции*/
+		private long stepUpdate = 0;
 		@Override
 		public void run() {
 			int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
@@ -134,7 +140,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 					else
 						coByH++;
 				}
-				if(coByHd > maxOrg / 4){	//Если среди миниралов много органики - схлопываем её
+				if(stepUpdate != step && coByHd > maxOrg / 4){	//Если среди миниралов много органики - схлопываем её
+					stepUpdate = step;
 					for(var i = 1 ; ;i++){
 						if (cellByY[Configurations.MAP_CELLS.height - i] instanceof Organic org) {
 							if(!org.getPermissionEat()){
@@ -170,7 +177,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	/**Счётчик ораганики*/
 	public int countOrganic = 0;
 	/**Счётчик живых*/
-	public int countLife = 0;
+	public int countLife = 1;
 	/**Счётчик капель яда*/
 	public int countPoison = 0;
 	/**Счётчик стенок*/
@@ -180,8 +187,6 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	/**Это мы, наш поток, в нём мы рисуем всё и всяк*/
 	@SuppressWarnings("unused")
 	private final AutostartThread worldThread;
-	/**Мы живы. Наш поток жив, мы выполняем расчёт*/
-	public boolean isStart = true;
 	/**Показывает, что остановка была сделана специально для перерисовки*/
 	private int repaint_stop = 0;
 	/**
@@ -207,13 +212,10 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		worldThread = new AutostartThread(this);
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
 	}
-	public void stop(){
-		isStart = false;
-	}
 	@Override
 	public void run() {
 		Thread.currentThread().setName("World thread");
-		while (isStart) {
+		while (countLife > 0 || countOrganic > 0 || countPoison > 0 || countWall > 0) {
 			if (isActiv && msTimeout < 2)
 				step();
 			else
@@ -507,42 +509,6 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		colors[1] = new ColorRec(xb,yb, new Color(139, 69, 19, 255));
 	}
 
-	public synchronized JSON serelization() {
-		StreamProgressBar sb = new StreamProgressBar();
-		sb.addEvent("Сохранение началось");
-		sb.addEvent("Конфигурация мира готова");
-		sb.addEvent("Древо эволюции - готово");
-		sb.addEvent("Объекты на поле - готовы");
-		sb.addEvent("Сохранение завершено");
-		sb.event();
-		
-		JSON make = new JSON();
-		make.add("VERSION", Configurations.VERSION);
-
-		JSON configWorld = Configurations.toJSON();
-		configWorld.add("step", step);
-		make.add("configWorld", configWorld);
-		sb.event();
-		
-		make.add("EvoTree", Configurations.tree.toJSON());
-		sb.event();
-		
-		var cells = new ArrayList<CellObject>();
-		for (CellObject[] cell : Configurations.worldMap) {
-			for (CellObject cell2 : cell) {
-				if(cell2 != null)
-					cells.add(cell2);
-			}
-		}
-		JSON[] nodes = new JSON[cells.size()];
-		for (int i = 0; i < nodes.length; i++) {
-			nodes[i] = cells.get(i).toJSON();
-		}
-		make.add("Cells", nodes);
-		sb.event();
-		sb.event();
-		return make;
-	}
 
 	public synchronized void update(JSON json) {
 		StreamProgressBar sb = new StreamProgressBar();
@@ -559,11 +525,11 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		
 		var version = json.getL("VERSION");
 		JSON configWorld = json.getJ("configWorld");
-		Configurations.load(configWorld,version);
+		new Configurations().setJSON(configWorld,version);
 		step = configWorld.getL("step");
 		sb.event();
 		
-		Configurations.tree = new EvolutionTree(json.getJ("EvoTree"),version);
+		Configurations.tree.setJSON(json.getJ("EvoTree"),version);
 		sb.event();
 		
 		List<JSON> cells = json.getAJ("Cells");		
@@ -572,7 +538,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			try {
 				switch (LV_STATUS.values()[(int)cell.get("alive")]) {
 					case LV_ALIVE -> {
-						//if(loadR(cell,359,76,10))
+						//if(loadR(cell,516,148,30))
 							add(new AliveCell(cell,Configurations.tree,version));
 					}
 					case LV_ORGANIC -> add(new Organic(cell,version));
@@ -718,6 +684,95 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			if(point != null)
 				Configurations.info.setCell(get(point));
 		}
+	}
+	
+	/**
+	 * Показывает состояние работы мира 
+	 * @return true, если включён автоматических ход мира
+	 */
+	public boolean isActiv(){
+		return isActiv;
+	}
+	/**Останавливает работу мира*/
+	public void stop(){
+		isActiv = false;
+	}
+	/**Запускает работу мира*/
+	public void start(){
+		isActiv = true;
+	}
+	private class JSONSerialization extends JsonSave.JSONSerialization{
+
+		@Override
+		public String getName() {
+			return "WORLD";
+		}
+
+		@Override
+		public JSON getJSON() {
+			JSON make = new JSON();
+			var cells = new ArrayList<CellObject>();
+			for (CellObject[] cell : Configurations.worldMap) {
+				for (CellObject cell2 : cell) {
+					if (cell2 != null)
+						cells.add(cell2);
+				}
+			}
+			JSON[] nodes = new JSON[cells.size()];
+			for (int i = 0; i < nodes.length; i++) {
+				nodes[i] = cells.get(i).toJSON();
+			}
+			make.add("step", step);
+			make.add("Cells", nodes);
+			return make;
+		}
+
+		@Override
+		public void setJSON(JSON json, long version) {
+			step = json.getL("step");
+			List<JSON> cells = json.getAJ("Cells");
+			Configurations.worldMap = new CellObject[Configurations.MAP_CELLS.width][Configurations.MAP_CELLS.height];
+			for (JSON cell : cells) {
+				try {
+					switch (LV_STATUS.values()[(int) cell.get("alive")]) {
+						case LV_ALIVE -> {
+							//if(loadR(cell,516,148,30))
+							add(new AliveCell(cell, Configurations.tree, version));
+						}
+						case LV_ORGANIC -> add(new Organic(cell, version));
+						case LV_POISON -> add(new Poison(cell, version));
+						case LV_WALL -> add(new Fossil(cell, version));
+						default -> System.err.println("Ошибка загрузки строки: \n" + cell);
+					}
+				} catch (java.lang.RuntimeException e1) {
+					e1.printStackTrace();
+					JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage() + "<br>Для объекта<br>" + cell.toJSONString(), "BioLife", JOptionPane.ERROR_MESSAGE);
+					throw e1;
+				}
+			}
+
+			//Когда все сохранены, обновялем список друзей
+			for (JSON cell : cells) {
+				if (!cell.containsKey("friends")) continue; // Мы не клетка
+				if (cell.getAJ("friends").isEmpty()) continue; // У нас нет друзей
+				Point pos = new Point(cell.getJ("pos"));
+				CellObject realCell = get(pos);
+				if (realCell == null || !(realCell instanceof AliveCell))
+					continue;
+				List<JSON> mindL = cell.getAJ("friends");
+				AliveCell new_name = (AliveCell) realCell;
+				for (JSON pointFriend : mindL) {
+					pos = new Point(pointFriend);
+					if (get(pos) instanceof AliveCell aliveCell)
+						new_name.setFriend(aliveCell);
+				}
+			}
+			Configurations.tree.updatre();
+		}
+		
+	}
+	public JsonSave.JSONSerialization serelization(){
+		return new JSONSerialization();
 	}
 
 }

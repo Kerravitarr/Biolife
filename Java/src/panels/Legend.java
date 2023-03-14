@@ -241,6 +241,9 @@ public class Legend extends JPanel{
 		public static Color HPtToColor(double hp){
 			return Utils.getHSBColor(0, 1, 1, Utils.betwin(0, (0.25 + 3d * hp / (4d * AliveCell.MAX_HP)), 1.0));
 		}
+		public static Color MPtToColor(double mp){
+			return Utils.getHSBColor(0.661111, 1, 1, Utils.betwin(0, (0.25 + 3d * mp / (4d * AliveCell.MAX_HP)), 1.0));
+		}
 	}
 
 	/**Панель, на которой рисуются радиокнопки*/
@@ -292,7 +295,7 @@ public class Legend extends JPanel{
 			}
 		}
 		Graph.mode = doing;
-		graph.updateSrin = !World.isActiv;
+		graph.updateSrin = !Configurations.world.isActiv();
 	}
 	
 	private JRadioButton makeRB(String name, Graph.MODE mode) {

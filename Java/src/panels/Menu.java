@@ -48,7 +48,7 @@ public class Menu extends JPanel {
 		add(makeButton("save", e-> Configurations.settings.save()));
 		add(makeButton("load", e-> Configurations.settings.load()));
 		add(makeButton("search", e-> System.out.println(e)));
-		add(start = makeButton("play", e->{World.isActiv = !World.isActiv;} ));
+		add(start = makeButton("play", e -> {if (Configurations.world.isActiv())Configurations.world.stop();else Configurations.world.start();} ));
 		add(makeButton("record", e-> System.out.println(e)));
 		add(makeButton("graph", e-> Configurations.evolTreeDialog.setVisible(true)));
 		add(makeButton("cursor", e-> toDefault()));
@@ -83,7 +83,7 @@ public class Menu extends JPanel {
 	
 	/**Функция, вызываемая каждую секунду автоматически*/
 	private void update_per_second() {
-		var isA = World.isActiv;
+		var isA = Configurations.world.isActiv();
 		if(isA != startButtonIsStart) {
 			startButtonIsStart = isA;
 			Configurations.setIcon(start,isA ? "pause" : "play");

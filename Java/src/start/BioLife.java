@@ -52,7 +52,9 @@ public class BioLife extends JFrame {
 	private class UpdateScrinTask implements Runnable {
 
 		@Override
-		public void run() {
+		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
+		
+		public void runE() {
 			String title = MessageFormat.format(Configurations.bundle.getString("BioLife.title"), world.fps.FPS(), world.step,
 					world.sps.FPS(), world.countLife, world.countOrganic, world.countPoison, world.countWall);
 			setTitle(title);
@@ -63,7 +65,7 @@ public class BioLife extends JFrame {
 				try {
 					gifs.nextFrame(g -> Configurations.world.paintComponent(g));
 				} catch (IOException e) {
-					World.isActiv = false;
+					Configurations.world.stop();
 					e.printStackTrace();
 					JOptionPane.showMessageDialog(null, "<html>Запись видео оборвалась по причине<br>"
 							+ e.getMessage(), "BioLife", JOptionPane.ERROR_MESSAGE);
@@ -113,6 +115,7 @@ public class BioLife extends JFrame {
 	private EvolTreeDialog dialog = new EvolTreeDialog();
 	private GifSequenceWriter gifs = null;
 	private JMenuItem startRecord;
+	private	final int PIXEL_PER_CELL = 10;
 
 	/**
 	 * Launch the application.
@@ -136,7 +139,7 @@ public class BioLife extends JFrame {
 		setBounds(100, 100, (int) (450*2.5), (int) (300*2.5));
 		
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
-		Configurations.makeWorld((int) sSize.getWidth() / 5, (int) (sSize.getHeight() - 120 ) / 5); //120 - пикселей на верхнюю и нижнюю шапочки
+		Configurations.makeWorld((int) sSize.getWidth() / PIXEL_PER_CELL, (int) (sSize.getHeight() - 120 ) / PIXEL_PER_CELL); //120 - пикселей на верхнюю и нижнюю шапочки
 		
 		contentPane = new JPanel();
 		contentPane.setBackground(Color.WHITE);
@@ -247,7 +250,7 @@ public class BioLife extends JFrame {
 
 	private void gifRecord() throws HeadlessException {
 		if(gifs == null) { //Запуск
-			World.isActiv = false;
+			Configurations.world.stop();
 			int result = javax.swing.JOptionPane.showConfirmDialog(null, "<html>ВНИМАНИЕ!!!<br>"
 					+ "Запись видео будет происходить в текущем разрешении ("
 					+ Configurations.world.getWidth() + "x" + Configurations.world.getHeight()
@@ -274,14 +277,14 @@ public class BioLife extends JFrame {
 					fileName += ".gif";
 				}
 				gifs = new GifSequenceWriter(fileName, true, Configurations.world.getSize());
-				World.isActiv = true;
+				Configurations.world.start();
 				startRecord.setText("Остановить запись");
 			} catch (IOException e1) {
 				JOptionPane.showMessageDialog(null,	"<html>Запись видео неудалась по причине<br>"
 						+ e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
 			}
 		} else { // Закончили
-			World.isActiv = false;
+			Configurations.world.stop();
 			try {gifs.close();} catch (IOException e1) {e1.printStackTrace();}
 			gifs = null;
 			startRecord.setText("Начать запись");
@@ -316,7 +319,10 @@ public class BioLife extends JFrame {
 		//System.out.println(e);
 		switch (e.getKeyCode()) {
 			case KeyEvent.VK_SPACE -> {
-				World.isActiv = !World.isActiv;
+				if (Configurations.world.isActiv())
+					Configurations.world.stop();
+				else
+					Configurations.world.start();
 			}
 			case KeyEvent.VK_S -> {
 				if ((e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0)
