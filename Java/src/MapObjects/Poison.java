@@ -80,6 +80,7 @@ public class Poison extends CellObject {
 
 	@Override
 	void step() {
+		if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
 		if ((getAge()) >= nextDouble) { // Вязкость яда
 			DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
 			var nen = energy /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
@@ -87,9 +88,8 @@ public class Poison extends CellObject {
 				energy = nen;
 			}
  			nextDouble = getTimeToNextDouble();
-			repaint();
+			if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
 		}
-		if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
 	}
 	/**
 	 * Создаёт каплю яда в определённой позиции
