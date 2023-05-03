@@ -291,15 +291,15 @@ public class Settings extends JPanel{
 		
 		listFields = new ArrayList<>();
 
-		listFields.add(new Slider("constSun", 1, Configurations.DBASE_SUN_POWER, 30, 1,Configurations.BASE_SUN_POWER,  null, e -> Configurations.setBASE_SUN_POWER(e)));
-		listFields.add(new Slider("scrollSun", 0, Configurations.DADD_SUN_POWER, 30, 0,Configurations.ADD_SUN_POWER, null, e -> Configurations.setADD_SUN_POWER(e)));
+		listFields.add(new Slider("constSun", 1, Configurations.DBASE_SUN_POWER, 300, 1,Configurations.BASE_SUN_POWER,  null, e -> Configurations.setBASE_SUN_POWER(e)));
+		listFields.add(new Slider("scrollSun", 0, Configurations.DADD_SUN_POWER, 300, 0,Configurations.ADD_SUN_POWER, null, e -> Configurations.setADD_SUN_POWER(e)));
 		listFields.add(new Slider("sunSize", 
 				1, Configurations.DSUN_LENGHT, Configurations.MAP_CELLS.width / 2,
 				1, Configurations.SUN_LENGHT, Configurations.MAP_CELLS.width / 2, e -> Configurations.setSUN_LENGHT(e)));
 		listFields.add(new Slider("sunSpeed", 1, Configurations.DSUN_SPEED, 200, 1, Configurations.SUN_SPEED, Integer.MAX_VALUE, e -> Configurations.setSUN_SPEED(e)));
 		listFields.add(new Slider("dirtiness",
-				0, Configurations.DDIRTY_WATER, Configurations.MAP_CELLS.height,
-				0, Configurations.DIRTY_WATER, Configurations.MAP_CELLS.height, e -> Configurations.setDIRTY_WATER(e)));
+				0, Configurations.DDIRTY_WATER, 200,
+				0, Configurations.DIRTY_WATER, null, e -> Configurations.setDIRTY_WATER(e)));
 		
 		listFields.add(new Slider("mineralHeight",
 				0, (int) ((1 - Configurations.DLEVEL_MINERAL) * 100), 100,

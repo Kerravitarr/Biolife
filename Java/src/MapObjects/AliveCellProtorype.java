@@ -34,11 +34,9 @@ public abstract class AliveCellProtorype extends CellObject{
 	/**Начальный уровень минералов клеток*/
 	protected static final int START_MP = 5;
 	/**Сколько нужно жизней для размножения, по умолчанию*/
-	public static final int MAX_HP = 999;
+	public static final int MAX_HP = 99999;
 	/**Сколько можно сохранить минералов*/
-	public static final int MAX_MP = 999;
-	/**На сколько организм тяготеет к фотосинтезу (0-4)*/
-	protected static final double DEF_PHOTOSIN = 2;
+	public static final int MAX_MP = 99999;
 	/**Столько здоровья требуется клетке для жизни на ход*/
 	public static final long HP_PER_STEP = 4;
 	/**Для изменения цвета*/
@@ -512,7 +510,7 @@ public abstract class AliveCellProtorype extends CellObject{
 		//+5 бонусных частичек света при наличии миниралов
         double t = 5 * getMineral() / AliveCell.MAX_MP;	
         //Ну и энергию от солнца не забываем
-		var max = specMax(Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER + 5, Specialization.TYPE.PHOTOSYNTHESIS);
+		var max = specMax(Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER, Specialization.TYPE.PHOTOSYNTHESIS);
         double hlt = Math.min(max, Configurations.sun.getEnergy(getPos()) + t);
 		return specNormalize(hlt, Specialization.TYPE.PHOTOSYNTHESIS);
 	}

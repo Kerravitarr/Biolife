@@ -52,7 +52,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 	public static int SUN_LENGHT = 0;
 	/**Форма солнца*/
 	public static int SUN_FORM = 0;
-	/**Уровень загрязнения воды*/
+	/**Уровень загрязнения воды. Процент, где заканчивается Солнце. В норме от 0 до 200*/
 	public static int DIRTY_WATER = 0;
 	/**Как глубоко лежат минералы. При этом 1.0 - ни где, а 0.0 - везде... Ну да, так получилось :)*/
 	public static double LEVEL_MINERAL = 0;
@@ -172,13 +172,13 @@ public class Configurations extends JsonSave.JSONSerialization{
 			worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 		}
 		//Освещение
-		setBASE_SUN_POWER(DBASE_SUN_POWER = 10);
+		setBASE_SUN_POWER(DBASE_SUN_POWER = 100);
 		setADD_SUN_POWER(DADD_SUN_POWER = DBASE_SUN_POWER);
 		setSUN_LENGHT(DSUN_LENGHT = width / 5);
 		setSUN_SPEED(DSUN_SPEED = 100); //Раз в 100 шагов сдвигается
 		setSUN_FORM(DSUN_FORM = -3);
 		SUN_POSITION = width / 2;
-		setDIRTY_WATER(DDIRTY_WATER = (int) (height - (height * 0.33) / BASE_SUN_POWER)); //33% карты сверху - освщеено
+		setDIRTY_WATER(DDIRTY_WATER = 33); //33% карты сверху - освщеено
 		
 		DLEVEL_MINERAL = LEVEL_MINERAL = 1 - 0.33;	//33% снизу в минералах
 		DCONCENTRATION_MINERAL = CONCENTRATION_MINERAL = 20;

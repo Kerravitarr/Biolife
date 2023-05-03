@@ -38,7 +38,7 @@ public class Sun {
 	/**Фоновое изображение воды*/
 	private ColorRec []fon;
 	
-	/**Абсолютные координаты солнца. То есть к ним достаточно просто прибавить положение солнца*/
+	/**Абсолютные координаты солнца. То есть к ним достаточно просто прибавить положение солнца. В каждой ячейке количество солнца на поверхности*/
 	private double[] sunY;
 	private int O_ADD_SUN_POWER = 0;
 	private int O_BASE_SUN_POWER = 0;
@@ -54,15 +54,18 @@ public class Sun {
 		w = width;
 		updateScrin();
 	}
-
+	/**
+	 * Возвращает количество солнечной энергии в этой точке пространства
+	 * @param pos позиция в пространстве
+	 * @return количество энергии. Может быть отрицательным числом - это не поглащение света, а удалённость от солнца
+	 */
 	public double getEnergy(Point pos) {
 		double E = Configurations.BASE_SUN_POWER;
-		if(Configurations.DIRTY_WATER != Configurations.MAP_CELLS.height)
-			E -= ((double) pos.getY()) / (Configurations.MAP_CELLS.height - Configurations.DIRTY_WATER);
 		double delX = Math.abs(Point.subtractionX(Configurations.SUN_POSITION, pos.getX()));
 		if(delX <= Configurations.SUN_LENGHT) {
 			E += Configurations.ADD_SUN_POWER * (1d - delX / Configurations.SUN_LENGHT);
 		}
+		E -= Configurations.BASE_SUN_POWER * ((double) pos.getY()) / (Configurations.MAP_CELLS.height * Configurations.DIRTY_WATER / 100.0);
 		return E;
 	}
 
@@ -140,7 +143,7 @@ public class Sun {
 		xm[2] = xm[3] = xw[2] = xw[3] = xr[2] = xr[3] = Point.getRx(Configurations.MAP_CELLS.width);
 		
 		yw[0] = yw[3] = yl[0] = yl[3] = yr[0] = yr[3] = Point.getRy(0);
-		yl[1] = yl[2] = yr[1] = yr[2] = Point.getRy(Configurations.BASE_SUN_POWER * (Configurations.MAP_CELLS.height - Configurations.DIRTY_WATER));
+		yl[1] = yl[2] = yr[1] = yr[2] = Point.getRy((int) (Configurations.MAP_CELLS.height * Configurations.DIRTY_WATER / 100.0));
 		yl[2] = s1.y[1];
 		yl[3] = s1.y[0];
 		yc[0] = s1.y[s1.y.length - 1];
@@ -182,7 +185,7 @@ public class Sun {
 		int pos = 0;
 		x[pos] = Point.getRx((PS - SUN_LENGHT));
 		y[pos++] = Point.getRy(0);
-		var dry = (Configurations.MAP_CELLS.height - Configurations.DIRTY_WATER);
+		var dry = Configurations.DIRTY_WATER / 100.0;
 		for(var i = 1 ; i < SUN_LENGHT + 1; i++) {
 			x[pos] = Point.getRx(i + (PS - SUN_LENGHT));
 			var yp = sunY[SUN_LENGHT - i] * dry;
