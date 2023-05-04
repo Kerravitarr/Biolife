@@ -34,9 +34,9 @@ public abstract class AliveCellProtorype extends CellObject{
 	/**Начальный уровень минералов клеток*/
 	protected static final int START_MP = 5;
 	/**Сколько нужно жизней для размножения, по умолчанию*/
-	public static final int MAX_HP = 99999;
+	public static final int MAX_HP = 9999;
 	/**Сколько можно сохранить минералов*/
-	public static final int MAX_MP = 99999;
+	public static final int MAX_MP = 9999;
 	/**Столько здоровья требуется клетке для жизни на ход*/
 	public static final long HP_PER_STEP = 4;
 	/**Для изменения цвета*/

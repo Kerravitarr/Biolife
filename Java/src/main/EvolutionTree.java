@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import MapObjects.AliveCell;
+import MapObjects.CellObject;
 import MapObjects.Poison;
 import Utils.JSON;
 import Utils.JsonSave;
@@ -32,7 +33,7 @@ public class EvolutionTree extends JsonSave.JSONSerialization{
 		/**Наш родитель, общий предок, если хотите*/
 		private Node perrent;
 		
-		//Клетка, создавшая узел:
+		/**Клетка, создавшая узел:*/
 		private AliveCell founder;
 		
 		//====================СПЕЦ ПЕРЕМЕННЫЕ. Нужны для дерева эволюции
@@ -274,16 +275,19 @@ public class EvolutionTree extends JsonSave.JSONSerialization{
 	}
 	/**
 	 * Функция, используемая при загрузке. Заодно помогает понять у какой ветви сколько потомков
+	 * @param cell чей именно это узел. А то вдруг это - основатель!
 	 * @param s полная строка эволюционного дерева, то есть 0>1>2...
 	 * @return Конкретный узел дерева
 	 */
-	public Node getNode(String s) {
+	public Node getNode(AliveCell cell, String s) {
 		String[] numbers = s.split(">");
 		Node ret = root;
 		
 		for (int i = 1; i < numbers.length; i++) {
 			ret = ret.getChild(Long.parseLong(numbers[i]));
 		}
+		if(ret.founder.aliveStatus(CellObject.LV_STATUS.LV_ALIVE) && ret.founder.getPos().equals(cell.getPos()))
+			ret.founder = cell;
 		
 		ret.countAliveCell.incrementAndGet(); //Подсчитали ещё одного живчика
 		return ret;

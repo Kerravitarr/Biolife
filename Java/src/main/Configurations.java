@@ -172,7 +172,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 			worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 		}
 		//Освещение
-		setBASE_SUN_POWER(DBASE_SUN_POWER = 100);
+		setBASE_SUN_POWER(DBASE_SUN_POWER = 20);
 		setADD_SUN_POWER(DADD_SUN_POWER = DBASE_SUN_POWER);
 		setSUN_LENGHT(DSUN_LENGHT = width / 5);
 		setSUN_SPEED(DSUN_SPEED = 100); //Раз в 100 шагов сдвигается

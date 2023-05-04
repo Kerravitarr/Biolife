@@ -121,8 +121,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		@Override
 		public void run() {
 			int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
-			var maxOrg = Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL; //Высота минирализации
-			var minH = Configurations.MAP_CELLS.height - maxOrg;  //В координатах мира
+			var minH = Configurations.MAP_CELLS.height * (1d  - Configurations.LEVEL_MINERAL);//Высота минирализации
+			boolean isUpdate = false;
 			for (CellObject[] cellByY : Configurations.worldMap) {
 				var coByH = 0;
 				var coByHd = 0;
@@ -140,8 +140,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 					else
 						coByH++;
 				}
-				if(stepUpdate != step && coByHd > maxOrg / 4){	//Если среди миниралов много органики - схлопываем её
-					stepUpdate = step;
+				if(stepUpdate != step && coByHd > minH / 2){	//Если среди миниралов много органики - схлопываем её
+					isUpdate = true;
 					for(var i = 1 ; ;i++){
 						if (cellByY[Configurations.MAP_CELLS.height - i] instanceof Organic org) {
 							if(!org.getPermissionEat()){
@@ -153,6 +153,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 				}
 				localCO += coByH + coByHd;
 			}
+			if(isUpdate)
+				stepUpdate = step;
 			countLife = localCl;
 			countOrganic = localCO;
 			countPoison = localCP;

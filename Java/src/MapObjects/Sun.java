@@ -185,7 +185,7 @@ public class Sun {
 		int pos = 0;
 		x[pos] = Point.getRx((PS - SUN_LENGHT));
 		y[pos++] = Point.getRy(0);
-		var dry = Configurations.DIRTY_WATER / 100.0;
+		var dry = (1d / Configurations.BASE_SUN_POWER) * Configurations.MAP_CELLS.height * Configurations.DIRTY_WATER / 100.0;
 		for(var i = 1 ; i < SUN_LENGHT + 1; i++) {
 			x[pos] = Point.getRx(i + (PS - SUN_LENGHT));
 			var yp = sunY[SUN_LENGHT - i] * dry;

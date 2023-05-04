@@ -59,7 +59,7 @@ public class AliveCell extends AliveCellProtorype {
         Generation = cell.getI("Generation");
         specialization = new Specialization(cell.getJ("Specialization"));
 		if(tree != null) 
-			evolutionNode = tree.getNode(cell.get("GenerationTree"));
+			evolutionNode = tree.getNode(this, cell.get("GenerationTree"));
 
         color_DO = new Color(255, 255, 255);
     }
