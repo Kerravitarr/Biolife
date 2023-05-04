@@ -38,10 +38,31 @@ public class Legend extends JPanel{
 						}
 					}
 					case HP -> {
-						values = new Graph.Value[10];
-						for (int i = 0; i < values.length; i++) {
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * AliveCell.MAX_HP / values.length) + "", Utils.getHSBColor(0, 1, 1, (0.25 + 3d*i / (4d*values.length))));
+						maxHP = 0;
+						double summ = 0;
+						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+								CellObject cell = Configurations.world.get(new Point(x, y));
+								if (cell != null && cell instanceof AliveCell acell){
+									summ += acell.getHealth();
+									maxHP = (long) Math.max(maxHP, acell.getHealth());
+								}
+							}
 						}
+						var length = 10;
+						values = new Graph.Value[length + 1];
+						var w = 1.0 / values.length;
+						for (int i = 0; i < values.length - 1; i++) {
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, w, (i * maxHP / length) + "", Utils.getHSBColor(0, 1, 1, (0.25 + 3d*i / (4d*length))));
+						}
+						if(summ < 10000)
+							values[values.length - 1]  = new Graph.Value(1.0, w, String.format("Σ=%d",(long)summ),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
+						else if(summ < 10000000)
+							values[values.length - 1]  = new Graph.Value(1.0, w, String.format("Σ=%dk",(long)summ/1000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
+						else if(summ < 10000000000L)
+							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dM",(long)summ/1000000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
+						else 
+							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
 					}
 					case YEAR -> {
 						maxAge = 0;
@@ -103,18 +124,31 @@ public class Legend extends JPanel{
 						}
 					}
 					case MINERALS -> {
-						long maxMP = 0;
+						maxMP = 0;
+						long summ = 0;
 						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 								CellObject cell = Configurations.world.get(new Point(x, y));
-								if (cell != null && cell instanceof AliveCell acell)
+								if (cell != null && cell instanceof AliveCell acell){
+									summ += acell.getMineral();
 									maxMP = Math.max(maxMP, acell.getMineral());
+								}
 							}
 						}
-						values = new Graph.Value[10];
-						for (int i = 0; i < values.length; i++) {
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, Integer.toString((int) (i * maxMP / values.length)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d*i / (4d*values.length))));
+						var length = 10;
+						values = new Graph.Value[length + 1];
+						var w = 1.0 / values.length;
+						for (int i = 0; i < values.length - 1; i++) {
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, w, Integer.toString((int) (i * maxMP / length)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d*i / (4d*length))));
 						}
+						if(summ < 10000)
+							values[values.length - 1]  = new Graph.Value(1.0, w, String.format("Σ=%d",(long)summ),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+						else if(summ < 10000000)
+							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dk",(long)summ/1000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+						else if(summ < 10000000000L)
+							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dM",(long)summ/1000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+						else 
+							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
 					}
 					case POISON -> {
 						values = new Graph.Value[10];
@@ -174,6 +208,10 @@ public class Legend extends JPanel{
 		static long minGenDef = 0;
 		/**Максимальное покаление объекта на экране*/
 		static long maxGenDef = 0;
+		/**Максимальное количество жизней у существ на экране*/
+		static long maxHP = 0;
+		/**Максимальное количество минералов у существ на экране*/
+		static long maxMP = 0;
 		/**Если нужно обновить цвет объектов на экране*/
 		boolean updateSrin = false;
 		
@@ -239,10 +277,16 @@ public class Legend extends JPanel{
 		}
 		
 		public static Color HPtToColor(double hp){
-			return Utils.getHSBColor(0, 1, 1, Utils.betwin(0, (0.25 + 3d * hp / (4d * AliveCell.MAX_HP)), 1.0));
+			if(maxHP != 0)
+				return Utils.getHSBColor(0, 1, 1, Utils.betwin(0, (0.25 + 3d * hp / (4d * maxHP)), 1.0));
+			else
+				return Utils.getHSBColor(0, 1, 1, 0.25);
 		}
 		public static Color MPtToColor(double mp){
-			return Utils.getHSBColor(0.661111, 1, 1, Utils.betwin(0, (0.25 + 3d * mp / (4d * AliveCell.MAX_HP)), 1.0));
+			if(maxMP != 0)
+				return Utils.getHSBColor(0.661111, 1, 1, Utils.betwin(0, (0.25 + 3d * mp / (4d * maxMP)), 1.0));
+			else
+				return Utils.getHSBColor(0.661111, 1, 1, 0.25);
 		}
 	}
 

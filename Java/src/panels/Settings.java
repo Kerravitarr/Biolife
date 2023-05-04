@@ -298,12 +298,12 @@ public class Settings extends JPanel{
 				1, Configurations.SUN_LENGHT, Configurations.MAP_CELLS.width / 2, e -> Configurations.setSUN_LENGHT(e)));
 		listFields.add(new Slider("sunSpeed", 1, Configurations.DSUN_SPEED, 200, 1, Configurations.SUN_SPEED, Integer.MAX_VALUE, e -> Configurations.setSUN_SPEED(e)));
 		listFields.add(new Slider("dirtiness",
-				0, Configurations.DDIRTY_WATER, 200,
+				0, Configurations.DDIRTY_WATER, 100,
 				0, Configurations.DIRTY_WATER, null, e -> Configurations.setDIRTY_WATER(e)));
 		
 		listFields.add(new Slider("mineralHeight",
 				0, (int) ((1 - Configurations.DLEVEL_MINERAL) * 100), 100,
-				0, (int) ((1 - Configurations.LEVEL_MINERAL) * 100), 100, e -> Configurations.setLEVEL_MINERAL(1 - e/100d)));
+				0, (int) ((1 - Configurations.LEVEL_MINERAL) * 100), null, e -> Configurations.setLEVEL_MINERAL(1 - e/100d)));
 		listFields.add(new Slider("mineralСoncentration", 0, Configurations.DCONCENTRATION_MINERAL, 400, 0,Configurations.CONCENTRATION_MINERAL, null, e -> Configurations.setCONCENTRATION_MINERAL(e)));
 		
 		listFields.add( new Slider("timeLifeOrg", 1, Configurations.DTIK_TO_EXIT, 100, 1, Configurations.TIK_TO_EXIT,null, e -> {
@@ -364,7 +364,7 @@ public class Settings extends JPanel{
 			var filename = js.load();
 			if(filename == null) return;
 			else if(filename.contains(".zbmap")){//Новый стандарт
-				js.load(filename, new JsonSave.Serialization[]{new Configurations(), Configurations.tree, Configurations.world.serelization()});
+				js.load(filename, new Configurations(), Configurations.tree, Configurations.world.serelization());
 			} else { //Старый стандарт
 				var obj = new JSON();
 				if(!js.load(filename, obj)) return;
@@ -391,7 +391,7 @@ public class Settings extends JPanel{
 		
 		if(lastSaveCount != Configurations.world.step) {
 			var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
-			if(js.save(new JsonSave.Serialization[]{new Configurations(), Configurations.tree, Configurations.world.serelization()}, true))
+			if(js.save(true, new Configurations(), Configurations.tree, Configurations.world.serelization()))
 				lastSaveCount = Configurations.world.step;
 		}
 		if (oldStateWorld)

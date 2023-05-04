@@ -38,7 +38,9 @@ import MapObjects.Poison;
 import MapObjects.dna.CommandDNA;
 import MapObjects.dna.DNA;
 import Utils.MyMessageFormat;
+import Utils.SameStepCounter;
 import Utils.Utils;
+import java.awt.Graphics;
 import main.Configurations;
 
 public class BotInfo extends JPanel {
@@ -80,8 +82,6 @@ public class BotInfo extends JPanel {
 	}
 	/**Отрисовщик строк таблицы. Очень помогает каждой строке давать свой цвет*/
 	private class JlistRender extends DefaultListCellRenderer {
-		/**Общий для всех счётчик, который листает бегущие строки*/
-		private static int counter = 0;
 		/**Время паузы между встречными движениями*/
 		private static int timeout = 10;
 		
@@ -95,7 +95,7 @@ public class BotInfo extends JPanel {
 				if (nextRow.textwidth > maxW) {
 					var lenght = nextRow.text.length();
 					int countVChir = (int) (lenght * maxW / nextRow.textwidth);
-					var pos = JlistRender.counter % (2 * (lenght + timeout));
+					var pos = counter.get() % (2 * (lenght + timeout));
 					if (pos < lenght + timeout)
 						setText(nextRow.text.substring(Utils.betwin(0, pos, lenght - countVChir)));
 					else
@@ -149,9 +149,9 @@ public class BotInfo extends JPanel {
 				@Override
 				public void mouseClicked(MouseEvent e) {
 					if(e.getButton() == MouseEvent.BUTTON1)
-						JlistRender.counter = -10;
+						counter.scroll(-10);
 					else if(e.getButton() == MouseEvent.BUTTON3)
-						JlistRender.counter += 10;
+						counter.scroll(10);
 				}
 			};
 			addMouseListener(adapter);
@@ -193,7 +193,7 @@ public class BotInfo extends JPanel {
 		/**Автоматически проматывает текст поля на один символ дальше*/
 		public void scrol() {
 			var max = (scroll.getHorizontalScrollBar().getMaximum() - scroll.getHorizontalScrollBar().getVisibleAmount());
-			var pos = JlistRender.counter % (2 * (max + timeout));
+			var pos = counter.get() % (2 * (max + timeout));
 			if (pos < max + timeout)
 				scroll.getHorizontalScrollBar().setValue(pos);
 			else
@@ -246,6 +246,7 @@ public class BotInfo extends JPanel {
 	private TextPair photos;
 	private TextPair state;
 	private TextPair hp;
+	private TextPair hpTank;
 	private TextPair mp;
 	private TextPair direction;
 	private TextPair age;
@@ -282,6 +283,8 @@ public class BotInfo extends JPanel {
 	private final JPanel panel;
 	/**Тестовая клетка, для работы с командами без конца*/
 	private TextAL testCell = null;
+	//Специальный счётчик, который нужен для обновления инфы по клетке
+	private SameStepCounter counter = new SameStepCounter(2);
 	/**Форматирование чисел*/
 	private static final MyMessageFormat numberFormat = new MyMessageFormat("{0,number,###,###}");
 	
@@ -304,7 +307,7 @@ public class BotInfo extends JPanel {
 						listDNA.repaint();
 					}
 				}
-				JlistRender.counter++;
+				counter.step(0);
 			} else {
 				if(cell != null) {
 					cell = null;
@@ -329,7 +332,10 @@ public class BotInfo extends JPanel {
 		panel.setToolTipText(getProperty("main"));
 		add(panel, BorderLayout.CENTER);
 
-		panelConstant = new JPanel();
+		panelConstant = new JPanel(){public void paintComponent(Graphics g){
+			super.paintComponent(g);
+			counter.step(1);
+		}};
 		makeParamsPanel();
 		
 		panel_DNA = new JPanel();
@@ -404,6 +410,8 @@ public class BotInfo extends JPanel {
 		
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new WorkTask(), 100, 100, TimeUnit.MILLISECONDS);
 	}
+	
+	
 	private void makeParamsPanel() {
 		panelConstant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), getProperty("ConstPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
 		
@@ -411,6 +419,7 @@ public class BotInfo extends JPanel {
 
 		listFields.add(pos = new TextPair(getProperty("LabelPos"), getProperty("fieldPos")));
 		listFields.add(hp = new TextPair(getProperty("LabelHp"), getProperty("fieldHp")));
+		listFields.add(hpTank = new TextPair(getProperty("LabelHpTank"), getProperty("fieldHpTank")));
 		listFields.add(state = new TextPair(getProperty("LabelState"), getProperty("fieldState")));
 		listFields.add(age = new TextPair(getProperty("LabelAge"), getProperty("fieldAge")));	
 		listFields.add(generation = new TextPair(getProperty("LabelGeneration"), getProperty("fieldGeneration")));
@@ -494,64 +503,67 @@ public class BotInfo extends JPanel {
 		pos.setText(cell.getPos().toString());
 		state.setText(getCell().getAlive().toString());
 		age.setText(numberFormat.format(getCell().getAge()));
-		if (getCell() instanceof AliveCell alive) {
-			if(testCell != null) //Так мы сможем обновлять эту клетку
-				alive = testCell;
-			direction.setText(alive.direction.toSString());
-			{
-				StringBuilder sb = new StringBuilder();
-				sb.append(((int) alive.getHealth()));
-				if(alive.getFoodTank() > 0){
-					sb.append(" +");
-					sb.append(alive.getFoodTank());
+		switch (getCell()) {
+			case AliveCell alive -> {
+				if(testCell != null) //Так мы сможем обновлять эту клетку
+					alive = testCell;
+				direction.setText(alive.direction.toSString());
+				{
+					StringBuilder sb = new StringBuilder();
+					sb.append(numberFormat.format((int) alive.getHealth()));
+					if(alive.getFoodTank() > 0)
+						hpTank.setText(numberFormat.format(alive.getFoodTank()));
+					else
+						hpTank.clear();
+					if(alive.getDNA_wall() > 0) {
+						sb.append(" ⌧§");
+						sb.append(alive.getDNA_wall());
+					}
+					hp.setText(sb.toString());
 				}
-				if(alive.getDNA_wall() > 0) {
-					sb.append(" ⌧§");
-					sb.append(alive.getDNA_wall());
+				if(alive.getMineral() > 0){
+					StringBuilder sb = new StringBuilder();
+					sb.append(((int) alive.getMineral()));
+					if(alive.getMineralTank() > 0){
+						sb.append(" +");
+						sb.append(alive.getMineralTank());
+					}
+					if(alive.mineralAround() > 0){
+						sb.append(" →← ");
+						sb.append((int) alive.mineralAround());
+					}
+					mp.setText(sb.toString());
+				} else {
+					mp.clear();
 				}
-				hp.setText(sb.toString());
+				if(alive.getPosionPower() > 0)
+					toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
+				else
+					toxicFIeld.clear();
+				if(alive.getBuoyancy() > 0)
+					buoyancy.setText(String.valueOf(alive.getBuoyancy()));
+				else
+					buoyancy.clear();
+				if(alive.getMucosa() > 0)
+					mucosa.setText(String.valueOf(alive.getMucosa()));
+				else
+					mucosa.clear();
 			}
-			if(alive.getMineral() > 0){
-				StringBuilder sb = new StringBuilder();
-				sb.append(((int) alive.getMineral()));
-				if(alive.getMineralTank() > 0){
-					sb.append(" +");
-					sb.append(alive.getMineralTank());
-				}
-				if(alive.mineralAround() > 0){
-					sb.append(" →← ");
-					sb.append((int) alive.mineralAround());
-				}
-				mp.setText(sb.toString());
-			} else {
-				mp.clear();
-			}
-			if(alive.getPosionPower() > 0)
-				toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
-			else
-				toxicFIeld.clear();
-			if(alive.getBuoyancy() > 0)
-				buoyancy.setText(String.valueOf(alive.getBuoyancy()));	
-			else
-				buoyancy.clear();
-			if(alive.getMucosa() > 0)
-				mucosa.setText(String.valueOf(alive.getMucosa()));
-			else
-				mucosa.clear();
-		} else if (getCell() instanceof Poison poison) {
-			hp.setText(String.valueOf((int)getCell().getHealth()));
-			toxicFIeld.setText(poison.getType().toString());
-		} else if (getCell() instanceof Organic org) {
-			if(org.getPermissionEat())
-				hp.setText("++" + String.valueOf((int)getCell().getHealth()));
-			else
+			case Poison poison -> {
 				hp.setText(String.valueOf((int)getCell().getHealth()));
-			if(org.getPoison() != Poison.TYPE.UNEQUIPPED)
-				toxicFIeld.setText(org.getPoison() + ":" + org.getPoisonCount());
-			else
-				toxicFIeld.clear();
-		} else {
-			hp.setText(String.valueOf((int)getCell().getHealth()));
+				toxicFIeld.setText(poison.getType().toString());
+			}
+			case Organic org -> {
+				if(org.getPermissionEat())
+					hp.setText("++" + numberFormat.format((int) org.getHealth()));
+				else
+					hp.setText(numberFormat.format((int) org.getHealth()));
+				if(org.getPoison() != Poison.TYPE.UNEQUIPPED)
+					toxicFIeld.setText(org.getPoison() + ":" + org.getPoisonCount());
+				else
+					toxicFIeld.clear();
+			}
+			case default -> hp.setText( numberFormat.format((int) getCell().getHealth()));
 		}
 		for(var i : scrolFieldList) 
 			i.scrol();

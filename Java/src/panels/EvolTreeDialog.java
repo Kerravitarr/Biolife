@@ -4,13 +4,14 @@
  */
 package panels;
 
+import Utils.MyMessageFormat;
+import Utils.SameStepCounter;
 import Utils.Utils;
 import java.awt.Color;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.swing.GroupLayout;
@@ -23,28 +24,6 @@ import main.EvolutionTree;
  * @author rjhjk
  */
 public class EvolTreeDialog extends javax.swing.JDialog {	
-	/**Класс счётчика, который переключается, только после всех пришедших сигналов входных*/
-	private class SameStepCounter{
-		private final int allCount;
-		private final HashMap<Integer,Boolean> flags;
-		private int count = 0;
-		private int countT = 0;
-		public SameStepCounter(int a){allCount = a;flags = new HashMap<>(allCount);for(var i = 0 ; i < allCount ; i++) flags.put(i, false);}
-		public void step(int numBranch){
-			if(!flags.get(numBranch)){
-				flags.put(numBranch, true);
-				countT++;
-			}
-			if(countT == allCount){
-				for(var i = 0 ; i < allCount ; i++)
-					flags.put(i, false);
-				countT = 0;
-				count++;
-			}
-		}
-		public int get(){return count;};
-	}
-	
 	/**Задача по обновлению экрана*/
 	private class UpdateScrinTask implements Runnable {
 		/**Пара чисел, для вычисления количества детей и узлов*/
@@ -53,7 +32,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		//Специальный счётчик, который нужен для обновления инфы по клетке
 		private SameStepCounter counter = new SameStepCounter(2);
 		@Override
-		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
+		public void run() {try{runE();}catch(java.lang.NullPointerException e){}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
 		
 		public void runE() {
 			if (Legend.Graph.getMode() == Legend.Graph.MODE.EVO_TREE){
@@ -200,8 +179,8 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 				default -> String.format("Полное название узла: %s", rootNode.getBranch());
 				case 1 -> String.format("Дочерних узлов: %d",rootNode.getChild().size());
 				case 2 -> String.format("Всего узлов в ветви: %d, живых клеток в ветви: %d",relaintFun.rootPair.countAllChild, relaintFun.rootPair.countChildCell);
-				case 3 -> String.format("Дата основания: %d шаг",rootNode.getTimeFounder());
-				case 4 -> String.format("Основатель прожил: %d шагов",rootNode.getFounder().getAge());
+				case 3 -> dateBirth.format(rootNode.getTimeFounder());
+				case 4 -> founderYear.format(rootNode.getFounder().getAge());
 				case 5 -> String.format("Устойчивость к яду: %s",rootNode.getFounder().getPosionType().toString());
 				case 6 -> String.format("Длина ДНК: %d",rootNode.getFounder().getDna().size);
 				/*case 7 -> {
@@ -318,6 +297,10 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 	private EvolutionTree.Node rootNode = EvolutionTree.root;
 	/**Закрашивалка узлов*/
 	private final UpdateScrinTask relaintFun;
+	/**Дата рождения*/
+	private static final MyMessageFormat dateBirth = new MyMessageFormat(Configurations.getProperty(EvolTreeDialog.class,"dateBirth"));
+	/**Возраст основателя*/
+	private static final MyMessageFormat founderYear = new MyMessageFormat(Configurations.getProperty(EvolTreeDialog.class,"founderYear"));
 	
 	/** Creates new form E */
 	public EvolTreeDialog() {
