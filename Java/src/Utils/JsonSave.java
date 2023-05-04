@@ -162,7 +162,7 @@ public class JsonSave {
 	 * @param isBeautiful красивое сохранине или в одну строчку
 	 * @return путь к файлу сохранения или null, если файл не выбран
 	 */
-	public boolean save(Serialization[] sers, boolean isBeautiful) {
+	public boolean save(boolean isBeautiful, Serialization ... sers) {
 		JFileChooser fileopen = new JFileChooser(path);
 		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
 		while(true) {
@@ -241,7 +241,7 @@ public class JsonSave {
 	 * @param sers - объекты, которые нужно прочитать
 	 * @return true есди загрузка удалась
 	 */
-	public boolean load(String pathToFile, Serialization[] sers) {
+	public boolean load(String pathToFile, Serialization ... sers) {
 		var v = new VERSION();
 		if(!load(pathToFile, v)) return false;
 		for(var s : sers){
