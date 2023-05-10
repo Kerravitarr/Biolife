@@ -55,6 +55,8 @@ public class AliveCell extends AliveCellProtorype {
         foodTank = cell.get("foodTank");
         mineralTank = cell.get("mineralTank");
         mucosa = cell.get("mucosa");
+		if(version < 6)
+			hp_by_div = cell.get("hp_by_div");
 
         Generation = cell.getI("Generation");
         specialization = new Specialization(cell.getJ("Specialization"));
@@ -65,7 +67,7 @@ public class AliveCell extends AliveCellProtorype {
     }
 
     /**
-     * Копирование клетки
+     * Деление клетки
      * @param cell - её родитель
      * @param newPos - где она окажется
      */
@@ -83,6 +85,11 @@ public class AliveCell extends AliveCellProtorype {
         poisonType = cell.getPosionType();
         poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
         mucosa = (cell.mucosa = (int) (cell.mucosa / 2.1)); //Делится слизистой оболочкой
+		setFoodTank(cell.getFoodTank() / 2);//Поделимся жирком и минералами 
+		cell.setFoodTank(cell.getFoodTank() / 2);
+		setMineralTank(cell.getMineralTank()/ 2);
+		cell.setMineralTank(cell.getMineralTank() / 2);
+		hp_by_div = cell.hp_by_div;					//ХП для деления остаётся тем-же
 
         specialization = new Specialization(cell);
         direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size() - 1));   // направление, куда повернут новорожденный, генерируется случайно
@@ -117,6 +124,7 @@ public class AliveCell extends AliveCellProtorype {
         poisonType = cell.getPosionType();
         poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
         mucosa = (cell.mucosa = (int) (cell.mucosa / 2.1)); //Делится слизистой оболочкой
+		hp_by_div = cell.hp_by_div;					//ХП для деления остаётся тем-же
 
         specialization = new Specialization(cell);
         direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size() - 1));   // направление, куда повернут новорожденный, генерируется случайно
@@ -158,15 +166,15 @@ public class AliveCell extends AliveCellProtorype {
             addHealth(-HP_PER_STEP); //Пожили - устали
         }
         //Излишки в желудок
-        if (getHealth() > MAX_HP - 100) {
-            TankFood.add(this, (int) (getHealth() - (MAX_HP - 100)));
+        if (getHealth() > hp_by_div - 100) {
+            TankFood.add(this, (int) (getHealth() - (hp_by_div - 100)));
         }
         if (getMineral() > MAX_MP - 100) {
             TankMineral.add(this, (int) (getMineral() - (MAX_MP - 100)));
         }
 
         //Если жизней много - делимся
-        if (this.getHealth() > MAX_HP) {
+        if (this.getHealth() > hp_by_div) {
             Birth.birth(this);
         }
         //Если есть друзья - делимся с ними едой
@@ -310,7 +318,7 @@ public class AliveCell extends AliveCellProtorype {
             DNA_wall = 0;
             return;
         }
-        switch (Utils.random(0, 9)) {
+        switch (Utils.random(0, 10)) {
             case 0 -> { //Мутирует специализация
                 int co = Utils.random(0, 100); //Новое значение специализации
                 int tp = Utils.random(0, Specialization.TYPE.size() - 1); //Какая специализация
@@ -373,6 +381,9 @@ public class AliveCell extends AliveCellProtorype {
             case 9 -> { //Мутирует наша невосприимчивость
                 tolerance = Utils.random(0, getDna().size - 1);
             }
+			case 10 -> { //Мутирует скорость размножения, сколько нужно ХП для поделишек
+				hp_by_div = Math.min(MAX_HP, hp_by_div * Utils.random(90, 110) / 100);
+			}
         }
         setGeneration(getGeneration() + 1);
         evolutionNode = evolutionNode.newNode(this, getStepCount());
@@ -603,6 +614,7 @@ public class AliveCell extends AliveCellProtorype {
         make.add("foodTank", getFoodTank());
         make.add("mineralTank", mineralTank);
         make.add("mucosa", getMucosa());
+        make.add("hp_by_div", hp_by_div);
 
         //=================ПАРАМЕТРЫ БОТА============
         make.add("Generation", Generation);

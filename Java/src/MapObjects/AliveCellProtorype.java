@@ -249,6 +249,8 @@ public abstract class AliveCellProtorype extends CellObject{
     protected Specialization specialization;
     /**Слизистая оболочка клетки. Если клетка в слизи, то к неё не присосаться*/
     protected int mucosa = 0;
+	/**Количество энергии для деления*/
+	protected int hp_by_div = 999;
     
     //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
     /**Поколение (мутационное). Другими словами - как далеко клетка ушла от изначальной*/
@@ -484,7 +486,7 @@ public abstract class AliveCellProtorype extends CellObject{
 		return mineralTank;
 	}
 	public void setMineralTank(int mineralTank) {
-		this.mineralTank = foodTank;
+		this.mineralTank = mineralTank;
 	}
 
 	/**Добавляет или уменьшает размер танка для минералов*/

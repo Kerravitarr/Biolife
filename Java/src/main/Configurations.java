@@ -33,7 +33,7 @@ import panels.Settings;
  */
 public class Configurations extends JsonSave.JSONSerialization{
 	/**Версия приложения. Нужна на тот случай, если вдруг будет загружаться старое приложение*/
-	public static final long VERSION = 5;
+	public static final long VERSION = 6;
 	
 	//Карта
 	/**Количиство ячеек карты*/

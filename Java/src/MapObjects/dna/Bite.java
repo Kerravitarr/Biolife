@@ -56,13 +56,13 @@ public class Bite extends CommandDoInterupted {
 				}
 				var maxF = cell.specMax(AliveCellProtorype.MAX_HP, AliveCellProtorype.Specialization.TYPE.DIGESTION);
 				var hpInOrg = Math.min(maxF, target.getHealth()) / 4;	
-				if(target.getPoison() != Poison.TYPE.YELLOW){
-					cell.addHealth(hpInOrg / 2);    //здоровье увеличилось
-					cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg / 2);
-				} else {
+				if(target.getPoison() == Poison.TYPE.YELLOW){
 					//Обработанная жёлтым ядом пища - сытнее
 					cell.addHealth(hpInOrg);    //здоровье увеличилось
 					cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
+				} else {
+					cell.addHealth(hpInOrg / 2);    //здоровье увеличилось
+					cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg / 2);
 				}
 				target.addHealth(-hpInOrg); //Одну четверть отдали
 			}

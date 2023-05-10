@@ -115,7 +115,8 @@ public class BioLife extends JFrame {
 	private EvolTreeDialog dialog = new EvolTreeDialog();
 	private GifSequenceWriter gifs = null;
 	private JMenuItem startRecord;
-	private	final int PIXEL_PER_CELL = 10;
+	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
+	private	final double PIXEL_PER_CELL = 10;
 
 	/**
 	 * Launch the application.
@@ -139,11 +140,11 @@ public class BioLife extends JFrame {
 		setBounds(100, 100, (int) (450*2.5), (int) (300*2.5));
 		
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
-		Configurations.makeWorld((int) sSize.getWidth() / PIXEL_PER_CELL, (int) (sSize.getHeight() - 120 ) / PIXEL_PER_CELL); //120 - пикселей на верхнюю и нижнюю шапочки
+		Configurations.makeWorld((int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL)); //120 - пикселей на верхнюю и нижнюю шапочки
 		
 		contentPane = new JPanel();
 		contentPane.setBackground(Color.WHITE);
-		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+		contentPane.setBorder(new EmptyBorder(5, 5, 5, 2));
 		contentPane.setLayout(new BorderLayout(0, 0));
 		setContentPane(contentPane);
 
