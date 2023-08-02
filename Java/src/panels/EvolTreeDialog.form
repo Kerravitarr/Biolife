@@ -22,6 +22,9 @@
     <SyntheticProperty name="formSizePolicy" type="int" value="1"/>
     <SyntheticProperty name="generateCenter" type="boolean" value="false"/>
   </SyntheticProperties>
+  <Events>
+    <EventHandler event="keyReleased" listener="java.awt.event.KeyListener" parameters="java.awt.event.KeyEvent" handler="formKeyReleased"/>
+  </Events>
   <AuxValues>
     <AuxValue name="FormSettings_autoResourcing" type="java.lang.Integer" value="0"/>
     <AuxValue name="FormSettings_autoSetComponentName" type="java.lang.Boolean" value="false"/>
@@ -60,6 +63,7 @@
         <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
           <Color blue="cc" green="cc" red="cc" type="rgb"/>
         </Property>
+        <Property name="toolTipText" type="java.lang.String" value="&#x412; &#x440;&#x435;&#x436;&#x438;&#x43c;&#x435; &#x43f;&#x430;&#x443;&#x437;&#x44b; &#x43f;&#x440;&#x438; &#x43d;&#x430;&#x432;&#x435;&#x434;&#x435;&#x43d;&#x438;&#x438; &#x43d;&#x430; &#x443;&#x437;&#x435;&#x43b; &#x43d;&#x430;&#x434; &#x43d;&#x438;&#x43c; &#x43f;&#x43e;&#x43a;&#x430;&#x437;&#x44b;&#x432;&#x430;&#x435;&#x442;&#x441;&#x44f; &#x43f;&#x43e;&#x434;&#x440;&#x43e;&#x431;&#x43d;&#x430;&#x44f; &#x438;&#x43d;&#x444;&#x43e;&#x440;&#x43c;&#x430;&#x446;&#x438;&#x44f;"/>
       </Properties>
       <Events>
         <EventHandler event="componentResized" listener="java.awt.event.ComponentListener" parameters="java.awt.event.ComponentEvent" handler="jPanelTreeComponentResized"/>
