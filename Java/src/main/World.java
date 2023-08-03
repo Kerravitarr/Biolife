@@ -164,6 +164,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	
 	/**Шаги мира*/
 	public long step = 0;
+	/**Шаг, который должен завершиться, чтобы быть уверенным - мир остановлен*/
+	private long stopStep = -1;
 	/**Счётчик количества отрисованных кадров. А ещё это специальный таймер, который позволяет замедлить симуляцию*/
 	public int timeoutStep = 0;
 	/**Всего точек по процессорам - сколько процессоров, в каждом ряду есть у*/
@@ -291,8 +293,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		Configurations.sun.step(step);
 		Configurations.tree.step();
 
-		step++;
 		sps.interapt();
+		step++;
 	}
 
     @Override
@@ -693,11 +695,14 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	 * @return true, если включён автоматических ход мира
 	 */
 	public boolean isActiv(){
-		return isActiv;
+		return isActiv || (stopStep == step);
 	}
 	/**Останавливает работу мира*/
 	public void stop(){
-		isActiv = false;
+		if(isActiv){ 
+			isActiv = false;
+			stopStep = step;
+		}
 	}
 	/**Запускает работу мира*/
 	public void start(){
@@ -738,8 +743,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 				try {
 					switch (LV_STATUS.values()[(int) cell.get("alive")]) {
 						case LV_ALIVE -> {
-							//if(loadR(cell,516,148,30))
-							add(new AliveCell(cell, Configurations.tree, version));
+							//if(loadOneCell(cell,31,31))
+								add(new AliveCell(cell, Configurations.tree, version));
 						}
 						case LV_ORGANIC -> add(new Organic(cell, version));
 						case LV_POISON -> add(new Poison(cell, version));

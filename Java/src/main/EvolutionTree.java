@@ -166,13 +166,13 @@ public class EvolutionTree extends JsonSave.JSONSerialization{
 			else
 				return "0";
 		}
-
-		public Node getChild(long genCh) {
+		/**Возвращает потомка под определеённым номером*/
+		private Node getChild(long genCh) {
 			for (Node node : child) {
 				if(node.getGeneration() == genCh)
 					return node;
 			}
-			return null;
+			throw new IllegalArgumentException("Узел " + genCh + " не найден в потомках узла " + this);
 		}
 
 		/**
