@@ -207,6 +207,15 @@ public class BioLife extends JFrame {
 				vertical.setValue((int) (vertical.getValue() * hOffset));
 			}
 		});
+		scrollPane.getViewport().addChangeListener(e -> {
+			var horizont = scrollPane.getHorizontalScrollBar();
+			var vertical = scrollPane.getVerticalScrollBar();
+			var xMin = Math.max(0, main.Point.rxToX(horizont.getValue()));
+			var xMax = Math.min(Configurations.MAP_CELLS.width - 1,main.Point.rxToX(horizont.getValue() + scrollPane.getViewport().getSize().width));
+			var yMin = Math.max(0, main.Point.ryToY(vertical.getValue()));
+			var yMax = Math.min(Configurations.MAP_CELLS.height - 1,main.Point.ryToY(vertical.getValue() + scrollPane.getViewport().getSize().height));
+			world.setVisible(new main.Point(xMin, yMin),new main.Point(xMax, yMax));
+		});
 		settings.setListener(scrollPane);
 		scrollPane.setViewportView(world);
 		var adapter = new MouseMoveAdapter();

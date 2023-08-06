@@ -155,10 +155,12 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			}
 			if(isUpdate)
 				stepUpdate = step;
-			countLife = localCl;
-			countOrganic = localCO;
-			countPoison = localCP;
-			countWall = localCW;
+			if(isActiv()){
+				countLife = localCl;
+				countOrganic = localCO;
+				countPoison = localCP;
+				countWall = localCW;
+			}
 		}
 	}
 	
@@ -193,12 +195,15 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	private final AutostartThread worldThread;
 	/**Показывает, что остановка была сделана специально для перерисовки*/
 	private int repaint_stop = 0;
+	/**Координаты видимой части экрана. Специально для перерисовки только ограниченной части. Две точки - верхний угол и нижний*/
+	private Point[] visible = new Point[2];
 	/**
 	 * Create the panel.
 	 */
 	public World() {
 		super();
 		Configurations.world = this;
+		setVisible(new Point(0,0),new Point(0,0));
 		maxExecutor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1), factory, null, true); // Один поток нужен системе для отрисовки
 		
 		worldGenerate();
@@ -219,14 +224,14 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	@Override
 	public void run() {
 		Thread.currentThread().setName("World thread");
-		while (countLife > 0 || countOrganic > 0 || countPoison > 0 || countWall > 0) {
+ 		while (countLife > 0 || countOrganic > 0 || countPoison > 0 || countWall > 0 || true) {
 			if (isActiv && msTimeout < 2)
 				step();
 			else
 				Utils.pause(1);
 		}
 	}
-	
+	/**Генерирует карту - добавляет солнце, гейзеры, обновляет константы мира, разбивает мир на потоки процессора */
 	public void worldGenerate() {
 		var vaxX = Configurations.MAP_CELLS.width;
 		geysers = new Geyser[2];
@@ -309,7 +314,9 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		for (CellObject[] cellByY : Configurations.worldMap) {
 			for (CellObject cell2 : cellByY) {
 				if(cell2 == null) continue;
-				cell2.paint(g);
+				if(visible[0].getX() <= cell2.getPos().getX() && cell2.getPos().getX() <= visible[1].getX()
+						&& visible[0].getY() <= cell2.getPos().getY() && cell2.getPos().getY() <= visible[1].getY())
+					cell2.paint(g);
 			}
 		}
 		if(Configurations.info.getCell() != null) {
@@ -463,7 +470,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		}
 		
 	}
-
+	/**Пересчитывает относительные размеры мира в пикселях.*/
 	public synchronized void recalculate() {
 		var oActiv = isActiv;
 		if(isActiv) {
@@ -708,6 +715,14 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public void start(){
 		isActiv = true;
 	}
+	/**Сохраняет размеры в координатах мира отображаемого прямоугольника
+	 * @param leftUp верхний левый угол прямоугольника
+	 * @param rightDown нижний правый угол прямоугольника 
+	 */
+	public final void setVisible(Point leftUp, Point rightDown){
+		visible[0] = leftUp;
+		visible[1] = rightDown;
+	}
 	private class JSONSerialization extends JsonSave.JSONSerialization{
 
 		@Override
@@ -775,6 +790,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 				}
 			}
 			Configurations.tree.updatre();
+			worldGenerate();
 		}
 		
 	}

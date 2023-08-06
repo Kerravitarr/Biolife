@@ -124,6 +124,22 @@ public class Point{
 	public static int getRr(int r) {
 		return (int) Math.round(r * Configurations.scale) ;
 	}
+	/**
+	 * Переводит координаты экрана в координаты клетки
+	 * @param x координата на экране
+	 * @return x координата на поле. Эта координата может выходить за размеры мира!!!
+	 */
+	public static int rxToX(int x) {
+		return (int) Math.round((x - Configurations.border.width)/Configurations.scale - 0.5);
+	}
+	/**
+	 * Переводит координаты экрана в координаты клетки
+	 * @param y координата на экране
+	 * @return x координата на поле. Эта координата может выходить за размеры мира!!!
+	 */
+	public static int ryToY(int y) {
+		return (int) Math.round((y - Configurations.border.height)/Configurations.scale - 0.5);
+	}
 	public Point next(DIRECTION dir) {
 		return new Point(x + dir.addX,y + dir.addY);
 	}
@@ -143,6 +159,7 @@ public class Point{
 		make.add("y", y);
 		return make;
 	}
+	@Override
 	public String toString() {
 		return "x: " + x + " y: " + y;
 	}
