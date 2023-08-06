@@ -60,13 +60,13 @@ public class Sun {
 	 * @return количество энергии. Может быть отрицательным числом - это не поглащение света, а удалённость от солнца
 	 */
 	public double getEnergy(Point pos) {
-		double E = Configurations.BASE_SUN_POWER;
+		var lum = 100 - (10000 * pos.getY())/(Configurations.MAP_CELLS.height * Configurations.DIRTY_WATER);
 		double delX = Math.abs(Point.subtractionX(Configurations.SUN_POSITION, pos.getX()));
+		double E = Configurations.BASE_SUN_POWER;
 		if(delX <= Configurations.SUN_LENGHT) {
-			E += Configurations.ADD_SUN_POWER * (1d - delX / Configurations.SUN_LENGHT);
+			E += O_ADD_SUN_POWER * Math.pow(1 - delX / Configurations.SUN_LENGHT, O_SUN_FORM == 0 ? 1 : (O_SUN_FORM > 0 ? O_SUN_FORM + 1 : -(1d / (O_SUN_FORM - 1))));
 		}
-		E -= Configurations.BASE_SUN_POWER * ((double) pos.getY()) / (Configurations.MAP_CELLS.height * Configurations.DIRTY_WATER / 100.0);
-		return E;
+		return E * lum / 100;
 	}
 
 	/**
@@ -80,10 +80,16 @@ public class Sun {
 
 	/**Шаг мира для пересчёта*/
 	public void step(long step) {
-		if(step % Configurations.SUN_SPEED == 0) {
-			Configurations.SUN_POSITION++;
-			if(Configurations.SUN_POSITION >= Configurations.MAP_CELLS.width)
-				Configurations.SUN_POSITION -= Configurations.MAP_CELLS.width;
+		if(Configurations.SUN_SPEED == 0 || step % Configurations.SUN_SPEED == 0) {
+			if(Configurations.SUN_SPEED < 0){
+				Configurations.SUN_POSITION--;
+				if(Configurations.SUN_POSITION < 0)
+					Configurations.SUN_POSITION += Configurations.MAP_CELLS.width;
+			}else{
+				Configurations.SUN_POSITION++;
+				if(Configurations.SUN_POSITION >= Configurations.MAP_CELLS.width)
+					Configurations.SUN_POSITION -= Configurations.MAP_CELLS.width;
+			}
 			updateScrin();
 		}
 	}

@@ -64,7 +64,11 @@ public class Settings extends JPanel{
 		private class RangeFilter extends PlainDocument {			
 			public void insertString(int offs, String str, AttributeSet a) throws BadLocationException {
 				try {
-					int value = Integer.parseInt(this.getText(0, this.getLength()) + str);					
+					StringBuilder newString = new StringBuilder();
+					newString.append(this.getText(0, offs));
+					newString.append(str);
+					newString.append(this.getText(offs, this.getLength() - offs));
+					int value = Integer.parseInt(newString.toString());					
 					if (min != null && value < min) {
 						this.remove(0, this.getLength());
 						super.insertString(0, min.toString(), a);
@@ -291,12 +295,12 @@ public class Settings extends JPanel{
 		
 		listFields = new ArrayList<>();
 
-		listFields.add(new Slider("constSun", 1, Configurations.DBASE_SUN_POWER, 300, 1,Configurations.BASE_SUN_POWER,  null, e -> Configurations.setBASE_SUN_POWER(e)));
-		listFields.add(new Slider("scrollSun", 0, Configurations.DADD_SUN_POWER, 300, 0,Configurations.ADD_SUN_POWER, null, e -> Configurations.setADD_SUN_POWER(e)));
+		listFields.add(new Slider("constSun", 1, Configurations.DBASE_SUN_POWER, 200, 1,Configurations.BASE_SUN_POWER,  null, e -> Configurations.setBASE_SUN_POWER(e)));
+		listFields.add(new Slider("scrollSun", 0, Configurations.DADD_SUN_POWER, 200, 0,Configurations.ADD_SUN_POWER, null, e -> Configurations.setADD_SUN_POWER(e)));
 		listFields.add(new Slider("sunSize", 
 				1, Configurations.DSUN_LENGHT, Configurations.MAP_CELLS.width / 2,
 				1, Configurations.SUN_LENGHT, Configurations.MAP_CELLS.width / 2, e -> Configurations.setSUN_LENGHT(e)));
-		listFields.add(new Slider("sunSpeed", 1, Configurations.DSUN_SPEED, 200, 1, Configurations.SUN_SPEED, Integer.MAX_VALUE, e -> Configurations.setSUN_SPEED(e)));
+		listFields.add(new Slider("sunSpeed", -200, Configurations.DSUN_SPEED, 200, Integer.MIN_VALUE, Configurations.SUN_SPEED, Integer.MAX_VALUE, e -> Configurations.setSUN_SPEED(e)));
 		listFields.add(new Slider("dirtiness",
 				0, Configurations.DDIRTY_WATER, 100,
 				0, Configurations.DIRTY_WATER, null, e -> Configurations.setDIRTY_WATER(e)));
