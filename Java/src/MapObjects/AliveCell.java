@@ -15,6 +15,7 @@ import MapObjects.dna.TankFood;
 import MapObjects.dna.TankMineral;
 import Utils.JSON;
 import Utils.Utils;
+import java.util.Iterator;
 import main.Configurations;
 import main.EvolutionTree;
 import main.Point;
@@ -146,7 +147,8 @@ public class AliveCell extends AliveCellProtorype {
     public void step() {
         //Работа ДНК
         for (int cyc = 0; (cyc < 15); cyc++) {
-            if (getDna().get().execute(this)) {
+			var cmd = getDna().get();
+            if (cmd.execute(this)) {
                 break;
             }
         }
@@ -519,9 +521,9 @@ public class AliveCell extends AliveCellProtorype {
         if (act.p != 1) {
             num *= act.p;
         }
-        color_cell.addR(color_cell.r > act.r ? -num : num);
-        color_cell.addG(color_cell.g > act.g ? -num : num);
-        color_cell.addB(color_cell.b > act.b ? -num : num);
+        color_cell.addR(color_cell.r > act.r ? -Math.min(num, color_cell.r - act.r) : Math.min(num, act.r - color_cell.r));
+        color_cell.addG(color_cell.g > act.g ? -Math.min(num, color_cell.g - act.g) : Math.min(num, act.g - color_cell.g));
+        color_cell.addB(color_cell.b > act.b ? -Math.min(num, color_cell.b - act.b) : Math.min(num, act.b - color_cell.b));
         color_DO = color_cell.getC();
     }
 
@@ -538,44 +540,41 @@ public class AliveCell extends AliveCellProtorype {
             Utils.fillSquare(g, rx, ry, r);
         } else {
             Utils.fillCircle(g, rx, ry, r);
-            synchronized (getFriends()) {
-                try {
-                    //Приходится рисовать в два этапа, иначе получается ужас страшный.
-                    //Этап первый - основные связи
+			int[][] points = new int[DIRECTION.size()][2];
+			var values = getFriends().values();
+			try {
+				//Посчитаем наших друзей
+				int index = 0;
+				for (Iterator<AliveCell> iterator = values.iterator(); iterator.hasNext(); index++) {
+					AliveCell i = iterator.next();
+					int rxc = i.getPos().getRx();
+					if (getPos().getX() == 0 && i.getPos().getX() == Configurations.MAP_CELLS.width - 1) {
+						rxc = rx - r;
+					} else if (i.getPos().getX() == 0 && getPos().getX() == Configurations.MAP_CELLS.width - 1) {
+						rxc = rx + r;
+					}
+					points[index][0] = rxc;
+					points[index][1] = i.getPos().getRy();
+				}
+				//Приходится рисовать в два этапа, иначе получается ужас страшный.
+				//Этап первый - основные связи
 
-                    Graphics2D g2 = (Graphics2D) g;
-                    Stroke oldStr = g2.getStroke();
-                    g.setColor(color_DO);
-                    g2.setStroke(new BasicStroke(r / 2));
-                    for (AliveCell i : getFriends().values()) {
-                        int rxc = i.getPos().getRx();
-                        if (getPos().getX() == 0 && i.getPos().getX() == Configurations.MAP_CELLS.width - 1) {
-                            rxc = rx - r;
-                        } else if (i.getPos().getX() == 0 && getPos().getX() == Configurations.MAP_CELLS.width - 1) {
-                            rxc = rx + r;
-                        }
-                        int ryc = i.getPos().getRy();
-
-                        int delx = rxc - rx;
-                        int dely = ryc - ry;
-                        g.drawLine(rx, ry, rx + delx / 3, ry + dely / 3);
-                    }
-                    g2.setStroke(oldStr);
-                    g.setColor(Color.BLACK);
-                    //Этап второй, всё тоже самое, но теперь лишь тонкие линии
-                    for (AliveCell i : getFriends().values()) {
-                        int rxc = i.getPos().getRx();
-                        if (getPos().getX() == 0 && i.getPos().getX() == Configurations.MAP_CELLS.width - 1) {
-                            rxc = rx - r;
-                        } else if (i.getPos().getX() == 0 && getPos().getX() == Configurations.MAP_CELLS.width - 1) {
-                            rxc = rx + r;
-                        }
-                        int ryc = i.getPos().getRy();
-                        //А теперь рисуем тонкую линию, чтобы видно было как они выглядят
-                        g.drawLine(rx, ry, rxc, ryc);
-                    }
-                } catch (java.util.ConcurrentModificationException e) {/* Выскакивает, если кто-то из наших друзей погиб*/                }
-            }
+				Graphics2D g2 = (Graphics2D) g;
+				Stroke oldStr = g2.getStroke();
+				g.setColor(color_DO);
+				g2.setStroke(new BasicStroke(r / 2));
+				for (int i = 0; i < index; i++) {
+					int delx = points[i][0] - rx;
+					int dely = points[i][1] - ry;
+					g.drawLine(rx, ry, rx + delx / 3, ry + dely / 3);
+				}
+				g2.setStroke(oldStr);
+				g.setColor(Color.BLACK);
+				//Этап второй, всё тоже самое, но теперь лишь тонкие линии
+				for (int i = 0; i < index; i++) {
+					g.drawLine(rx, ry, points[i][0], points[i][1]);
+				}
+			} catch (java.util.ConcurrentModificationException e) {/* Выскакивает, если кто-то из наших друзей погиб*/                }
         }
         if (r > 10) {
             g.setColor(Color.PINK);
