@@ -62,11 +62,11 @@ public class Sun {
 	public double getEnergy(Point pos) {
 		var lum = 100 - (10000 * pos.getY())/(Configurations.MAP_CELLS.height * Configurations.DIRTY_WATER);
 		double delX = Math.abs(Point.subtractionX(Configurations.SUN_POSITION, pos.getX()));
-		double E = Configurations.BASE_SUN_POWER;
+		double E = Configurations.BASE_SUN_POWER * lum / 100;
 		if(delX <= Configurations.SUN_LENGHT) {
 			E += O_ADD_SUN_POWER * Math.pow(1 - delX / Configurations.SUN_LENGHT, O_SUN_FORM == 0 ? 1 : (O_SUN_FORM > 0 ? O_SUN_FORM + 1 : -(1d / (O_SUN_FORM - 1))));
 		}
-		return E * lum / 100;
+		return E;
 	}
 
 	/**
