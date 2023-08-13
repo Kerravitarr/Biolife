@@ -101,18 +101,28 @@ public class BioLife extends JFrame {
 			}
 		}
 
+		@Override
+		public void mouseMoved(MouseEvent e){mousePoint = e.getPoint();}
+		@Override
+		public void mouseExited(MouseEvent e) { mousePoint = null;}
+		
+
 	}
 	/**Центральная панель, на которой всё и происходит*/
 	private final JPanel contentPane;
+	/**Где последний раз видели мышку*/
+	private java.awt.Point mousePoint = null;
 	
 	private final Menu menu;
 	private final BotInfo botInfo;
 	private final Settings settings;
 	private final World world;
 	private final Legend legend;
-	
+	/**Панелька с миром*/
 	private JScrollPane scrollPane;
+	/**Дерево эволюции*/
 	private EvolTreeDialog dialog = new EvolTreeDialog();
+	
 	private GifSequenceWriter gifs = null;
 	private JMenuItem startRecord;
 	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
@@ -137,9 +147,14 @@ public class BioLife extends JFrame {
 	 */
 	public BioLife() {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, (int) (450*2.5), (int) (300*2.5));
-		
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
+		//8 - это потому что 5/8 это примерно 60% экрана. 
+		//А 5 - потому что именно при соотношении в 5 раз начинается детальная отрисовка клеток
+		//а это нехило так роняет ФПС
+		if(PIXEL_PER_CELL > 8)
+			setBounds(100, 100, (int) (sSize.getWidth() * 5 / PIXEL_PER_CELL), (int)((sSize.getHeight()) * 5 / PIXEL_PER_CELL));
+		else
+			setBounds(100, 100, (int) (sSize.getWidth() / 2), (int)((sSize.getHeight()) / 2));
 		Configurations.makeWorld((int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL)); //120 - пикселей на верхнюю и нижнюю шапочки
 		
 		contentPane = new JPanel();
@@ -181,30 +196,38 @@ public class BioLife extends JFrame {
 		    	mouseWheel(e);
 		        super.processMouseWheelEvent(e);
 		    }
-
 		};
 		scrollPane.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
 				int newW = (int) (scrollPane.getWidth() * (1 + (settings.getScale() / 100d))) - 10;
 				int newH = (int) (scrollPane.getHeight() * (1 + (settings.getScale() / 100d))) - 10;
-				var horizont = scrollPane.getHorizontalScrollBar();
-				var vertical = scrollPane.getVerticalScrollBar();
+				//var horizont = scrollPane.getHorizontalScrollBar();
+				//var vertical = scrollPane.getVerticalScrollBar(); 
 				
 				if(settings.getScale() > 0) {
 					newH = (int) ((newW * (1 + (Configurations.UP_border + Configurations.DOWN_border)) * Configurations.MAP_CELLS.height) / Configurations.MAP_CELLS.width);
 					
-					horizont.setUnitIncrement(Math.max(1, newW / 100));
-					vertical.setUnitIncrement(Math.max(1, newH / 100));
+					//horizont.setUnitIncrement(Math.max(1, newW / 100));
+					//vertical.setUnitIncrement(Math.max(1, newH / 100));
 				}
 				
-				var wOffset = ((double) newW) / world.getWidth();
-				var hOffset = ((double) newH) / world.getHeight();
+				var lastP = mousePoint;
+				if(lastP == null){
+					lastP = scrollPane.getViewport().getViewPosition();
+					lastP.x += scrollPane.getViewport().getWidth()/2;
+					lastP.y += scrollPane.getViewport().getHeight()/2;
+				}
+				var Zw = ((double) newW) / world.getWidth();
+				var Zh = ((double) newH) / world.getHeight();
+				
+				Point pos = scrollPane.getViewport().getViewPosition();
+				int newX = (int) ((Zw - 1d) * (lastP.x - pos.x) + Zw * pos.x);
+				int newY = (int) ((Zh - 1d) * (lastP.y - pos.y) + Zh * pos.y);
 				
 				world.setPreferredSize(new Dimension(newW,newH));
-				
-				horizont.setValue((int) (horizont.getValue() * wOffset));
-				vertical.setValue((int) (vertical.getValue() * hOffset));
+				scrollPane.getViewport().setViewPosition(new Point(newX, newY));
+				world.revalidate();
 			}
 		});
 		scrollPane.getViewport().addChangeListener(e -> {
