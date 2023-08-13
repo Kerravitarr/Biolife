@@ -51,7 +51,7 @@ public class AliveCell extends AliveCellProtorype {
         direction = DIRECTION.toEnum(cell.getI("direction"));
         DNA_wall = cell.getI("DNA_wall");
         poisonType = Poison.TYPE.toEnum(cell.getI("posionType"));
-        poisonPower = cell.getI("posionPower");
+        setPosionPower(cell.getI("posionPower"));
         tolerance = cell.getI("tolerance");
         foodTank = cell.get("foodTank");
         mineralTank = cell.get("mineralTank");
@@ -479,7 +479,7 @@ public class AliveCell extends AliveCellProtorype {
     @Override
     public boolean toxinDamage(TYPE type, int damag) {
         if (type == getPosionType() && getPosionPower() >= damag) {
-            poisonPower = getPosionPower() + 1;
+            setPosionPower(getPosionPower() + 1);
             return false;
         } else {
             switch (type) {

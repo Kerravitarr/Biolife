@@ -369,7 +369,7 @@ public abstract class AliveCellProtorype extends CellObject{
 		return poisonPower;
 	}
 	public void setPosionPower(int poisonPower) {
-		this.poisonPower = poisonPower;
+		this.poisonPower = Math.min(Poison.MAX_TOXIC * 100, poisonPower);
 	}
 	/**
 	 * @return the dna
