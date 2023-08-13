@@ -83,7 +83,8 @@ public class Poison extends CellObject {
 		if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
 		if ((getAge()) >= nextDouble) { // Вязкость яда
 			DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
-			var nen = energy /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
+			energy *= 0.9;// 10% выветривается каждый раз
+			var nen = energy / 2; // Половину своей энергии отдаём новой калпе
 			if(createPoison(getPos().next(dir),getType(),getStepCount(), nen, getStream())) {
 				energy = nen;
 			}
