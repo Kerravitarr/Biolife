@@ -62,11 +62,13 @@ public class Organic extends CellObject {
 				if(Poison.createPoison(getPos().next(dir),poison,getStepCount(), nen, getStream())) {
 					poisonCount = nen;	
 				}
-				//Так как мы ядовиты, то по чуть чуть растворяемся, то есть становимся ещё более ядовиты
-				poisonCount = Math.min(poisonCount * 1.05, Poison.MAX_TOXIC);
+				//Оцениваем когда следующий раз поделимся
 	 			nextDouble = getTimeToNextDouble();
 	 			if(poisonCount <= 1)
 	 				poison = Poison.TYPE.UNEQUIPPED;
+			} else {
+				//Так как мы ядовиты, то по чуть чуть растворяемся, то есть становимся ещё более ядовиты
+				poisonCount += 1.0/Configurations.TIK_TO_EXIT;
 			}
 		}
 		if(energy <= 0){
