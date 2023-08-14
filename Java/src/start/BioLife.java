@@ -149,10 +149,10 @@ public class BioLife extends JFrame {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
 		//8 - это потому что 5/8 это примерно 60% экрана. 
-		//А 5 - потому что именно при соотношении в 5 раз начинается детальная отрисовка клеток
+		//А 4.5 - потому что именно при соотношении в 5 раз начинается детальная отрисовка клеток
 		//а это нехило так роняет ФПС
 		if(PIXEL_PER_CELL > 8)
-			setBounds(100, 100, (int) (sSize.getWidth() * 5 / PIXEL_PER_CELL), (int)((sSize.getHeight()) * 5 / PIXEL_PER_CELL));
+			setBounds(100, 100, (int) (sSize.getWidth() * 4.5 / PIXEL_PER_CELL), (int)((sSize.getHeight()) * 4.5 / PIXEL_PER_CELL));
 		else
 			setBounds(100, 100, (int) (sSize.getWidth() / 2), (int)((sSize.getHeight()) / 2));
 		Configurations.makeWorld((int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL)); //120 - пикселей на верхнюю и нижнюю шапочки
@@ -200,16 +200,18 @@ public class BioLife extends JFrame {
 		scrollPane.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
-				int newW = (int) (scrollPane.getWidth() * (1 + (settings.getScale() / 100d))) - 10;
-				int newH = (int) (scrollPane.getHeight() * (1 + (settings.getScale() / 100d))) - 10;
-				//var horizont = scrollPane.getHorizontalScrollBar();
-				//var vertical = scrollPane.getVerticalScrollBar(); 
 				
-				if(settings.getScale() > 0) {
+				var scale = (Math.pow(10,settings.getScale() / 100d));
+				int newW = (int) (scrollPane.getWidth() * scale) - 10;
+				int newH = (int) (scrollPane.getHeight() * scale) - 10;
+				var horizont = scrollPane.getHorizontalScrollBar();
+				var vertical = scrollPane.getVerticalScrollBar(); 
+				
+				if(scale > 1) {
 					newH = (int) ((newW * (1 + (Configurations.UP_border + Configurations.DOWN_border)) * Configurations.MAP_CELLS.height) / Configurations.MAP_CELLS.width);
 					
-					//horizont.setUnitIncrement(Math.max(1, newW / 100));
-					//vertical.setUnitIncrement(Math.max(1, newH / 100));
+					horizont.setUnitIncrement(Math.max(1, newW / 100));
+					vertical.setUnitIncrement(Math.max(1, newH / 100));
 				}
 				
 				var lastP = mousePoint;
