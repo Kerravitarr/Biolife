@@ -107,60 +107,12 @@ public class JsonSave {
 		this.extension=extension;
 		version=v;
 	}
-
-	/**
-	 * Создаёт диалоговое окно и сохраняет файл
-	 * @param obj объект, который надо сохранить
-	 * @param isBeautiful красивое сохранине или в одну строчку
-	 * @return true, если файл сохранён
-	 */
-	public boolean save(SerializationOld obj, boolean isBeautiful) {
-		JFileChooser fileopen = new JFileChooser(path);
-		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
-		while(true) {
-			int ret = fileopen.showDialog(null, "Сохранить файл");
-			if (ret != JFileChooser.APPROVE_OPTION) return false;
-			String fileName = fileopen.getSelectedFile().getPath();
-			if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
-				if(!fileName.substring(fileName.lastIndexOf(".")+1).equals(extension))
-					fileName += "."+extension;
-			} else {
-				fileName += "."+extension;
-			}
-			var file = new File(fileName);
-			if(file.exists()) {
-				int result;
-				if(fileName.lastIndexOf("\\") != -1)
-					result = JOptionPane.showConfirmDialog(null,"Файл " + fileName.substring(fileName.lastIndexOf("\\")+1) + " существует, перзаписать? ", projectName,JOptionPane.YES_NO_CANCEL_OPTION);
-				else
-					result = JOptionPane.showConfirmDialog(null,"Файл " + fileName + " существует, перзаписать? ", projectName,JOptionPane.YES_NO_CANCEL_OPTION);
-				switch (result) {
-					case JOptionPane.YES_OPTION-> {file.delete();}
-					case JOptionPane.NO_OPTION-> {continue;}
-					case JOptionPane.CANCEL_OPTION-> {return false;}
-				}
-			}
-			try(FileWriter writer = new FileWriter(fileName, true)){
-				if(isBeautiful)
-					obj.toBeautifulJSONString(writer);
-				else
-					obj.toJSONString(writer);
-				writer.flush();
-				JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	projectName, JOptionPane.INFORMATION_MESSAGE);
-				return true;
-			} catch (IOException | java.lang.RuntimeException e1) {
-				e1.printStackTrace();
-				JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
-			}
-			return false;
-		}
-	}
 	
 	/**
 	 * Создаёт диалоговое окно выбора файла сохранения
 	 * @param sers объекты, которые надо сохранить
 	 * @param isBeautiful красивое сохранине или в одну строчку
-	 * @return путь к файлу сохранения или null, если файл не выбран
+	 * @return true, если сохранение завершилось успешно
 	 */
 	public boolean save(boolean isBeautiful, Serialization ... sers) {
 		JFileChooser fileopen = new JFileChooser(path);
@@ -188,21 +140,35 @@ public class JsonSave {
 					case JOptionPane.CANCEL_OPTION-> {return false;}
 				}
 			}
-
-			try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(fileName))) {
-				java.io.OutputStreamWriter out = new OutputStreamWriter(zout);
-				var v = new VERSION();
-				save(zout,out, v,isBeautiful);
-				for(var s : sers){
-					save(zout,out, s,isBeautiful);
-				}
+			if(save(fileName,isBeautiful,sers)){
 				JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	projectName, JOptionPane.INFORMATION_MESSAGE);
 				return true;
-			} catch (IOException | java.lang.RuntimeException e1) {
-				e1.printStackTrace();
-				JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
+			} else {
 				return false;
 			}
+		}
+	}
+	
+	/**
+	 * Сохраняет объекты в определённый файл
+	 * @param pathToFile - файл в который будет произведено сохранение
+	 * @param isBeautiful красивое сохранине или в одну строчку
+	 * @param sers объекты, которые надо сохранить
+	 * @return true, если сохранение завершилось успешно
+	 */
+	public boolean save(String pathToFile,boolean isBeautiful, Serialization ... sers){
+		try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(pathToFile))) {
+			java.io.OutputStreamWriter out = new OutputStreamWriter(zout);
+			var v = new VERSION();
+			save(zout,out, v,isBeautiful);
+			for(var s : sers){
+				save(zout,out, s,isBeautiful);
+			}
+			return true;
+		} catch (IOException | java.lang.RuntimeException e1) {
+			e1.printStackTrace();
+			JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
+			return false;
 		}
 	}
 	

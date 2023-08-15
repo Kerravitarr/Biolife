@@ -403,6 +403,26 @@ public class Settings extends JPanel{
 		else
 			Configurations.world.stop();
 	}
+	/**
+	 * Функция сохранения - сохранит мир в определённый файл
+	 * @param filePatch - путь, куда сохранить мир
+	 */
+	public void save(String filePatch) {
+		boolean oldStateWorld = Configurations.world.isActiv();				
+		Configurations.world.stop();
+		while(Configurations.world.isActiv())
+			Utils.Utils.pause(1);
+		
+		if(lastSaveCount != Configurations.world.step) {
+			var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
+			if(js.save(filePatch,true, new Configurations(), Configurations.tree, Configurations.world.serelization()))
+				lastSaveCount = Configurations.world.step;
+		}
+		if (oldStateWorld)
+			Configurations.world.start();
+		else
+			Configurations.world.stop();
+	}
 
 	public void setListener(JComponent scrollPane) {
 		listener = scrollPane;

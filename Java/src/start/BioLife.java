@@ -40,6 +40,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import MapObjects.CellObject;
 import Utils.GifSequenceWriter;
+import java.io.File;
 import main.Configurations;
 import main.World;
 import panels.BotInfo;
@@ -50,17 +51,65 @@ import panels.Settings;
 
 public class BioLife extends JFrame {
 	private class UpdateScrinTask implements Runnable {
+		/**Предыдущий шаг сохранения*/
+		private long lastSave = 0;
+		/**Период сохранения, шаги эволюции*/
+		private long savePeriod = 100_000;
+		/**Окно автосохранения*/
+		private javax.swing.JWindow win;
+		/**Сколько файлов автосохранения держать*/
+		private final int COUNT_SAVE = 3;
+		
+		public UpdateScrinTask(){
+			JLabel errorLabel = new JLabel(Configurations.getProperty(BioLife.class,"autosave"));
+			var topLevelWin = javax.swing.SwingUtilities.getWindowAncestor(world);
+			win = new javax.swing.JWindow(topLevelWin);
+			JPanel contentPane = (JPanel) win.getContentPane();
+			contentPane.add(errorLabel);
+			contentPane.setBackground(Color.white);
+			contentPane.setBorder(javax.swing.BorderFactory.createLineBorder(Color.LIGHT_GRAY));
+			win.pack();
+			win.setVisible(false);
+		}
 
 		@Override
 		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
 		
 		public void runE() {
-			String title = MessageFormat.format(Configurations.bundle.getString("BioLife.title"), world.fps.FPS(), world.step,
+			String title = MessageFormat.format(Configurations.getProperty(BioLife.class,"title"), world.fps.FPS(), world.step,
 					world.sps.FPS(), world.countLife, world.countOrganic, world.countPoison, world.countWall, world.isActiv() ? ">" : "||");
 			setTitle(title);
 			if (dialog.isVisible())
 				dialog.repaint();
 			world.repaint();
+			
+			//Автосохранение
+			if(Math.abs(world.step - lastSave) > savePeriod){
+				if(world.isActiv()){
+					//Если мир пассивный - то с чего мы вдруг решили его начать сохранять? Может он только загружен?
+					final var loc = scrollPane.getLocationOnScreen();
+					win.setLocation(loc.x + scrollPane.getWidth() / 2, loc.y + scrollPane.getHeight() / 2);
+					win.setVisible(true);
+					win.toFront();
+					win.revalidate();
+
+					var list = new File[COUNT_SAVE];
+					for(var i = 0 ; i < COUNT_SAVE ; i++){
+						list[i] = new File("autosave" + (i+1) + ".zbmap");
+					}
+					var save = list[0];
+					for(var i = 1 ; i < COUNT_SAVE && save.exists(); i++){
+						if(!list[i].exists() || save.lastModified() > list[i].lastModified())
+							save = list[i];
+					}
+					settings.save(save.getName());
+					win.setVisible(false);
+				}
+				lastSave = world.step;
+			}
+			
+			
+			
 			if (gifs != null) {
 				try {
 					gifs.nextFrame(g -> Configurations.world.paintComponent(g));
