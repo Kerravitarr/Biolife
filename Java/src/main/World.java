@@ -119,7 +119,9 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		/**Специальная переменная, которая следит, чтобы обновления клеток проходили только во время симуляции*/
 		private long stepUpdate = 0;
 		@Override
-		public void run() {
+		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
+		
+		public void runE() {
 			int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
 			var minH = Configurations.MAP_CELLS.height * (1d  - Configurations.LEVEL_MINERAL);//Высота минирализации
 			boolean isUpdate = false;
@@ -142,7 +144,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 				}
 				if(stepUpdate != step && coByHd > minH / 2){	//Если среди миниралов много органики - схлопываем её
 					isUpdate = true;
-					for(var i = 1 ; ;i++){
+					for(var i = 1 ; i < Configurations.MAP_CELLS.height;i++){
 						if (cellByY[Configurations.MAP_CELLS.height - i] instanceof Organic org) {
 							if(!org.getPermissionEat()){
 								org.setPermissionEat();
@@ -224,11 +226,13 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	@Override
 	public void run() {
 		Thread.currentThread().setName("World thread");
- 		while (countLife > 0 || countOrganic > 0 || countPoison > 0 || countWall > 0 || true) {
+ 		while (true) {
 			if (isActiv && msTimeout < 2)
 				step();
 			else
 				Utils.pause(1);
+			if(countLife == 0 && countOrganic == 0 && countPoison == 0 && countWall == 0 && isActiv())
+				stop();
 		}
 	}
 	/**Генерирует карту - добавляет солнце, гейзеры, обновляет константы мира, разбивает мир на потоки процессора */
