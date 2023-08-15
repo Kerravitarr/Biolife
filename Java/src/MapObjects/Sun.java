@@ -136,8 +136,14 @@ public class Sun {
 		//Минералы
 		int xm[] = new int[4];
 		int ym[] = new int[4];
+		//Белые уши, для сокрытия рисовки
+		int xwl[] = new int[4];
+		int ywl[] = new int[4];
+		int xwr[] = new int[4];
+		int ywr[] = new int[4];
 		
-		xm[0] = xm[1] = xw[0] = xw[1] = xl[0] = xl[1] = Point.getRx(0);
+		xwl[0] = xwl[1] = 0;
+		xwl[2] = xwl[3] = xm[0] = xm[1] = xw[0] = xw[1] = xl[0] = xl[1] = Point.getRx(0);
 		xl[2] = s1.x[1];
 		xl[3] = s1.x[0];
 		xc[0] = s1.x[s1.x.length - 1];
@@ -146,9 +152,10 @@ public class Sun {
 		xc[3] = s2.x[0];
 		xr[0] = s2.x[s2.x.length - 1];
 		xr[1] = s2.x[s2.x.length - 2];
-		xm[2] = xm[3] = xw[2] = xw[3] = xr[2] = xr[3] = Point.getRx(Configurations.MAP_CELLS.width);
+		xwr[0] = xwr[1] = xm[2] = xm[3] = xw[2] = xw[3] = xr[2] = xr[3] = Point.getRx(Configurations.MAP_CELLS.width);
+		xwr[2] = xwr[3] = Configurations.world.getWidth();
 		
-		yw[0] = yw[3] = yl[0] = yl[3] = yr[0] = yr[3] = Point.getRy(0);
+		ywl[0] = ywl[3] = ywr[0] = ywr[3] = yw[0] = yw[3] = yl[0] = yl[3] = yr[0] = yr[3] = Point.getRy(0);
 		yl[1] = yl[2] = yr[1] = yr[2] = Point.getRy((int) (Configurations.MAP_CELLS.height * Configurations.DIRTY_WATER / 100.0));
 		yl[2] = s1.y[1];
 		yl[3] = s1.y[0];
@@ -159,12 +166,12 @@ public class Sun {
 		yr[0] = s2.y[s2.y.length - 1];
 		yr[1] = s2.y[s2.y.length - 2];
 		ym[0] = ym[3] = Point.getRy((int) (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL));
-		yw[1] = yw[2] = ym[1] = ym[2] = Point.getRy(Configurations.MAP_CELLS.height);
+		ywl[1] = ywl[2] = ywr[1] = ywr[2] = yw[1] = yw[2] = ym[1] = ym[2] = Point.getRy(Configurations.MAP_CELLS.height);
 		
 		
 		
 		//Части без солнца
-		var lfon = new ColorRec[7];
+		var lfon = new ColorRec[9];
 		GradientPaint gp;
 		//Заполнение
 		lfon[0] = new ColorRec(xw,yw, dirColor);
@@ -182,6 +189,10 @@ public class Sun {
 		gp = new GradientPaint(w, ym[0], minColorAlf, w, ym[1], minColor);
 			
 		lfon[6] = new ColorRec(xm,ym, gp);
+		//Боковины, скроющие особенности рисования
+		lfon[7] = new ColorRec(xwl,ywl, Color.WHITE);
+		lfon[8] = new ColorRec(xwr,ywr, Color.WHITE);
+		
 		fon = lfon;
 	}
 	
