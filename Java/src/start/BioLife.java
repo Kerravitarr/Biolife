@@ -5,7 +5,6 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
-import java.awt.HeadlessException;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
@@ -18,28 +17,19 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
-import java.text.DecimalFormat;
 import java.text.MessageFormat;
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JViewport;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 import MapObjects.CellObject;
-import Utils.GifSequenceWriter;
 import java.io.File;
 import main.Configurations;
 import main.World;
@@ -107,21 +97,6 @@ public class BioLife extends JFrame {
 				}
 				lastSave = world.step;
 			}
-			
-			
-			
-			if (gifs != null) {
-				try {
-					gifs.nextFrame(g -> Configurations.world.paintComponent(g));
-				} catch (IOException e) {
-					Configurations.world.stop();
-					e.printStackTrace();
-					JOptionPane.showMessageDialog(null, "<html>Запись видео оборвалась по причине<br>"
-							+ e.getMessage(), "BioLife", JOptionPane.ERROR_MESSAGE);
-					gifs = null;
-					startRecord.setText("Начать запись");
-				}
-			}
 		}
 	}
 	
@@ -135,18 +110,16 @@ public class BioLife extends JFrame {
 
 		@Override
 		public void mouseDragged(MouseEvent e) {
-			if (origin != null) {
-				JViewport viewPort = (JViewport) javax.swing.SwingUtilities.getAncestorOfClass(JViewport.class, world);
-				if (viewPort != null) {
-					int deltaX = origin.x - e.getX();
-					int deltaY = origin.y - e.getY();
+			if (origin != null && !Configurations.menu.isSelectedCell()) {
+				final var viewport = scrollPane.getViewport();
+				int deltaX = origin.x - e.getX();
+				int deltaY = origin.y - e.getY();
 
-					Rectangle view = viewPort.getViewRect();
-					view.x += deltaX;
-					view.y += deltaY;
+				Rectangle view = viewport.getViewRect();
+				view.x += deltaX;
+				view.y += deltaY;
 
-					world.scrollRectToVisible(view);
-				}
+				world.scrollRectToVisible(view);
 			}
 		}
 
@@ -172,7 +145,6 @@ public class BioLife extends JFrame {
 	/**Дерево эволюции*/
 	private EvolTreeDialog dialog = new EvolTreeDialog();
 	
-	private GifSequenceWriter gifs = null;
 	private JMenuItem startRecord;
 	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
 	private	final double PIXEL_PER_CELL = 10;
@@ -246,13 +218,14 @@ public class BioLife extends JFrame {
 		        super.processMouseWheelEvent(e);
 		    }
 		};
+		final var viewport = scrollPane.getViewport();
 		scrollPane.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
 				
-				var scale = (Math.pow(10,settings.getScale() / 100d));
-				int newW = (int) (scrollPane.getWidth() * scale) - 10;
-				int newH = (int) (scrollPane.getHeight() * scale) - 10;
+				var scale = (Math.pow(5,settings.getScale() / 100d));
+				var newW = (int) (scrollPane.getWidth() * scale) - 10;
+				var newH = (int) (scrollPane.getHeight() * scale) - 10;
 				var horizont = scrollPane.getHorizontalScrollBar();
 				var vertical = scrollPane.getVerticalScrollBar(); 
 				
@@ -265,29 +238,32 @@ public class BioLife extends JFrame {
 				
 				var lastP = mousePoint;
 				if(lastP == null){
-					lastP = scrollPane.getViewport().getViewPosition();
-					lastP.x += scrollPane.getViewport().getWidth()/2;
-					lastP.y += scrollPane.getViewport().getHeight()/2;
+					lastP = viewport.getViewPosition();
+					lastP.x += viewport.getWidth()/2;
+					lastP.y += viewport.getHeight()/2;
 				}
 				var Zw = ((double) newW) / world.getWidth();
 				var Zh = ((double) newH) / world.getHeight();
 				
-				Point pos = scrollPane.getViewport().getViewPosition();
-				int newX = (int) ((Zw - 1d) * (lastP.x - pos.x) + Zw * pos.x);
-				int newY = (int) ((Zh - 1d) * (lastP.y - pos.y) + Zh * pos.y);
+				Point pos = viewport.getViewPosition();
+				int newX = (int) ((Zw - 1d) * (lastP.x - pos.x) + Zw * lastP.x);
+				int newY = (int) ((Zh - 1d) * (lastP.y - pos.y) + Zh * lastP.y);
+				//int newX = (int) (lastP.x * newW / world.getWidth() - viewport.getWidth()/2);
+				//int newY = (int) (lastP.y * newH / world.getHeight() - viewport.getHeight()/2);
 				
 				world.setPreferredSize(new Dimension(newW,newH));
-				scrollPane.getViewport().setViewPosition(new Point(newX, newY));
+				viewport.setViewPosition(new Point(newX, newY));
 				world.revalidate();
+				//Configurations.TIME_OUT_POOL.schedule(() -> {horizont.setValue(newX);vertical.setValue(newY);}, 20, TimeUnit.MILLISECONDS);
 			}
 		});
-		scrollPane.getViewport().addChangeListener(e -> {
+		viewport.addChangeListener(e -> {
 			var horizont = scrollPane.getHorizontalScrollBar();
 			var vertical = scrollPane.getVerticalScrollBar();
 			var xMin = Math.max(0, main.Point.rxToX(horizont.getValue()));
-			var xMax = Math.min(Configurations.MAP_CELLS.width - 1,main.Point.rxToX(horizont.getValue() + scrollPane.getViewport().getSize().width));
+			var xMax = Math.min(Configurations.MAP_CELLS.width - 1,main.Point.rxToX(horizont.getValue() + viewport.getSize().width));
 			var yMin = Math.max(0, main.Point.ryToY(vertical.getValue()));
-			var yMax = Math.min(Configurations.MAP_CELLS.height - 1,main.Point.ryToY(vertical.getValue() + scrollPane.getViewport().getSize().height));
+			var yMax = Math.min(Configurations.MAP_CELLS.height - 1,main.Point.ryToY(vertical.getValue() +viewport.getSize().height));
 			world.setVisible(new main.Point(xMin, yMin),new main.Point(xMax, yMax));
 		});
 		settings.setListener(scrollPane);
@@ -332,49 +308,6 @@ public class BioLife extends JFrame {
 		return sb.toString();
 	}
 
-	private void gifRecord() throws HeadlessException {
-		if(gifs == null) { //Запуск
-			Configurations.world.stop();
-			int result = javax.swing.JOptionPane.showConfirmDialog(null, "<html>ВНИМАНИЕ!!!<br>"
-					+ "Запись видео будет происходить в текущем разрешении ("
-					+ Configurations.world.getWidth() + "x" + Configurations.world.getHeight()
-					+ "пк)<br>"
-							+ "Менять во время записи размеры программы и открывать/закрывать панели "
-							+ "крайне нерекомендуется!<br>"
-							+ "Это может привести к кривой записи!!!<br>"
-							+ "Снимок экрана производится раз в секунду, воспроизводится 25 кадров в секунду<br>"
-							+ "Вы согласны начать запись?",
-					"BioLife", javax.swing.JOptionPane.OK_CANCEL_OPTION);
-			if(result == javax.swing.JOptionPane.CANCEL_OPTION) return;
-			
-			String pathToRoot = System.getProperty("user.dir");
-			JFileChooser fileopen = new JFileChooser(pathToRoot);
-			fileopen.setFileFilter(new FileNameExtensionFilter("gif", "gif"));
-			int ret = fileopen.showDialog(null, "Началь запись");
-			if (ret != JFileChooser.APPROVE_OPTION) return;
-			try {
-				String fileName = fileopen.getSelectedFile().getPath();
-				if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
-					if(!fileName.substring(fileName.lastIndexOf(".")+1).equals("gif"))
-						fileName += ".gif";
-				} else {
-					fileName += ".gif";
-				}
-				gifs = new GifSequenceWriter(fileName, true, Configurations.world.getSize());
-				Configurations.world.start();
-				startRecord.setText("Остановить запись");
-			} catch (IOException e1) {
-				JOptionPane.showMessageDialog(null,	"<html>Запись видео неудалась по причине<br>"
-						+ e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
-			}
-		} else { // Закончили
-			Configurations.world.stop();
-			try {gifs.close();} catch (IOException e1) {e1.printStackTrace();}
-			gifs = null;
-			startRecord.setText("Начать запись");
-		}
-	}
-	
 	private void mouseClicked_panel(JPanel panel ,JLabel panel_Label, String name, boolean isActive, String borderLayoutConst) {
 		String symbol =  switch (borderLayoutConst) {
 			case BorderLayout.EAST -> isActive ? "&GT;" : "&lt;";

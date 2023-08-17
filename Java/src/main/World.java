@@ -41,16 +41,18 @@ import Utils.JSON;
 import Utils.JsonSave;
 import Utils.StreamProgressBar;
 import Utils.Utils;
+import java.awt.event.MouseMotionListener;
 import java.util.concurrent.TimeUnit;
 import main.Point.DIRECTION;
 
-public class World extends JPanel implements Runnable,ComponentListener,MouseListener{	
+public class World extends JPanel implements Runnable,ComponentListener,MouseListener,MouseMotionListener{	
 	/**Симуляция запущена?*/
 	private boolean isActiv = true;
 	/**Произошла авария?*/
 	public static boolean isError = false;
 	/**Сколько кадров отрисовывать перед ходом. Если = 0, то как можно меньше. Если = 1, то считать всё на одном процессоре, если >1, то ФПС будет во столько раз больше ППС*/
 	public static int msTimeout = 0;
+
 	class AutostartThread extends Thread{AutostartThread(Runnable target){super(target);start();}}
 	final ForkJoinWorkerThreadFactory factory = new ForkJoinWorkerThreadFactory() {
 		private final AtomicInteger branshCount = new AtomicInteger(0);
@@ -198,7 +200,9 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	/**Показывает, что остановка была сделана специально для перерисовки*/
 	private int repaint_stop = 0;
 	/**Координаты видимой части экрана. Специально для перерисовки только ограниченной части. Две точки - верхний угол и нижний*/
-	private Point[] visible = new Point[2];
+	private final Point[] visible = new Point[2];
+	/**Координаты выделения клеток при использовании мыши в качестве выделителя*/
+	private final Point[] selectPoint = new Point[2];
 	/**
 	 * Create the panel.
 	 */
@@ -220,6 +224,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 
 		addComponentListener(this);
 		addMouseListener(this);
+		addMouseMotionListener(this);
 		worldThread = new AutostartThread(this);
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
 	}
@@ -308,18 +313,25 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 
     @Override
 	public void paintComponent(Graphics g) {
+		paintComponent(g,false);
+	}
+	/**Отрисовывает мир на холст
+	 * @param g куда рисовать
+	 * @param isAll рисовать всё или только то, что видно на экране?
+	 */
+	public void paintComponent(Graphics g, boolean isAll) {
 		super.paintComponent(g);
 		
 		paintField(g);
 		
-		if(isActiv && (msTimeout > 1 && timeoutStep % (msTimeout - 1) == 0)) {
+		if(!isAll && isActiv && (msTimeout > 1 && timeoutStep % (msTimeout - 1) == 0)) {
 			step();
 		}
 		for (CellObject[] cellByY : Configurations.worldMap) {
 			for (CellObject cell2 : cellByY) {
 				if(cell2 == null) continue;
-				if(visible[0].getX() <= cell2.getPos().getX() && cell2.getPos().getX() <= visible[1].getX()
-						&& visible[0].getY() <= cell2.getPos().getY() && cell2.getPos().getY() <= visible[1].getY())
+				if(isAll || (visible[0].getX() <= cell2.getPos().getX() && cell2.getPos().getX() <= visible[1].getX()
+						&& visible[0].getY() <= cell2.getPos().getY() && cell2.getPos().getY() <= visible[1].getY()))
 					cell2.paint(g);
 			}
 		}
@@ -328,6 +340,17 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			g.drawLine(Configurations.info.getCell().getPos().getRx(), Configurations.border.height, Configurations.info.getCell().getPos().getRx(), getHeight()-Configurations.border.height);
 			g.drawLine(Configurations.border.width, Configurations.info.getCell().getPos().getRy(), getWidth()-Configurations.border.width, Configurations.info.getCell().getPos().getRy());
 		}
+		
+		if(selectPoint[0] != null && selectPoint[1] != null){
+			g.setColor(new Color(255,255,255,25));
+			var x0 = selectPoint[0].getRx();
+			var y0 = selectPoint[0].getRy();
+			var x1 = selectPoint[1].getRx();
+			var y1 = selectPoint[1].getRy();
+			g.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x0 - x1), Math.abs(y0 - y1));
+		}
+		
+		if(isAll) return;
 		
 		timeoutStep++;
 		fps.interapt();
@@ -661,13 +684,42 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	}
 	
 	@Override
-	public void mousePressed(MouseEvent e) {}
+	public void mousePressed(MouseEvent e) {
+		if(Configurations.menu.isSelectedCell()){
+			selectPoint[1] = recalculation(e.getX(),e.getY());
+			selectPoint[0] = selectPoint[1];
+		}
+	}
 	@Override
-	public void mouseReleased(MouseEvent e) {}
+	public void mouseReleased(MouseEvent e) {
+		selectPoint[1] = recalculation(e.getX(),e.getY());
+		if(selectPoint[0] == null || selectPoint[1] == null) return;
+		if(Configurations.menu.isSelectedCell()){
+			var selected = new ArrayList<CellObject>();
+			var x0 = Math.min(selectPoint[0].getX(), selectPoint[1].getX());
+			var y0 = Math.min(selectPoint[0].getY(), selectPoint[1].getY());
+			var x1 = Math.max(selectPoint[0].getX(), selectPoint[1].getX());
+			var y1 = Math.max(selectPoint[0].getY(), selectPoint[1].getY());
+			for (CellObject[] cellByY : Configurations.worldMap) {
+				for (CellObject cell2 : cellByY) {
+					if(cell2 == null) continue;
+					if((x0 <= cell2.getPos().getX() && cell2.getPos().getX() <= x1
+							&& y0 <= cell2.getPos().getY() && cell2.getPos().getY() <= y1))
+						selected.add(cell2);
+				}
+			}
+			Configurations.menu.setCell(selected);
+			selectPoint[0] = null;
+		}
+	}
 	@Override
 	public void mouseEntered(MouseEvent e) {}
 	@Override
 	public void mouseExited(MouseEvent e) {}
+	@Override
+	public void mouseDragged(MouseEvent e) {selectPoint[1] = recalculation(e.getX(),e.getY());}
+	@Override
+	public void mouseMoved(MouseEvent e) {}
 	
 	/**
 	 * Пересчитыавет координаты мировые в пикселях в координаты ячейки
@@ -689,11 +741,6 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	
 	@Override
 	public void mouseClicked(MouseEvent e) {
-		if(Configurations.menu.isVisible()) {
-			Point point = recalculation(e.getX(),e.getY());
-			if(point != null)
-				Configurations.menu.setCell(get(point));
-		}
 		if(Configurations.info.isVisible()) {
 			Point point = recalculation(e.getX(),e.getY());
 			if(point != null)

@@ -366,6 +366,8 @@ public class Settings extends JPanel{
 		var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
 		try{
 			var filename = js.load();
+			while(Configurations.world.isActiv()) //На всякий случай убеждаемся, что мир прям точно встал!
+				Utils.Utils.pause(1);
 			if(filename == null) return;
 			else if(filename.contains(".zbmap")){//Новый стандарт
 				js.load(filename, new Configurations(), Configurations.tree, Configurations.world.serelization());
