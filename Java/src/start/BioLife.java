@@ -153,14 +153,7 @@ public class BioLife extends JFrame {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
-		EventQueue.invokeLater(() -> {
-			try {
-				BioLife frame = new BioLife();
-				frame.setVisible(true);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		});
+		EventQueue.invokeLater(() -> {try {new BioLife().setVisible(true);} catch (Exception e) {e.printStackTrace();}});
 	}
 
 	/**

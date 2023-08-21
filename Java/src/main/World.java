@@ -41,6 +41,7 @@ import Utils.JSON;
 import Utils.JsonSave;
 import Utils.StreamProgressBar;
 import Utils.Utils;
+import java.awt.EventQueue;
 import java.awt.event.MouseMotionListener;
 import java.util.concurrent.TimeUnit;
 import main.Point.DIRECTION;
@@ -680,7 +681,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public void componentHidden(ComponentEvent e) {}
 	@Override
 	public void componentResized(ComponentEvent e) {
-		recalculate();
+		EventQueue.invokeLater(() -> recalculate());
 	}
 	
 	@Override
