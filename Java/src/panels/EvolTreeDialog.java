@@ -9,15 +9,20 @@ import Utils.MyMessageFormat;
 import Utils.SameStepCounter;
 import Utils.Utils;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.swing.GroupLayout;
 import javax.swing.JPanel;
+import javax.swing.JToolTip;
+import javax.swing.Popup;
+import javax.swing.PopupFactory;
 import main.Configurations;
 import main.EvolutionTree;
 
@@ -92,8 +97,17 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 	}
 	/**Одоин отображающийся узел*/
 	private class NodeJpanel extends JPanel{
+		/**Реальный узел, который мы изображаем*/
 		private final EvolutionTree.Node node;
+		/**Прозрачный цвет*/
 		private static final Color bColor = new Color(0,0,0,0);
+		/**Фабрика создания всплывающей подсказки*/
+		private PopupFactory popupFactory;
+		/**Окно подсказки*/
+		private static Popup popup;
+		/**Сама подсказка*/
+		private JToolTip t;
+		
 		NodeJpanel(EvolutionTree.Node node){
 			this.node = node;
 			init();
@@ -109,16 +123,24 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 			    }
 				@Override
 			    public void mouseEntered(MouseEvent e) {
-					if(getToolTipText() == null){
+					if(t == null){
+						t = jPanelTree.createToolTip();
 						StringBuilder sb = new StringBuilder();
 						sb.append("<html>");
 						for (int i = 0; i < 7; i++) {
 							if(i > 0) sb.append("<br>");
 							sb.append(formatNode(node,i));
 						}
-						setToolTipText(sb.toString());
+						t.setTipText(sb.toString());
+						popupFactory = PopupFactory.getSharedInstance();
 					}
+					if(popup != null)
+						popup.hide();
+					popup = popupFactory.getPopup(jPanelTree, t, e.getXOnScreen(), e.getYOnScreen());
+					popup.show();
 			    }
+				@Override
+				public void mouseExited(MouseEvent e) {if(popup != null) popup.hide();}
 			});
 			setBackground(bColor);
 		}
@@ -296,10 +318,14 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 	public EvolTreeDialog() {
 		super((Frame) null, false);
 		initComponents();
+		Configurations.setIcon(resetButton,"reset");
+		resetButton.addActionListener( e-> restart());
+		resetButton.setToolTipText(Configurations.getHProperty(EvolTreeDialog.class,"reset"));
 		
 		Configurations.evolTreeDialog = this;
 		
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(relaintFun = new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
+		restart();
 	}
 	
 	@Override
@@ -318,38 +344,42 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		rootNode = newNode;
 		relaintFun.updateColor();
 		DrawPanelEvoTree.isNeedUpdate = true;
+		resetButton.setVisible(newNode != EvolutionTree.root);
 		repaint();
 	}
 	
 	/**Возвращает одну из строк текстового описания узла*/
 	private String formatNode(EvolutionTree.Node node, int row){
-		UpdateScrinTask.Pair p = row == 2 ? relaintFun.countPair(node) : null;
-		return switch (row % 7) {
-			default -> String.format("Полное название узла: %s", node.getBranch());
-			case 1 -> String.format("Дочерних узлов: %d",node.getChild().size());
-			case 2 -> String.format("Всего узлов в ветви: %d, живых клеток в ветви: %d",p.countAllChild, p.countChildCell);
-			case 3 -> dateBirth.format(node.getTimeFounder());
-			case 4 -> founderYear.format(node.getFounder().getAge());
-			case 5 -> String.format("Устойчивость к яду: %s",node.getFounder().getPosionType().toString());
-			case 6 -> String.format("Длина ДНК: %d",node.getFounder().getDna().size);
-			/*case 7 -> {
-				StringBuilder sb = new StringBuilder();
-				for(var i : Utils.sortByValue(rootNode.getFounder().getSpecialization())) {
-					if(i.getValue() == 0) continue;
-					if (sb.isEmpty())
-						sb.append(i.getKey().toString());
-					else
-						sb.append(i.getKey().toSString());
-					sb.append(' ');
-					sb.append(i.getValue());
-					sb.append('%');
-					sb.append(' ');
-				}
+		var index = row % 7;
+		try{
+			UpdateScrinTask.Pair p = index == 2 ? relaintFun.countPair(node) : null;
+			return switch (index) {
+				default -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodeDescriptionNode"), node.getBranch());
+				case 1 -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodeDaughter"),node.getChild().size());
+				case 2 -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodeStatistic"),p.countAllChild, p.countChildCell);
+				case 3 -> dateBirth.format(node.getTimeFounder());
+				case 4 -> founderYear.format(node.getFounder().getAge());
+				case 5 -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodePoison"),node.getFounder().getPosionType().toString());
+				case 6 -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodeDna"),node.getFounder().getDna().size);
+				/*case 7 -> {
+					StringBuilder sb = new StringBuilder();
+					for(var i : Utils.sortByValue(rootNode.getFounder().getSpecialization())) {
+						if(i.getValue() == 0) continue;
+						if (sb.isEmpty())
+							sb.append(i.getKey().toString());
+						else
+							sb.append(i.getKey().toSString());
+						sb.append(' ');
+						sb.append(i.getValue());
+						sb.append('%');
+						sb.append(' ');
+					}
 
-				sb.toString();
+					sb.toString();
 
-			} */
-		};
+				} */
+			};
+		} catch (Exception e){ return index + ")";} //Если узлы обновляются, то всегда есть шанс нарваться на асинхронность и вылететь нафиг
 	}
 
 
@@ -364,7 +394,10 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 
         jScrollPane1 = new javax.swing.JScrollPane();
         jEditorPane1 = new javax.swing.JEditorPane();
+        mainP = new javax.swing.JPanel();
         jPanelTree = new DrawPanelEvoTree();
+        jPanel1 = new javax.swing.JPanel();
+        resetButton = new javax.swing.JButton();
 
         jScrollPane1.setViewportView(jEditorPane1);
 
@@ -376,8 +409,12 @@ public class EvolTreeDialog extends javax.swing.JDialog {
             }
         });
 
+        mainP.setLayout(new java.awt.BorderLayout());
+
         jPanelTree.setBackground(new java.awt.Color(204, 204, 204));
-        jPanelTree.setToolTipText("В режиме паузы при наведении на узел над ним показывается подробная информация");
+        jPanelTree.setToolTipText(Configurations.getHProperty(EvolTreeDialog.class,"toolTipText"));
+        jPanelTree.setAlignmentX(0.0F);
+        jPanelTree.setAlignmentY(0.0F);
         jPanelTree.addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentResized(java.awt.event.ComponentEvent evt) {
                 jPanelTreeComponentResized(evt);
@@ -388,28 +425,53 @@ public class EvolTreeDialog extends javax.swing.JDialog {
         jPanelTree.setLayout(jPanelTreeLayout);
         jPanelTreeLayout.setHorizontalGroup(
             jPanelTreeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 423, Short.MAX_VALUE)
+            .addGap(0, 0, Short.MAX_VALUE)
         );
         jPanelTreeLayout.setVerticalGroup(
             jPanelTreeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 365, Short.MAX_VALUE)
+            .addGap(0, 401, Short.MAX_VALUE)
         );
+
+        mainP.add(jPanelTree, java.awt.BorderLayout.CENTER);
+
+        jPanel1.setBackground(new java.awt.Color(204, 204, 204));
+        jPanel1.setAlignmentX(0.0F);
+        jPanel1.setAlignmentY(0.0F);
+
+        resetButton.setAlignmentY(0.0F);
+        resetButton.setBorderPainted(false);
+        resetButton.setContentAreaFilled(false);
+        resetButton.setFocusPainted(false);
+        resetButton.setFocusable(false);
+        resetButton.setInheritsPopupMenu(true);
+        resetButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
+        resetButton.setPreferredSize(new java.awt.Dimension(40, 20));
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap(643, Short.MAX_VALUE)
+                .addComponent(resetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(resetButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+
+        mainP.add(jPanel1, java.awt.BorderLayout.SOUTH);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanelTree, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+            .addComponent(mainP, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanelTree, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+            .addComponent(mainP, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         pack();
@@ -432,7 +494,10 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JEditorPane jEditorPane1;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanelTree;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JPanel mainP;
+    private javax.swing.JButton resetButton;
     // End of variables declaration//GEN-END:variables
 }
