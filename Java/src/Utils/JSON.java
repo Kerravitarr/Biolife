@@ -1,4 +1,5 @@
 package Utils;
+//Версия 2.1 от 07 августа 2023 года!
 
 
 
@@ -12,10 +13,9 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import Utils.JsonSave.SerializationOld;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 
 /**
  * Класс, который отвечает за стиль JSON
@@ -24,7 +24,7 @@ import java.io.OutputStreamWriter;
  */
 public class JSON implements SerializationOld{
 	/**Перечисление разных состояний парсинга файла*/
-	private enum JSON_TOKEN{
+	private static enum JSON_TOKEN{
 		BEGIN_OBJECT("{"), END_OBJECT("}"), BEGIN_ARRAY("["), END_ARRAY("]"), NULL("null"), NUMBER("number"),
 		STRING("str"), BOOLEAN("true/false"), SEP_COLON(":"), SEP_COMMA(","), END_DOCUMENT("");
 		/**Описание символа*/
@@ -39,7 +39,7 @@ public class JSON implements SerializationOld{
 		UNEXPECTED_CHAR,UNEXPECTED_TOKEN,UNEXPECTED_EXCEPTION,UNEXPECTED_VALUE,UNKNOW
 	}
 	/**Один прочитанный токен из потока*/
-	private class Token{
+	private static class Token{
 		public Token(JSON.JSON_TOKEN type, Object value) {
 			this.type=type;
 			this.value=value;
@@ -51,7 +51,7 @@ public class JSON implements SerializationOld{
 	}
 	
 	/**Чтец токенов*/
-	private class TokenReader {
+	private static class TokenReader {
 		/**Поток, из которого читаем*/
 		Reader stream;
 		/**Текущая позиция чтения*/
@@ -77,12 +77,12 @@ public class JSON implements SerializationOld{
 				ch = read();
 			} while (isWhiteSpace(ch));
 			switch (ch) { // Не пробел, а что?
-				case '{' -> {return new Token(JSON_TOKEN.BEGIN_OBJECT, null);}
-				case '}' -> {return new Token(JSON_TOKEN.END_OBJECT, null);}
-				case '[' -> {return new Token(JSON_TOKEN.BEGIN_ARRAY, null);}
-				case ']' -> {return new Token(JSON_TOKEN.END_ARRAY, null);}
-				case ',' -> {return new Token(JSON_TOKEN.SEP_COMMA, null);}
-				case ':' -> {return new Token(JSON_TOKEN.SEP_COLON, null);}
+				case '{' -> {return new Token(JSON_TOKEN.BEGIN_OBJECT, "{");}
+				case '}' -> {return new Token(JSON_TOKEN.END_OBJECT, "}");}
+				case '[' -> {return new Token(JSON_TOKEN.BEGIN_ARRAY, "[");}
+				case ']' -> {return new Token(JSON_TOKEN.END_ARRAY, "]");}
+				case ',' -> {return new Token(JSON_TOKEN.SEP_COMMA, ",");}
+				case ':' -> {return new Token(JSON_TOKEN.SEP_COLON, ":");}
 				case 'n' -> {return readNull();}
 				case 't', 'f' -> {return readBoolean(ch);}
 				case '"' -> {return readString();}
@@ -206,19 +206,28 @@ public class JSON implements SerializationOld{
 				char ch = read();
 				switch (ch) {
 					case '\\' -> {
-						char escapeCh = read();
-						if (!isEscape(escapeCh))
-							throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
-						sb.append('\\');
-						sb.append(ch);
-						if (ch == 'u') {
-							for (int i = 0; i < 4; i++) {
-								ch = read();
-								if (isHex(ch))
-									sb.append(ch);
-								else
-									throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
+						 switch (read()) {
+							case '"' -> sb.append('\"');
+							case '\\' -> sb.append('\\');
+							case '/' -> sb.append('/');
+							case 'b' -> sb.append('\b');
+							case 'f' -> sb.append('\f');
+							case 'n' -> sb.append('\n');
+							case 'r' -> sb.append('\r');
+							case 't' -> sb.append('\t');
+							case 'u' -> {
+								StringBuilder unix = new StringBuilder();
+								for (int i = 0; i < 4; i++) {
+									ch = read();
+									if (isHex(ch))
+										unix.append(ch);
+									else
+										throw new ParseException(pos, ERROR.UNEXPECTED_CHAR, ch);
+								}
+								sb.append(Character.toChars(
+										Integer.parseInt(unix.toString(), 16)));
 							}
+							default -> throw new ParseException(pos, ERROR.UNEXPECTED_CHAR, ch);
 						}
 					}
 					case '"' -> {return new Token(JSON_TOKEN.STRING, sb.toString());}
@@ -287,10 +296,6 @@ public class JSON implements SerializationOld{
 		private boolean isHex(char ch) {
 	        return ((ch >= '0' && ch <= '9') || ('a' <= ch && ch <= 'f') || ('A' <= ch && ch <= 'F'));
 		}
-		/**Проверяет, что у нас один из экранированных символов - " \ n r...*/
-		private boolean isEscape(char ch) {
-	        return (ch == '"' || ch == '\\' || ch == 'u' || ch == 'r' || ch == 'n' || ch == 'b' || ch == 't' || ch == 'f');
-		}
 		/**
 		 * Показывает, является-ли введённый символ пробелом (таблом, ентером и т.д.)
 		 * @param ch
@@ -333,7 +338,7 @@ public class JSON implements SerializationOld{
 	 * Разные ошибки, возникающие при парсинге файла
 	 *
 	 */
-	public class ParseException extends RuntimeException {
+	public static class ParseException extends RuntimeException {
 		private ERROR errorType;
 		private Object unexpectedObject;
 		private long position;
@@ -378,7 +383,7 @@ public class JSON implements SerializationOld{
 				case UNEXPECTED_TOKEN -> sb.append("Неожиданный токен '").append(unexpectedObject).append("' в позиции ").append(position).append(".");
 				case UNEXPECTED_EXCEPTION -> sb.append("Unexpected exception at position ").append(position).append(": ").append(unexpectedObject);
 				case UNEXPECTED_VALUE -> sb.append("Неожиданное значение в позиции ").append(position).append(": ").append(unexpectedObject);
-				default -> sb.append("Неизвестная ошибка в позиции ").append(position).append(".");
+				default -> sb.append("Неизвестная ошибка в позиции ").append(position).append(":").append(unexpectedObject).append(".");
 			}
 			return sb.toString();
 		}
@@ -424,7 +429,14 @@ public class JSON implements SerializationOld{
 		}
 		private String getVal(T value_o) {
 			if(value_o instanceof String) {
-				return "\"" + value_o.toString().replaceAll("\"", "\\\\\"") + "\"";
+				var ret = value_o.toString().replace("\\", "\\\\")
+						.replace("\t", "\\t")
+						.replace("\b", "\\b")
+						.replace("\n", "\\n")
+						.replace("\r", "\\r")
+						.replace("\f", "\\f")
+						.replace("\"", "\\\"");
+				return "\"" + ret + "\"";
 			}else {
 				return value_o.toString();
 			}
@@ -527,8 +539,6 @@ public class JSON implements SerializationOld{
 		}
 	}
 	
-	/**Это список всех параметров объекта. Используется лист пар потому что было важное условие - сохранить порядок данных*/
-	private LinkedHashMap<String,JSON_par> parametrs;
 	
 	/**
 	 * Создаёт объект JSON в который будут заносится значения для серелизации
@@ -547,6 +557,27 @@ public class JSON implements SerializationOld{
 	 * @throws IOException */
 	public JSON(Reader parseStr) throws JSON.ParseException, IOException {
 		parse(parseStr);
+	}
+	/**Парсинг JSON строки и заполнение соответствующих объектов
+	 * @throws JSON.ParseException 
+	 * @throws IOException */
+	public static List<Object> JSONA(String parseStr) throws JSON.ParseException, IOException {
+		return JSONA(new StringReader(parseStr));
+	}
+	/**Парсинг JSON строки и заполнение соответствующих объектов
+	 * @throws JSON.ParseException 
+	 * @throws IOException */
+	public static List<Object> JSONA(Reader in) throws JSON.ParseException, IOException {
+		TokenReader reader = new TokenReader(in);
+		if(!reader.hasNext()) { // Пустой файл
+			return new ArrayList<>();
+		}else {
+			Token token = reader.next();
+			if(token.type == JSON_TOKEN.BEGIN_ARRAY)
+				return parseA(reader);
+			else
+				throw new ParseException(reader.pos, ERROR.UNEXPECTED_TOKEN, token.value);
+		}
 	}
 	
 	/**
@@ -575,7 +606,7 @@ public class JSON implements SerializationOld{
 	 * @throws JSON.ParseException
 	 * @throws IOException
 	 */
-	private JSON parseO(JSON.TokenReader reader) throws JSON.ParseException, IOException {
+	private static JSON parseO(JSON.TokenReader reader) throws JSON.ParseException, IOException {
 		JSON json = new JSON();
 		int expectToken = JSON_TOKEN.STRING.value | JSON_TOKEN.END_OBJECT.value; // Ключ или конец объекта
 		String key = null;
@@ -633,7 +664,7 @@ public class JSON implements SerializationOld{
 	 * @throws JSON.ParseException
 	 * @throws IOException
 	 */
-	private List<Object> parseA(JSON.TokenReader reader) throws JSON.ParseException, IOException {
+	private static List<Object> parseA(JSON.TokenReader reader) throws JSON.ParseException, IOException {
 		List<Object> array = new ArrayList<>();
 		int expectToken = JSON_TOKEN.BEGIN_ARRAY.value | JSON_TOKEN.END_ARRAY.value | JSON_TOKEN.BEGIN_OBJECT.value
 				 | JSON_TOKEN.NUMBER.value | JSON_TOKEN.BOOLEAN.value | JSON_TOKEN.STRING.value | JSON_TOKEN.NULL.value; // Массив чего у нас там?
@@ -728,6 +759,23 @@ public class JSON implements SerializationOld{
 			return null;
 	}
 	/**
+	 * Возвращает массив состоящий из лонгов
+	 * @param key - ключ
+	 * @return - значение, или null, если значение не найдено
+	 */
+	@SuppressWarnings("unchecked")
+	public List<Long> getAL(String key) {
+		var par = parametrs.get(key);
+		if (par instanceof JSON_A) {
+			var ret = new ArrayList<Long>(((JSON_A<Number>) par).value_mo.size());
+			for(var l : ((JSON_A<Number>) par).value_mo)
+				ret.add(l.longValue());
+			return ret;
+		} else {
+			return null;
+		}
+	}
+	/**
 	 * Получает любые векторные значения по ключу
 	 * @param key - ключ
 	 * @return - значение, или null, если значение не найдено
@@ -752,6 +800,7 @@ public class JSON implements SerializationOld{
 	public Integer getI(String key) {
 		Number val = get(key);
 		if(val == null) return null;
+		else if(val instanceof Double) throw new java.lang.ClassCastException("Невозможно тип Double преобразовать к Integer");
 		return val.intValue();
 	}
 	/**
@@ -763,7 +812,20 @@ public class JSON implements SerializationOld{
 	public Long getL(String key) {
 		Number val = get(key);
 		if(val == null) return null;
+		else if(val instanceof Double) throw new java.lang.ClassCastException("Невозможно тип Double преобразовать к Integer");
 		return val.longValue();
+	}
+	/**
+	 * Получает значение по ключу. Заглушка, потому что во
+	 * 	время исполнения не определить запрашиваемый тип
+	 * @param key - ключ
+	 * @return - значение, или null, если значение не найдено
+	 */
+	public Double getD(String key) {
+		Number val = get(key);
+		if(val == null) return null;
+		else if(val instanceof Long) throw new java.lang.ClassCastException("Невозможно тип Long преобразовать к Double");
+		return val.doubleValue();
 	}
 	/**
 	 * Получает значение по ключу
@@ -817,6 +879,7 @@ public class JSON implements SerializationOld{
 	 */
 	public void toBeautifulJSONString(Writer writer) throws IOException {
 		toBeautifulJSONString(writer,"");
+		writer.flush();
 	}
 	/**Внутренний метод для печати объекта. Объект состоит из открывающей табы ну и дальше по тексту*/
 	private void toBeautifulJSONString(Writer writer,String tabs) throws IOException {
@@ -856,4 +919,14 @@ public class JSON implements SerializationOld{
 	public void clear() {
 		parametrs.clear();
 	}
+	/**Возвращает список всех ключей объекта
+	 * @return список со всеми ключами
+	 */
+	public Set<String> getKeys(){
+		return parametrs.keySet();
+	}
+	
+	
+	/**Это список всех параметров объекта. Используется лист пар потому что было важное условие - сохранить порядок данных*/
+	private LinkedHashMap<String,JSON_par> parametrs;
 }
