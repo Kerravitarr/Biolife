@@ -203,6 +203,9 @@ public class BioLife extends JFrame {
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
 	}
 
+	/**Так как мир несколько особенный, то тут создаётся центральная панель, на которой будет рисоваться мир
+	 * @return панель мира
+	 */
 	private Component makeWorldPanel() {
 		scrollPane = new JScrollPane(){
 		    @Override
@@ -216,7 +219,7 @@ public class BioLife extends JFrame {
 			@Override
 			public void componentResized(ComponentEvent e) {
 				
-				var scale = (Math.pow(5,settings.getScale() / 100d));
+				var scale = (Math.pow(5,(settings.getScale()-1) / 100d));
 				var newW = (int) (scrollPane.getWidth() * scale) - 10;
 				var newH = (int) (scrollPane.getHeight() * scale) - 10;
 				var horizont = scrollPane.getHorizontalScrollBar();
@@ -251,13 +254,17 @@ public class BioLife extends JFrame {
 			}
 		});
 		viewport.addChangeListener(e -> {
-			var horizont = scrollPane.getHorizontalScrollBar();
-			var vertical = scrollPane.getVerticalScrollBar();
-			var xMin = Math.max(0, main.Point.rxToX(horizont.getValue()));
-			var xMax = Math.min(Configurations.MAP_CELLS.width - 1,main.Point.rxToX(horizont.getValue() + viewport.getSize().width));
-			var yMin = Math.max(0, main.Point.ryToY(vertical.getValue()));
-			var yMax = Math.min(Configurations.MAP_CELLS.height - 1,main.Point.ryToY(vertical.getValue() +viewport.getSize().height));
-			world.setVisible(new main.Point(xMin, yMin),new main.Point(xMax, yMax));
+			if(settings.getScale() > 1){
+				var horizont = scrollPane.getHorizontalScrollBar();
+				var vertical = scrollPane.getVerticalScrollBar();
+				var xMin = Math.max(0, main.Point.rxToX(horizont.getValue()));
+				var xMax = Math.min(Configurations.MAP_CELLS.width - 1,main.Point.rxToX(horizont.getValue() + viewport.getSize().width));
+				var yMin = Math.max(0, main.Point.ryToY(vertical.getValue()));
+				var yMax = Math.min(Configurations.MAP_CELLS.height - 1,main.Point.ryToY(vertical.getValue() + viewport.getSize().height));
+				world.setVisible(new main.Point(xMin, yMin),new main.Point(xMax, yMax));
+			} else {
+				world.setVisible(new main.Point(0, 0),new main.Point(Configurations.MAP_CELLS.width - 1, Configurations.MAP_CELLS.height - 1));
+			}
 		});
 		settings.setListener(scrollPane);
 		scrollPane.setViewportView(world);

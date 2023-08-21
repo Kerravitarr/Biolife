@@ -322,7 +322,7 @@ public class Settings extends JPanel{
 				World.msTimeout = e;
 		}));
 		
-		listFields.add(scale = new Slider("scale", 1,(int) Configurations.scale, 100, 1, (int) Configurations.scale,null, e -> {
+		listFields.add(scale = new Slider("scale", 1,1, 100, 1, 1,null, e -> {
 			if(listener != null) {
 				listener.dispatchEvent(new ComponentEvent(listener, ComponentEvent.COMPONENT_RESIZED));
 				Configurations.world.dispatchEvent(new ComponentEvent(Configurations.world, ComponentEvent.COMPONENT_RESIZED));
