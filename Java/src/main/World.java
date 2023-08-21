@@ -278,6 +278,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		cellsTask.add(new WorldTask(firstList.toArray(Point[]::new),secondList.toArray(Point[]::new)));
 		
 		recalculate();
+		
+		setVisible(new Point(0,0),new Point(Configurations.MAP_CELLS.width, Configurations.MAP_CELLS.height));
 	}
 	/**
 	 * Один маленький шажок для мира и один огронмый шаг для клеток
