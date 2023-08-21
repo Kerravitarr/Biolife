@@ -1,8 +1,9 @@
 
-@choice /C IC /D I /T 5 /M "I - build and install; C - clean"
+@choice /C ICR /D I /T 5 /M "I - build; C - clean; R - rebuild"
 
 @if %errorlevel%==1 Goto make
 @if %errorlevel%==2 Goto clean
+@if %errorlevel%==3 Goto rebuild
 
 :make
 
@@ -22,6 +23,7 @@ xcopy .\src\resources .\binFiles\resources /e
 @CLS
 @echo =======================================
 @echo Step 1 - OK
+@echo bytecode files in binFiles/
 @echo =======================================
 @echo =======================================
 @echo STEP 2. Creation of program documentation
@@ -30,7 +32,12 @@ javadoc -encoding utf8  -d docsFiles -sourcepath src\start\*.java src\main\*.jav
 rem if errorlevel 1 Goto error - Ой, да кому нужны документы? Что-то да соберётся
 @CLS
 @echo =======================================
+@echo Step 1 - OK
+@echo bytecode files in binFiles/
+@echo =======================================
+@echo =======================================
 @echo Step 2 - OK
+@echo API documents in binFiles/
 @echo =======================================
 @echo =======================================
 @echo STEP 3. Collecting bytecode into an executable
@@ -40,12 +47,15 @@ jar -cvef start.BioLife BioLife.jar -C binFiles .
 @CLS
 @echo =======================================
 @echo Step 1 - OK
+@echo bytecode files in binFiles/
 @echo =======================================
 @echo =======================================
 @echo Step 2 - OK
+@echo API documents in binFiles/
 @echo =======================================
 @echo =======================================
 @echo Step 3 - OK
+@echo BioLife.jar in binFiles/
 @echo =======================================
 
 mkdir .\jarFile\
@@ -57,6 +67,12 @@ rd /s /q .\jarFile\
 rd /s /q .\docsFiles\
 rd /s /q .\binFiles\
 goto end
+
+:rebuild
+rd /s /q .\jarFile\
+rd /s /q .\docsFiles\
+rd /s /q .\binFiles\
+goto make
 
 :error
 @echo !
