@@ -68,6 +68,29 @@ public class AliveCell extends AliveCellProtorype {
     }
 
     /**
+     * Создание полной копии клетки. Без мутаций!
+     * @param cell - на основе кого создаём клетку
+     */
+	protected AliveCell(AliveCell cell){
+        super(cell.getStepCount(), LV_STATUS.LV_ALIVE);
+		setPos(cell.getPos());
+        evolutionNode = cell.evolutionNode;
+        setHealth(cell.getHealth());
+        setMineral(cell.getMineral());
+        DNA_wall = cell.DNA_wall;
+        poisonType = cell.getPosionType();
+        poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
+        mucosa = cell.mucosa;
+		setFoodTank(cell.getFoodTank());//Поделимся жирком и минералами
+		setMineralTank(cell.getMineralTank());
+		hp_by_div = cell.hp_by_div;					//ХП для деления остаётся тем-же
+
+        specialization = new Specialization(cell);
+        direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size() - 1));   // направление, куда повернут новорожденный, генерируется случайно
+        dna = new DNA(cell.getDna());
+        setGeneration(cell.Generation);
+	}
+    /**
      * Деление клетки
      * @param cell - её родитель
      * @param newPos - где она окажется

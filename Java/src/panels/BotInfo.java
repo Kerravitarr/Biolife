@@ -208,17 +208,8 @@ public class BotInfo extends JPanel {
 	private class TextAL extends AliveCell{
 		DNA interDNA = null;
 		private TextAL(AliveCell cell) {
-			super(cell,cell.getPos());
-			evolutionNode.remove();//Мы ложные
-			cell.addHealth(getHealth());//Возвращаем здоровье
-			addHealth(getHealth());
-			cell.setMineral(getMineral()*2);
-			setMineral(getMineral()*2);
-			direction = cell.direction; // И направление
+			super(cell);
 		}
-		
-		@Override
-		protected void mutation(){};
 		/**Выполняет следующую инструкцию */
 		private void next() {
 			var cmd = getDna().get();
@@ -503,67 +494,64 @@ public class BotInfo extends JPanel {
 		pos.setText(cell.getPos().toString());
 		state.setText(getCell().getAlive().toString());
 		age.setText(numberFormat.format(getCell().getAge()));
-		switch (getCell()) {
-			case AliveCell alive -> {
-				if(testCell != null) //Так мы сможем обновлять эту клетку
-					alive = testCell;
-				direction.setText(alive.direction.toSString());
-				{
-					StringBuilder sb = new StringBuilder();
-					sb.append(numberFormat.format((int) alive.getHealth()));
-					if(alive.getFoodTank() > 0)
-						hpTank.setText(numberFormat.format(alive.getFoodTank()));
-					else
-						hpTank.clear();
-					if(alive.getDNA_wall() > 0) {
-						sb.append(" ⌧§");
-						sb.append(alive.getDNA_wall());
-					}
-					hp.setText(sb.toString());
+		if (getCell() instanceof AliveCell alive) {
+			if(testCell != null) //Так мы сможем обновлять эту клетку
+				alive = testCell;
+			direction.setText(alive.direction.toSString());
+			{
+				StringBuilder sb = new StringBuilder();
+				sb.append(numberFormat.format((int) alive.getHealth()));
+				if(alive.getFoodTank() > 0)
+					hpTank.setText(numberFormat.format(alive.getFoodTank()));
+				else
+					hpTank.clear();
+				if(alive.getDNA_wall() > 0) {
+					sb.append(" ⌧§");
+					sb.append(alive.getDNA_wall());
 				}
-				if(alive.getMineral() > 0){
-					StringBuilder sb = new StringBuilder();
-					sb.append(((int) alive.getMineral()));
-					if(alive.getMineralTank() > 0){
-						sb.append(" +");
-						sb.append(alive.getMineralTank());
-					}
-					if(alive.mineralAround() > 0){
-						sb.append(" →← ");
-						sb.append((int) alive.mineralAround());
-					}
-					mp.setText(sb.toString());
-				} else {
-					mp.clear();
+				hp.setText(sb.toString());
+			}
+			if(alive.getMineral() > 0){
+				StringBuilder sb = new StringBuilder();
+				sb.append(((int) alive.getMineral()));
+				if(alive.getMineralTank() > 0){
+					sb.append(" +");
+					sb.append(alive.getMineralTank());
 				}
-				if(alive.getPosionPower() > 0)
-					toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
-				else
-					toxicFIeld.clear();
-				if(alive.getBuoyancy() > 0)
-					buoyancy.setText(String.valueOf(alive.getBuoyancy()));
-				else
-					buoyancy.clear();
-				if(alive.getMucosa() > 0)
-					mucosa.setText(String.valueOf(alive.getMucosa()));
-				else
-					mucosa.clear();
+				if(alive.mineralAround() > 0){
+					sb.append(" →← ");
+					sb.append((int) alive.mineralAround());
+				}
+				mp.setText(sb.toString());
+			} else {
+				mp.clear();
 			}
-			case Poison poison -> {
-				hp.setText(String.valueOf((int)getCell().getHealth()));
-				toxicFIeld.setText(poison.getType().toString());
-			}
-			case Organic org -> {
-				if(org.getPermissionEat())
-					hp.setText("++" + numberFormat.format((int) org.getHealth()));
-				else
-					hp.setText(numberFormat.format((int) org.getHealth()));
-				if(org.getPoison() != Poison.TYPE.UNEQUIPPED)
-					toxicFIeld.setText(org.getPoison() + ":" + org.getPoisonCount());
-				else
-					toxicFIeld.clear();
-			}
-			case default -> hp.setText( numberFormat.format((int) getCell().getHealth()));
+			if(alive.getPosionPower() > 0)
+				toxicFIeld.setText(alive.getPosionType() + ":" + alive.getPosionPower());
+			else
+				toxicFIeld.clear();
+			if(alive.getBuoyancy() > 0)
+				buoyancy.setText(String.valueOf(alive.getBuoyancy()));
+			else
+				buoyancy.clear();
+			if(alive.getMucosa() > 0)
+				mucosa.setText(String.valueOf(alive.getMucosa()));
+			else
+				mucosa.clear();
+		} else if (getCell() instanceof Poison poison){
+			hp.setText(String.valueOf((int)getCell().getHealth()));
+			toxicFIeld.setText(poison.getType().toString());
+		} else if (getCell() instanceof Organic org){
+			if(org.getPermissionEat())
+				hp.setText("++" + numberFormat.format((int) org.getHealth()));
+			else
+				hp.setText(numberFormat.format((int) org.getHealth()));
+			if(org.getPoison() != Poison.TYPE.UNEQUIPPED)
+				toxicFIeld.setText(org.getPoison() + ":" + org.getPoisonCount());
+			else
+				toxicFIeld.clear();
+		} else {
+			hp.setText( numberFormat.format((int) getCell().getHealth()));	
 		}
 		for(var i : scrolFieldList) 
 			i.scrol();

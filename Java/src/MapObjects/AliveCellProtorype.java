@@ -42,19 +42,19 @@ public abstract class AliveCellProtorype extends CellObject{
 	/**Для изменения цвета*/
 	public enum ACTION {
 		/**Съесть органику - красный*/
-		EAT_ORG(255,0,0,1), 
+		EAT_ORG(255,0,0,0.1), 
 		/**Съесть минералы - синий*/
-		EAT_MIN(0,0,255,1), 
+		EAT_MIN(0,0,255,0.1), 
 		/**Фотосинтез - зелёный*/
-		EAT_SUN(0,255,0,1), 
+		EAT_SUN(0,255,0,0.5), 
 		/**Поделиться - оливковый, грязно-жёлтый*/
-		GIVE(128,128,0,0.5), 
+		GIVE(128,128,0,0.05), 
 		/**Принять подачку - морской волны*/
-		RECEIVE(0,128,128,0.5), 
+		RECEIVE(0,128,128,0.05), 
 		/**Сломать мою ДНК - чёрный*/
-		BREAK_DNA(0,0,0,1), 
+		BREAK_DNA(0,0,0,0.1), 
 		/**Ничего не делать - серый*/
-		NOTHING(128,128,128,0.04);
+		NOTHING(128,128,128,0.01);
 		public static final ACTION[] staticValues = ACTION.values();
 		public static int size() {return staticValues.length;}
 		
