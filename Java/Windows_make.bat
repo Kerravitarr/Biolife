@@ -37,7 +37,7 @@ rem if errorlevel 1 Goto error - Ой, да кому нужны документ
 @echo =======================================
 @echo =======================================
 @echo Step 2 - OK
-@echo API documents in binFiles/
+@echo API documents in docsFiles/
 @echo =======================================
 @echo =======================================
 @echo STEP 3. Collecting bytecode into an executable
@@ -51,11 +51,11 @@ jar -cvef start.BioLife BioLife.jar -C binFiles .
 @echo =======================================
 @echo =======================================
 @echo Step 2 - OK
-@echo API documents in binFiles/
+@echo API documents in docsFiles/
 @echo =======================================
 @echo =======================================
 @echo Step 3 - OK
-@echo BioLife.jar in binFiles/
+@echo BioLife.jar in jarFile/
 @echo =======================================
 
 mkdir .\jarFile\
