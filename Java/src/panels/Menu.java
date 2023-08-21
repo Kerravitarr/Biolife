@@ -13,18 +13,29 @@ import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.CellObjectRemoveException;
 import Utils.GifSequenceWriter;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.List;
 import javax.swing.JFileChooser;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import main.Configurations;
-import main.World;
 
 public class Menu extends JPanel {
 	/**Для выбора кнопочек меню*/
-	enum MENU_SELECT{NONE,REMOVE,REMOVE_ALIVE,REMOVE_ORGANIC,REMOVE_POISON,REMOVE_FOSIL}
+	enum MENU_SELECT{NONE,REMOVE}
+	/**Перечисление для удаления только определённых объектов*/
+	enum REMOVE_O{
+		ORGANIC("organic"),POISON("poison"),OWALL("fossil"),BOT("alive"),ALL("all"),
+		;
+		public static final REMOVE_O[] values = REMOVE_O.values();
+		/**Описание пункта меню*/
+		private final String text;
+		private REMOVE_O(String n){text = Configurations.getHProperty(Menu.class,"remove." + n);}
+	}
 	/**Поток автоматического обновления*/
 	private class WorkTask implements Runnable{
 		@Override
@@ -36,6 +47,8 @@ public class Menu extends JPanel {
 	
 	/**Какая из кнопок выбрана*/
 	private MENU_SELECT select = MENU_SELECT.NONE;
+	/**Объекты какого типа удаляем*/
+	private REMOVE_O removeO;
 	/**Кнопка запуска моделирования*/
 	private final JButton start;
 	/*Память на то какая иконка у кнопки старта**/
@@ -63,8 +76,22 @@ public class Menu extends JPanel {
 		add(record = makeButton("record", e-> record()));
 		add(makeButton("graph", e-> Configurations.evolTreeDialog.setVisible(true)));
 		add(makeButton("cursor", e-> toDefault()));
-		add(makeButton("kill", e-> remove()));
-		
+		JButton kill;
+		add(kill = makeButton("kill", e-> remove(REMOVE_O.ALL)));
+		kill.addMouseListener(new MouseAdapter(){
+			@Override
+			public void mouseClicked(MouseEvent evt) {
+				if(evt.getButton() == MouseEvent.BUTTON3){
+					var jPopupMenu1 = new javax.swing.JPopupMenu();
+					for(var i : REMOVE_O.values){
+						var visible = new JMenuItem(i.text);
+						visible.addActionListener( e -> remove(i));
+						jPopupMenu1.add(visible);
+					}
+					jPopupMenu1.show(Menu.this, evt.getX(), evt.getY());
+				}
+			}
+		});
 
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new WorkTask(), 100, 100, TimeUnit.MILLISECONDS);
 	}
@@ -82,9 +109,12 @@ public class Menu extends JPanel {
         button.setFocusable(false);
 		return button;
 	}
-
-	private void remove() {
+	/**Запускает удаление объектов на карте
+	 * @param o тип объектов, подлежащих удалению
+	 */
+	private void remove(REMOVE_O o) {
 		Configurations.world.stop();
+		removeO = o;
 		select = MENU_SELECT.REMOVE;
 		Configurations.world.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
 	}
@@ -129,12 +159,35 @@ public class Menu extends JPanel {
 			switch (select) {
 				case NONE -> {}
 				case REMOVE -> {
-					if (cellObject instanceof AliveCell acell) {
-						try {
-							acell.bot2Organic();
-						}catch (CellObjectRemoveException e) {}
-					} else {
-						cellObject.remove_NE();
+					switch (removeO) {
+						case ALL -> {
+							if (cellObject instanceof AliveCell acell) {
+								try {
+									acell.bot2Organic();
+								}catch (CellObjectRemoveException e) {}
+							} else {
+								cellObject.remove_NE();
+							}
+						}
+						case ORGANIC -> {
+							if (cellObject instanceof MapObjects.Organic)
+								cellObject.remove_NE();
+						}
+						case POISON -> {
+							if (cellObject instanceof MapObjects.Poison)
+								cellObject.remove_NE();
+						}
+						case OWALL -> {
+							if (cellObject instanceof MapObjects.Fossil)
+								cellObject.remove_NE();
+						}
+						case BOT -> {
+							if (cellObject instanceof AliveCell acell) {
+								try {
+									acell.bot2Organic();
+								}catch (CellObjectRemoveException e) {}
+							}
+						}
 					}
 				}
 			}
