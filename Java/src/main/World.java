@@ -233,7 +233,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public void run() {
 		Thread.currentThread().setName("World thread");
  		while (true) {
-			if (isActiv && msTimeout < 2)
+			if ((isActiv || stopStep == step) && msTimeout < 2)
 				step();
 			else
 				Utils.pause(1);
