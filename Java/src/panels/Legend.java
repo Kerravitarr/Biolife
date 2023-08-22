@@ -64,6 +64,33 @@ public class Legend extends JPanel{
 						else 
 							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
 					}
+					case MINERALS -> {
+						maxMP = 0;
+						long summ = 0;
+						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+								CellObject cell = Configurations.world.get(new Point(x, y));
+								if (cell != null && cell instanceof AliveCell acell){
+									summ += acell.getMineral();
+									maxMP = Math.max(maxMP, acell.getMineral());
+								}
+							}
+						}
+						var length = 10;
+						values = new Graph.Value[length + 1];
+						var w = 1.0 / values.length;
+						for (int i = 0; i < values.length - 1; i++) {
+							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, w, Integer.toString((int) (i * maxMP / length)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d*i / (4d*length))));
+						}
+						if(summ < 10000)
+							values[values.length - 1]  = new Graph.Value(1.0, w, String.format("Σ=%d",(long)summ),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+						else if(summ < 10000000)
+							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dk",(long)summ/1000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+						else if(summ < 10000000000L)
+							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dM",(long)summ/1000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+						else 
+							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+					}
 					case YEAR -> {
 						maxAge = 0;
 						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
@@ -122,33 +149,6 @@ public class Legend extends JPanel{
 							text.setLength(0);
 							mGen = nGen;
 						}
-					}
-					case MINERALS -> {
-						maxMP = 0;
-						long summ = 0;
-						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-								CellObject cell = Configurations.world.get(new Point(x, y));
-								if (cell != null && cell instanceof AliveCell acell){
-									summ += acell.getMineral();
-									maxMP = Math.max(maxMP, acell.getMineral());
-								}
-							}
-						}
-						var length = 10;
-						values = new Graph.Value[length + 1];
-						var w = 1.0 / values.length;
-						for (int i = 0; i < values.length - 1; i++) {
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, w, Integer.toString((int) (i * maxMP / length)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d*i / (4d*length))));
-						}
-						if(summ < 10000)
-							values[values.length - 1]  = new Graph.Value(1.0, w, String.format("Σ=%d",(long)summ),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-						else if(summ < 10000000)
-							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dk",(long)summ/1000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-						else if(summ < 10000000000L)
-							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dM",(long)summ/1000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-						else 
-							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
 					}
 					case POISON -> {
 						values = new Graph.Value[10];
