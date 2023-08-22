@@ -403,11 +403,15 @@ public abstract class AliveCellProtorype extends CellObject{
 	public void DNAupdate(int ma, int mc) {
 		setDna(getDna().update(ma, mc));
 	}
-	private double specMax(Specialization.TYPE type) {
-		var spec = specialization.get(type);
+	/**Выдаёт фактическое значение специализации в %
+	 * @param type что за специализация
+	 * @return [0, 1.0] в зависимости от приспособления
+	 */
+	private double specMaxVal(Specialization.TYPE type) {
+		var spec = specialization.get(type).doubleValue();
 		if(type != specialization.main)
 			spec = Math.min(10, spec);
-		return (0.25 * Specialization.MAX_SPECIALIZATION + 0.75 * spec) / Specialization.MAX_SPECIALIZATION;
+		return spec / Specialization.MAX_SPECIALIZATION;
 	}
 	/**
 	 * Возвращает предельное значение параметра, в зависимости от специализации
@@ -415,8 +419,8 @@ public abstract class AliveCellProtorype extends CellObject{
 	 * @param type специализация
 	 * @return [0,maxVal] в зависимости от специализации
 	 */
-	public double specMax(double maxVal, Specialization.TYPE type) {
-		return maxVal * specMax(type);
+	public double specMaxVal(double maxVal, Specialization.TYPE type) {
+		return maxVal * specMaxVal(type);
 	}
 	/**
 	 * Возвращает предельное значение параметра, в зависимости от специализации
@@ -424,48 +428,8 @@ public abstract class AliveCellProtorype extends CellObject{
 	 * @param type специализация
 	 * @return [0,maxVal] в зависимости от специализации
 	 */
-	public int specMax(int maxVal, Specialization.TYPE type) {
-		return (int) (maxVal * specMax(type));
-	}
-	/**
-	 * Возвращает предельное значение параметра, в зависимости от специализации
-	 * @param maxVal истиное максимальное значение
-	 * @param type специализация
-	 * @return [0,maxVal] в зависимости от специализации
-	 */
-	public long specMax(long maxVal, Specialization.TYPE type) {
-		return (long) (maxVal * specMax(type));
-	}
-	
-	public double specNormalize(Specialization.TYPE type){
-		return 0.5 + specMax(type) / 2 ;
-	}
-	/**
-	 * Нормализует значение в зависимости от специализации
-	 * @param val значение 
-	 * @param type специализация
-	 * @return [val/2,val] в зависимости от специализации
-	 */
-	public double specNormalize(double val, Specialization.TYPE type){
-		return val * specNormalize(type);
-	}
-	/**
-	 * Нормализует значение в зависимости от специализации
-	 * @param val значение 
-	 * @param type специализация
-	 * @return [val/2,val] в зависимости от специализации
-	 */
-	public int specNormalize(int val, Specialization.TYPE type){
-		return (int) (val * specNormalize(type));
-	}
-	/**
-	 * Нормализует значение в зависимости от специализации
-	 * @param val значение 
-	 * @param type специализация
-	 * @return [val/2,val] в зависимости от специализации
-	 */
-	public long specNormalize(long val, Specialization.TYPE type){
-		return (long) (val * specNormalize(type));
+	public int specMaxVal(int maxVal, Specialization.TYPE type) {
+		return (int) specMaxVal((double) maxVal,type);
 	}
 	
 	public Specialization getSpecialization() {
@@ -501,8 +465,7 @@ public abstract class AliveCellProtorype extends CellObject{
 	public double mineralAround() {
 		double realLv = getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
 		double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
-		var max = specMax(Configurations.CONCENTRATION_MINERAL, AliveCellProtorype.Specialization.TYPE.MINERALIZATION) * (realLv / dist);
-		return specNormalize(max, Specialization.TYPE.MINERALIZATION);
+		return specMaxVal(Configurations.CONCENTRATION_MINERAL * (realLv / dist), AliveCellProtorype.Specialization.TYPE.MINERALIZATION);
 	}
 	/**
 	 * Возвращает количество солнца вокруг
@@ -512,9 +475,7 @@ public abstract class AliveCellProtorype extends CellObject{
 		//+5 бонусных частичек света при наличии миниралов
         double t = 5 * getMineral() / AliveCell.MAX_MP;	
         //Ну и энергию от солнца не забываем
-		var max = specMax(Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER, Specialization.TYPE.PHOTOSYNTHESIS);
-        double hlt = Math.min(max, Configurations.sun.getEnergy(getPos()) + t);
-		return specNormalize(hlt, Specialization.TYPE.PHOTOSYNTHESIS);
+		return specMaxVal(Configurations.sun.getEnergy(getPos()) + t, Specialization.TYPE.PHOTOSYNTHESIS);
 	}
 
 	/**

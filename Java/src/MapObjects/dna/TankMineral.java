@@ -43,7 +43,7 @@ public class TankMineral extends CommandDo {
 		val = (int) Math.min(cell.getMineral(), val);
 		if(val <= 0) return;
 		//Сколько у нас места осталось
-		val = (int) Math.min(val, cell.specMax(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION) - cell.getMineralTank());
+		val = (int) Math.min(val, cell.specMaxVal(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION) - cell.getMineralTank());
 		if(val <= 0) return;
 		cell.addMineralTank(val);
 		cell.addMineral(-val);
@@ -75,7 +75,7 @@ public class TankMineral extends CommandDo {
 			//Сколько можем запасти
 			val = (int) Math.min(cell.getMineral(), val);
 			//Сколько у нас места осталось
-			val = Math.min(val, cell.specMax(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION)- cell.getMineralTank());
+			val = Math.min(val, cell.specMaxVal(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION)- cell.getMineralTank());
 			val = Math.max(0, val);
 			return valueFormatAdd.format(val, cell.getMineralTank() + val);
 		} else {

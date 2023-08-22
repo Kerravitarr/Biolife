@@ -87,11 +87,11 @@ public abstract class CellObject {
 	
     /**Цвет бота зависит от того, что он делает*/
 	public Color color_DO;
-    /**Позиция органики*/
+    /**Позиция объекта*/
 	private Point pos = new Point(0,0);
-    //Счётчик, показывает ходил бот в этот ход или нет
+    //Счётчик, показывает ходил объект в этот ход или нет
 	protected long stepCount = -1;
-    /**Возраст бота*/
+    /**Возраст объекта*/
     private long years = 0;
 	
 	public CellObject(long stepCount,LV_STATUS alive){

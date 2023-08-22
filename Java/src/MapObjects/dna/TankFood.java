@@ -44,7 +44,7 @@ public class TankFood extends CommandDo {
 		val = (int) Math.min(cell.getHealth() - 2 * AliveCellProtorype.HP_PER_STEP, val);
 		if(val <= 0) return;
 		//Сколько у нас места осталось
-		val = Math.min(val, cell.specMax(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION) - cell.getFoodTank());
+		val = Math.min(val, cell.specMaxVal(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION) - cell.getFoodTank());
 		if(val <= 0) return;
 		cell.addFoodTank(val);
 		cell.addHealth(-val);
@@ -76,7 +76,7 @@ public class TankFood extends CommandDo {
 			//Сколько можем запасти
 			val = (int) Math.min(cell.getHealth() - 2 * AliveCellProtorype.HP_PER_STEP, val);
 			//Сколько у нас места осталось
-			val = Math.min(val, cell.specMax(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION)- cell.getFoodTank());
+			val = Math.min(val, cell.specMaxVal(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION)- cell.getFoodTank());
 			val = Math.max(0, val);
 			return valueFormatAdd.format(HP_COST + val, cell.getFoodTank() + val);
 		} else {

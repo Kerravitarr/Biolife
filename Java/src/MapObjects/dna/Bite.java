@@ -54,51 +54,73 @@ public class Bite extends CommandDoInterupted {
 				if(target.getPoison() != Poison.TYPE.UNEQUIPPED) { //Если еда ядовита - то мы получаем урон
 					cell.toxinDamage(target.getPoison(),target.getPoisonCount());
 				}
-				var maxF = cell.specMax(AliveCellProtorype.MAX_HP, AliveCellProtorype.Specialization.TYPE.DIGESTION);
-				var hpInOrg = Math.min(maxF, target.getHealth()) / 4;	
-				if(target.getPoison() == Poison.TYPE.YELLOW){
-					//Обработанная жёлтым ядом пища - сытнее
-					cell.addHealth(hpInOrg);    //здоровье увеличилось
-					cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
-				} else {
-					cell.addHealth(hpInOrg / 2);    //здоровье увеличилось
-					cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg / 2);
-				}
-				target.addHealth(-hpInOrg); //Одну четверть отдали
+				
+				var hpInOrg = Math.min(target.getHealth() / 4, AliveCellProtorype.MAX_HP / 2); //Сколько можем съесть
+				target.addHealth(-hpInOrg); //Укусили
+				if(target.getPoison() != Poison.TYPE.YELLOW)
+					hpInOrg /= 2; //Если яд не жёлтый, то пища не такая вкусная
+				hpInOrg = cell.specMaxVal(hpInOrg, AliveCellProtorype.Specialization.TYPE.DIGESTION); //Сколько из съеденного получили энергии
+				cell.addHealth(hpInOrg);    //здоровье увеличилось
+				cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
 			}
 			case ENEMY, FRIEND -> {
 				//--------- дошли до сюда, значит впереди живой бот -------------------
 				Point point = nextPoint(cell,direction);
 				AliveCell target = (AliveCell) Configurations.world.get(point);
-	
-				var min0 = cell.getMineral();  // определим количество минералов у нас
-				var min1 = target.getMineral() / 2;  // определим количество минералов у цели,
-				//но так как мы только кусаем - то и прорываться нам не через весь панцирь
-				var hl = target.getHealth();  // определим энергию у потенциального кусиха
-				var maxF = cell.specMax(AliveCellProtorype.MAX_HP, AliveCellProtorype.Specialization.TYPE.ASSASSINATION);//Сила укуса. Ооочень сильные могут прокусить даже хороший панцирь
-				//Если у цели минералов не слишком много, а у нас жизней сильно меньше - можем его кусить
-				var minMax = cell.specMax(AliveCellProtorype.MAX_MP, AliveCellProtorype.Specialization.TYPE.ASSASSINATION);
-				if (Math.min(minMax, min0)* 2 >= (min1/2) && (cell.getHealth()/2 < hl)) {
-					cell.setMineral(min0 - min1/2); // количество минералов у бота уменьшается на количество минералов у жертвы
-					// типа, стесал свои зубы о панцирь жертвы
-					var cl = Math.min(maxF, target.getHealth()) / 4;	   // количество энергии у бота прибавляется лишь чуть чуть, мы же кусили
-					cell.addHealth(cl);
-					target.addHealth(-cl);
-					cell.color(AliveCell.ACTION.EAT_ORG,cl);
-				} else {
-					//если у жертвы минералов больше, то нам его просто не прокусить
-					cell.setMineral(cell.getMineral()/2);  //Ну мы же попробовали
+				
+				var ourMP = cell.getMineral();  // определим количество минералов у нас
+				var tarMP = target.getMineral();  // определим количество минералов у потенциального обеда
+				final var ourHP = cell.getHealth();  // определим наше здоровье
+				var tarHP = target.getHealth();  // определим размер обеда
+				if(ourMP > 0){
+					var maxF = cell.specMaxVal(ourMP, AliveCellProtorype.Specialization.TYPE.ASSASSINATION);//Определим силу укуса нашими зубиками. То есть - сколько мы можем пробить минералов панциря
+					maxF /= 4; //Мы только попробуем, не в полную силу
+					if(maxF >= tarMP){
+						cell.addMineral(tarMP);		 // количество минералов у бота уменьшается на количество минералов у жертвы. Стесали зубики
+						//Свежатинку не надо переваривать. Мы её едим прям так, как есть.
+						tarHP /= 4; //Мы лишь кусаем, так что берём только 1/4 всех жизней
+						cell.addHealth(tarHP);
+						cell.color(AliveCell.ACTION.EAT_ORG,tarHP);
+						target.addHealth( -tarHP);
+					} else {
+						//Не смогли прокусить панцирь. Животинка нас уделала.
+						cell.addMineral(-(long)maxF);
+						target.addMineral(-(long)maxF); //Но зубики-то постачивала
+						//Но раз мы кусаем, то отваливаемся. Не пробуем физическую силу
+						//tarMP = target.getMineral();
+						//ourMP = 0;
+					}
+				} 
+				if(ourMP <= 0){
+					//Мы без зубиков. Будем пробовать свою мускульную силу
+					var maxF = cell.specMaxVal(ourHP, AliveCellProtorype.Specialization.TYPE.ASSASSINATION);//Определим силу укуса нашими зубиками. То есть - сколько мы можем пробить минералов панциря
+					maxF /= 4; //Мы только попробуем, не в полную силу
+					if(maxF >= (tarMP * 2 + tarHP)){
+						//Ну хоть так мы победили! Но какой ценой?
+						if(tarMP > 0)
+							cell.addHealth(-(tarMP * 2));
+						
+						tarHP /= 4; //Мы лишь кусаем, так что берём только 1/4 всех жизней
+						cell.addHealth(tarHP);
+						cell.color(AliveCell.ACTION.EAT_ORG,tarHP);
+						target.addHealth( -tarHP);
+					} else {
+						//У нас достойный противник, но, раз мы только кусили, то и живы остались
+						cell.addHealth(-(long)maxF); 
+						return;
+					}
 				}
 			}
 			case OWALL -> {
 				//Кусь за стену
 				Point point = nextPoint(cell,direction);
 				Fossil target = (Fossil) Configurations.world.get(point);
-				var maxF = cell.specMax(AliveCellProtorype.MAX_HP, AliveCellProtorype.Specialization.TYPE.ASSASSINATION);//Сила укуса. Ооочень сильные могут прокусить даже хороший панцирь
-				target.addHealth(-Math.min(maxF, cell.getHealth()) / 20);	//Стена оооочень крепкая
-				if(target.getHealth() < 0) {
+				var maxF = cell.specMaxVal(cell.getMineral() * 2 + cell.getHealth(), AliveCellProtorype.Specialization.TYPE.ASSASSINATION);//Сила укуса. Ооочень сильные могут прокусить даже хороший панцирь
+				maxF /= 20;//Стена оооочень крепкая, а мы ещё и работаем в четверть силы. однако эффективность ниже только в половину
+				if(maxF > target.getHealth())
 					target.remove_NE();
-				}
+				else
+					target.addHealth(-maxF);
 			}
 			case CLEAN, NOT_POISON, POISON, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
