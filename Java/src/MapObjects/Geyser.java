@@ -20,42 +20,23 @@ import main.Point.DIRECTION;
  *
  */
 public class Geyser {
-
-    /**
-     * Ширина половины гейзера
-     */
-    public int width;
-    /**
-     * Середина гейзера
-     */
-    public int center;
-    /**
-     * Каждые сколько тиков клетку в центре будет сдувать
-     */
-    public int calm;
-    /**
-     * Направление гейзера
-     */
-    DIRECTION dir;
-    /**
-     * Фоновое изображение Гейзера
-     */
-    private ColorRec[] fon = new ColorRec[2];
-    /**
-     * Холодный гейзер в центре
-     */
+    /**Ширина половины гейзера*/
+    public final int width;
+    /** Середина гейзера */
+    public final int center;
+    /**Каждые сколько тиков клетку в центре будет сдувать */
+    public final int calm;
+    /**Направление гейзера*/
+    private final DIRECTION dir;
+    /**Фоновое изображение Гейзера */
+    private final ColorRec[] fon = new ColorRec[2];
+    /**Холодный гейзер в центре*/
     private final static Color coldColor1 = new Color(0, 0, 205, 100);
-    /**
-     * Холодный гейзер скраю
-     */
+    /**Холодный гейзер скраю */
     private final static Color coldColor2 = new Color(0, 0, 205, 0);
-    /**
-     * Горячий гейзер в центре
-     */
+    /**Горячий гейзер в центре */
     private final static Color hotColor1 = new Color(220, 20, 60, 100);
-    /**
-     * Горячий гейзер скраю
-     */
+    /**Горячий гейзер скраю */
     private final static Color hotColor2 = new Color(220, 20, 60, 0);
 
     /**
