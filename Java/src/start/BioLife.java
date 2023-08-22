@@ -241,19 +241,15 @@ public class BioLife extends JFrame {
 				var Zw = ((double) newW) / world.getWidth();
 				var Zh = ((double) newH) / world.getHeight();
 				
-				Point pos = viewport.getViewPosition();
-				int newX = (int) ((Zw - 1d) * (lastP.x - pos.x) + Zw * lastP.x);
-				int newY = (int) ((Zh - 1d) * (lastP.y - pos.y) + Zh * lastP.y);
-				//int newX = (int) (lastP.x * newW / world.getWidth() - viewport.getWidth()/2);
-				//int newY = (int) (lastP.y * newH / world.getHeight() - viewport.getHeight()/2);
-				
 				world.setPreferredSize(new Dimension(newW,newH));
-				viewport.setViewPosition(new Point(newX, newY));
-				world.revalidate();
-				//Configurations.TIME_OUT_POOL.schedule(() -> {horizont.setValue(newX);vertical.setValue(newY);}, 20, TimeUnit.MILLISECONDS);
+
+				int newX = (int) ((lastP.x *= Zw) - viewport.getWidth()/2);
+				int newY = (int) ((lastP.y *= Zh) - viewport.getHeight()/2);
+				EventQueue.invokeLater(() -> viewport.setViewPosition(new Point(Math.max(0, newX), Math.max(0,newY))));
 			}
 		});
-		viewport.addChangeListener(e -> {
+		
+		viewport.addChangeListener(e -> EventQueue.invokeLater(() ->{
 			if(settings.getScale() > 1){
 				var horizont = scrollPane.getHorizontalScrollBar();
 				var vertical = scrollPane.getVerticalScrollBar();
@@ -265,7 +261,7 @@ public class BioLife extends JFrame {
 			} else {
 				world.setVisible(new main.Point(0, 0),new main.Point(Configurations.MAP_CELLS.width - 1, Configurations.MAP_CELLS.height - 1));
 			}
-		});
+		}));
 		settings.setListener(scrollPane);
 		scrollPane.setViewportView(world);
 		var adapter = new MouseMoveAdapter();
@@ -334,7 +330,7 @@ public class BioLife extends JFrame {
 	}
 	private void keyPressed(KeyEvent e) {
 		//System.out.println(e);
-		switch (e.getKeyCode()) {
+       		switch (e.getKeyCode()) {
 			case KeyEvent.VK_SPACE -> {
 				if (Configurations.world.isActiv())
 					Configurations.world.stop();
@@ -351,7 +347,7 @@ public class BioLife extends JFrame {
 				Configurations.TIME_OUT_POOL.execute(() -> {
 					CellObject cell = botInfo.getCell();
 					if (cell != null)
-						cell.step(Math.round(Math.random() * 1000));
+						new Thread(() -> cell.step(Math.round(Math.random() * 1000))).start();
 				});
 			case KeyEvent.VK_E ->
 				Configurations.TIME_OUT_POOL.execute(() -> {
