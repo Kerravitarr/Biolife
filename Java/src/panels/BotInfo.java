@@ -41,7 +41,9 @@ import Utils.MyMessageFormat;
 import Utils.SameStepCounter;
 import Utils.Utils;
 import java.awt.Graphics;
+import java.util.Map;
 import main.Configurations;
+import main.Point;
 
 public class BotInfo extends JPanel {
 	
@@ -207,8 +209,10 @@ public class BotInfo extends JPanel {
 	/**Клетка-затычка*/
 	private class TextAL extends AliveCell{
 		DNA interDNA = null;
+		private final Map<Point,AliveCell> friends;
 		private TextAL(AliveCell cell) {
 			super(cell);
+			friends = cell.getFriends();
 		}
 		/**Выполняет следующую инструкцию */
 		private void next() {
@@ -232,6 +236,8 @@ public class BotInfo extends JPanel {
 			if(interDNA == null) return super.getDna();
 			else return interDNA;
 		}
+		@Override
+		public Map<Point,AliveCell> getFriends(){return friends;}
 	}
 	
 	private TextPair photos;
