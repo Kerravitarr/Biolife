@@ -34,6 +34,8 @@ public class ViralLysis extends CommandDo {
         if (n == null)          	// если бот окружен, то он в муках погибает
         	return ;//Ну что-ж, не в этот раз
 		cell.addHealth(-HP_FOR_DOUBLE);      // бот затрачивает энергии на создание копии
+		if(HP == 0)
+			return; //Что нам толку создавать пустые клетки?
 		
 		var dnaChild = new DNA(length_DNA);
 		var dnaPerrent = cell.getDna();
@@ -60,10 +62,10 @@ public class ViralLysis extends CommandDo {
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
 			return switch (numParam) {
-				case 0 -> param0Format.format(param(dna,0, dna.size));
-				case 1 -> param1Format.format(param(dna,0));
-				case 2 -> param2Format.format(param(dna,0));
-				case 3 -> param3Format.format(param(dna,0,AliveCellProtorype.MAX_HP));
+				case 0 -> param0Format.format(param(dna,numParam, dna.size));
+				case 1 -> param1Format.format(param(dna,numParam));
+				case 2 -> param2Format.format(param(dna,numParam));
+				case 3 -> param3Format.format(param(dna,numParam,AliveCellProtorype.MAX_HP));
 				default-> super.getParam(cell, numParam, dna);
 			};
 	}
