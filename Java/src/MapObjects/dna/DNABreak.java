@@ -82,11 +82,8 @@ public class DNABreak extends CommandDo {
 					int cmdStart = param(cell,0); // После какого гена мы устраиваем подлянку
 					int length_DNA = param(cell,1, cell.getDna().size - 1) + 1; // Сколько вставляем
 					int pref = param(cell,2); //Сколько генов отступаем назад
-					int[] cmds = new int[length_DNA];
 					var dna = cell.getDna();
-					for(int i = 0 ; i < length_DNA ; i++){
-						cmds[i] = dna.get(0, dna.getPC() - pref + i);
-					}
+					final var cmds = dna.subDNA(- pref, false, Math.min(length_DNA,bot.getDna().size));
 					if(isInsert)
 						insertCmds(cell,bot, true,cmdStart,cmds);
 					else
@@ -110,7 +107,7 @@ public class DNABreak extends CommandDo {
 	 */
 	public static int findPos(DNA dna, int cmd){
 		for (var i = 0; i < dna.size; i++) {
-			if (dna.get(dna.getPC(), i) == cmd) {
+			if (dna.get(i, false) == cmd) {
 				return (dna.getPC() + i + 1) % dna.size;
 			}
 		}
@@ -148,10 +145,7 @@ public class DNABreak extends CommandDo {
 			var dna = target.getDna();
 			var index = findPos(dna,cmdStart);
 			if(index == -1 || dna.size + comands.length >= AliveCellProtorype.MAX_MINDE_SIZE) return;
-			dna = dna.doubling(index, comands.length);
-			for(var iCmd = 0 ; iCmd < comands.length ; iCmd++)
-				dna.criticalUpdate(index - dna.getPC() + iCmd, comands[iCmd]);
-			target.setDna(dna);
+			target.setDna(dna.insert(index, true, comands));
 			updateGeneration(target,who);
 		}
 	}
@@ -181,10 +175,7 @@ public class DNABreak extends CommandDo {
 			var dna = target.getDna();
 			var index = findPos(dna,cmdStart);
 			if(index == -1) return;
-			dna = dna.update(index - dna.getPC(), comands[0]); //Создаёт копию ДНК
-			for(var iCmd = 0 ; iCmd < comands.length ; iCmd++)
-				dna.criticalUpdate(index - dna.getPC() + iCmd, comands[iCmd]);
-			target.setDna(dna);
+			target.setDna(dna.update(index, true, comands));
 			updateGeneration(target,who);
 		}
 	}

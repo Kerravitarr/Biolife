@@ -39,9 +39,7 @@ public class ViralLysis extends CommandDo {
 		
 		var dnaChild = new DNA(length_DNA);
 		var dnaPerrent = cell.getDna();
-		for(var i = 0 ; i < length_DNA ; i++){
-			dnaChild.criticalUpdate(i, dnaPerrent.get(0, dnaPerrent.getPC() - pref + i));
-		}
+		dnaChild.update(0, true, dnaPerrent.subDNA(-pref, false, length_DNA));
 		dnaChild.next(PC);
 		if (Configurations.world.test(n).isPosion) {
 			Poison posion = (Poison) Configurations.world.get(n);
