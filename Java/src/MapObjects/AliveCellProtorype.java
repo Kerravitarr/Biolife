@@ -46,18 +46,23 @@ public abstract class AliveCellProtorype extends CellObject{
 		/**Съесть минералы - синий*/
 		EAT_MIN(0,0,255,0.1), 
 		/**Фотосинтез - зелёный*/
-		EAT_SUN(0,255,0,0.5), 
+		EAT_SUN(0,255,0,0.1), 
 		/**Поделиться - оливковый, грязно-жёлтый*/
-		GIVE(128,128,0,0.05), 
+		GIVE(128,128,0,0.1), 
 		/**Принять подачку - морской волны*/
-		RECEIVE(0,128,128,0.05), 
+		RECEIVE(0,128,128,0.1), 
 		/**Сломать мою ДНК - чёрный*/
 		BREAK_DNA(0,0,0,0.1), 
 		/**Ничего не делать - серый*/
 		NOTHING(128,128,128,0.01);
 		public static final ACTION[] staticValues = ACTION.values();
 		public static int size() {return staticValues.length;}
-		
+		/**Описание цвета действия
+		 * @param rc красный компонент
+		 * @param gc зелёный компонент
+		 * @param bc синий компонент
+		 * @param power сколько +1hp прибавляет к цвету
+		 */
 		ACTION(int rc, int gc, int bc, double power) {r=rc;g=gc;b=bc;p=power;description = Configurations.getProperty(getClass(), super.name());}
 		public final int r;
 		public final int g;
@@ -118,7 +123,7 @@ public abstract class AliveCellProtorype extends CellObject{
 			public final float color;
 		}
 		/**Максимальная специализация*/
-		private static final int MAX_SPECIALIZATION = 100;
+		public static final int MAX_SPECIALIZATION = 100;
 		/**Ведущая специализация*/
 		private TYPE main = TYPE.PHOTOSYNTHESIS;
 		
@@ -399,17 +404,19 @@ public abstract class AliveCellProtorype extends CellObject{
 	public void setDNA_wall(int DNA_wall) {
 		this.DNA_wall=DNA_wall;
 	}
-
-	public void DNAupdate(int ma, int mc) {
-		setDna(getDna().update(ma, mc));
+	/**Возвращает основную специализацию клетки
+	 * @return основная специализация
+	 */
+	public Specialization.TYPE getMainSpec(){
+		return specialization.main;
 	}
 	/**Выдаёт фактическое значение специализации в %
 	 * @param type что за специализация
 	 * @return [0, 1.0] в зависимости от приспособления
 	 */
-	private double specMaxVal(Specialization.TYPE type) {
+	public double specMaxVal(Specialization.TYPE type) {
 		var spec = specialization.get(type).doubleValue();
-		if(type != specialization.main)
+		if(type != getMainSpec())
 			spec = Math.min(10, spec);
 		return spec / Specialization.MAX_SPECIALIZATION;
 	}
@@ -420,7 +427,8 @@ public abstract class AliveCellProtorype extends CellObject{
 	 * @return [0,maxVal] в зависимости от специализации
 	 */
 	public double specMaxVal(double maxVal, Specialization.TYPE type) {
-		return maxVal * specMaxVal(type);
+		if(maxVal == 0)	return 0d;
+		else			return maxVal * specMaxVal(type);
 	}
 	/**
 	 * Возвращает предельное значение параметра, в зависимости от специализации

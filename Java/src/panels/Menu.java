@@ -13,6 +13,7 @@ import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.CellObjectRemoveException;
 import Utils.GifSequenceWriter;
+import java.awt.EventQueue;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
@@ -104,7 +105,7 @@ public class Menu extends JPanel {
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setContentAreaFilled(false);
-        button.addActionListener(al);
+        button.addActionListener(e -> EventQueue.invokeLater(() -> al.actionPerformed(e)));
         button.setToolTipText(Configurations.getHProperty(Menu.class,name));
         button.setFocusable(false);
 		return button;

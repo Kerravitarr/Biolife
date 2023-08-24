@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
+import static MapObjects.AliveCellProtorype.Specialization.TYPE.ASSASSINATION;
 import MapObjects.CellObject.OBJECT;
 import static MapObjects.CellObject.OBJECT.FRIEND;
 import static MapObjects.CellObject.OBJECT.NOT_POISON;
@@ -25,6 +26,8 @@ import main.Point.DIRECTION;
 public class Bite extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
+	/**Бонус, от использования стратегии*/
+	private final int BONUS = 2;
 	
 	/**
 	 * Инициализирует функцию куся
@@ -49,19 +52,25 @@ public class Bite extends CommandDoInterupted {
 		var see = cell.see(direction);
 		switch (see) {
 			case ORGANIC ->  {
-				Point point = nextPoint(cell,direction);
-				Organic target = (Organic) Configurations.world.get(point);
+				final var point = nextPoint(cell,direction);
+				final var target = (Organic) Configurations.world.get(point);
 				if(target.getPoison() != Poison.TYPE.UNEQUIPPED) { //Если еда ядовита - то мы получаем урон
 					cell.toxinDamage(target.getPoison(),target.getPoisonCount());
 				}
-				
-				var hpInOrg = Math.min(target.getHealth() / 4, AliveCellProtorype.MAX_HP / 2); //Сколько можем съесть
+				var hpInOrg = Math.min(target.getHealth() / 4, ((AliveCell.MAX_HP - cell.getHealth())) / 2); //Сколько можем съесть
 				target.addHealth(-hpInOrg); //Укусили
-				if(target.getPoison() != Poison.TYPE.YELLOW)
-					hpInOrg /= 2; //Если яд не жёлтый, то пища не такая вкусная
-				hpInOrg = cell.specMaxVal(hpInOrg, AliveCellProtorype.Specialization.TYPE.DIGESTION); //Сколько из съеденного получили энергии
-				cell.addHealth(hpInOrg);    //здоровье увеличилось
-				cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
+				if(cell.getMainSpec() == AliveCellProtorype.Specialization.TYPE.DIGESTION){
+					//Мы умеем переваривать органику - мы перевариваем органику!
+					if(target.getPoison() != Poison.TYPE.YELLOW)
+						hpInOrg /= 2; //Если яд не жёлтый, то пища не такая вкусная
+					hpInOrg = cell.specMaxVal(hpInOrg, AliveCellProtorype.Specialization.TYPE.DIGESTION); //Сколько из съеденного получили энергии
+					cell.addHealth(hpInOrg);    //здоровье увеличилось
+					cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
+				} else {
+					//Мы плохо перевариваем органику, а значит мы ей травимся
+					hpInOrg = hpInOrg - cell.specMaxVal(hpInOrg, AliveCellProtorype.Specialization.TYPE.DIGESTION); //Какая часть из съеденного пошла не в то горло?
+					cell.addHealth(-hpInOrg);
+				}
 			}
 			case ENEMY, FRIEND -> {
 				//--------- дошли до сюда, значит впереди живой бот -------------------
@@ -73,40 +82,46 @@ public class Bite extends CommandDoInterupted {
 				final var ourHP = cell.getHealth();  // определим наше здоровье
 				var tarHP = target.getHealth();  // определим размер обеда
 				if(ourMP > 0){
-					var maxF = cell.specMaxVal(ourMP, AliveCellProtorype.Specialization.TYPE.ASSASSINATION);//Определим силу укуса нашими зубиками. То есть - сколько мы можем пробить минералов панциря
-					maxF /= 4; //Мы только попробуем, не в полную силу
-					if(maxF >= tarMP){
-						cell.addMineral(tarMP);		 // количество минералов у бота уменьшается на количество минералов у жертвы. Стесали зубики
-						//Свежатинку не надо переваривать. Мы её едим прям так, как есть.
-						tarHP /= 4; //Мы лишь кусаем, так что берём только 1/4 всех жизней
+					//Раунд 1, когда боты мерюются минералами
+					var ourF = cell.specMaxVal(ourMP * BONUS, ASSASSINATION);		//Определим силу укуса нашими зубиками. То есть - сколько мы можем пробить минералов панциря
+					var tarF = target.specMaxVal(tarMP / BONUS, ASSASSINATION);	//Определим на сколько другой противник умелый и сможет себя защитить
+					if(ourF >= tarF){
+						//Мы прокусили панцирь, теперь можем попить жизенных соков
+						if(ourMP > tarF)
+							cell.addMineral((long) -tarF);		 // количество минералов у бота уменьшается на количество минералов у жертвы. Стесали зубики
+						else
+							cell.setMineral(0);
+						//А теперь выпьем часть жизненных соков
+						tarHP /= 4;
 						cell.addHealth(tarHP);
 						cell.color(AliveCell.ACTION.EAT_ORG,tarHP);
 						target.addHealth( -tarHP);
 					} else {
-						//Не смогли прокусить панцирь. Животинка нас уделала.
-						cell.addMineral(-(long)maxF);
-						target.addMineral(-(long)maxF); //Но зубики-то постачивала
-						//Но раз мы кусаем, то отваливаемся. Не пробуем физическую силу
-						//tarMP = target.getMineral();
-						//ourMP = 0;
+						//Не смогли прокусить панцирь. Животинка сама нас победила
+						cell.setMineral(0);
+						target.addMineral(-(long)ourF); //И только зубки сточила
+						return;
 					}
 				} 
 				if(ourMP <= 0){
 					//Мы без зубиков. Будем пробовать свою мускульную силу
-					var maxF = cell.specMaxVal(ourHP, AliveCellProtorype.Specialization.TYPE.ASSASSINATION);//Определим силу укуса нашими зубиками. То есть - сколько мы можем пробить минералов панциря
-					maxF /= 4; //Мы только попробуем, не в полную силу
-					if(maxF >= (tarMP * 2 + tarHP)){
+					var maxF = cell.specMaxVal(ourHP * BONUS, ASSASSINATION);//Определим силу укуса нашими зубиками. То есть - сколько мы можем пробить минералов панциря
+					var tarF = target.specMaxVal((tarMP * 2 + target.getHealth()) / BONUS, ASSASSINATION);	//Определим на сколько другой противник умелый и сможет себя защитить
+					if(maxF >= tarF){
 						//Ну хоть так мы победили! Но какой ценой?
-						if(tarMP > 0)
-							cell.addHealth(-(tarMP * 2));
-						
-						tarHP /= 4; //Мы лишь кусаем, так что берём только 1/4 всех жизней
+						if(tarMP > 0){
+							if(ourHP > tarF)	cell.addHealth((long) -tarF);
+							else				cell.setHealth(1);
+						}
+						//А теперь выпьем часть жизненных соков
+						tarHP /= 4;
 						cell.addHealth(tarHP);
 						cell.color(AliveCell.ACTION.EAT_ORG,tarHP);
 						target.addHealth( -tarHP);
 					} else {
-						//У нас достойный противник, но, раз мы только кусили, то и живы остались
-						cell.addHealth(-(long)maxF); 
+						//У нас достойный противник
+						if(ourHP > tarF)	cell.addHealth((long) -tarF);
+						else				cell.setHealth(1);
 						return;
 					}
 				}
