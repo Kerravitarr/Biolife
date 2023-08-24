@@ -31,8 +31,11 @@ import javax.swing.text.PlainDocument;
 import Utils.JSON;
 import Utils.JsonSave;
 import Utils.MyMessageFormat;
+import java.text.MessageFormat;
+import java.util.concurrent.TimeUnit;
 import main.Configurations;
 import main.World;
+import start.BioLife;
 
 public class Settings extends JPanel{
 	
@@ -362,12 +365,14 @@ public class Settings extends JPanel{
 	 * Функция загрузки - предложит окно и всё сама сделает
 	 */
 	public void load() {
-		Configurations.world.stop();
-		var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
 		try{
+			Configurations.world.stop();
+			var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
 			var filename = js.load();
-			while(Configurations.world.isActiv()) //На всякий случай убеждаемся, что мир прям точно встал!
+			while(Configurations.world.isActiv()){ //На всякий случай убеждаемся, что мир прям точно встал!
+				Configurations.world.stop();
 				Utils.Utils.pause(1);
+			}
 			if(filename == null) return;
 			else if(filename.contains(".zbmap")){//Новый стандарт
 				js.load(filename, new Configurations(), Configurations.tree, Configurations.world.serelization());
@@ -381,49 +386,64 @@ public class Settings extends JPanel{
 			construct();
 			repaint();
 			revalidate();
-		} catch (java.lang.RuntimeException e1) {
+		} catch (java.lang.Exception e1) {
 			e1.printStackTrace();
-			JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
+			var error = MessageFormat.format(Configurations.getHProperty(Settings.class,"error.load"),e1.getMessage());
+			JOptionPane.showMessageDialog(null,error,	"BioLife", JOptionPane.ERROR_MESSAGE);
 		} 
 	}
 	/**
 	 * Функция сохранения - предложит окно и всё сама сделает
 	 */
 	public void save() {
-		boolean oldStateWorld = Configurations.world.isActiv();				
-		Configurations.world.stop();
-		while(Configurations.world.isActiv())
-			Utils.Utils.pause(1);
-		
-		if(lastSaveCount != Configurations.world.step) {
-			var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
-			if(js.save(true, new Configurations(), Configurations.tree, Configurations.world.serelization()))
-				lastSaveCount = Configurations.world.step;
-		}
-		if (oldStateWorld)
-			Configurations.world.start();
-		else
-			Configurations.world.stop();
+		try{
+			boolean oldStateWorld = Configurations.world.isActiv();	
+			while(Configurations.world.isActiv()){ //На всякий случай убеждаемся, что мир прям точно встал!
+				Configurations.world.stop();
+				Utils.Utils.pause(1);
+			}
+
+			if(lastSaveCount != Configurations.world.step) {
+				var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
+				if(js.save(true, new Configurations(), Configurations.tree, Configurations.world.serelization()))
+					lastSaveCount = Configurations.world.step;
+			}
+			if (oldStateWorld)
+				Configurations.world.start();
+			else
+				Configurations.world.stop();
+		} catch (java.lang.Exception e1) {
+			e1.printStackTrace();
+			var error = MessageFormat.format(Configurations.getHProperty(Settings.class,"error.save"),e1.getMessage());
+			JOptionPane.showMessageDialog(null,error,	"BioLife", JOptionPane.ERROR_MESSAGE);
+		} 
 	}
 	/**
 	 * Функция сохранения - сохранит мир в определённый файл
 	 * @param filePatch - путь, куда сохранить мир
 	 */
 	public void save(String filePatch) {
-		boolean oldStateWorld = Configurations.world.isActiv();				
-		Configurations.world.stop();
-		while(Configurations.world.isActiv())
-			Utils.Utils.pause(1);
-		
-		if(lastSaveCount != Configurations.world.step) {
-			var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
-			if(js.save(filePatch,true, new Configurations(), Configurations.tree, Configurations.world.serelization()))
-				lastSaveCount = Configurations.world.step;
-		}
-		if (oldStateWorld)
-			Configurations.world.start();
-		else
-			Configurations.world.stop();
+		try{
+			boolean oldStateWorld = Configurations.world.isActiv();		
+			while(Configurations.world.isActiv()){ //На всякий случай убеждаемся, что мир прям точно встал!
+				Configurations.world.stop();
+				Utils.Utils.pause(1);
+			}
+
+			if(lastSaveCount != Configurations.world.step) {
+				var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
+				if(js.save(filePatch,true, new Configurations(), Configurations.tree, Configurations.world.serelization()))
+					lastSaveCount = Configurations.world.step;
+			}
+			if (oldStateWorld)
+				Configurations.world.start();
+			else
+				Configurations.world.stop();
+		} catch (java.lang.Exception e1) {
+			e1.printStackTrace();
+			var error = MessageFormat.format(Configurations.getHProperty(Settings.class,"error.autosave"),e1.getMessage());
+			JOptionPane.showMessageDialog(null,error,	"BioLife", JOptionPane.ERROR_MESSAGE);
+		} 
 	}
 
 	public void setListener(JComponent scrollPane) {
