@@ -31,6 +31,9 @@ import javax.swing.border.EmptyBorder;
 
 import MapObjects.CellObject;
 import java.io.File;
+import javax.swing.JToolTip;
+import javax.swing.Popup;
+import javax.swing.PopupFactory;
 import main.Configurations;
 import main.World;
 import panels.BotInfo;
@@ -45,21 +48,20 @@ public class BioLife extends JFrame {
 		private long lastSave = 0;
 		/**Период сохранения, шаги эволюции*/
 		private long savePeriod = 100_000;
-		/**Окно автосохранения*/
-		private javax.swing.JWindow win;
 		/**Сколько файлов автосохранения держать*/
 		private final int COUNT_SAVE = 3;
 		
+		/**Фабрика создания всплывающей подсказки*/
+		private PopupFactory popupFactory;
+		/**Окно подсказки*/
+		private static Popup popup;
+		/**Сама подсказка*/
+		private JToolTip t;
+		
 		public UpdateScrinTask(){
-			JLabel errorLabel = new JLabel(Configurations.getProperty(BioLife.class,"autosave"));
-			var topLevelWin = javax.swing.SwingUtilities.getWindowAncestor(world);
-			win = new javax.swing.JWindow(topLevelWin);
-			JPanel contentPane = (JPanel) win.getContentPane();
-			contentPane.add(errorLabel);
-			contentPane.setBackground(Color.white);
-			contentPane.setBorder(javax.swing.BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-			win.pack();
-			win.setVisible(false);
+			t = Configurations.world.createToolTip();
+			t.setTipText(Configurations.getProperty(BioLife.class,"autosave"));
+			popupFactory = PopupFactory.getSharedInstance();
 		}
 
 		@Override
@@ -78,10 +80,10 @@ public class BioLife extends JFrame {
 				if(world.isActiv()){
 					//Если мир пассивный - то с чего мы вдруг решили его начать сохранять? Может он только загружен?
 					final var loc = scrollPane.getLocationOnScreen();
-					win.setLocation(loc.x + scrollPane.getWidth() / 2, loc.y + scrollPane.getHeight() / 2);
-					win.setVisible(true);
-					win.toFront();
-					win.revalidate();
+					if(popup != null)
+						popup.hide();
+					popup = popupFactory.getPopup(Configurations.world, t,loc.x + scrollPane.getWidth() / 2, loc.y + scrollPane.getHeight() / 2);
+					popup.show();
 
 					var list = new File[COUNT_SAVE];
 					for(var i = 0 ; i < COUNT_SAVE ; i++){
@@ -93,7 +95,10 @@ public class BioLife extends JFrame {
 							save = list[i];
 					}
 					settings.save(save.getName());
-					win.setVisible(false);
+					if(popup != null){
+						popup.hide();
+						popup = null;
+					}
 				}
 				lastSave = world.step;
 			}
@@ -143,7 +148,7 @@ public class BioLife extends JFrame {
 	/**Панелька с миром*/
 	private JScrollPane scrollPane;
 	/**Дерево эволюции*/
-	private EvolTreeDialog dialog = new EvolTreeDialog();
+	private final EvolTreeDialog dialog = new EvolTreeDialog();
 	
 	private JMenuItem startRecord;
 	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
@@ -153,7 +158,7 @@ public class BioLife extends JFrame {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
-		EventQueue.invokeLater(() -> {try {new BioLife().setVisible(true);} catch (Exception e) {e.printStackTrace();}});
+		EventQueue.invokeLater(() -> {try {new BioLife().setVisible(true);} catch (Exception e) {e.printStackTrace();}});		
 	}
 
 	/**
