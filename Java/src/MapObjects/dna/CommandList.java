@@ -29,28 +29,9 @@ public class CommandList {
     public static final int BLOCK_6 = COUNT_COMAND * 7 / 8;
     
     public static final CommandDNA[] list = new CommandDNA[COUNT_COMAND+1];
-	static {
-		for(var i = 0 ; i < list.length ; i++)
-			list[i] = get(i);
-		
-		//Небольшие тестики, после создания новой функции
-		//Они не влияют на логику, но нужны для отоброжения
-		var adam = new AliveCell();
-		for (CommandDNA cmd : list) {
-			try{
-				if(cmd.isInterrupt())
-					cmd.getInterrupt(adam, adam.getDna());
-				String param = null;
-				for (int j = 0; j < cmd.getCountParams(); j++) {
-					String param2 = cmd.getParam(adam, j, adam.getDna());
-					if(param2.equals(param))
-						throw new RuntimeException("Параметры совпали для " + cmd);
-					param = param2;
-				}
-			}catch(RuntimeException e){
-				System.out.println(e);
-			}
-		}		
+	static{
+		for(var i = 0 ; i < CommandList.list.length ; i++)
+			CommandList.list[i] = CommandList.get(i);
 	}
 	/**
 	 * Функция преобразует порядковый номер команды в объект.
@@ -59,7 +40,7 @@ public class CommandList {
 	 * @param key порядковый номер команды
 	 * @return
 	 */
-	private static CommandDNA get(int key) {
+	protected static CommandDNA get(int key) {
 		return switch (key) {
 			case BLOCK_1 -> new Photosynthesis();
 			case BLOCK_1 + 1 -> new Minerals2Energy();
