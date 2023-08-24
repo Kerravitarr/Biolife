@@ -98,7 +98,10 @@ public class Organic extends CellObject {
 			}
 			case ORGANIC -> {
 				var org = (Organic) Configurations.world.get(pos);
-				if(org.eatUp || eatUp || org.getHealth() + getHealth() < AliveCellProtorype.MAX_HP || getHealth() > AliveCellProtorype.MAX_HP * 10){ //Маленькие кусочки слипаются
+				var isAdhesion = org.getHealth() + getHealth() < AliveCellProtorype.MAX_HP
+						|| ((org.eatUp || eatUp) 
+							&& (Math.max(getHealth(), org.getHealth()) / Math.min(getHealth(), org.getHealth()) <= 1.1));
+				if(isAdhesion){ //Маленькие кусочки слипаются
 					org.eatUp = false;
 					org.addHealth(getHealth());
 					if(poison != Poison.TYPE.UNEQUIPPED)

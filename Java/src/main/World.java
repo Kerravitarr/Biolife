@@ -145,7 +145,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 					else
 						coByH++;
 				}
-				if(stepUpdate != step && coByHd > minH / 2){	//Если среди миниралов много органики - схлопываем её
+				if(stepUpdate != step && coByHd > minH / 2){	//Если среди минералов много органики - схлопываем её
 					isUpdate = true;
 					for(var i = 1 ; i < Configurations.MAP_CELLS.height;i++){
 						if (cellByY[Configurations.MAP_CELLS.height - i] instanceof Organic org) {
