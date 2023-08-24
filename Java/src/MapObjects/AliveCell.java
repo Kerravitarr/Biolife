@@ -86,7 +86,7 @@ public class AliveCell extends AliveCellProtorype {
 		hp_by_div = cell.hp_by_div;					//ХП для деления остаётся тем-же
 
         specialization = new Specialization(cell);
-        direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size() - 1));   // направление, куда повернут новорожденный, генерируется случайно
+        direction = cell.direction;   // направление, куда повернут новорожденный, генерируется случайно
         dna = new DNA(cell.getDna());
         setGeneration(cell.Generation);
 	}
@@ -343,7 +343,7 @@ public class AliveCell extends AliveCellProtorype {
             DNA_wall = 0;
             return;
         }
-        switch (Utils.random(0, 10)) {
+        switch (Utils.random(0, 11)) {
             case 0 -> { //Мутирует специализация
                 int co = Utils.random(0, 100); //Новое значение специализации
                 int tp = Utils.random(0, Specialization.TYPE.size() - 1); //Какая специализация
@@ -352,43 +352,52 @@ public class AliveCell extends AliveCellProtorype {
             case 1 -> { //Мутирует геном
                 int ma = Utils.random(0, getDna().size - 1); //Индекс гена
                 int mc = Utils.random(0, CommandList.COUNT_COMAND); //Его значение
-                setDna(getDna().update(ma, mc));
+                setDna(getDna().update(ma, true,mc));
             }
             case 2 -> { //Дупликация - один ген удваивается
                 if (getDna().size + 1 <= MAX_MINDE_SIZE) {
-                    int mc = Utils.random(0, getDna().size - 1); //Индекс гена, который будет дублироваться
-                    setDna(getDna().doubling(mc));
+                    final int mc = Utils.random(0, getDna().size - 1); //Индекс гена, который будет дублироваться
+					final var gen = getDna().get(mc);
+					if(gen.size() <= getDna().size) //Чтобы не не умножать для вирусов
+						setDna(getDna().doubling(mc,false,gen.size()));
                 }
             }
             case 3 -> { //Делеция - один ген удалился
 				if(getDna().size == 1) return ;	//Да, у виросов бывает, что и не бывает
 				int mc = Utils.random(0, getDna().size - 1); //Индекс гена, который будет удалён
-				setDna(getDna().compression(mc));
+				final var gen = getDna().get(mc);
+				if(gen.size() < getDna().size) //Чтобы последний не удалить ненароком
+					setDna(getDna().compression(mc,false,gen.size()));
             }
             case 4 -> { //Инверсия - два подряд идущих гена меняются местами
                 int mn = Utils.random(0, getDna().size - 1); //Индекс гена, который будет обменян со следующим
-                var f = getDna().get(getDna().getPC(), mn);
-                var s = getDna().get(getDna().getPC(), mn + 1);
-                setDna(getDna().update(mn, s));
-                setDna(getDna().update(mn + 1, f));
+				final var f = getDna().get(mn);
+				final var lf = f.size();
+				final var s = getDna().get(mn + lf);
+				final var ls = s.size();
+				if(lf + ls <= getDna().size) { //У микроскопических ДНК не может быть такого
+					final var ndna = new int[lf + ls];
+					for(var i = 0 ; i < ls; i++)
+						ndna[i] = getDna().get(mn + lf + i, false);
+					for(var i = 0 ; i < lf; i++)
+						ndna[i + ls] = getDna().get(mn + i, false);
+					setDna(getDna().update(mn, false,ndna));
+				}
             }
-            case 5 -> { //Изометрия - отзеркаливание гена на следующий
+            case 5 -> { //Изометрия - отзеркаливание гена на обратный
                 int mn = Utils.random(0, getDna().size - 1); //Индекс гена, c которым будем работать
-                setDna(getDna().update(mn + 1, CommandList.COUNT_COMAND - getDna().get(getDna().getPC(), mn)));
+                setDna(getDna().update(mn + 1,false, CommandList.COUNT_COMAND - getDna().get(mn, false)));
             }
             case 6 -> { //Транслокация - смена местоприбывания гена
                 int iStart = Utils.random(0, getDna().size - 1); //Индекс гена сейчас
                 int iStop = Utils.random(0, getDna().size - 1); //Индекс гена который хочу
-                var f = getDna().get(getDna().getPC(), iStart);//Сам путешественник
-                if (getDna().getIndex(iStart) > getDna().getIndex(iStop)) {
-                    setDna(getDna().doubling(getDna().getIndex(iStop)));	//Создали площадку
-                    setDna(getDna().update(iStop, f)); //Переместили сюда новый ген
-                    setDna(getDna().compression(getDna().getIndex(iStart + 1))); //Удалили его предыдущую форму
-                } else {
-                    setDna(getDna().doubling(getDna().getIndex(iStop + 1)));	//Создали площадку
-                    setDna(getDna().update(iStop + 1, f)); //Переместили сюда новый ген
-                    setDna(getDna().compression(getDna().getIndex(iStart))); //Удалили его предыдущую форму
-                }
+				final var f = getDna().get(iStart);
+				final var lf = f.size();
+				if(lf < getDna().size) { //У микроскопических ДНК не может быть такого
+					final var comad = getDna().subDNA(iStart, false, lf);
+					//А теперь вырезаем ген, где он был и вставляем его в новое место
+					setDna(getDna().compression(iStart, false,lf).insert(iStop, false, comad));
+				}
             }
             case 7 -> { // Смена типа яда на который мы отзываемся
                 poisonType = TYPE.toEnum(Utils.random(0, TYPE.size()));
@@ -403,11 +412,14 @@ public class AliveCell extends AliveCellProtorype {
                 int mc = Utils.random(0, getDna().size - 1); //Его значение
                 dna.interrupts[ma] = mc;
             }
-            case 9 -> { //Мутирует наша невосприимчивость
+            case 9 -> { //Мутирует наша невосприимчивость к ДНК других клеток
                 tolerance = Utils.random(0, getDna().size - 1);
             }
 			case 10 -> { //Мутирует скорость размножения, сколько нужно ХП для поделишек
 				hp_by_div = Math.min(MAX_HP, hp_by_div * Utils.random(90, 110) / 100);
+			}
+			case 11 -> { //Мутирует программный счётчик ДНК
+				dna.next(Utils.random(1, dna.size));
 			}
         }
         setGeneration(getGeneration() + 1);
@@ -442,7 +454,7 @@ public class AliveCell extends AliveCellProtorype {
      * Подглядывает за бота в абсолютном направлении
      *
      * @param direction направление, DIRECTION
-     * @returns параметры OBJECT
+     * @return параметры OBJECT
      */
     @Override
     public OBJECT see(DIRECTION direction) {
