@@ -662,7 +662,7 @@ public class BotInfo extends JPanel {
 	 * @param model модель, в которую добавлять будем данные
 	 * @param interVal какой индексу прерывания, если активное
 	 * @param indexRowInModel какой номер строки добавляем
-	 * @param indexCmd какой индекс у команды
+	 * @param indexCmd какой абсолютный индекс у команды
 	 * @param cmd_o команда, которую разбираем
 	 * @param type тип команды. Это может быть команда, а может быть её параметр или аргумент
 	 * @param indexParamOrBrenh
@@ -676,7 +676,7 @@ public class BotInfo extends JPanel {
 			sb.append("  ");
 		sb.append(indexCmd);
 		sb.append("=");
-		sb.append(dna.get(indexCmd, 0));
+		sb.append(dna.get(indexCmd, true));
 		switch (type) {
 			case CMD,CMD_D,CMD_I -> {
 				sb.append(" ");

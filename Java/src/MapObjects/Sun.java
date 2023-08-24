@@ -71,7 +71,7 @@ public class Sun {
 
 	/**
 	 * Отрисовывает себя кому угодно
-	 * @param g
+	 * @param g2d
 	 */
 	public void paint(Graphics2D g2d) {
 		for(var i : fon)

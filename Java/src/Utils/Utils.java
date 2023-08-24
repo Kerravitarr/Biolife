@@ -91,7 +91,7 @@ public class Utils {
      * <p>
      * The integer that is returned by {@code HSBtoRGB} encodes the
      * value of a color in bits 0-23 of an integer value that is the same
-     * format used by the method {@link #getRGB() getRGB}.
+     * format used by the method
      * This integer can be supplied as an argument to the
      * {@code Color} constructor that takes a single integer argument.
      * @param     h   цветовая составляющая цвета
@@ -113,21 +113,21 @@ public class Utils {
 	
 	/**
 	 * Пауза
-	 * @param sec
+	 * @param sec секунды
 	 */
 	public static void pause(long sec) {
 		pause_ms(sec * 1_000);
 	}
 	/**
 	 * Пауза
-	 * @param msec
+	 * @param msec милисекунды
 	 */
 	public static void pause_ms(long msec) {
 		pause_ns(msec * 1_000_000);
 	}
 	/**
 	 * Пауза
-	 * @param msec
+	 * @param nsec наносекунды
 	 */
 	public static void pause_ns(long nsec) {
 		LockSupport.parkNanos(nsec);

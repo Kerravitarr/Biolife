@@ -353,24 +353,10 @@ public class JSON implements SerializationOld{
 			return errorType;
 		}
 
-		/**
-		 * @see org.json.simple.parser.JSONParser#getPosition()
-		 * 
-		 * @return The character position (starting with 0) of the input where the error
-		 *         occurs.
-		 */
 		public long getPosition() {
 			return position;
 		}
-
-		/**
-		 * @see org.json.simple.parser.JSONtoken
-		 * 
-		 * @return One of the following base on the value of errorType:
-		 *         ERROR_UNEXPECTED_CHAR java.lang.Character ERROR_UNEXPECTED_TOKEN
-		 *         org.json.simple.parser.JSONtoken ERROR_UNEXPECTED_EXCEPTION
-		 *         java.lang.Exception
-		 */
+		
 		public Object getUnexpectedObject() {
 			return unexpectedObject;
 		}
