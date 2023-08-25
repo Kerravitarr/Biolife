@@ -66,6 +66,7 @@
             <Property name="alignmentY" type="float" value="0.0"/>
           </Properties>
           <Events>
+            <EventHandler event="mouseEntered" listener="java.awt.event.MouseListener" parameters="java.awt.event.MouseEvent" handler="jPanelTreeMouseEntered"/>
             <EventHandler event="componentResized" listener="java.awt.event.ComponentListener" parameters="java.awt.event.ComponentEvent" handler="jPanelTreeComponentResized"/>
           </Events>
           <AuxValues>

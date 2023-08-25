@@ -415,6 +415,11 @@ public class EvolTreeDialog extends javax.swing.JDialog {
         jPanelTree.setToolTipText(Configurations.getHProperty(EvolTreeDialog.class,"toolTipText"));
         jPanelTree.setAlignmentX(0.0F);
         jPanelTree.setAlignmentY(0.0F);
+        jPanelTree.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                jPanelTreeMouseEntered(evt);
+            }
+        });
         jPanelTree.addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentResized(java.awt.event.ComponentEvent evt) {
                 jPanelTreeComponentResized(evt);
@@ -491,6 +496,11 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 			}
 		}
     }//GEN-LAST:event_formKeyReleased
+
+    private void jPanelTreeMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jPanelTreeMouseEntered
+		if(NodeJpanel.popup != null)
+			NodeJpanel.popup.hide();
+    }//GEN-LAST:event_jPanelTreeMouseEntered
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JEditorPane jEditorPane1;
