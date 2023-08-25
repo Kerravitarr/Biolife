@@ -32,19 +32,34 @@ public class TankFood extends CommandDo {
 		else
 			sub(cell, val);
 	}
+	/**Возвращает объём хранилища
+	 * @param cell чьё хранилище смотрим
+	 * @return сколько единиц оно может вместить
+	 */
+	public static int size(AliveCell cell){
+		return cell.specMaxVal(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION);
+	}
+	/**Возвращает объём пустой части хранилища, сколько ещё сюда можно доложить
+	 * @param cell чьё хранилище смотрим
+	 * @return сколько единиц оно может вместить до полного
+	 */
+	public static int leftover(AliveCell cell){
+		return size(cell) - cell.getFoodTank();
+	}
 	
 	/**
-	 * Закладывает еду в желудок
+	 * Закладывает еду в жирки
+	 * Может положить, если место есть, а может и не положить, если место закончилось
 	 * @param cell кто кладёт
 	 * @param val сколько класть
 	 */
 	public static void add(AliveCell cell,int val) {
 		if(val <= 0) return;
 		//Сколько можем запасти
-		val = (int) Math.min(cell.getHealth() - 2 * AliveCellProtorype.HP_PER_STEP, val);
+		val = (int) Math.min(val, cell.getHealth() - 2 * AliveCellProtorype.HP_PER_STEP);
 		if(val <= 0) return;
 		//Сколько у нас места осталось
-		val = Math.min(val, cell.specMaxVal(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION) - cell.getFoodTank());
+		val = Math.min(val, leftover(cell));
 		if(val <= 0) return;
 		cell.addFoodTank(val);
 		cell.addHealth(-val);
@@ -52,7 +67,7 @@ public class TankFood extends CommandDo {
 	/**
 	 * Забирает из желудка столько энергии, сколько получится
 	 * @param cell кто
-	 * @param val сколько
+	 * @param val сколько хотим получить
 	 */
 	public static void sub(AliveCell cell, int val) {
 		if(val <= 0) return;
