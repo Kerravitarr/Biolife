@@ -186,7 +186,7 @@ public class AliveCell extends AliveCellProtorype {
         //Трата энергии на ход
         if (isSleep) {
             setSleep(false);
-            addHealth(-1);          //Спать куда эффективнее
+            addHealth(-HP_PER_STEP/10d);          //Спать куда эффективнее
         } else {
             addHealth(-HP_PER_STEP); //Пожили - устали
         }
@@ -335,8 +335,8 @@ public class AliveCell extends AliveCellProtorype {
         }
     }
 
-    /**
-     * Создаёт одну из мутаций
+    /**Заставляет геном клетки или её параметры мутировать.
+	 * Если у клетки защищена ДНК, то она не мутируте, а защита её ДНК сбрасывается в 0
      */
     protected void mutation() {
         if (DNA_wall > 0) {	//Защита ДНК в действии!
