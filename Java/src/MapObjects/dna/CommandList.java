@@ -88,8 +88,8 @@ public class CommandList {
 
 			case BLOCK_4 + 0 -> new Eat(true);
 			case BLOCK_4 + 1 -> new Eat(false);
-			case BLOCK_4 + 2 -> new Bite(true);
-			case BLOCK_4 + 3 -> new Bite(false);
+			//case BLOCK_4 + 2 -> new Bite(true);
+			//case BLOCK_4 + 3 -> new Bite(false);
 			case BLOCK_4 + 4 -> new Care(true);
 			case BLOCK_4 + 5 -> new Care(false);
 			case BLOCK_4 + 6 -> new Give(true);

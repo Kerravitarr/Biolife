@@ -9,6 +9,7 @@ import static MapObjects.CellObject.OBJECT.WALL;
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import static MapObjects.AliveCellProtorype.Specialization.TYPE.ASSASSINATION;
+import MapObjects.CellObject;
 import MapObjects.Fossil;
 import MapObjects.Organic;
 import MapObjects.Poison;
@@ -52,7 +53,7 @@ public class Eat extends CommandDoInterupted {
 				if(target.getPoison() != Poison.TYPE.UNEQUIPPED) { //Если еда ядовита - то мы получаем урон
 					cell.toxinDamage(target.getPoison(),target.getPoisonCount());
 				}
-				final var maxEat = (AliveCell.MAX_HP - cell.getHealth());
+				final var maxEat = ((AliveCell.MAX_HP - cell.getHealth()) + TankFood.leftover(cell));
 				var hpInOrg = Math.min(target.getHealth(), maxEat); //Сколько можем съесть
 				if(cell.getMainSpec() == AliveCellProtorype.Specialization.TYPE.DIGESTION){
 					//Мы умеем переваривать органику - мы перевариваем органику!
@@ -84,6 +85,7 @@ public class Eat extends CommandDoInterupted {
 				var tarMP = target.getMineral();  // определим количество минералов у потенциального обеда
 				final var ourHP = cell.getHealth();  // определим наше здоровье
 				final var tarHP = target.getHealth() + target.getFoodTank();  // определим размер обеда
+				final var maxEat = ((AliveCell.MAX_HP - cell.getHealth()) + TankFood.leftover(cell));	//Сколько в нас места
 				if(ourMP > 0){
 					//Раунд 1, когда боты мерюются минералами
 					var ourF = cell.specMaxVal(ourMP, ASSASSINATION);		//Определим силу укуса нашими зубиками. То есть - сколько мы можем пробить минералов панциря
@@ -92,10 +94,21 @@ public class Eat extends CommandDoInterupted {
 						//Мы прокусили панцирь, осталось выесть самую мякотку
 						cell.addMineral((long) -tarF);		 // количество минералов у бота уменьшается на количество минералов у жертвы. Стесали зубики
 						//Свежатинку не надо переваривать. Мы её едим прям так, как есть.
-						cell.addHealth(tarHP);
-						cell.addMineral(target.getMineralTank());
-						cell.color(AliveCell.ACTION.EAT_ORG,tarHP);
-						target.remove_NE();
+						if(tarHP <= maxEat){
+							cell.addHealth(tarHP);
+							cell.addMineral(target.getMineralTank());
+							cell.color(AliveCell.ACTION.EAT_ORG,tarHP);
+							target.remove_NE();
+						} else {
+							cell.addHealth(maxEat);
+							cell.addMineral(target.getMineralTank());
+							cell.color(AliveCell.ACTION.EAT_ORG,maxEat);
+							target.addHealth(-maxEat);
+							try{target.bot2Organic();}catch(CellObject.CellObjectRemoveException e){
+								final var organic = (Organic) Configurations.world.get(point);
+								organic.addHealth(-maxEat);
+							}
+						}
 					} else {
 						//Не смогли прокусить панцирь. Животинка сама нас победила
 						cell.setMineral(0);
@@ -114,10 +127,20 @@ public class Eat extends CommandDoInterupted {
 							cell.addHealth(-tarF);
 
 						//Свежатинку не надо переваривать. Мы её едим прям так, как есть.
-						cell.addHealth(tarHP);
-						cell.addMineral(target.getMineralTank());
-						cell.color(AliveCell.ACTION.EAT_ORG,tarHP);
-						target.remove_NE();
+						if(tarHP <= maxEat){
+							cell.addHealth(tarHP);
+							cell.addMineral(target.getMineralTank());
+							cell.color(AliveCell.ACTION.EAT_ORG,tarHP);
+							target.remove_NE();
+						} else {
+							cell.addHealth(maxEat);
+							cell.addMineral(target.getMineralTank());
+							cell.color(AliveCell.ACTION.EAT_ORG,maxEat);
+							try{target.bot2Organic();}catch(CellObject.CellObjectRemoveException e){
+								final var organic = (Organic) Configurations.world.get(point);
+								organic.addHealth(-maxEat);
+							}
+						}
 					} else {
 						//У нас достойный противник
 						cell.bot2Organic();  // здоровье уходит в ноль
