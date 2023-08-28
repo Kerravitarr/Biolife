@@ -15,12 +15,14 @@ import MapObjects.dna.TankFood;
 import MapObjects.dna.TankMineral;
 import Utils.JSON;
 import Utils.Utils;
+import java.text.MessageFormat;
 import java.util.Iterator;
 import main.Configurations;
 import main.EvolutionTree;
 import main.Point;
 import main.Point.DIRECTION;
 import panels.Legend;
+import start.BioLife;
 
 public class AliveCell extends AliveCellProtorype {
 
@@ -41,6 +43,7 @@ public class AliveCell extends AliveCellProtorype {
      *
      * @param cell - JSON объект, который содержит всю информацюи о клетке
      * @param tree - Дерево эволюции
+	 * @param version - версия формата JSON. Нужна для отлова параметров, которых раньше не было
      */
     public AliveCell(JSON cell, EvolutionTree tree, long version) {
         super(cell);
@@ -56,7 +59,7 @@ public class AliveCell extends AliveCellProtorype {
         foodTank = cell.get("foodTank");
         mineralTank = cell.get("mineralTank");
         mucosa = cell.get("mucosa");
-		if(version < 6)
+		if(version >= 6)
 			hp_by_div = cell.get("hp_by_div");
 
         Generation = cell.getI("Generation");
@@ -533,7 +536,12 @@ public class AliveCell extends AliveCellProtorype {
                     return !isLife;
                 }
                 case BLACK -> {
-                    mutation();
+					//Защита ДНК может поглатить сколько угодно урона.
+					//Но если урон слабый, то защита ДНК не снимается даже полностью!
+					if(DNA_wall >= damag)
+						DNA_wall -= damag;
+					else
+						mutation();
                     return false;
                 }
                 case UNEQUIPPED ->
@@ -673,5 +681,13 @@ public class AliveCell extends AliveCellProtorype {
 
         return make;
     }
+	
+	/**
+	 *
+	 * @return
+	 */
+	public String toString(){
+		return 	MessageFormat.format(Configurations.getProperty(AliveCell.class,"toString"), getPos());
+	}
 
 }
