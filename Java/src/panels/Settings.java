@@ -33,6 +33,7 @@ import Utils.JsonSave;
 import Utils.MyMessageFormat;
 import java.text.MessageFormat;
 import java.util.concurrent.TimeUnit;
+import javax.swing.JScrollPane;
 import main.Configurations;
 import main.World;
 import start.BioLife;
@@ -292,8 +293,8 @@ public class Settings extends JPanel{
 		add(makeParamsPanel());
 	}
 	
-	private JPanel makeParamsPanel() {
-		JPanel panelConstant = new JPanel();
+	private JScrollPane makeParamsPanel() {
+		final var panelConstant = new JPanel();
 		panelConstant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), Configurations.getHProperty(Settings.class,"mainPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
 		
 		listFields = new ArrayList<>();
@@ -358,7 +359,10 @@ public class Settings extends JPanel{
 				.addGroup(wGroupe)
 		);
 		panelConstant.setLayout(gl_panel_const);
-		return panelConstant;
+	
+		final var scroll = new JScrollPane(panelConstant);
+		scroll.setBorder(null);
+		return scroll;
 	}
 
 	/**
@@ -368,6 +372,7 @@ public class Settings extends JPanel{
 		try{
 			Configurations.world.stop();
 			var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
+			js.addActionListener( e-> System.out.println("Загрузка " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
 			var filename = js.load();
 			while(Configurations.world.isActiv()){ //На всякий случай убеждаемся, что мир прям точно встал!
 				Configurations.world.stop();
@@ -405,6 +410,7 @@ public class Settings extends JPanel{
 
 			if(lastSaveCount != Configurations.world.step) {
 				var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
+				js.addActionListener( e-> System.out.println("Сохранение " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
 				if(js.save(true, new Configurations(), Configurations.tree, Configurations.world.serelization()))
 					lastSaveCount = Configurations.world.step;
 			}
@@ -432,6 +438,7 @@ public class Settings extends JPanel{
 
 			if(lastSaveCount != Configurations.world.step) {
 				var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
+				js.addActionListener( e-> System.out.println("Автосохранение " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
 				if(js.save(filePatch,true, new Configurations(), Configurations.tree, Configurations.world.serelization()))
 					lastSaveCount = Configurations.world.step;
 			}

@@ -11,6 +11,9 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.ArrayList;
+import java.util.EventListener;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -50,6 +53,34 @@ public class JsonSave {
 		public void toJSONString(Writer writer) throws IOException;
 		/** Разбирает объект из потока */
 		public void parse(Reader reader, long version) throws IOException;
+	}
+	
+	/**Событие, происходящее при сохранении/загрузке файла*/
+	public interface SaveLoadListener extends EventListener {
+		/**Событие*/
+		public static class Event{
+			public static enum TYPE {SAVE,LOAD}
+			/**Тип события*/
+			public final TYPE type;
+			/**Сколько всего файлов нужно обработать*/
+			public final int all;
+			/**Какой по счёту файл в работе*/
+			public final int now;
+			/**Сколько прошло времени от начала действия, мс*/
+			public final long allMC;
+			/**Сколько прошло времени на предыдущее действие, мс*/
+			public final long lastMC;
+			public Event(TYPE t, int a, int n, long am, long lm){type = t; all=a; now=n;allMC=am;lastMC=lm;}
+			/**Возвращает сколько процентов выполнено
+			 * @return число в интервале [0;1]
+			 */
+			public double getProgress(){return ((double)now ) / all;}
+			/**Возвращает сколько времени ещё нужно на все действия
+			 * @return число милесекунд до завершения
+			 */
+			public double getTime(){if(now == 0) return 0; else return allMC / getProgress() - allMC;}
+		}
+		public void event(Event e);
 	}
 	
 	private class VERSION extends JsonSave.JSONSerialization{
@@ -100,12 +131,15 @@ public class JsonSave {
 	private final String extension;
 	/**версия проекта/окна*/
 	private final long version;
+	/**версия проекта/окна*/
+	private final List<SaveLoadListener> listeners;
 	
 	public JsonSave(String projectName,String extension, long v){
 		path = System.getProperty("user.dir");
 		this.projectName=projectName;
 		this.extension=extension;
 		version=v;
+		listeners = new ArrayList<>();
 	}
 	
 	/**
@@ -157,13 +191,21 @@ public class JsonSave {
 	 * @return true, если сохранение завершилось успешно
 	 */
 	public boolean save(String pathToFile,boolean isBeautiful, Serialization ... sers){
+		var startMC = System.currentTimeMillis();
+		var prefMC = startMC;
 		try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(pathToFile))) {
 			java.io.OutputStreamWriter out = new OutputStreamWriter(zout);
 			var v = new VERSION();
 			save(zout,out, v,isBeautiful);
-			for(var s : sers){
+			for (int i = 0; i < sers.length; i++) {
+				var nmc = System.currentTimeMillis();
+				dispatchEvent(new SaveLoadListener.Event(SaveLoadListener.Event.TYPE.SAVE, sers.length,i,nmc - startMC,nmc - prefMC));
+				prefMC = nmc;
+				final var s = sers[i];
 				save(zout,out, s,isBeautiful);
 			}
+			var nmc = System.currentTimeMillis();
+			dispatchEvent(new SaveLoadListener.Event(SaveLoadListener.Event.TYPE.SAVE, sers.length,sers.length,nmc - startMC,nmc - prefMC));
 			return true;
 		} catch (IOException | java.lang.RuntimeException e1) {
 			e1.printStackTrace();
@@ -208,11 +250,20 @@ public class JsonSave {
 	 * @return true есди загрузка удалась
 	 */
 	public boolean load(String pathToFile, Serialization ... sers) {
+		var startMC = System.currentTimeMillis();
+		var prefMC = startMC;
+		
 		var v = new VERSION();
 		if(!load(pathToFile, v)) return false;
-		for(var s : sers){
+		for (int i = 0; i < sers.length; i++) {
+			var nmc = System.currentTimeMillis();
+			dispatchEvent(new SaveLoadListener.Event(SaveLoadListener.Event.TYPE.LOAD, sers.length,i,nmc - startMC,nmc - prefMC));
+			prefMC = nmc;
+			var s = sers[i];
 			if(!load(pathToFile, s)) return false;
 		}
+		var nmc = System.currentTimeMillis();
+		dispatchEvent(new SaveLoadListener.Event(SaveLoadListener.Event.TYPE.LOAD, sers.length,sers.length,nmc - startMC,nmc - prefMC));
 		return true;
 	}
 	/**
@@ -250,5 +301,18 @@ public class JsonSave {
 			JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
+	}
+	/**Добавить слушателя на событие сохранения/загрузки
+	 * @param l слушатель, который будет получать уведомления по мере прогресса
+	 */
+	public void addActionListener(SaveLoadListener l){
+		listeners.add(l);
+	}
+	/**Рассылает уведомление о ходе работы всем слушателям
+	 * @param e уведомление о состоянии
+	 */
+	public void dispatchEvent(SaveLoadListener.Event e){
+		for(var l : listeners)
+			l.event(e);
 	}
 }
