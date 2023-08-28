@@ -81,7 +81,11 @@ public abstract class CellObject {
 	
 	public class CellObjectRemoveException extends RuntimeException {
 		CellObjectRemoveException(){
-			super("Удалили клетку " + CellObject.this);
+			super();
+		}
+		@Override
+		public String getMessage(){
+			return "Удалили клетку " + CellObject.this;
 		}
 	}
 	
