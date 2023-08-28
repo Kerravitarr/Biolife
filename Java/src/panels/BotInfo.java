@@ -129,9 +129,9 @@ public class BotInfo extends JPanel {
 		private static int timeout = 10;
 		
 		public TextPair(String label, String toolTipText) {
-			setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
+			setLayout(new BorderLayout());
 			text = new JLabel(label);
-			add(text);
+			add(text,BorderLayout.WEST);
 
 			scroll = new JScrollPane();
 			scroll.getVerticalScrollBar().setVisibleAmount(0);
@@ -139,9 +139,10 @@ public class BotInfo extends JPanel {
 			scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 			scroll.setBorder(BorderFactory.createEmptyBorder());
 			scroll.getVerticalScrollBar().setUnitIncrement(1);
-			add(scroll);
+			add(scroll,BorderLayout.CENTER);
 			
 			field = new JLabel();
+			field.setHorizontalAlignment(javax.swing.SwingConstants.RIGHT);
 			scroll.setViewportView(field);
 			
 	        scrolFieldList.add(this);
@@ -347,7 +348,7 @@ public class BotInfo extends JPanel {
 					.addGroup(gl_panel.createParallelGroup(Alignment.LEADING)
 						.addComponent(panel_DNA, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
 						.addComponent(scrollPane_inter, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE)
-						.addComponent(panelConstant, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 175, Short.MAX_VALUE))
+						.addComponent(panelConstant, Alignment.TRAILING, GroupLayout.DEFAULT_SIZE, 200, Short.MAX_VALUE))
 					.addContainerGap())
 		);
 		gl_panel.setVerticalGroup(
