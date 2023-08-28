@@ -140,6 +140,10 @@ public class Point{
 	public static int ryToY(int y) {
 		return (int) Math.round((y - Configurations.border.height)/Configurations.scale - 0.5);
 	}
+	/**Получить точку в указанном направлении от текущей
+	 * @param dir в каком направлении нужна точка
+	 * @return точка в нужном направлении
+	 */
 	public Point next(DIRECTION dir) {
 		return new Point(x + dir.addX,y + dir.addY);
 	}

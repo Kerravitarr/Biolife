@@ -145,7 +145,12 @@ public class Utils {
 		System.arraycopy(second, 0, result, first.length, second.length);
 		return result;
 	}
-	
+	/**Приравнивает число к интервалу [min,max]
+	 * @param min минимальное значение, меньше которого выходное число точно не будет
+	 * @param val число, которое нужно ограничить
+	 * @param max максимальное значение, больше которого выходное число точно не будет
+	 * @return 
+	 */
 	public static int betwin(int min, int val, int max) {
 		if (val > max)
 			return max;
@@ -154,6 +159,13 @@ public class Utils {
 		else
 			return val;
 	}
+	/**
+	 * Приравнивает число к интервалу [min,max]
+	 * @param min минимальное значение, меньше которого выходное число точно не будет
+	 * @param val число, которое нужно ограничить
+	 * @param max максимальное значение, больше которого выходное число точно не будет
+	 * @return 
+	 */
 	public static double betwin(double min, double val, double max) {
 		if (val > max)
 			return max;

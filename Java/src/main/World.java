@@ -43,8 +43,10 @@ import Utils.StreamProgressBar;
 import Utils.Utils;
 import java.awt.EventQueue;
 import java.awt.event.MouseMotionListener;
+import java.text.MessageFormat;
 import java.util.concurrent.TimeUnit;
 import main.Point.DIRECTION;
+import start.BioLife;
 
 public class World extends JPanel implements Runnable,ComponentListener,MouseListener,MouseMotionListener{	
 	/**Симуляция запущена?*/
@@ -108,26 +110,19 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 					e.printStackTrace();
 					System.out.println(cell);
 					System.out.println(point);
-					JOptionPane.showMessageDialog(null,	"<html>Критическая ошибка!!!\n"
-							+ "Вызвала клетка " + cell + " с координат" + point + "\n"
-							+ "Описание: " + e.getMessage() + "\n"
-							+ "К сожалению дальнейшее моделирование невозможно. \n"
-							+ "Вы можете сохранить мир и перезагрузить программу.",	"BioLife", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null,	MessageFormat.format(Configurations.getHProperty(World.class,"error.exception"), cell, point, e.getMessage()),	"BioLife", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		}
 	}
 	/**Задача выполняемая ежесекундно, для всяких там работ с картой*/
 	private class UpdateScrinTask implements Runnable {
-		/**Специальная переменная, которая следит, чтобы обновления клеток проходили только во время симуляции*/
-		private long stepUpdate = 0;
 		@Override
 		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
 		
 		public void runE() {
 			int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
 			var minH = Configurations.MAP_CELLS.height * (1d  - Configurations.LEVEL_MINERAL);//Высота минирализации
-			boolean isUpdate = false;
 			for (CellObject[] cellByY : Configurations.worldMap) {
 				var coByH = 0;
 				var coByHd = 0;
@@ -145,21 +140,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 					else
 						coByH++;
 				}
-				if(stepUpdate != step && coByHd > minH / 2){	//Если среди минералов много органики - схлопываем её
-					isUpdate = true;
-					for(var i = 1 ; i < Configurations.MAP_CELLS.height;i++){
-						if (cellByY[Configurations.MAP_CELLS.height - i] instanceof Organic org) {
-							if(!org.getPermissionEat()){
-								org.setPermissionEat();
-								break;
-							}
-						}
-					}
-				}
 				localCO += coByH + coByHd;
 			}
-			if(isUpdate)
-				stepUpdate = step;
 			if(isActiv()){
 				countLife = localCl;
 				countOrganic = localCO;
@@ -445,7 +427,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	
 	public void add(CellObject cell) {
 		if(get(cell.getPos()) != null) {
-			throw new RuntimeException("Объект " + cell + " решил вступть на " + cell.getPos() + ",\nно тут занято " + get(cell.getPos()) + "!!!");
+			throw new RuntimeException("Объект " + cell + " решил вступть на " + cell.getPos() + ",но тут занято " + get(cell.getPos()) + "!!!");
 		} else if(cell.aliveStatus(LV_STATUS.GHOST)) {
 			throw new RuntimeException("Требуется добавить " + cell + " только вот он уже мёртв!!! ");
 		} else {
@@ -731,10 +713,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	 * @return точку в реальном пространстве или null, если эта точка за гранью
 	 */
 	private Point recalculation(int x, int y) {
-		if(x < Configurations.border.width || x > getWidth() - Configurations.border.width)
-			return null;
-		if(y < Configurations.border.height || y > getHeight() - Configurations.border.height)
-			return null;
+		x = Utils.betwin(Configurations.border.width, x, getWidth() - Configurations.border.width);
+		y = Utils.betwin(Configurations.border.height, y, getWidth() - Configurations.border.height);
 		x -= Configurations.border.width;
 		y -= Configurations.border.height;
 		x = (int) Math.round(x/Configurations.scale-0.5);

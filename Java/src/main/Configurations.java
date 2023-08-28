@@ -175,7 +175,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 		setBASE_SUN_POWER(DBASE_SUN_POWER = 20);
 		setADD_SUN_POWER(DADD_SUN_POWER = DBASE_SUN_POWER);
 		setSUN_LENGHT(DSUN_LENGHT = width / 5);
-		setSUN_SPEED(DSUN_SPEED = 100); //Раз в 100 шагов сдвигается
+		setSUN_SPEED(DSUN_SPEED = 25); //Раз в 25 шагов сдвигается
 		setSUN_FORM(DSUN_FORM = -3);
 		SUN_POSITION = width / 2;
 		setDIRTY_WATER(DDIRTY_WATER = 33); //33% карты сверху - освщеено
@@ -183,7 +183,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 		DLEVEL_MINERAL = LEVEL_MINERAL = 1 - 0.33;	//33% снизу в минералах
 		DCONCENTRATION_MINERAL = CONCENTRATION_MINERAL = 20;
 		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 25;
-		TIK_TO_EXIT = DTIK_TO_EXIT = 50;
+		TIK_TO_EXIT = DTIK_TO_EXIT = 1000; //1 единица энергии уходит за 1000 шагов!
 	}
 	
 	public static void setBASE_SUN_POWER(int val) {
