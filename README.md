@@ -67,12 +67,31 @@ Now on a six-core machine and a 500x200 field, it is possible to achieve 80-120 
 
 ## Windows:
 1. Install JDK and JRE
-2. Run Windows_make.bat from /Java folder
-3. Launching the application from /Java/jarFile folder
-4. Have fun
+1. Run Windows_make.bat from /Java folder
+1. Launching the application from /Java/jarFile folder
+1. Have fun
 
 ## Linux:
 1. Install JDK and JRE
-2. Run in terminal Linux_make.sh from /Java folder
-3. Launching the application from /Java/jarFile folder
-4. Have fun
+1. Run in terminal Linux_make.sh from /Java folder
+1. Launching the application from /Java/jarFile folder
+1. Have fun
+
+
+# Известные проблемы при сборке и запуске:
+1. linux has been compiled by a more recent version of the Java Runtime (class file version 60.0), this version of the Java Runtime only recognizes class file versions up to 55.0
+Приложение компилируется на версии Java 16 (она-же Java 60). Если в системе по умолчанию стоит более старая версия, то запустить игру не получится.
+Нужно сначала установить нужную версию, а потом системе объяснить какую версию использовать:
+- Для Ubuntu и подобных: _sudo update-java-alternatives --set java-1.16.0-openjdk-amd64_. Для установки JRE по умолчанию (вместо openjdk-16-jre можно использовать openjdk-17-jre, openjdk-18-jre и т.д.).
+- Для Windows: Необходимо обновить переменную среды _Path_, указав в ней путь к нужней версией Java.
+1. В Linux/Ubuntu не отображается большинство символов unicode.
+Это значит, что не хватает шрифтов. Установить необходимый пакет можно командой: _sudo apt install ttf-ancient-fonts_.
+
+# Startup problems?:
+1. linux has been compiled by a more recent version of the Java Runtime (class file version 60.0), this version of the Java Runtime only recognizes class file versions up to 55.0
+The application is compiled on Java 16 (Java 60). If the system defaults to an older version, then the game will not run.
+You must first install the desired version, and then explain to the system which version to use:
+- For Ubuntu/Linux: _sudo update-java-alternatives --set java-1.16.0-openjdk-amd64_. This cmd install the default JRE (you can use openjdk-17-jre, openjdk-18-jre, etc. instead of openjdk-16-jre)
+- For Windows: You need to update the _Path_ environment variable to the correct version of Java.
+1. Linux/Ubuntu does not display most unicode characters.
+This means that there are not enough fonts. You can install the required package with the command: _sudo apt install ttf-ancient-fonts_.
