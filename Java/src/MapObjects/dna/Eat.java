@@ -55,26 +55,16 @@ public class Eat extends CommandDoInterupted {
 				}
 				final var maxEat = ((AliveCell.MAX_HP - cell.getHealth()) + TankFood.leftover(cell));
 				var hpInOrg = Math.min(target.getHealth(), maxEat); //Сколько можем съесть
-				if(cell.getMainSpec() == AliveCellProtorype.Specialization.TYPE.DIGESTION){
-					//Мы умеем переваривать органику - мы перевариваем органику!
-					if(target.getPoison() != Poison.TYPE.YELLOW)
-						hpInOrg /= 2; //Если яд не жёлтый, то пища не такая вкусная
-					hpInOrg = cell.specMaxVal(hpInOrg, AliveCellProtorype.Specialization.TYPE.DIGESTION); //Сколько из съеденного получили энергии
-					cell.addHealth(hpInOrg);    //здоровье увеличилось
-					cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
-					if(target.getHealth() < maxEat)
-						target.remove_NE(); //А цель мы всю поглотили
-					else
-						target.addHealth(-maxEat);
-				} else {
-					//Мы плохо перевариваем органику, а значит мы ей травимся
-					hpInOrg = hpInOrg - cell.specMaxVal(hpInOrg, AliveCellProtorype.Specialization.TYPE.DIGESTION); //Какая часть из съеденного пошла не в то горло?
-					cell.addHealth(-hpInOrg);
-					if(target.getHealth() < maxEat)
-						target.remove_NE(); //А цель мы всю поглотили
-					else
-						target.addHealth(-maxEat);
-				}
+				//Мы умеем переваривать органику - мы перевариваем органику!
+				if(target.getPoison() != Poison.TYPE.YELLOW)
+					hpInOrg /= 2; //Если яд не жёлтый, то пища не такая вкусная
+				hpInOrg = cell.specMaxVal(hpInOrg, AliveCellProtorype.Specialization.TYPE.DIGESTION); //Сколько из съеденного получили энергии
+				cell.addHealth(hpInOrg);    //здоровье увеличилось
+				cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
+				if(target.getHealth() < maxEat)
+					target.remove_NE(); //А цель мы всю поглотили
+				else
+					target.addHealth(-maxEat);
 			}
 			case ENEMY, FRIEND -> {
 				//--------- дошли до сюда, значит впереди живой бот -------------------
@@ -103,7 +93,6 @@ public class Eat extends CommandDoInterupted {
 							cell.addHealth(maxEat);
 							cell.addMineral(target.getMineralTank());
 							cell.color(AliveCell.ACTION.EAT_ORG,maxEat);
-							target.addHealth(-maxEat);
 							try{target.bot2Organic();}catch(CellObject.CellObjectRemoveException e){
 								final var organic = (Organic) Configurations.world.get(point);
 								organic.addHealth(-maxEat);
