@@ -20,7 +20,6 @@ import MapObjects.Poison;
 import Utils.Utils;
 import main.Configurations;
 import main.Point;
-import main.World;
 import panels.Legend.Graph.MODE;
 
 public class Legend extends JPanel{
@@ -38,17 +37,18 @@ public class Legend extends JPanel{
 						}
 					}
 					case HP -> {
-						maxHP = 0;
+						var max = 0d;
 						double summ = 0;
 						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 								CellObject cell = Configurations.world.get(new Point(x, y));
 								if (cell != null && cell instanceof AliveCell acell){
 									summ += acell.getHealth();
-									maxHP = (long) Math.max(maxHP, acell.getHealth());
+									max = Math.max(max, acell.getHealth());
 								}
 							}
 						}
+						maxHP = (long) max;
 						var length = 10;
 						values = new Graph.Value[length + 1];
 						var w = 1.0 / values.length;
@@ -65,17 +65,18 @@ public class Legend extends JPanel{
 							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
 					}
 					case MINERALS -> {
-						maxMP = 0;
+						var max = 0l;
 						long summ = 0;
 						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 								CellObject cell = Configurations.world.get(new Point(x, y));
 								if (cell != null && cell instanceof AliveCell acell){
 									summ += acell.getMineral();
-									maxMP = Math.max(maxMP, acell.getMineral());
+									max = Math.max(max, acell.getMineral());
 								}
 							}
 						}
+						maxMP = max;
 						var length = 10;
 						values = new Graph.Value[length + 1];
 						var w = 1.0 / values.length;
@@ -92,14 +93,15 @@ public class Legend extends JPanel{
 							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
 					}
 					case YEAR -> {
-						maxAge = 0;
+						var max = 0l;
 						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 								CellObject cell = Configurations.world.get(new Point(x, y));
 								if (cell != null && cell instanceof AliveCell acell)
-									maxAge = Math.max(maxAge, acell.getAge());
+									max = Math.max(max, acell.getAge());
 							}
 						}
+						maxAge = max;
 						var rmaxAge = maxAge;
 						maxAge *= 1.4;//Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах
 						values = new Graph.Value[10];
@@ -123,17 +125,19 @@ public class Legend extends JPanel{
 						}
 					}
 					case GENER -> {
-						maxGenDef = 0;
-						minGenDef = Long.MAX_VALUE;
+						var max = 0l;
+						var min = Long.MAX_VALUE;
 						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 								CellObject cell = Configurations.world.get(new Point(x, y));
-								if (cell != null && cell instanceof AliveCell) {
-									maxGenDef = Math.max(maxGenDef, ((AliveCell) cell).getGeneration());
-									minGenDef = Math.min(minGenDef, ((AliveCell) cell).getGeneration());
+								if (cell != null && cell instanceof AliveCell acell) {
+									max = Math.max(max, acell.getGeneration());
+									min = Math.min(min, acell.getGeneration());
 								}
 							}
 						}
+						maxGenDef = max;
+						minGenDef = min;
 						var rdel = maxGenDef - minGenDef;
 						long del = (long) (rdel * 1.4);//Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах
 						maxGenDef = minGenDef + del;
@@ -241,6 +245,7 @@ public class Legend extends JPanel{
 		public void paintComponent(Graphics g) {
 			g.setColor(getBackground());
 			g.fillRect(0, 0, getWidth(), getHeight());
+			g.setFont(Configurations.smalFont);
 			
 			g.setColor(Color.BLACK);
 			int width = getWidth()-BORDER*2;
@@ -331,7 +336,10 @@ public class Legend extends JPanel{
 		);
 		graph.setLayout(gl_Graph);
 	}
-
+	/**Активировать ту или иную кнопку
+	 * @param e событие, в котором указано какая кнопка активированна
+	 * @param doing какое теперь будет действие
+	 */
 	private void action(ActionEvent e, MODE doing) {
 		for(var i : panel.getComponents()) {
 			if(i instanceof JRadioButton rb) {
@@ -341,12 +349,16 @@ public class Legend extends JPanel{
 		Graph.mode = doing;
 		graph.updateSrin = !Configurations.world.isActiv();
 	}
-	
+	/**Создаёт кнопку выбора режима работы легенды
+	 * @param name имя кнопки, оно используется для подтягивания текста
+	 * @param mode какой режим выбирается этой кнопкой
+	 * @return переключатель
+	 */
 	private JRadioButton makeRB(String name, Graph.MODE mode) {
 		JRadioButton jrbuton = new JRadioButton(Configurations.getHProperty(Legend.class,"Label" + name));
 		jrbuton.setToolTipText(Configurations.getHProperty(Legend.class,"ToolTip" + name));
 		jrbuton.addActionListener(e->action(e,mode));
-		jrbuton.setFont(new Font("Tahoma", Font.PLAIN, 11));
+		jrbuton.setFont(Configurations.smalFont);
 		jrbuton.setFocusable(false);
 		return jrbuton;
 	}
