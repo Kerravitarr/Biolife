@@ -31,9 +31,12 @@ import javax.swing.border.EmptyBorder;
 
 import MapObjects.CellObject;
 import java.io.File;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import javax.swing.JToolTip;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
+import javax.swing.UIManager;
 import main.Configurations;
 import main.World;
 import panels.BotInfo;
@@ -154,11 +157,50 @@ public class BioLife extends JFrame {
 	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
 	private	final double PIXEL_PER_CELL = 10;
 
-	/**
-	 * Launch the application.
+	/**Точка входа в приложение
+	 * @param args аргументы командной строки
 	 */
 	public static void main(String[] args) {
+		final var _opts = new Utils.CMDOptions(args);
+		_opts.add(new Utils.CMDOptions.Option('h',"Печать справки по драйверу"));
+		
+		var print_help = _opts.get('h').get(Boolean.class) ? (false ? 1 : 2) : 0;
+		boolean isNeedHelp = print_help != 0;
+		if (isNeedHelp) {
+			if(print_help == 1)
+				System.out.println("Параметры командной строки, установленные:");
+			else
+				System.out.println("Параметры командной строки, по умолчанию:");
+			String opts_str = "";
+			for (var it = _opts.iterator(); it.hasNext();) {
+				Utils.CMDOptions.Option i = it.next();
+				if(i.get(Utils.CMDOptions.Option.state.class) != Utils.CMDOptions.Option.state.remove)
+					opts_str += "\n" + i.print(75,!(print_help == 1));
+			}
+			System.out.println(opts_str);
+			return;
+		} else {
+			String optsStr = "";
+			for(var i : _opts.getCmdParams().entrySet())
+				optsStr += String.format("-%s%s ",i.getKey(), i.getValue());
+			System.out.println("Опции находятся в допустимых пределах. Параметры запуска: " + optsStr);
+		}
+		setUIFont(new javax.swing.plaf.FontUIResource(Configurations.defaultFont));
 		EventQueue.invokeLater(() -> {try {new BioLife().setVisible(true);} catch (Exception e) {e.printStackTrace();}});		
+	}
+	/**Сохраняет шрифты по умолчанию для всего приложения
+	 * @param f 
+	 */
+	public static void setUIFont(javax.swing.plaf.FontUIResource f) {
+		
+		java.util.Enumeration keys = UIManager.getDefaults().keys();
+		while (keys.hasMoreElements()) {
+			Object key = keys.nextElement();
+			Object value = UIManager.get(key);
+			if (value instanceof javax.swing.plaf.FontUIResource) {
+				UIManager.put(key, f);
+			}
+		}
 	}
 
 	/**
@@ -280,8 +322,12 @@ public class BioLife extends JFrame {
 		panel_2.setLayout(new BorderLayout(0, 0));
 		
 		JLabel label = new JLabel();
-		label.setFont(new Font("Tahoma", Font.PLAIN, 8));
-		label.setHorizontalAlignment(SwingConstants.CENTER);
+		label.setFont(Configurations.smalFont);
+		switch (borderLayoutConst) {
+			case BorderLayout.EAST -> label.setHorizontalAlignment(SwingConstants.RIGHT);
+			case BorderLayout.WEST -> label.setHorizontalAlignment(SwingConstants.LEFT);
+			default -> label.setHorizontalAlignment(SwingConstants.CENTER);
+		}
 		label.addMouseListener(new MouseAdapter() {
 			boolean isActive = false;
 			@Override
@@ -306,15 +352,17 @@ public class BioLife extends JFrame {
 			sb.append(text.charAt(i));
 			sb.append("<br>");
 		}
+		//И ещё небольшой отпуск снизу
+		sb.append("<br>");
 		return sb.toString();
 	}
 
 	private void mouseClicked_panel(JPanel panel ,JLabel panel_Label, String name, boolean isActive, String borderLayoutConst) {
-		String symbol =  switch (borderLayoutConst) {
+		String symbol =  "" + switch (borderLayoutConst) {
 			case BorderLayout.EAST -> isActive ? "&GT;" : "&lt;";
 			case BorderLayout.WEST -> !isActive ? "&GT;" : "&lt;";
-			case BorderLayout.SOUTH -> isActive ? " \\/;" : " /\\";
-			case BorderLayout.NORTH -> !isActive ? " \\/;" : " /\\";
+			case BorderLayout.SOUTH -> isActive ? "  \\/" : "  /\\";
+			case BorderLayout.NORTH -> !isActive ? "  \\/" : "  /\\";
 			default ->	throw new IllegalArgumentException("Unexpected value: " + borderLayoutConst);
 		};
 		panel.setVisible(isActive);
