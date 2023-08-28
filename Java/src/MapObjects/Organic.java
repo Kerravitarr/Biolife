@@ -24,8 +24,6 @@ public class Organic extends CellObject {
     private double poisonCount = 0;
 	/**Когда следующее деление*/
 	public int nextDouble;
-	/**Нам разрешил скушать того, кто сверху!*/
-	private boolean eatUp = false;
     
 
 	public Organic(AliveCell cell) {
@@ -38,6 +36,7 @@ public class Organic extends CellObject {
 	/**
      * Загрузка клетки
      * @param cell - JSON объект, который содержит всю информацюи о клетке
+	 * @param version версия протокола JSON
      */
     public Organic(JSON cell, long version) {
     	super(cell);
@@ -97,12 +96,13 @@ public class Organic extends CellObject {
 				return super.move(direction);
 			}
 			case ORGANIC -> {
-				var org = (Organic) Configurations.world.get(pos);
-				var isAdhesion = org.getHealth() + getHealth() < AliveCellProtorype.MAX_HP
-						|| ((org.eatUp || eatUp) 
-							&& (Math.max(getHealth(), org.getHealth()) / Math.min(getHealth(), org.getHealth()) <= 1.1));
-				if(isAdhesion){ //Маленькие кусочки слипаются
-					org.eatUp = false;
+				final var org = (Organic) Configurations.world.get(pos);
+				final var yMin =  Math.min(getPos().getY(), org.getPos().getY());
+				final var yMax =  Math.max(getPos().getY(), org.getPos().getY());
+				final var hpMin =  Math.min(getHealth(), org.getHealth());
+				final var hpMax =  Math.max(getHealth(), org.getHealth());
+				//100_000_000 - если больше сделать, то 0.1 уже не помещается в double и органика становится бесконечной
+				if(hpMin * yMax >= hpMax * yMin && hpMax < 100_000_000){ //Маленькие кусочки слипаются
 					org.addHealth(getHealth());
 					if(poison != Poison.TYPE.UNEQUIPPED)
 						org.toxinDamage(poison, (int) poisonCount);
@@ -203,21 +203,16 @@ public class Organic extends CellObject {
 		}
 	}
 
-	/**Возвращает тип яда, которым пропитанна органика*/
+	/**Возвращает тип яда, которым пропитанна органик
+	 * @return тип яда, которым заражена органики
+	 */
 	public Poison.TYPE getPoison() {
 		return poison;
 	}
-	/**Возвращает степень ядовитости органики*/
+	/**Возвращает степень ядовитости органик
+	 * @return количество очков яда, которые уже есть в клетке
+	 */
 	public int getPoisonCount() {
 		return (int) poisonCount;
 	}
-	
-	/**
-	 * Разрешает клетке объединиться с любой другой клеткой
-	 */
-	public void setPermissionEat(){
-		eatUp = true;
-	}
-	public boolean getPermissionEat(){return eatUp;};
-
 }
