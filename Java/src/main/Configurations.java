@@ -20,6 +20,10 @@ import MapObjects.Geyser;
 import MapObjects.Sun;
 import Utils.JSON;
 import Utils.JsonSave;
+import java.awt.Font;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import panels.BotInfo;
 import panels.EvolTreeDialog;
 import panels.Menu;
@@ -109,6 +113,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 	/**Дерево эволюции*/
 	public static EvolTreeDialog evolTreeDialog = null;
 	
+	
 	//Общие классы для программы
 	/**ГСЧ для симуляции*/
 	public static SplittableRandom rnd = new SplittableRandom();
@@ -117,8 +122,15 @@ public class Configurations extends JsonSave.JSONSerialization{
 		@Override
 		public Thread newThread(Runnable task) {return new Thread(task, "TIME_OUT_TASK");}
 	});
+	
+	//Общее форматирование
+	/**Фон по умолчанию для всех компонентов*/
+	public static java.awt.Font defaultFont = new java.awt.Font("Verdana", Font.BOLD, 12); 
+	/**Уменьешнный размер шрифта для необходимых элементов*/
+	public static java.awt.Font smalFont = new java.awt.Font("Verdana", Font.PLAIN, 10); 
+	
 	/**Переводчик для всех названий. В теории*/
-	public static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
+	private static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
 	
 	
 	@Override
@@ -295,5 +307,23 @@ public class Configurations extends JsonSave.JSONSerialization{
 			button.setRolloverIcon(new ImageIcon(icon_select.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
 		else if(icon_const != null)
 			button.setRolloverIcon(new ImageIcon(icon_const.getImage().getScaledInstance(10, 10, Image.SCALE_SMOOTH)));
+	}
+	
+	/**Тестирует шрифт на возможность вывода на экран всех ключей.
+	 * @param font тестируемый шрифт
+	 * @return список символов, которые невозможно вывыести на экран
+	 */
+	public static Set<String> testFont(java.awt.Font font){
+		var ret = new HashSet<String>();
+		for (var iterator = Configurations.bundle.getKeys(); iterator.hasMoreElements();) {
+			String key = iterator.nextElement();
+			for(var ch : Configurations.bundle.getString(key).split("")){
+				var n = font.canDisplayUpTo(ch);
+				if(n < 0){
+					ret.add(ch);
+				}
+			}
+		}
+		return ret;
 	}
 }
