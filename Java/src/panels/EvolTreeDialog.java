@@ -430,7 +430,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
         jPanelTree.setLayout(jPanelTreeLayout);
         jPanelTreeLayout.setHorizontalGroup(
             jPanelTreeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
+            .addGap(0, 689, Short.MAX_VALUE)
         );
         jPanelTreeLayout.setVerticalGroup(
             jPanelTreeLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)

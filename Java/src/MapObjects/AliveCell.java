@@ -158,7 +158,7 @@ public class AliveCell extends AliveCellProtorype {
 
         dna = ndna;
 
-        setGeneration(0); //Вирусные клетки имеют нулевое поколение
+        setGeneration(cell.Generation + 1); //Вирусные клетки имеют следующее поколение, хотя формально в них мутаций целый вагон
         evolutionNode = cell.evolutionNode.clone();
         evolutionNode = evolutionNode.newNode(this, getStepCount());
         repaint();
@@ -682,10 +682,7 @@ public class AliveCell extends AliveCellProtorype {
         return make;
     }
 	
-	/**
-	 *
-	 * @return
-	 */
+	@Override
 	public String toString(){
 		return 	MessageFormat.format(Configurations.getProperty(AliveCell.class,"toString"), getPos());
 	}
