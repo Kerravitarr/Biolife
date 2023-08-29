@@ -186,7 +186,8 @@ public class Organic extends CellObject {
 
 	@Override
 	public void repaint() {
-		switch (Legend.Graph.getMode()) {
+		final var legend = Configurations.legend;
+		switch (legend.getMode()) {
 			case POISON -> {
 				var rg = (int) Utils.betwin(0, getHealth() / Poison.MAX_TOXIC, 1.0) * 255;
 				switch (poison) {
@@ -197,8 +198,8 @@ public class Organic extends CellObject {
 				}
 				
 			}
-			case HP -> color_DO = Legend.Graph.HPtToColor(getHealth());
-			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge());
+			case HP -> color_DO = legend.HPtToColor(getHealth());
+			case YEAR -> color_DO = legend.AgeToColor(getAge());
 			default -> color_DO = ORGANIC_COLOR;
 		}
 	}

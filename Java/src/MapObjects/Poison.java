@@ -259,9 +259,10 @@ public class Poison extends CellObject {
 
 	@Override
 	public void repaint() {
-		switch (Legend.Graph.getMode()) {
-			case HP -> color_DO = Legend.Graph.HPtToColor(getHealth());
-			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge());
+		final var legend = Configurations.legend;
+		switch (legend.getMode()) {
+			case HP -> color_DO = legend.HPtToColor(energy/MAX_TOXIC);
+			case YEAR -> color_DO = legend.AgeToColor(getAge());
 			default -> {
 				switch (getType()) {
 					case YELLOW -> color_DO = (Color.YELLOW);

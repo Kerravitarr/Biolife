@@ -6,6 +6,7 @@ import java.awt.Graphics;
 
 import Utils.JSON;
 import Utils.Utils;
+import main.Configurations;
 import main.Point.DIRECTION;
 import panels.Legend;
 
@@ -105,9 +106,10 @@ public class Fossil extends CellObject {
 
 	@Override
 	public void repaint() {
-		switch (Legend.Graph.getMode()) {
-			case HP -> color_DO = Legend.Graph.HPtToColor(getHealth());
-			case YEAR -> color_DO = Legend.Graph.AgeToColor(((double)getAge())/MAX_AGE);
+		final var legend = Configurations.legend;
+		switch (legend.getMode()) {
+			case HP -> color_DO = legend.HPtToColor(getHealth());
+			case YEAR -> color_DO = legend.AgeToColor(((double)getAge())/MAX_AGE);
 			default -> color_DO = COLOR_DO;
 		}
 	}

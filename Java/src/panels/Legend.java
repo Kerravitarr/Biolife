@@ -20,315 +20,92 @@ import MapObjects.Poison;
 import Utils.Utils;
 import main.Configurations;
 import main.Point;
-import panels.Legend.Graph.MODE;
 
-public class Legend extends JPanel{
-	public static class Graph extends JPanel {
-		private class UpdateScrinTask implements Runnable {
-			@Override
-			public void run() {
-				if (!isVisible()) return;
-				switch (getMode()) {
-					case DOING -> {
-						values = new Graph.Value[AliveCell.ACTION.size()];
-						for(int i = 0 ; i < values.length ; i++) {
-							var act = AliveCell.ACTION.staticValues[i];
-							values[i] = new Graph.Value((i + 1.0) / values.length, 1.0 / values.length, act.description, new Color(act.r,act.g,act.b));
-						}
-					}
-					case HP -> {
-						var max = 0d;
-						double summ = 0;
-						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-								CellObject cell = Configurations.world.get(new Point(x, y));
-								if (cell != null && cell instanceof AliveCell acell){
-									summ += acell.getHealth();
-									max = Math.max(max, acell.getHealth());
-								}
-							}
-						}
-						maxHP = (long) max;
-						var length = 10;
-						values = new Graph.Value[length + 1];
-						var w = 1.0 / values.length;
-						for (int i = 0; i < values.length - 1; i++) {
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, w, (i * maxHP / length) + "", Utils.getHSBColor(0, 1, 1, (0.25 + 3d*i / (4d*length))));
-						}
-						if(summ < 10000)
-							values[values.length - 1]  = new Graph.Value(1.0, w, String.format("Σ=%d",(long)summ),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
-						else if(summ < 10000000)
-							values[values.length - 1]  = new Graph.Value(1.0, w, String.format("Σ=%dk",(long)summ/1000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
-						else if(summ < 10000000000L)
-							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dM",(long)summ/1000000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
-						else 
-							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
-					}
-					case MINERALS -> {
-						var max = 0l;
-						long summ = 0;
-						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-								CellObject cell = Configurations.world.get(new Point(x, y));
-								if (cell != null && cell instanceof AliveCell acell){
-									summ += acell.getMineral();
-									max = Math.max(max, acell.getMineral());
-								}
-							}
-						}
-						maxMP = max;
-						var length = 10;
-						values = new Graph.Value[length + 1];
-						var w = 1.0 / values.length;
-						for (int i = 0; i < values.length - 1; i++) {
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, w, Integer.toString((int) (i * maxMP / length)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d*i / (4d*length))));
-						}
-						if(summ < 10000)
-							values[values.length - 1]  = new Graph.Value(1.0, w, String.format("Σ=%d",(long)summ),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-						else if(summ < 10000000)
-							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dk",(long)summ/1000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-						else if(summ < 10000000000L)
-							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dM",(long)summ/1000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-						else 
-							values[values.length - 1]  = new Graph.Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-					}
-					case YEAR -> {
-						var max = 0l;
-						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-								CellObject cell = Configurations.world.get(new Point(x, y));
-								if (cell != null && cell instanceof AliveCell acell)
-									max = Math.max(max, acell.getAge());
-							}
-						}
-						maxAge = max;
-						var rmaxAge = maxAge;
-						maxAge *= 1.4;//Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах
-						values = new Graph.Value[10];
-						long mAge = 0;
-						StringBuilder text = new StringBuilder(100);
-						for (int i = 0; i < values.length; i++) {
-							long nAge = (i+1) * rmaxAge / values.length;
-							numToStr(mAge,text);
-							text.append(" - ");
-							numToStr(nAge,text);
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), Color.getHSBColor(i / (values.length * 1.4f), 0.9f, 0.9f));
-							text.setLength(0);
-							mAge = nAge;
-						}
-					}
-					case PHEN ->  {
-						values = new Graph.Value[AliveCellProtorype.Specialization.TYPE.size()];
-						for(int i = 0 ; i < values.length ; i++) {
-							var act = AliveCellProtorype.Specialization.TYPE.staticValues[i];
-							values[i] = new Graph.Value((i + 1.0) / values.length, 1.0 / values.length, act.toString(), Utils.getHSBColor(act.color, 1f, 1f, 1f));
-						}
-					}
-					case GENER -> {
-						var max = 0l;
-						var min = Long.MAX_VALUE;
-						for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-							for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-								CellObject cell = Configurations.world.get(new Point(x, y));
-								if (cell != null && cell instanceof AliveCell acell) {
-									max = Math.max(max, acell.getGeneration());
-									min = Math.min(min, acell.getGeneration());
-								}
-							}
-						}
-						maxGenDef = max;
-						minGenDef = min;
-						var rdel = maxGenDef - minGenDef;
-						long del = (long) (rdel * 1.4);//Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах
-						maxGenDef = minGenDef + del;
-						long mGen = minGenDef;
-						StringBuilder text = new StringBuilder(100);
-						values = new Graph.Value[10];
-						for (int i = 0; i < values.length; i++) {
-							long nGen = minGenDef + (i+1) * rdel / values.length;
-							numToStr(mGen,text);
-							text.append(" - ");
-							numToStr(nGen,text);
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), Color.getHSBColor(i / (values.length * 1.4f), 0.9f, 0.9f));
-							text.setLength(0);
-							mGen = nGen;
-						}
-					}
-					case POISON -> {
-						values = new Graph.Value[10];
-						for (int i = 0; i < values.length; i++) {
-							var rg = (int) (255.0 * i / values.length);
-							values[i] = new Graph.Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * Poison.MAX_TOXIC / values.length) + "", new Color(rg, rg, rg));
-						}
-					}
-					case EVO_TREE -> {
-						values = new Graph.Value[0];
-					}
-				}
-				if (updateSrin) {
-					updateSrin = false;
-					for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-						for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-							CellObject cell = Configurations.world.get(new Point(x, y));
-							if (cell != null)
-								cell.repaint();
-						}
-					}
-				}
-				Graph.this.repaint(1);
-			}
-			private void numToStr(long num, StringBuilder sb) {
-				if(num < 1000){
-					sb.append(Long.toString(num));
-				} else if(num < 10000) {
-					sb.append(Long.toString(num / 1000));
-					sb.append(".");
-					sb.append(Long.toString((num % 1000) / 100));
-					sb.append("k");
-				}  else if(num < 1000000) {
-					sb.append(Long.toString(num / 1000));
-					sb.append("k");
-				} else if(num < 10000000) {
-					sb.append(Long.toString(num / 1000000));
-					sb.append(".");
-					sb.append(Long.toString((num % 1000000) / 100000));
-					sb.append("M");
-				} else {
-					sb.append(Long.toString(num / 1000000));
-					sb.append("M");
-				} 
-			}
-		}
-
-		
-		static final int HEIGHT = 40;
-		static final int BORDER = 50;
-		
-		public enum MODE {DOING,HP,YEAR,PHEN, GENER, MINERALS, POISON, EVO_TREE}
-		static MODE mode = MODE.DOING;
-		/**Максимальный возраст объекта на экране*/
-		static long maxAge = 0;
-		/**Минимальное покаление объекта на экране*/
-		static long minGenDef = 0;
-		/**Максимальное покаление объекта на экране*/
-		static long maxGenDef = 0;
-		/**Максимальное количество жизней у существ на экране*/
-		static long maxHP = 0;
-		/**Максимальное количество минералов у существ на экране*/
-		static long maxMP = 0;
-		/**Если нужно обновить цвет объектов на экране*/
-		boolean updateSrin = false;
-		
-		/**Значение*/
-		class Value{
-			public Value(double right, double width, String title, Color color) {
-				this.x=right - width/2;
-				this.width=width/2;
-				this.title=title;
-				this.color=color;
-			}
-			/**0-1, где находится значение*/
-			double x ;
-			/**0-1 его ширина*/
-			double width;
-			//Подпись
-			String title;
-			//Цвет занчения
-			Color color;
-		}
-		Value[] values = new Value[0];
-		
-		Graph(){
-			Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
-		}
-		
+public class Legend extends JPanel implements Configurations.EvrySecondTask{
+	private class Graph extends JPanel {
+		@Override
 		public void paintComponent(Graphics g) {
 			g.setColor(getBackground());
 			g.fillRect(0, 0, getWidth(), getHeight());
-			g.setFont(Configurations.smalFont);
+			g.setFont(Configurations.defaultFont);
 			
 			g.setColor(Color.BLACK);
-			int width = getWidth()-BORDER*2;
-			g.drawLine(BORDER, HEIGHT-20, getWidth()-BORDER, HEIGHT-20);
+			int width = getWidth()-_BORDER*2;
+			g.drawLine(_BORDER, _HEIGHT-20, getWidth()-_BORDER, _HEIGHT-20);
 			
 			for(Value i : values) {
 				g.setColor(i.color);
-				g.fillRect(BORDER+(int) ((i.x-i.width)*width), 0, (int) (i.width*width * 2), HEIGHT-25);
-				g.drawString(i.title, BORDER+(int) (i.x*width) - i.title.length()*5/2, HEIGHT-10);
+				g.fillRect(_BORDER+(int) ((i.x-i.width)*width), 0, (int) (i.width*width * 2), _HEIGHT-25);
+				g.drawString(i.title, _BORDER+(int) (i.x*width) - i.title.length()*5/2, _HEIGHT-10);
 			}
-		}
-
-		/**
-		 * @return the mode
-		 */
-		public static MODE getMode() {
-			return mode;
-		}
-		/**
-		 * Превращает покаление клетки в конкретный цвет
-		 * @param gen покаление
-		 * @return Цвет
-		 */
-		public static Color generationToColor(long gen) {
-			return Utils.getHSBColor(Utils.betwin(0.0, ((double)(gen - minGenDef))/(maxGenDef-minGenDef), 1.0), 1, 1,1);
-		}
-		/**
-		 * Превращает возраст клетки в конкретный цвет
-		 * @param age возраст, в тиках
-		 * @return Цвет
-		 */
-		public static Color AgeToColor(long age) {
-			return AgeToColor(((double)age)/maxAge);
-		}
-		/**
-		 * Превращает возраст клетки в конкретный цвет
-		 * @param age возраст, в процентах от максимального. [0;1]
-		 * @return Цвет
-		 */
-		public static Color AgeToColor(double age) {
-			return Utils.getHSBColor(Utils.betwin(0.0, age, 1.0), 1, 1,1);
-		}
-		
-		public static Color HPtToColor(double hp){
-			if(maxHP != 0)
-				return Utils.getHSBColor(0, 1, 1, Utils.betwin(0, (0.25 + 3d * hp / (4d * maxHP)), 1.0));
-			else
-				return Utils.getHSBColor(0, 1, 1, 0.25);
-		}
-		public static Color MPtToColor(double mp){
-			if(maxMP != 0)
-				return Utils.getHSBColor(0.661111, 1, 1, Utils.betwin(0, (0.25 + 3d * mp / (4d * maxMP)), 1.0));
-			else
-				return Utils.getHSBColor(0.661111, 1, 1, 0.25);
 		}
 	}
 
 	/**Панель, на которой рисуются радиокнопки*/
-	JPanel panel;
+	private final JPanel panel;
 	/**Панель, на которой рисуются шкалы*/
-	Graph graph;
+	private final JPanel graph;
+	/**Текущий режим работы легеды*/
+	private MODE mode = MODE.DOING;
+	/**Максимальный возраст объекта на экране*/
+	private long maxAge = 0;
+	/**Минимальное покаление объекта на экране*/
+	private long minGenDef = 0;
+	/**Максимальное покаление объекта на экране*/
+	private long maxGenDef = 0;
+	/**Максимальное количество жизней у существ на экране*/
+	private long maxHP = 0;
+	/**Максимальное количество минералов у существ на экране*/
+	private long maxMP = 0;
+	/**Если нужно обновить цвет объектов на экране*/
+	private boolean updateSrin = false;
+	/**Блоки, из которых состоит легеда - цвета и значения интервалов*/
+	private Value[] values = new Value[0];
+	/**Высота области легеды*/
+	private final int _HEIGHT = 40;
+	/**Размер краёв области легеды*/
+	private final int _BORDER = 50;
+
+	/**Режимы работы легенды*/
+	public enum MODE {DOING,HP,YEAR,PHEN, GENER, MINERALS, POISON, EVO_TREE}
+	/**Интервал значений и цвет значений для подписей внизу экрана*/
+	class Value{
+		/**0-1, где находится значение*/
+		double x ;
+		/**0-1 его ширина*/
+		double width;
+		//Подпись
+		String title;
+		//Цвет занчения
+		Color color;
+		public Value(double right, double width, String title, Color color) {this.x=right - width/2;this.width=width/2;this.title=title;this.color=color;}
+	}
+		
+		
 	/**
 	 * Create the panel.
 	 */
 	public Legend() {
 		setLayout(new BorderLayout(0, 0));
+		Configurations.legend = this;
+		
 		
 		panel = new JPanel();
 		panel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
 		add(panel, BorderLayout.NORTH);
 		
 		{
-			var f = makeRB("Doing",Graph.MODE.DOING);
+			var f = makeRB("Doing",MODE.DOING);
 			f.setSelected(true);
 			panel.add(f);
 		}
-		panel.add(makeRB("Hp",Graph.MODE.HP));
-		panel.add(makeRB("Age",Graph.MODE.YEAR));
-		panel.add(makeRB("Generation",Graph.MODE.GENER));
-		panel.add(makeRB("Phenotype",Graph.MODE.PHEN));
-		panel.add(makeRB("Mp",Graph.MODE.MINERALS));
+		panel.add(makeRB("Hp",MODE.HP));
+		panel.add(makeRB("Age",MODE.YEAR));
+		panel.add(makeRB("Generation",MODE.GENER));
+		panel.add(makeRB("Phenotype",MODE.PHEN));
+		panel.add(makeRB("Mp",MODE.MINERALS));
 		//panel.add(makeRB("Poison",Graph.MODE.POISON));
-		panel.add(makeRB("EvoTree",Graph.MODE.EVO_TREE));
+		panel.add(makeRB("EvoTree",MODE.EVO_TREE));
 		
 
 		graph = new Graph();
@@ -340,10 +117,199 @@ public class Legend extends JPanel{
 		);
 		gl_Graph.setVerticalGroup(
 			gl_Graph.createParallelGroup(Alignment.LEADING)
-				.addGap(0, Graph.HEIGHT, Short.MAX_VALUE)
+				.addGap(0, _HEIGHT, Short.MAX_VALUE)
 		);
 		graph.setLayout(gl_Graph);
+		add(graph);
+		Configurations.addTask(this);
 	}
+	
+	@Override
+	public void taskStep(){
+		if (!isVisible()) return;
+		switch (getMode()) {
+			case DOING -> {
+				values = new Value[AliveCell.ACTION.size()];
+				for(int i = 0 ; i < values.length ; i++) {
+					var act = AliveCell.ACTION.staticValues[i];
+					values[i] = new Value((i + 1.0) / values.length, 1.0 / values.length, act.description, new Color(act.r,act.g,act.b));
+				}
+			}
+			case HP -> {
+				var max = 0d;
+				double summ = 0;
+				for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+					for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+						CellObject cell = Configurations.world.get(new Point(x, y));
+						if (cell != null && cell instanceof AliveCell acell){
+							summ += acell.getHealth();
+							max = Math.max(max, acell.getHealth());
+						}
+					}
+				}
+				maxHP = (long) max;
+				var length = 10;
+				values = new Value[length + 1];
+				var w = 1.0 / values.length;
+				for (int i = 0; i < values.length - 1; i++) {
+					values[i] = new Value(1.0 * (i + 1) / values.length, w, (i * maxHP / length) + "", Utils.getHSBColor(0, 1, 1, (0.25 + 3d*i / (4d*length))));
+				}
+				if(summ < 10000)
+					values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%d",(long)summ),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
+				else if(summ < 10000000)
+					values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%dk",(long)summ/1000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
+				else if(summ < 10000000000L)
+					values[values.length - 1]  = new Value(1.0, w,String.format("Σ=%dM",(long)summ/1000000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
+				else 
+					values[values.length - 1]  = new Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
+			}
+			case MINERALS -> {
+				var max = 0l;
+				long summ = 0;
+				for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+					for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+						CellObject cell = Configurations.world.get(new Point(x, y));
+						if (cell != null && cell instanceof AliveCell acell){
+							summ += acell.getMineral();
+							max = Math.max(max, acell.getMineral());
+						}
+					}
+				}
+				maxMP = max;
+				var length = 10;
+				values = new Value[length + 1];
+				var w = 1.0 / values.length;
+				for (int i = 0; i < values.length - 1; i++) {
+					values[i] = new Value(1.0 * (i + 1) / values.length, w, Integer.toString((int) (i * maxMP / length)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d*i / (4d*length))));
+				}
+				if(summ < 10000)
+					values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%d",(long)summ),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+				else if(summ < 10000000)
+					values[values.length - 1]  = new Value(1.0, w,String.format("Σ=%dk",(long)summ/1000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+				else if(summ < 10000000000L)
+					values[values.length - 1]  = new Value(1.0, w,String.format("Σ=%dM",(long)summ/1000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+				else 
+					values[values.length - 1]  = new Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+			}
+			case YEAR -> {
+				var max = 0l;
+				for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+					for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+						CellObject cell = Configurations.world.get(new Point(x, y));
+						if (cell != null && cell instanceof AliveCell acell)
+							max = Math.max(max, acell.getAge());
+					}
+				}
+				maxAge = max;
+				var rmaxAge = maxAge;
+				maxAge *= 1.4;//Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах
+				values = new Value[10];
+				long mAge = 0;
+				StringBuilder text = new StringBuilder(100);
+				for (int i = 0; i < values.length; i++) {
+					long nAge = (i+1) * rmaxAge / values.length;
+					numToStr(mAge,text);
+					text.append(" - ");
+					numToStr(nAge,text);
+					values[i] = new Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), Color.getHSBColor(i / (values.length * 1.4f), 0.9f, 0.9f));
+					text.setLength(0);
+					mAge = nAge;
+				}
+			}
+			case PHEN ->  {
+				values = new Value[AliveCellProtorype.Specialization.TYPE.size()];
+				for(int i = 0 ; i < values.length ; i++) {
+					var act = AliveCellProtorype.Specialization.TYPE.staticValues[i];
+					values[i] = new Value((i + 1.0) / values.length, 1.0 / values.length, act.toString(), Utils.getHSBColor(act.color, 1f, 1f, 1f));
+				}
+			}
+			case GENER -> {
+				var max = 0l;
+				var min = Long.MAX_VALUE;
+				for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+					for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+						CellObject cell = Configurations.world.get(new Point(x, y));
+						if (cell != null && cell instanceof AliveCell acell) {
+							max = Math.max(max, acell.getGeneration());
+							min = Math.min(min, acell.getGeneration());
+						}
+					}
+				}
+				maxGenDef = max;
+				minGenDef = min;
+				var rdel = maxGenDef - minGenDef;
+				long del = (long) (rdel * 1.4);//Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах
+				maxGenDef = minGenDef + del;
+				long mGen = minGenDef;
+				StringBuilder text = new StringBuilder(100);
+				values = new Value[10];
+				for (int i = 0; i < values.length; i++) {
+					long nGen = minGenDef + (i+1) * rdel / values.length;
+					if(i == 0){
+						numToStr(minGenDef,text);
+						text.append("+ [");
+					}
+					numToStr(mGen - minGenDef,text);
+					text.append(" - ");
+					numToStr(nGen - minGenDef,text);
+					if(i+1 == values.length){
+						text.append("]");
+					}
+					values[i] = new Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), Color.getHSBColor(i / (values.length * 1.4f), 0.9f, 0.9f));
+					text.setLength(0);
+					mGen = nGen;
+				}
+			}
+			case POISON -> {
+				values = new Value[10];
+				for (int i = 0; i < values.length; i++) {
+					var rg = (int) (255.0 * i / values.length);
+					values[i] = new Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * Poison.MAX_TOXIC / values.length) + "", new Color(rg, rg, rg));
+				}
+			}
+			case EVO_TREE -> {
+				values = new Value[0];
+			}
+		}
+		if (updateSrin) {
+			updateSrin = false;
+			for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+				for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+					CellObject cell = Configurations.world.get(new Point(x, y));
+					if (cell != null)
+						cell.repaint();
+				}
+			}
+		}
+		repaint(1);
+	}
+	
+	/**Переводит число в краткую форму
+	 * @param num число
+	 * @param sb строка, куда запишется число и буква Кило или Мега
+	 */
+	private void numToStr(long num, StringBuilder sb) {
+		if(num < 1000){
+			sb.append(Long.toString(num));
+		} else if(num < 10000) {
+			sb.append(Long.toString(num / 1000));
+			sb.append(".");
+			sb.append(Long.toString((num % 1000) / 100));
+			sb.append("k");
+		}  else if(num < 1000000) {
+			sb.append(Long.toString(num / 1000));
+			sb.append("k");
+		} else if(num < 10000000) {
+			sb.append(Long.toString(num / 1000000));
+			sb.append(".");
+			sb.append(Long.toString((num % 1000000) / 100000));
+			sb.append("M");
+		} else {
+			sb.append(Long.toString(num / 1000000));
+			sb.append("M");
+		} 
+	}
+	
 	/**Активировать ту или иную кнопку
 	 * @param e событие, в котором указано какая кнопка активированна
 	 * @param doing какое теперь будет действие
@@ -354,22 +320,74 @@ public class Legend extends JPanel{
 				rb.setSelected(i == e.getSource());
 			}
 		}
-		Graph.mode = doing;
-		graph.updateSrin = !Configurations.world.isActiv();
+		mode = doing;
+		updateSrin = !Configurations.world.isActiv();
 	}
 	/**Создаёт кнопку выбора режима работы легенды
 	 * @param name имя кнопки, оно используется для подтягивания текста
 	 * @param mode какой режим выбирается этой кнопкой
 	 * @return переключатель
 	 */
-	private JRadioButton makeRB(String name, Graph.MODE mode) {
+	private JRadioButton makeRB(String name, MODE mode) {
 		JRadioButton jrbuton = new JRadioButton(Configurations.getHProperty(Legend.class,"Label" + name));
 		jrbuton.setToolTipText(Configurations.getHProperty(Legend.class,"ToolTip" + name));
 		jrbuton.addActionListener(e->action(e,mode));
-		jrbuton.setFont(Configurations.smalFont);
+		jrbuton.setFont(Configurations.defaultFont);
 		jrbuton.setFocusable(false);
 		return jrbuton;
 	}
 	
+	
+
+	/**
+	 * @return the mode
+	 */
+	public MODE getMode() {
+		return mode;
+	}
+	/**
+	 * Превращает покаление клетки в конкретный цвет
+	 * @param gen покаление
+	 * @return Цвет
+	 */
+	public Color generationToColor(long gen) {
+		return Utils.getHSBColor(Utils.betwin(0.0, ((double)(gen - minGenDef))/(maxGenDef-minGenDef), 1.0), 1, 1,1);
+	}
+	/**
+	 * Превращает возраст клетки в конкретный цвет
+	 * @param age возраст, в тиках
+	 * @return Цвет
+	 */
+	public Color AgeToColor(long age) {
+		return AgeToColor(((double)age)/maxAge);
+	}
+	/**
+	 * Превращает возраст клетки в конкретный цвет
+	 * @param age возраст, в процентах от максимального. [0;1]
+	 * @return Цвет
+	 */
+	public Color AgeToColor(double age) {
+		return Utils.getHSBColor(Utils.betwin(0.0, age, 1.0), 1, 1,1);
+	}
+	/**Переводит очки здровья в цвет
+	 * @param hp сколько очков здоровья
+	 * @return цвет, соответствующий указанному числу
+	 */
+	public Color HPtToColor(double hp){
+		if(maxHP != 0)
+			return Utils.getHSBColor(0, 1, 1, Utils.betwin(0, (0.25 + 3d * hp / (4d * maxHP)), 1.0));
+		else
+			return Utils.getHSBColor(0, 1, 1, 0.25);
+	}
+	/**Переводит очки минералов в цвет
+	 * @param mp сколько минералов
+	 * @return цвет, соответствующий указанному числу
+	 */
+	public Color MPtToColor(double mp){
+		if(maxMP != 0)
+			return Utils.getHSBColor(0.661111, 1, 1, Utils.betwin(0, (0.25 + 3d * mp / (4d * maxMP)), 1.0));
+		else
+			return Utils.getHSBColor(0.661111, 1, 1, 0.25);
+	}
 	
 }
