@@ -125,9 +125,9 @@ public class Configurations extends JsonSave.JSONSerialization{
 	
 	//Общее форматирование
 	/**Фон по умолчанию для всех компонентов*/
-	public static java.awt.Font defaultFont = new java.awt.Font("Verdana", Font.BOLD, 12); 
+	public static java.awt.Font defaultFont = null; 
 	/**Уменьешнный размер шрифта для необходимых элементов*/
-	public static java.awt.Font smalFont = new java.awt.Font("Verdana", Font.PLAIN, 10); 
+	public static java.awt.Font smalFont = null; 
 	
 	/**Переводчик для всех названий. В теории*/
 	private static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());

@@ -25,14 +25,11 @@ import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JViewport;
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 
 import MapObjects.CellObject;
 import java.io.File;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import javax.swing.JToolTip;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
@@ -71,6 +68,7 @@ public class BioLife extends JFrame {
 		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
 		
 		public void runE() {
+			final var world = Configurations.world;
 			String title = MessageFormat.format(Configurations.getProperty(BioLife.class,"title"), world.fps.FPS(), world.step,
 					world.sps.FPS(), world.countLife, world.countOrganic, world.countPoison, world.countWall, world.isActiv() ? ">" : "||");
 			setTitle(title);
@@ -97,7 +95,7 @@ public class BioLife extends JFrame {
 						if(!list[i].exists() || save.lastModified() > list[i].lastModified())
 							save = list[i];
 					}
-					settings.save(save.getName());
+					Configurations.settings.save(save.getName());
 					if(popup != null){
 						popup.hide();
 						popup = null;
@@ -127,7 +125,7 @@ public class BioLife extends JFrame {
 				view.x += deltaX;
 				view.y += deltaY;
 
-				world.scrollRectToVisible(view);
+				Configurations.world.scrollRectToVisible(view);
 			}
 		}
 
@@ -142,11 +140,7 @@ public class BioLife extends JFrame {
 	private final JPanel contentPane;
 	/**Где последний раз видели мышку*/
 	private java.awt.Point mousePoint = null;
-	
-	private final Menu menu;
-	private final BotInfo botInfo;
-	private final Settings settings;
-	private final World world;
+	/**Легенда карты*/
 	private final Legend legend;
 	/**Панелька с миром*/
 	private JScrollPane scrollPane;
@@ -155,7 +149,7 @@ public class BioLife extends JFrame {
 	
 	private JMenuItem startRecord;
 	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
-	private	final double PIXEL_PER_CELL = 10;
+	private	static final double PIXEL_PER_CELL = 10;
 
 	/**Точка входа в приложение
 	 * @param args аргументы командной строки
@@ -163,7 +157,7 @@ public class BioLife extends JFrame {
 	public static void main(String[] args) {
 		final var _opts = new Utils.CMDOptions(args);
 		_opts.add(new Utils.CMDOptions.Option('h',"Печать справки по драйверу"));
-		
+		//Обработка опций
 		var print_help = _opts.get('h').get(Boolean.class) ? (false ? 1 : 2) : 0;
 		boolean isNeedHelp = print_help != 0;
 		if (isNeedHelp) {
@@ -185,14 +179,27 @@ public class BioLife extends JFrame {
 				optsStr += String.format("-%s%s ",i.getKey(), i.getValue());
 			System.out.println("Опции находятся в допустимых пределах. Параметры запуска: " + optsStr);
 		}
+		//Обработка переменных окружения
+		//Настраиваем буковки
+		Configurations.defaultFont = new java.awt.Font("Default", Font.BOLD, 12);
+		Configurations.smalFont = Configurations.defaultFont.deriveFont(10f);
+		//Создаём мир
+		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
+		Configurations.makeWorld((int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL)); //120 - пикселей на верхнюю и нижнюю шапочки
+		Configurations.settings = new Settings();
+		Configurations.info = new BotInfo();
+		Configurations.world = new World();
+		Configurations.menu = new Menu();
+				
 		setUIFont(new javax.swing.plaf.FontUIResource(Configurations.defaultFont));
+		
+		//Запускаем приложение!
 		EventQueue.invokeLater(() -> {try {new BioLife().setVisible(true);} catch (Exception e) {e.printStackTrace();}});		
 	}
 	/**Сохраняет шрифты по умолчанию для всего приложения
 	 * @param f 
 	 */
 	public static void setUIFont(javax.swing.plaf.FontUIResource f) {
-		
 		java.util.Enumeration keys = UIManager.getDefaults().keys();
 		while (keys.hasMoreElements()) {
 			Object key = keys.nextElement();
@@ -216,7 +223,6 @@ public class BioLife extends JFrame {
 			setBounds(100, 100, (int) (sSize.getWidth() * 4.5 / PIXEL_PER_CELL), (int)((sSize.getHeight()) * 4.5 / PIXEL_PER_CELL));
 		else
 			setBounds(100, 100, (int) (sSize.getWidth() / 2), (int)((sSize.getHeight()) / 2));
-		Configurations.makeWorld((int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL)); //120 - пикселей на верхнюю и нижнюю шапочки
 		
 		contentPane = new JPanel();
 		contentPane.setBackground(Color.WHITE);
@@ -224,17 +230,12 @@ public class BioLife extends JFrame {
 		contentPane.setLayout(new BorderLayout(0, 0));
 		setContentPane(contentPane);
 
-		settings = new Settings();
-		contentPane.add(makePanel(settings, "Settings", BorderLayout.EAST), BorderLayout.EAST);
+		contentPane.add(makePanel(Configurations.settings, "Settings", BorderLayout.EAST), BorderLayout.EAST);
 		legend = new Legend();
 		contentPane.add(makePanel(legend, "Legend", BorderLayout.SOUTH), BorderLayout.SOUTH);
-		botInfo = new BotInfo();
-		contentPane.add(makePanel(botInfo,"BotInfo", BorderLayout.WEST), BorderLayout.WEST);
-		world = new World();
+		contentPane.add(makePanel(Configurations.info,"BotInfo", BorderLayout.WEST), BorderLayout.WEST);
 		contentPane.add(makeWorldPanel(), BorderLayout.CENTER);
-		menu = new Menu();
-		contentPane.add(makePanel(menu, "Menu", BorderLayout.NORTH), BorderLayout.NORTH);
-		//setJMenuBar(makeMenu());
+		contentPane.add(makePanel(Configurations.menu, "Menu", BorderLayout.NORTH), BorderLayout.NORTH);
 		
 		addKeyListener(new KeyAdapter() {
 			@Override
@@ -266,7 +267,7 @@ public class BioLife extends JFrame {
 			@Override
 			public void componentResized(ComponentEvent e) {
 				
-				var scale = (Math.pow(5,(settings.getScale()-1) / 100d));
+				var scale = (Math.pow(5,(Configurations.settings.getScale()-1) / 100d));
 				var newW = (int) (scrollPane.getWidth() * scale) - 10;
 				var newH = (int) (scrollPane.getHeight() * scale) - 10;
 				var horizont = scrollPane.getHorizontalScrollBar();
@@ -285,10 +286,10 @@ public class BioLife extends JFrame {
 					lastP.x += viewport.getWidth()/2;
 					lastP.y += viewport.getHeight()/2;
 				}
-				var Zw = ((double) newW) / world.getWidth();
-				var Zh = ((double) newH) / world.getHeight();
+				var Zw = ((double) newW) / Configurations.world.getWidth();
+				var Zh = ((double) newH) / Configurations.world.getHeight();
 				
-				world.setPreferredSize(new Dimension(newW,newH));
+				Configurations.world.setPreferredSize(new Dimension(newW,newH));
 
 				int newX = (int) ((lastP.x *= Zw) - viewport.getWidth()/2);
 				int newY = (int) ((lastP.y *= Zh) - viewport.getHeight()/2);
@@ -297,23 +298,23 @@ public class BioLife extends JFrame {
 		});
 		
 		viewport.addChangeListener(e -> EventQueue.invokeLater(() ->{
-			if(settings.getScale() > 1){
+			if(Configurations.settings.getScale() > 1){
 				var horizont = scrollPane.getHorizontalScrollBar();
 				var vertical = scrollPane.getVerticalScrollBar();
 				var xMin = Math.max(0, main.Point.rxToX(horizont.getValue()));
 				var xMax = Math.min(Configurations.MAP_CELLS.width - 1,main.Point.rxToX(horizont.getValue() + viewport.getSize().width));
 				var yMin = Math.max(0, main.Point.ryToY(vertical.getValue()));
 				var yMax = Math.min(Configurations.MAP_CELLS.height - 1,main.Point.ryToY(vertical.getValue() + viewport.getSize().height));
-				world.setVisible(new main.Point(xMin, yMin),new main.Point(xMax, yMax));
+				Configurations.world.setVisible(new main.Point(xMin, yMin),new main.Point(xMax, yMax));
 			} else {
-				world.setVisible(new main.Point(0, 0),new main.Point(Configurations.MAP_CELLS.width - 1, Configurations.MAP_CELLS.height - 1));
+				Configurations.world.setVisible(new main.Point(0, 0),new main.Point(Configurations.MAP_CELLS.width - 1, Configurations.MAP_CELLS.height - 1));
 			}
 		}));
-		settings.setListener(scrollPane);
-		scrollPane.setViewportView(world);
+		Configurations.settings.setListener(scrollPane);
+		scrollPane.setViewportView(Configurations.world);
 		var adapter = new MouseMoveAdapter();
-		world.addMouseListener(adapter);
-		world.addMouseMotionListener(adapter);
+		Configurations.world.addMouseListener(adapter);
+		Configurations.world.addMouseMotionListener(adapter);
 		return scrollPane;
 	}
 	
@@ -378,7 +379,7 @@ public class BioLife extends JFrame {
 	}
 	private void mouseWheel(MouseWheelEvent e) {
 		if (e.isControlDown()) {
-			settings.addScale(-e.getWheelRotation() * 10);
+			Configurations.settings.addScale(-e.getWheelRotation() * 10);
         }
 	}
 	private void keyPressed(KeyEvent e) {
@@ -394,19 +395,19 @@ public class BioLife extends JFrame {
 				if ((e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0)
 					Configurations.settings.save();
 				else
-					Configurations.TIME_OUT_POOL.execute(() -> world.step());
+					Configurations.TIME_OUT_POOL.execute(() -> Configurations.world.step());
 			}
 			case KeyEvent.VK_W ->
 				Configurations.TIME_OUT_POOL.execute(() -> {
-					CellObject cell = botInfo.getCell();
+					CellObject cell = Configurations.info.getCell();
 					if (cell != null)
 						new Thread(() -> cell.step(Math.round(Math.random() * 1000))).start();
 				});
 			case KeyEvent.VK_E ->
 				Configurations.TIME_OUT_POOL.execute(() -> {
-					CellObject cell = botInfo.getCell();
+					CellObject cell = Configurations.info.getCell();
 					if (cell != null)
-						botInfo.step();
+						Configurations.info.step();
 				});
 		}
 	}
