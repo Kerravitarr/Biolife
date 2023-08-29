@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
+import panels.Legend;
 
 /**
  *
@@ -31,6 +32,7 @@ public class CommandListTest {
 	public void setUp() {
 		Configurations.makeWorld(100, 100);
 		new World().stop();
+		Configurations.legend = new Legend();
 	}
 	
 	@Test
