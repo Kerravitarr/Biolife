@@ -594,7 +594,7 @@ public class CMDOptions implements java.lang.Iterable{
 	/**
 	 * Добавляет опцию
 	 * @param opt опция, которую надо добавить
-	 * @throws IllegalArgumentException, если такая опция уже существует
+	 * @throws IllegalArgumentException если такая опция уже существует
 	 */
 	public void add(Option opt){
 		if(contain(opt.name)){
@@ -607,7 +607,7 @@ public class CMDOptions implements java.lang.Iterable{
 	/**
 	 * Удаляет опцию
 	 * @param symbol опция, которую надо удалить
-	 * @throws IllegalArgumentException, если такая опция уже существует
+	 * @throws IllegalArgumentException если такая опция уже существует
 	 */
 	public void remove(char symbol){
 		if (contain(symbol) && get(symbol)._status != Option.state.remove) {
@@ -621,7 +621,7 @@ public class CMDOptions implements java.lang.Iterable{
 	 * Если у новой опции не задано описание и тот-же масштаб, то
 	 * опция считается не обновлённой, так как по факту мы просто обновили минимум-максимум
 	 * @param opt опция, которую надо обновить
-	 * @throws IllegalArgumentException, если такая опция уже существует
+	 * @throws IllegalArgumentException если такая опция не существует
 	 */
 	public void update(Option opt){
 		if(!contain(opt.name) && get(opt.name)._status != Option.state.remove){
@@ -658,7 +658,7 @@ public class CMDOptions implements java.lang.Iterable{
 	 * Возвращает опцию по её символу
 	 * @param symbol символ опции
 	 * @return опция, которую ищем
-	 * @throws IllegalArgumentException, если такая опция уже существует
+	 * @throws IllegalArgumentException если такая опция уже существует
 	 */
 	public Option get(char symbol){
 		var find = opts.stream().filter(test -> (test.getName() == symbol)).findFirst().orElse(null);
