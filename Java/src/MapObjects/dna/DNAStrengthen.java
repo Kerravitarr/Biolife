@@ -9,7 +9,7 @@ public class DNAStrengthen extends CommandDo {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
 	
-	protected DNAStrengthen() {super("ДНК ⊡++","Укрепить ДНК");}
+	protected DNAStrengthen() {super();}
 
 	@Override
 	protected void doing(AliveCell cell) {

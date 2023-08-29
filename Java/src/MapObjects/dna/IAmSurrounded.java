@@ -9,10 +9,14 @@ import MapObjects.AliveCell;
  */
 public class IAmSurrounded extends CommandExplore {
 
-	protected IAmSurrounded() {super("∅","Я окружён?", 2);}
+	protected IAmSurrounded() {super(2);}
 
 	@Override
 	protected int explore(AliveCell cell) {
 		return findEmptyDirection(cell) == null ? 0 : 1;
 	}
+	
+	public String getBranch(AliveCell cell, int numBranch, DNA dna){
+		return numBranch == 0 ? "◯" : "◉";
+	};
 }

@@ -2,7 +2,9 @@ package main;
 import static main.Configurations.geysers;
 
 import java.awt.Color;
+import java.awt.GradientPaint;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.HeadlessException;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -23,6 +25,10 @@ import javax.swing.JPanel;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.LV_STATUS;
+import static MapObjects.CellObject.LV_STATUS.LV_ALIVE;
+import static MapObjects.CellObject.LV_STATUS.LV_ORGANIC;
+import static MapObjects.CellObject.LV_STATUS.LV_POISON;
+import static MapObjects.CellObject.LV_STATUS.LV_WALL;
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Fossil;
 import MapObjects.Geyser;
@@ -32,104 +38,37 @@ import MapObjects.Sun;
 import Utils.ColorRec;
 import Utils.FPScounter;
 import Utils.JSON;
+import Utils.JsonSave;
 import Utils.StreamProgressBar;
 import Utils.Utils;
+import java.awt.EventQueue;
+import java.awt.event.MouseMotionListener;
+import java.text.MessageFormat;
+import java.util.concurrent.TimeUnit;
 import main.Point.DIRECTION;
-import panels.Legend;
+import start.BioLife;
 
-public class World extends JPanel implements Runnable,ComponentListener,MouseListener{	
+public class World extends JPanel implements Runnable,ComponentListener,MouseListener,MouseMotionListener{	
 	/**Симуляция запущена?*/
-	public static boolean isActiv = true;
-	/**Произошла авария?*/
+	private boolean isActiv = true;
+	/**Произошла авария? Значит больше задача моделироваться не может, игра закончена*/
 	public static boolean isError = false;
-	/**Сколько милисекунд делать перед ходами*/
+	/**Сколько кадров отрисовывать перед ходом. Если = 0, то как можно меньше. Если = 1, то считать всё на одном процессоре, если >1, то ФПС будет во столько раз больше ППС*/
 	public static int msTimeout = 0;
-	class AutostartThread extends Thread{AutostartThread(Runnable target){super(target);start();}}
-	final ForkJoinWorkerThreadFactory factory = new ForkJoinWorkerThreadFactory() {
-		private final AtomicInteger branshCount = new AtomicInteger(0);
-		@Override
-		public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
-			final ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-			worker.setName("World map thread " + branshCount.incrementAndGet());
-			return worker;
-		}
-	};
-	
-	class WorldTask implements Callable<Boolean>{
-		class WorkThread{
-			public WorkThread(Point[] cells) {
-				points = cells;
-				startX = points[0].getX();
-			}
-			/**Точки потока*/
-			Point [] points;
-			/**Начальный Х потока*/
-			int startX;
-		}
-		
-		WorkThread first;
-		WorkThread second;
-		WorldTask(Point [] cellsFirst, Point[] cellsSecond){
-			first = new WorkThread(cellsFirst);
-			second = new WorkThread(cellsSecond);
-		}
-		@Override
-		public Boolean call(){
-			WorkThread activ = isFirst ? first : second;
-			Point[] points = activ.points;
-			for (int i = points.length - 1; i >= 0 && !isError; i--) {
-				Point t = points[i];
-				if(get(t) == null) continue; //Чего мы будем пустые клетки мешать?
-				int j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
-				points[i] = points[j];
-				points[j] = t;
-				action(points[i]);
-			}
-			return null;
-		}
-
-		private void action(Point point) throws HeadlessException {
-			CellObject cell = get(point);
-			if(cell != null && cell.canStep(step)) {
-				try {
-					cell.step(step);
-					switch (Legend.Graph.getMode()) {
-						case HP,MINERALS,YEAR -> {
-							if (cell.getAge() % 100 == 0) // Перекрашиваем клетку иногда
-								cell.repaint();
-						}
-						default->{
-							if (cell.getAge() % 1000 == 0) // Перекрашиваем клетку иногда
-								cell.repaint();
-							}
-					}
-					
-				} catch (Exception e) {
-					isError = true;
-					isActiv = false;
-					e.printStackTrace();
-					System.out.println(cell);
-					System.out.println(point);
-					JOptionPane.showMessageDialog(null,	"<html>Критическая ошибка!!!\n"
-							+ "Вызвала клетка " + cell + " с координат" + point + "\n"
-							+ "Описание: " + e.getMessage() + "\n"
-							+ "К сожалению дальнейшее моделирование невозможно. \n"
-							+ "Вы можете сохранить мир и перезагрузить программу.",	"BioLife", JOptionPane.ERROR_MESSAGE);
-				}
-			}
-		}
-	}
-	
+	/**Фабрика создания потоков обсчёта мира*/
+	final ForkJoinWorkerThreadFactory factory;
 	/**Шаги мира*/
 	public long step = 0;
-	/**Специальный таймер, который позволяет замедлить симуляцию*/
+	/**Шаг, который должен завершиться, чтобы быть уверенным - мир остановлен*/
+	private long stopStep = -1;
+	/**Счётчик количества отрисованных кадров. А ещё это специальный таймер, который позволяет замедлить симуляцию*/
 	public int timeoutStep = 0;
 	/**Всего точек по процессорам - сколько процессоров, в каждом ряду есть у*/
 	private List<WorldTask> cellsTask;
 	/**Флаг, показывает какую часть экрана обрабатываем (первую или вторую)*/
 	private boolean isFirst = false;
 	/**Очередь потоков, которая будет обсчитывать мир*/
-	private ExecutorService executor;
+	private final ExecutorService maxExecutor;
 	/**Счётчик ФПС*/
 	public final FPScounter fps = new FPScounter();
 	/**Счётчик шагов*/
@@ -137,27 +76,91 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	/**Счётчик ораганики*/
 	public int countOrganic = 0;
 	/**Счётчик живых*/
-	public int countLife = 0;
+	public int countLife = 1;
 	/**Счётчик капель яда*/
 	public int countPoison = 0;
 	/**Счётчик стенок*/
 	public int countWall = 0;
 	/**Все цвета, которые мы должны отобразить на поле*/
-	ColorRec [] colors;
+	private final ColorRec [] colors = new ColorRec[2];
 	/**Это мы, наш поток, в нём мы рисуем всё и всяк*/
-	@SuppressWarnings("unused")
 	private final AutostartThread worldThread;
-	/**Мы живы. Наш поток жив, мы выполняем расчёт*/
-	public boolean isStart = true;
 	/**Показывает, что остановка была сделана специально для перерисовки*/
 	private int repaint_stop = 0;
+	/**Координаты видимой части экрана. Специально для перерисовки только ограниченной части. Две точки - верхний угол и нижний*/
+	private final Point[] visible = new Point[2];
+	/**Координаты выделения клеток при использовании мыши в качестве выделителя*/
+	private final Point[] selectPoint = new Point[2];
+	
+	/**Поток, который автоматически стартует при создании*/
+	class AutostartThread extends Thread{AutostartThread(Runnable target){super(target);start();}}
+	
+	/**Один блок, состоящий из двух вертекалей, карты*/
+	class WorldTask implements Callable<Boolean>{
+		/**Один вертикальный столбик карты, который обсчитвыает этот поток*/
+		class WorkThread{
+			/**Точки потока*/
+			final Point [] points;
+			/**Начальный Х потока*/
+			final int startX;
+			public WorkThread(Point[] cells) {points = cells;startX = points[0].getX();}
+		}
+		/**Первая вертикаль блока*/
+		private final WorkThread first;
+		/**Вторая вертикаль блока*/
+		private final WorkThread second;
+		WorldTask(Point [] cellsFirst, Point[] cellsSecond){first = new WorkThread(cellsFirst);second = new WorkThread(cellsSecond);}
+		@Override
+		public Boolean call(){
+			final Point[] points = (isFirst ? first : second).points;
+			for (int i = points.length - 1; i >= 0 && !isError; i--) {
+				Point t = points[i];
+				if(get(t) == null) continue; //Чего мы будем пустые клетки мешать?
+				int j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
+				//Меняем местами клетки, чтобы каждый раз вызывать их в разной последовательности
+				points[i] = points[j];
+				points[j] = t;
+				action(points[i]);
+			}
+			return null;
+		}
+		/** Выполняет обработку шага клетки
+		 * @param point точка, клетка из которой нас интересует
+		 */
+		private void action(Point point){
+			final CellObject cell = get(point);
+			if(cell != null && cell.canStep(step)) {
+				try {
+					cell.step(step);					
+				} catch (Exception e) {
+					isError = true;
+					isActiv = false;
+					e.printStackTrace();
+					System.out.println(cell);
+					System.out.println(point);
+					JOptionPane.showMessageDialog(null,	MessageFormat.format(Configurations.getHProperty(World.class,"error.exception"), cell, point, e.getMessage()),	"BioLife", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Create the panel.
 	 */
 	public World() {
 		super();
 		Configurations.world = this;
-		executor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1), factory, null, true); // Один поток нужен системе для отрисовки
+		setVisible(new Point(0,0),new Point(0,0));
+		factory = new ForkJoinWorkerThreadFactory() {
+			private final AtomicInteger branshCount = new AtomicInteger(0);
+			@Override
+			public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+				final ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+				worker.setName("World map thread " + branshCount.incrementAndGet());
+				return worker;
+			}
+		};
+		maxExecutor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1), factory, null, true); // Один поток нужен системе для отрисовки
 		
 		worldGenerate();
 		
@@ -171,27 +174,58 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 
 		addComponentListener(this);
 		addMouseListener(this);
+		addMouseMotionListener(this);
 		worldThread = new AutostartThread(this);
-	}
-	public void stop(){
-		isStart = false;
+		Configurations.addTask(() -> evrySecondTask());
 	}
 	@Override
 	public void run() {
 		Thread.currentThread().setName("World thread");
-		while (isStart) {
-			if (isActiv && msTimeout == 0)
+ 		while (true) {
+			if ((isActiv || stopStep == step) && msTimeout < 2)
 				step();
 			else
 				Utils.pause(1);
+			if(countLife == 0 && countOrganic == 0 && countPoison == 0 && countWall == 0 && isActiv())
+				stop();
 		}
 	}
-	
+	/**Задача, выполняющаяся каждую секунду*/
+	private void evrySecondTask(){
+		int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
+		var minH = Configurations.MAP_CELLS.height * (1d  - Configurations.LEVEL_MINERAL);//Высота минирализации
+		for (CellObject[] cellByY : Configurations.worldMap) {
+			var coByH = 0;
+			var coByHd = 0;
+			for (CellObject cell2 : cellByY) {
+				if(cell2 == null) continue;
+				cell2.repaint();
+				if(cell2.aliveStatus(LV_STATUS.LV_ALIVE))
+					localCl++;
+				else if(cell2.aliveStatus(LV_STATUS.LV_POISON))
+					localCP++;
+				else if(cell2.aliveStatus(LV_STATUS.LV_WALL))
+					localCW++;
+				else if(cell2.getPos().getY() > minH)
+					coByHd++;
+				else
+					coByH++;
+			}
+			localCO += coByH + coByHd;
+		}
+		if(isActiv()){
+			countLife = localCl;
+			countOrganic = localCO;
+			countPoison = localCP;
+			countWall = localCW;
+		}
+	}
+	/**Генерирует карту - добавляет солнце, гейзеры, обновляет константы мира, разбивает мир на потоки процессора */
 	public void worldGenerate() {
 		var vaxX = Configurations.MAP_CELLS.width;
 		geysers = new Geyser[2];
-		geysers[0]  = new Geyser(vaxX * 10 / 40,vaxX * 13 / 40,getWidth(),getHeight(),DIRECTION.DOWN,10,10);
-		geysers[1]  = new Geyser(vaxX * 30 / 40,vaxX * 33 / 40,getWidth(),getHeight(),DIRECTION.UP,10, 2);
+		geysers[0]  = new Geyser(vaxX * 1 / 4,vaxX * 1/5,getWidth(),getHeight(),DIRECTION.DOWN,100);
+		geysers[1]  = new Geyser(vaxX * 3 / 4,vaxX * 1/10,getWidth(),getHeight(),DIRECTION.UP,2);
 		Configurations.sun = new Sun(getWidth(),getHeight());
 		Point.update();
 		
@@ -223,8 +257,8 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		cellsTask.add(new WorldTask(firstList.toArray(Point[]::new),secondList.toArray(Point[]::new)));
 		
 		recalculate();
-
-		Configurations.settings.updateScrols();
+		
+		setVisible(new Point(0,0),new Point(Configurations.MAP_CELLS.width, Configurations.MAP_CELLS.height));
 	}
 	/**
 	 * Один маленький шажок для мира и один огронмый шаг для клеток
@@ -235,53 +269,70 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public synchronized void step() {
 		try {
 			isFirst = Configurations.rnd.nextBoolean();
-			executor.invokeAll(cellsTask);
+			
+			if(msTimeout == 1) {
+				for(var t : cellsTask)
+					t.call();
+			} else {
+				maxExecutor.invokeAll(cellsTask);
+			}
 			isFirst = !isFirst;
-			executor.invokeAll(cellsTask);
+			if(msTimeout == 1) {
+				for(var t : cellsTask)
+					t.call();
+			} else {
+				maxExecutor.invokeAll(cellsTask);
+			}
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 		Configurations.sun.step(step);
 		Configurations.tree.step();
 
-		step++;
 		sps.interapt();
+		step++;
 	}
 
     @Override
 	public void paintComponent(Graphics g) {
+		paintComponent(g,false);
+	}
+	/**Отрисовывает мир на холст
+	 * @param g куда рисовать
+	 * @param isAll рисовать всё или только то, что видно на экране?
+	 */
+	public void paintComponent(Graphics g, boolean isAll) {
 		super.paintComponent(g);
 		
 		paintField(g);
 		
-		if(isActiv && (msTimeout != 0 && timeoutStep % msTimeout == 0)) {
+		if(!isAll && isActiv && (msTimeout > 1 && timeoutStep % (msTimeout - 1) == 0)) {
 			step();
 		}
-		int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
-		for (CellObject[] cell : Configurations.worldMap) {
-			for (CellObject cell2 : cell) {
-				if(cell2 != null) {
+		for (CellObject[] cellByY : Configurations.worldMap) {
+			for (CellObject cell2 : cellByY) {
+				if(cell2 == null) continue;
+				if(isAll || (visible[0].getX() <= cell2.getPos().getX() && cell2.getPos().getX() <= visible[1].getX()
+						&& visible[0].getY() <= cell2.getPos().getY() && cell2.getPos().getY() <= visible[1].getY()))
 					cell2.paint(g);
-					if(cell2.aliveStatus(LV_STATUS.LV_ALIVE))
-						localCl++;
-					else if(cell2.aliveStatus(LV_STATUS.LV_POISON))
-						localCP++;
-					else if(cell2.aliveStatus(LV_STATUS.LV_WALL))
-						localCW++;
-					else
-						localCO++;
-				}
 			}
 		}
-		countLife = localCl;
-		countOrganic = localCO;
-		countPoison = localCP;
-		countWall = localCW;
 		if(Configurations.info.getCell() != null) {
 			g.setColor(Color.GRAY);
 			g.drawLine(Configurations.info.getCell().getPos().getRx(), Configurations.border.height, Configurations.info.getCell().getPos().getRx(), getHeight()-Configurations.border.height);
 			g.drawLine(Configurations.border.width, Configurations.info.getCell().getPos().getRy(), getWidth()-Configurations.border.width, Configurations.info.getCell().getPos().getRy());
 		}
+		
+		if(selectPoint[0] != null && selectPoint[1] != null){
+			g.setColor(new Color(255,255,255,25));
+			var x0 = selectPoint[0].getRx();
+			var y0 = selectPoint[0].getRy();
+			var x1 = selectPoint[1].getRx();
+			var y1 = selectPoint[1].getRy();
+			g.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x0 - x1), Math.abs(y0 - y1));
+		}
+		
+		if(isAll) return;
 		
 		timeoutStep++;
 		fps.interapt();
@@ -296,18 +347,17 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 
 	private void paintField(Graphics g) {
 		//Небо
-		colors[0].paint(g);
+		colors[0].paint((Graphics2D) g);
 		//Вода
-		Configurations.sun.paint(g);
+		Configurations.sun.paint((Graphics2D) g);
         //Минералы
-		colors[1].paint(g);
-		colors[1+1].paint(g);
+		colors[1].paint((Graphics2D) g);
 		//Гейзеры
 		for(Geyser gz : Configurations.geysers)
 			gz.paint(g);
 
 		//Земля
-		colors[1+2].paint(g);
+		colors[1].paint((Graphics2D)g);
 		//Вспомогательное построение
 		//paintLine(g);
 		//paintProc(g);
@@ -374,7 +424,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	
 	public void add(CellObject cell) {
 		if(get(cell.getPos()) != null) {
-			throw new RuntimeException("Объект " + cell + " решил вступть на " + cell.getPos() + ",\nно тут занято " + get(cell.getPos()) + "!!!");
+			throw new RuntimeException("Объект " + cell + " решил вступть на " + cell.getPos() + ",но тут занято " + get(cell.getPos()) + "!!!");
 		} else if(cell.aliveStatus(LV_STATUS.GHOST)) {
 			throw new RuntimeException("Требуется добавить " + cell + " только вот он уже мёртв!!! ");
 		} else {
@@ -390,18 +440,53 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			Configurations.worldMap[cell.getPos().getX()][cell.getPos().getY()] = null;
 		}
 	}
+	/**
+	 * Перемещает клетку в новую позицию
+	 * @param cell клетка
+	 * @param target её новая позиция
+	 */
 	public void move(CellObject cell,Point target) {
 		clean(cell);
 		cell.setPos(target);
 		add(cell);
 	}
-
+	/**
+	 * Меняет текущее местоположение клетки и желаемую цель местами
+	 * @param cell клетка
+	 * @param target с какой позицией она хочет обменяться местами
+	 */
+	public void swap(CellObject cell,Point target) {
+		var t = get(target);
+		if(t == null){
+			move(cell,target);
+		} else {
+			var d = Point.direction(target, cell.getPos());
+			clean(cell);
+			if(t.move(d)){	//Если перемещение удачное
+				clean(t);
+				add(cell);	//Тогда цель уже в нужной позиции, осталость клетку поменять
+				if(cell.move(d.inversion())){
+					add(t);	//Если клетка сдвинулась тоже - возвращаем цель и выходим
+				} else {
+					clean(cell); //Иначе удаляем клетку
+					add(t);
+					t.move(d.inversion()); //Откатываем цель ((клетку удаляем, потому что цель на месте клетки сейчас))
+					add(cell);	//И возваращем клетку на свободное место
+				}
+			} else {
+				add(cell);
+			}
+		}
+		
+	}
+	/**Пересчитывает относительные размеры мира в пикселях.*/
 	public synchronized void recalculate() {
 		var oActiv = isActiv;
 		if(isActiv) {
 			isActiv = false;
 			repaint_stop = 5;
 		}
+		//Пересчёт размера мира
 		double hDel = ((double) getHeight()) * (1 - (Configurations.UP_border + Configurations.DOWN_border)) / (Configurations.MAP_CELLS.height);
 		double wDel = ((double) getWidth()) / (Configurations.MAP_CELLS.width);
 		Configurations.scale = Math.min(hDel, wDel);
@@ -411,55 +496,39 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		for(Geyser gz : Configurations.geysers)
 			gz.updateScreen(getWidth(),getHeight());
 		Configurations.sun.resize(getWidth(), getHeight());
-				
-		colors = new ColorRec[2 + 2];
-		var width = Configurations.border.width;
-		var height = Configurations.border.height;
-		colors[0] = new ColorRec(width, 0, getWidth() - width * 2, height, new Color(224, 255, 255, 255)); // небо
-		int lenghtY = getHeight() - height * 2;
-		colors[1] = new ColorRec(width, (int) (height + lenghtY * Configurations.LEVEL_MINERAL), getWidth() - width * 2, (int) (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2), Utils.getHSBColor(270.0 / 360, 0.5, 1.0, 0.5));
-		colors[1 + 1] = new ColorRec(width, (int) (getHeight() - height - (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2)), getWidth() - width * 2, (int) (lenghtY * (1 - Configurations.LEVEL_MINERAL) / 2), Utils.getHSBColor(300.0 / 360, 0.5, 1.0, 0.5));
-		colors[1 + 2] = new ColorRec(width, getHeight() - height, getWidth() - width * 2, height, new Color(139, 69, 19, 255));
+		
+		updateScrin();
+		
 		if(oActiv && !isActiv)
 			isActiv = true;
 	}
 
-	public synchronized JSON serelization() {
-		StreamProgressBar sb = new StreamProgressBar();
-		sb.addEvent("Сохранение началось");
-		sb.addEvent("Конфигурация мира готова");
-		sb.addEvent("Древо эволюции - готово");
-		sb.addEvent("Объекты на поле - готовы");
-		sb.addEvent("Сохранение завершено");
-		sb.event();
+	/**Пересчитывает позиции всех объектов*/
+	public void updateScrin() {
+		//Верхнее небо
+		int xs[] = new int[4];
+		int ys[] = new int[4];
+		//Минералы
+		int xm[] = new int[4];
+		int ym[] = new int[4];
+		//Дно
+		int xb[] = new int[4];
+		int yb[] = new int[4];
 		
-		JSON make = new JSON();
-		make.add("VERSION", Configurations.VERSION);
-
-		JSON configWorld = Configurations.toJSON();
-		configWorld.add("step", step);
-		make.add("configWorld", configWorld);
-		sb.event();
+		xs[0] = xs[1] = xm[0] = xm[1] = xb[0] = xb[1] = Point.getRx(0);
+		xs[2] = xs[3] = xm[2] = xm[3] = xb[2] = xb[3] = Point.getRx(Configurations.MAP_CELLS.width);
 		
-		make.add("EvoTree", Configurations.tree.toJSON());
-		sb.event();
+		ys[0] = ys[3] = 0;
+		ys[1] = ys[2] = Point.getRy(0);
+		ym[0] = ym[3] = Point.getRy((int) (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL));
+		ym[1] = ym[2] = yb[0] = yb[3] = Point.getRy(Configurations.MAP_CELLS.height - 1);
+		yb[1] = yb[2] = getHeight();
 		
-		var cells = new ArrayList<CellObject>();
-		for (CellObject[] cell : Configurations.worldMap) {
-			for (CellObject cell2 : cell) {
-				if(cell2 != null)
-					cells.add(cell2);
-			}
-		}
-		JSON[] nodes = new JSON[cells.size()];
-		for (int i = 0; i < nodes.length; i++) {
-			nodes[i] = cells.get(i).toJSON();
-		}
-		make.add("Cells", nodes);
-		sb.event();
-		sb.event();
-		return make;
+		colors[0] = new ColorRec(xs,ys, new Color(224, 255, 255, 255));
+		colors[1] = new ColorRec(xm,ym, new GradientPaint(getWidth(), ym[0], Utils.getHSBColor(240d / 360, 1, 1, 0.7), getWidth(), ym[1], Utils.getHSBColor(300.0 / 360, 1d, 1d, 0.7)));
+		colors[1] = new ColorRec(xb,yb, new Color(139, 69, 19, 255));
 	}
+
 
 	public synchronized void update(JSON json) {
 		StreamProgressBar sb = new StreamProgressBar();
@@ -474,12 +543,13 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		
 		sb.event();
 		
+		var version = json.getL("VERSION");
 		JSON configWorld = json.getJ("configWorld");
-		Configurations.load(configWorld);
+		new Configurations().setJSON(configWorld,version);
 		step = configWorld.getL("step");
 		sb.event();
 		
-		Configurations.tree = new EvolutionTree(json.getJ("EvoTree"));
+		Configurations.tree.setJSON(json.getJ("EvoTree"),version);
 		sb.event();
 		
 		List<JSON> cells = json.getAJ("Cells");		
@@ -488,12 +558,12 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 			try {
 				switch (LV_STATUS.values()[(int)cell.get("alive")]) {
 					case LV_ALIVE -> {
-						//if(loadR(cell,359,76,10))
-							add(new AliveCell(cell,Configurations.tree));
+						//if(loadR(cell,516,148,30))
+							add(new AliveCell(cell,Configurations.tree,version));
 					}
-					case LV_ORGANIC -> add(new Organic(cell));
-					case LV_POISON -> add(new Poison(cell));
-					case LV_WALL -> add(new Fossil(cell));
+					case LV_ORGANIC -> add(new Organic(cell,version));
+					case LV_POISON -> add(new Poison(cell,version));
+					case LV_WALL -> add(new Fossil(cell,version));
 					default -> System.err.println("Ошибка загрузки строки: \n" + cell);
 				}
 			} catch (java.lang.RuntimeException e1) {
@@ -520,9 +590,6 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		    		new_name.setFriend(aliveCell);
 			}
 		}
-		//Очищаем память
-		cells.clear();
-		json.clear();
 		sb.event();
 		
 		Configurations.tree.updatre();
@@ -595,33 +662,171 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	public void componentHidden(ComponentEvent e) {}
 	@Override
 	public void componentResized(ComponentEvent e) {
-		recalculate();
+		EventQueue.invokeLater(() -> recalculate());
 	}
 	
 	@Override
-	public void mousePressed(MouseEvent e) {}
+	public void mousePressed(MouseEvent e) {
+		if(Configurations.menu.isSelectedCell()){
+			selectPoint[1] = recalculation(e.getX(),e.getY());
+			selectPoint[0] = selectPoint[1];
+		}
+	}
 	@Override
-	public void mouseReleased(MouseEvent e) {}
+	public void mouseReleased(MouseEvent e) {
+		selectPoint[1] = recalculation(e.getX(),e.getY());
+		if(selectPoint[0] == null || selectPoint[1] == null) return;
+		if(Configurations.menu.isSelectedCell()){
+			var selected = new ArrayList<CellObject>();
+			var x0 = Math.min(selectPoint[0].getX(), selectPoint[1].getX());
+			var y0 = Math.min(selectPoint[0].getY(), selectPoint[1].getY());
+			var x1 = Math.max(selectPoint[0].getX(), selectPoint[1].getX());
+			var y1 = Math.max(selectPoint[0].getY(), selectPoint[1].getY());
+			for (CellObject[] cellByY : Configurations.worldMap) {
+				for (CellObject cell2 : cellByY) {
+					if(cell2 == null) continue;
+					if((x0 <= cell2.getPos().getX() && cell2.getPos().getX() <= x1
+							&& y0 <= cell2.getPos().getY() && cell2.getPos().getY() <= y1))
+						selected.add(cell2);
+				}
+			}
+			Configurations.menu.setCell(selected);
+			selectPoint[0] = null;
+		}
+	}
 	@Override
 	public void mouseEntered(MouseEvent e) {}
 	@Override
 	public void mouseExited(MouseEvent e) {}
 	@Override
+	public void mouseDragged(MouseEvent e) {selectPoint[1] = recalculation(e.getX(),e.getY());}
+	@Override
+	public void mouseMoved(MouseEvent e) {}
+	
+	/**
+	 * Пересчитыавет координаты мировые в пикселях в координаты ячейки
+	 * @param x мировая координата х
+	 * @param y мировая координата у
+	 * @return точку в реальном пространстве или null, если эта точка за гранью
+	 */
+	private Point recalculation(int x, int y) {
+		x = Utils.betwin(Configurations.border.width, x, getWidth() - Configurations.border.width);
+		y = Utils.betwin(Configurations.border.height, y, getWidth() - Configurations.border.height);
+		x -= Configurations.border.width;
+		y -= Configurations.border.height;
+		x = (int) Math.round(x/Configurations.scale-0.5);
+		y = (int) Math.round(y/Configurations.scale-0.5);
+		return new Point(x,y);
+	}
+	
+	@Override
 	public void mouseClicked(MouseEvent e) {
 		if(Configurations.info.isVisible()) {
-			int realX = e.getX();
-			if(realX < Configurations.border.width || realX > getWidth() - Configurations.border.width)
-				return;
-			int realY = e.getY();
-			if(realY < Configurations.border.height || realY > getHeight() - Configurations.border.height)
-				return;
-			realX -= Configurations.border.width;
-			realY -= Configurations.border.height;
-			realX = (int) Math.round(realX/Configurations.scale-0.5);
-			realY = (int) Math.round(realY/Configurations.scale-0.5);
-			Point point = new Point(realX,realY);
-			Configurations.info.setCell(get(point));
+			Point point = recalculation(e.getX(),e.getY());
+			if(point != null)
+				Configurations.info.setCell(get(point));
 		}
+	}
+	
+	/**
+	 * Показывает состояние работы мира 
+	 * @return true, если включён автоматических ход мира
+	 */
+	public boolean isActiv(){
+		return isActiv || (stopStep == step);
+	}
+	/**Останавливает работу мира*/
+	public void stop(){
+		if(isActiv){ 
+			isActiv = false;
+			stopStep = step;
+		}
+	}
+	/**Запускает работу мира*/
+	public void start(){
+		isActiv = true;
+	}
+	/**Сохраняет размеры в координатах мира отображаемого прямоугольника
+	 * @param leftUp верхний левый угол прямоугольника
+	 * @param rightDown нижний правый угол прямоугольника 
+	 */
+	public final void setVisible(Point leftUp, Point rightDown){
+		visible[0] = leftUp;
+		visible[1] = rightDown;
+	}
+	private class JSONSerialization extends JsonSave.JSONSerialization{
+
+		@Override
+		public String getName() {
+			return "WORLD";
+		}
+
+		@Override
+		public JSON getJSON() {
+			JSON make = new JSON();
+			var cells = new ArrayList<CellObject>();
+			for (CellObject[] cell : Configurations.worldMap) {
+				for (CellObject cell2 : cell) {
+					if (cell2 != null)
+						cells.add(cell2);
+				}
+			}
+			JSON[] nodes = new JSON[cells.size()];
+			for (int i = 0; i < nodes.length; i++) {
+				nodes[i] = cells.get(i).toJSON();
+			}
+			make.add("step", step);
+			make.add("Cells", nodes);
+			return make;
+		}
+
+		@Override
+		public void setJSON(JSON json, long version) {
+			step = json.getL("step");
+			List<JSON> cells = json.getAJ("Cells");
+			Configurations.worldMap = new CellObject[Configurations.MAP_CELLS.width][Configurations.MAP_CELLS.height];
+			for (JSON cell : cells) {
+				try {
+					switch (LV_STATUS.values()[(int) cell.get("alive")]) {
+						case LV_ALIVE -> {
+							//if(loadOneCell(cell,31,31))
+								add(new AliveCell(cell, Configurations.tree, version));
+						}
+						case LV_ORGANIC -> add(new Organic(cell, version));
+						case LV_POISON -> add(new Poison(cell, version));
+						case LV_WALL -> add(new Fossil(cell, version));
+						default -> System.err.println("Ошибка загрузки строки: \n" + cell);
+					}
+				} catch (java.lang.RuntimeException e1) {
+					e1.printStackTrace();
+					JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage() + "<br>Для объекта<br>" + cell.toJSONString(), "BioLife", JOptionPane.ERROR_MESSAGE);
+					throw e1;
+				}
+			}
+
+			//Когда все сохранены, обновялем список друзей
+			for (JSON cell : cells) {
+				if (!cell.containsKey("friends")) continue; // Мы не клетка
+				if (cell.getAJ("friends").isEmpty()) continue; // У нас нет друзей
+				Point pos = new Point(cell.getJ("pos"));
+				CellObject realCell = get(pos);
+				if (realCell == null || !(realCell instanceof AliveCell))
+					continue;
+				List<JSON> mindL = cell.getAJ("friends");
+				AliveCell new_name = (AliveCell) realCell;
+				for (JSON pointFriend : mindL) {
+					pos = new Point(pointFriend);
+					if (get(pos) instanceof AliveCell aliveCell)
+						new_name.setFriend(aliveCell);
+				}
+			}
+			Configurations.tree.updatre();
+			worldGenerate();
+		}
+		
+	}
+	public JsonSave.JSONSerialization serelization(){
+		return new JSONSerialization();
 	}
 
 }

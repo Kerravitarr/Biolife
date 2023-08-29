@@ -79,8 +79,9 @@ public class GifSequenceWriter {
 	}
 	/**
 	 * Создаёт гифку с частотой смены кадров по 40 мс (25 кадров в сек)
-	 * @param out - Имя файла для записи
+	 * @param fileName - Имя файла для записи
 	 * @param loop - зацикливать или нет гифку
+	 * @param maxSize - размер гифки
 	 * @throws IOException
 	 */
 	public GifSequenceWriter(String fileName, boolean loop, Dimension maxSize) throws IOException {

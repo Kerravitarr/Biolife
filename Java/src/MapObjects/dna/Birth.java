@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.Poison;
+import MapObjects.CellObject.OBJECT;
 import main.Configurations;
 import main.Point;
 
@@ -14,8 +15,8 @@ public class Birth extends CommandDo {
 	/**Столько энергии тратит бот на размножение*/
 	private static final long HP_FOR_DOUBLE = 150;
 
-	public Birth() {this(1,"♡","Деление");};
-	protected Birth(int countParams,String shotName,String longName) {super(countParams,shotName,longName);};
+	public Birth() {this(1);};
+	protected Birth(int countParams) {super(countParams);};
 	@Override
 	protected void doing(AliveCell cell) {
 		int childCMD = 1 + 1 + param(cell,0); // Откуда будет выполняться команда ребёнка	
@@ -50,16 +51,15 @@ public class Birth extends CommandDo {
 		dna.next(nextCmd); // Чтобы у потомка выполнилась следующая команда	
         if(Configurations.world.test(pos).isPosion) {
 			Poison posion = (Poison) Configurations.world.get(pos);
+			posion.remove_NE(); //Не беспокойтесь. Всё нормально. Мы временно
             AliveCell newbot = new AliveCell(cell,pos);
-            if(newbot.toxinDamage(posion.type, (int) posion.getHealth())) { //Нас убило
-            	posion.addHealth(Math.abs(newbot.getHealth()));
-            	newbot.evolutionNode.remove(); //Мы так и не родились, так что нам не нужен узел
-            	isBirth = false;
-            } else { // Мы сильнее яда! Так что удаляем яд и занимаем его место
-            	posion.remove_NE();
-            	Configurations.world.add(newbot);
-            	isBirth = true;
-            }
+			Configurations.world.add(newbot);
+			if(Poison.createPoison(pos, posion.getType(), posion.getStepCount(), posion.getHealth(), posion.getStream())) { //А теперь на созданную клетку воздействуем ядом
+				isBirth = Configurations.world.test(pos) == OBJECT.BOT; //Удачное деление - это когда у нас бот на выходе
+			} else {
+						//Как это не получилось провзаимодействовать с клеткой?!
+				throw new RuntimeException("Не сработала функция создания ребёнка вот сюда: " + pos);
+			}
         } else {
             Configurations.world.add(new AliveCell(cell,pos));
         	isBirth = true;

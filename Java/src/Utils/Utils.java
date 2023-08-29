@@ -4,18 +4,26 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.locks.LockSupport;
+import main.Configurations;
 
 public class Utils {
 
 	/**
-	 * Метод получения псевдослучайного целого числа от min до max (включая max);
-	 * @param min
-	 * @param max
+	 * Метод получения псевдослучайного целого числа [min,max];
+	 * @param min минимальное значение, включительно
+	 * @param max максимальное значение, включительно
+	 * @return [min,max]
 	 */
 	public static int random(int min, int max) {
 		max -= min;
-		return (int) (Math.random() * ++max) + min;
+		return min + Configurations.rnd.nextInt(max+1);
 	}
 
 	/**
@@ -83,7 +91,7 @@ public class Utils {
      * <p>
      * The integer that is returned by {@code HSBtoRGB} encodes the
      * value of a color in bits 0-23 of an integer value that is the same
-     * format used by the method {@link #getRGB() getRGB}.
+     * format used by the method
      * This integer can be supplied as an argument to the
      * {@code Color} constructor that takes a single integer argument.
      * @param     h   цветовая составляющая цвета
@@ -105,21 +113,21 @@ public class Utils {
 	
 	/**
 	 * Пауза
-	 * @param sec
+	 * @param sec секунды
 	 */
 	public static void pause(long sec) {
 		pause_ms(sec * 1_000);
 	}
 	/**
 	 * Пауза
-	 * @param msec
+	 * @param msec милисекунды
 	 */
 	public static void pause_ms(long msec) {
 		pause_ns(msec * 1_000_000);
 	}
 	/**
 	 * Пауза
-	 * @param msec
+	 * @param nsec наносекунды
 	 */
 	public static void pause_ns(long nsec) {
 		LockSupport.parkNanos(nsec);
@@ -137,7 +145,12 @@ public class Utils {
 		System.arraycopy(second, 0, result, first.length, second.length);
 		return result;
 	}
-	
+	/**Приравнивает число к интервалу [min,max]
+	 * @param min минимальное значение, меньше которого выходное число точно не будет
+	 * @param val число, которое нужно ограничить
+	 * @param max максимальное значение, больше которого выходное число точно не будет
+	 * @return 
+	 */
 	public static int betwin(int min, int val, int max) {
 		if (val > max)
 			return max;
@@ -146,6 +159,13 @@ public class Utils {
 		else
 			return val;
 	}
+	/**
+	 * Приравнивает число к интервалу [min,max]
+	 * @param min минимальное значение, меньше которого выходное число точно не будет
+	 * @param val число, которое нужно ограничить
+	 * @param max максимальное значение, больше которого выходное число точно не будет
+	 * @return 
+	 */
 	public static double betwin(double min, double val, double max) {
 		if (val > max)
 			return max;
@@ -153,5 +173,23 @@ public class Utils {
 			return min;
 		else
 			return val;
+	}
+	
+	/**
+	 * Сортирует любую карту по значениям
+	 * @param <K>
+	 * @param <V>
+	 * @param map карта, которую надо отсортировать
+	 * @return List, в котором пары отсортированны по значениям в убывающем порядке
+	 */
+	public static <K, V extends Comparable<? super V>> List<Entry<K,V>> sortByValue(Map<K, V> map) {
+		List<Map.Entry<K, V>> list = new LinkedList<>(map.entrySet());
+		Collections.sort(list, new Comparator<Map.Entry<K, V>>() {
+			@Override
+			public int compare(Map.Entry<K, V> o1, Map.Entry<K, V> o2) {
+				return (o2.getValue()).compareTo(o1.getValue());
+			}
+		});
+		return list;
 	}
 }

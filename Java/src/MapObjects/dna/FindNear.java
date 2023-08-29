@@ -15,7 +15,7 @@ import main.Point.DIRECTION;
  */
 public class FindNear extends CommandExplore {
 
-	public FindNear() {super("🔍",Configurations.bundle.getString("DNA.FindNear"),1,2);}
+	public FindNear() {super(1,2);}
 	
 	@Override
 	protected int explore(AliveCell cell) {
@@ -48,7 +48,7 @@ public class FindNear extends CommandExplore {
 	 * @param type тип, который ожидаем там найти
 	 * @return true, если ожидания совпали с реальностью
 	 */
-	private boolean test(AliveCell cell, Point point, OBJECT type) {
+	public static boolean test(AliveCell cell, Point point, OBJECT type) {
 		var wtype = Configurations.world.test(point);
 		switch (wtype) {
 			case BOT -> {	//Конфигурация мира не умеет отличать друзей от врагов
@@ -61,8 +61,8 @@ public class FindNear extends CommandExplore {
 			}
 			case POISON -> {	//Конфигурация мира не умеет отличать яды от лекарств
 				return switch (type) {
-					case NOT_POISON->	((Poison) Configurations.world.get(point)).type == cell.getPosionType();
-					case POISON->		((Poison) Configurations.world.get(point)).type != cell.getPosionType();
+					case NOT_POISON->	((Poison) Configurations.world.get(point)).getType() == cell.getPosionType();
+					case POISON->		((Poison) Configurations.world.get(point)).getType() != cell.getPosionType();
 					case BOT, CLEAN, FRIEND, ORGANIC, OWALL, ENEMY, WALL -> false;
 				};
 			}
@@ -74,4 +74,8 @@ public class FindNear extends CommandExplore {
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
 		return OBJECT.get(param(cell,0, OBJECT.size() - 1)).toString();
 	}
+	
+	public String getBranch(AliveCell cell, int numBranch, DNA dna){
+		return numBranch == 0 ? "👎" : "👌";
+	};
 }

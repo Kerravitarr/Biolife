@@ -17,11 +17,11 @@ import main.Point.DIRECTION;
 public abstract class CellObject {
 	/**Статус*/
 	public enum LV_STATUS {
-		LV_ALIVE("Клетка"), LV_ORGANIC("Органика"), LV_POISON("Яд"), LV_WALL("Стена"), GHOST("Ошибка");
+		LV_ALIVE, LV_ORGANIC, LV_POISON, LV_WALL, GHOST;
 		/**Имя типа объекта*/
 		private String name;
 
-		LV_STATUS(String n) {name = n;}
+		LV_STATUS() {name = Configurations.getProperty(getClass(), super.name());}
 		
 		public String toString() {
 			return name;
@@ -55,12 +55,16 @@ public abstract class CellObject {
 		public final boolean isPosion;
 		/**Является это место ботом*/
 		public final boolean isBot;
+		/**Читабельное имя объекта*/
+		public final String name;
+		
 		OBJECT(int nextCMD) {this(nextCMD,false,false,false);}
 		OBJECT(int nextCMD, boolean isEmptyPlase, boolean isPosion, boolean isBot) {
 			this.nextCMD=nextCMD;
 			this.isEmptyPlase=isEmptyPlase;
 			this.isPosion=isPosion;
 			this.isBot=isBot;
+			name = Configurations.getProperty(getClass(), super.name());
 		}
 		public static int size() {return myEnumValues.length;}
 		public static OBJECT get(int index) {
@@ -70,21 +74,28 @@ public abstract class CellObject {
 			}
 			return null;
 		}
+		public String toString() {
+			return name;
+		}
 	};
 	
 	public class CellObjectRemoveException extends RuntimeException {
 		CellObjectRemoveException(){
-			super("Удалили клетку " + CellObject.this);
+			super();
+		}
+		@Override
+		public String getMessage(){
+			return "Удалили клетку " + CellObject.this;
 		}
 	}
 	
     /**Цвет бота зависит от того, что он делает*/
 	public Color color_DO;
-    /**Позиция органики*/
+    /**Позиция объекта*/
 	private Point pos = new Point(0,0);
-    //Счётчик, показывает ходил бот в этот ход или нет
+    //Счётчик, показывает ходил объект в этот ход или нет
 	protected long stepCount = -1;
-    /**Возраст бота*/
+    /**Возраст объекта*/
     private long years = 0;
 	
 	public CellObject(long stepCount,LV_STATUS alive){
@@ -207,8 +218,10 @@ public abstract class CellObject {
 	}
 	/**
 	 * Перемещает бота в абсолютном направлении
-	 * @param direction
-	 * @return
+	 * @param direction направление, в котором следует двигаться
+	 * @return true, если клетка сходила куда её попросили и 
+	 * 			false, если движение по каким либо причинам невозможно
+	 * @throws CellObjectRemoveException если объект во времядвижения того. Умер
 	 */
 	public boolean move(DIRECTION direction) {
 		switch (see(direction)) {
@@ -216,26 +229,31 @@ public abstract class CellObject {
 				return false;
 			}
 			case CLEAN -> {
-				{
-					Point point = getPos().next(direction);
-					Configurations.world.move(this,point);
-				} return true;
+				Point point = getPos().next(direction);
+				Configurations.world.move(this,point);
+				return true;
 			}
 			case POISON, NOT_POISON -> {
-				{
-					Point point = getPos().next(direction);
-					Poison poison = (Poison) Configurations.world.get(point);
-					if(toxinDamage(poison.type, (int) poison.getHealth())) {
-						poison.addHealth(Math.abs(getHealth()));
-						destroy();// Не важно что мы вернём - мы мертвы
+				Point point = getPos().next(direction);
+				Poison poison = (Poison) Configurations.world.get(point);
+				if(Poison.createPoison(getPos(), poison.getType(), stepCount, poison.getHealth(), poison.getStream())) {
+					//Яд смог на нас как-то воздействовать. Это печально, но не всё ещё потерянно!
+					poison.remove_NE(); //Яда больше нет
+					var nObj = Configurations.world.get(getPos()); //Теперь этот некто занимает точку в пространстве
+					Configurations.world.move(nObj, point);	//Я точно не знаю кто тут теперь... Но пускай он ходит :)
+					if(nObj != this) { //И это не мы, значит мы - мертвы
+						alive = LV_STATUS.GHOST;
+						throw new CellObjectRemoveException();
 					} else {
-						poison.remove_NE(); // Удаляем яд, который мы заменили
-						Configurations.world.move(this, point);
+						return true;
 					}
-				}return true;
+				} else {	//Почему-то с нами яд не взаимодействовал, так что походить мы туда не можем
+					return false;
+				}
 			}
-			default -> throw new IllegalArgumentException("Unexpected value: " + see(direction));
+			case BOT -> throw new UnsupportedOperationException("Unimplemented case: " + see(direction));
 		}
+		throw new IllegalArgumentException("Unexpected value: " + see(direction));
 	}
 	/**
 	 * Перемещает бота в направлении, если не получится прямо в этом направлении - перемещает
@@ -262,29 +280,6 @@ public abstract class CellObject {
 		return false;
 	}
 	
-	/**
-	 * Родственные-ли боты?
-	 * TODO Вообще пока смотрит только по ДНК, но возможно в будущем нужно смотреть будет не на 
-	 *      генотип, а на фенотип!
-	 * @param cell
-	 * @param cell2
-	 * @return
-	 */
-	/*private boolean isRelative(Cell bot0, Cell bot1) {
-	    if (bot0.alive != LV_STATUS.LV_ALIVE || bot1.alive != LV_STATUS.LV_ALIVE) {
-	        return false;
-	    }
-	    int dif = 0;    // счетчик несовпадений в геноме
-	    for (int i = 0; i < mind.length; i++) {
-	        if (bot0.mind[i] != bot1.mind[i]) {
-	            dif = dif + 1;
-	            if (dif == 2) {
-	                return false;
-	            } // если несовпадений в генеме больше 1
-	        }     // то боты не родственики
-	    }
-	    return true;
-	}*/
 	/**
 	 * Родственные-ли боты?
 	 * Определеяет родственников по фенотипу, по тому как они выглядят

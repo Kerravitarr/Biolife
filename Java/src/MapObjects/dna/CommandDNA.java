@@ -23,18 +23,61 @@ public abstract class CommandDNA {
 	private final String longName;
 	/**Показывает, что мы должны отображать всё в кратком виде*/
 	private static boolean isFullMod = false;
+	/**Больше параметра*/
+	private static String parametrMoreOrEqual = "≥" + Configurations.getProperty(CommandDNA.class, "parameter");
+	/**Меньше параметра*/
+	private static String parametrLess = "<" + Configurations.getProperty(CommandDNA.class, "parameter");
+	/**Абсолютные координаты или относительные. Для комнад, для которых может быть разночтение*/
+	protected final boolean isAbolute;
+
 	/**
 	 * Констурктор класса
 	 * @param countParams - число параметров у функции
 	 * @param countBranch - число ветвей у функции
-	 * @param shotName - краткое имя у функции
-	 * @param longName - полное имя функции
 	 */
-	protected CommandDNA(int countParams,int countBranch,String shotName,String longName) {
+	protected CommandDNA(int countParams,int countBranch) {
+		this(null, countParams,countBranch, null);
+	}
+	/**
+	 * Констурктор класса для тех команд, которые могут быть как абсолютные, так и относительные
+	 * @param countParams - число параметров у функции
+	 * @param countBranch - число ветвей у функции
+	 * @param propName - дополнительное имя функции
+	 */
+	protected CommandDNA(int countParams,int countBranch, String propName) {
+		this(null, countParams,countBranch, propName);
+	}
+	/**
+	 * Констурктор класса для тех команд, которые могут быть как абсолютные, так и относительные
+	 * @param isAbsolute - команда выполняется в абсолютном или относительном выражении
+	 * @param countParams - число параметров у функции
+	 * @param countBranch - число ветвей у функции
+	 */
+	protected CommandDNA(Boolean isAbsolute, int countParams,int countBranch) {
+		this(isAbsolute, countParams,countBranch, null);
+	}
+	/**
+	 * Констурктор класса для тех команд, которые могут быть как абсолютные, так и относительные
+	 * @param isAbsolute - команда выполняется в абсолютном или относительном выражении
+	 * @param countParams - число параметров у функции
+	 * @param countBranch - число ветвей у функции
+	 * @param propName - дополнительное имя функции
+	 */
+	protected CommandDNA(Boolean isAbsolute, int countParams,int countBranch, String propName) {
 		this.countParams = countParams;
 		this.countBranch = countBranch;
-		this.shotName = shotName;
-		this.longName = longName;
+		String nameS = Configurations.getProperty(this.getClass(), propName == null ? "Shot" : (propName + ".Shot"));
+		String nameL = Configurations.getProperty(this.getClass(), propName == null ? "Long" : (propName + ".Long"));
+		if(isAbsolute != null) {
+			isAbolute = isAbsolute;
+			var suname = isAbolute ? Configurations.getProperty(CommandDNA.class, "absolute") : Configurations.getProperty(CommandDNA.class, "relative");
+			nameS += suname;
+			nameL += suname;
+		} else {
+			isAbolute = false;
+		}
+		shotName = nameS;
+		longName = nameL;
 	}
 
 	/**
@@ -49,8 +92,7 @@ public abstract class CommandDNA {
 			cell.getDna().next(1 + getCountParams() + branch);
 		}else {
 			var dna = cell.getDna();
-			var PC = dna.getIndex() + 1 + getCountParams();
-			dna.next(dna.get(PC, branch)); // Сдвижка определеяется параметром из ДНК
+			dna.next(dna.get(1 + getCountParams() + branch,false)); // Сдвижка определеяется параметром из ДНК
 		}
 		return isDoing();
 	}
@@ -88,27 +130,50 @@ public abstract class CommandDNA {
 	 * Возвращает параметр ДНК
 	 * @param dna - днк, параметр который возвращаем
 	 * @param numParam - номер параметра
-	 * @return значение параметра, от 0 до CommandList.COUNT_COMAND, включетльно
+	 * @return значение параметра [0,CommandList.COUNT_COMAND]
 	 */
 	protected static int param(DNA dna, int numParam) {
-		return dna.get(dna.getIndex(),  1 +numParam);
+		return dna.get(1 + numParam,false);
 	}
 	/**
 	 * Возвращает параметр ДНК
 	 * @param cell - клетка, параметр который возвращаем
-	 * @param index - номер параметра
+	 * @param numParam - номер параметра
 	 * @param maxVal - максимальное значение, которым ограничивается параметр
 	 * @return значение параметра, от 0 до maxVal, включетльно
 	 */
-	protected static int param(AliveCell cell, int index, double maxVal) {
-		return param(cell.getDna(),index,maxVal);
+	protected static int param(AliveCell cell, int numParam, double maxVal) {
+		return param(cell.getDna(),numParam,maxVal);
+	}
+	/**
+	 * Возвращает параметр ДНК как направление смотрения
+	 * @param cell - клетка, параметр который возвращаем
+	 * @param numParam - номер параметра
+	 * @param isAbsolute - абсолютное-ли значение направления нам требуется?
+	 * @return значение параметра, от 0 до maxVal, включетльно
+	 */
+	protected static DIRECTION param(AliveCell cell, int numParam, boolean isAbsolute) {
+		var par = param(cell,numParam, DIRECTION.size() - 1);
+		return isAbsolute ? DIRECTION.toEnum(par) : cell.direction.next(par);
+	}
+	/**
+	 * Возвращает параметр ДНК как направление смотрения
+	 * @param dna - днк, параметр который возвращаем
+	 * @param cell - клетка, параметр который возвращаем
+	 * @param index - номер параметра
+	 * @param isAbsolute - абсолютное-ли значение направления нам требуется?
+	 * @return значение параметра, от 0 до maxVal, включетльно
+	 */
+	protected static DIRECTION param(DNA dna, AliveCell cell, int index, boolean isAbsolute) {
+		var par = param(dna,index, DIRECTION.size() - 1);
+		return isAbsolute ? DIRECTION.toEnum(par) : cell.direction.next(par);
 	}
 	/**
 	 * Возвращает параметр ДНК
 	 * @param dna - днк, параметр который возвращаем
 	 * @param index - номер параметра
 	 * @param maxVal - максимальное значение, которым ограничивается параметр
-	 * @return значение параметра, от 0 до maxVal, включетльно
+	 * @return значение параметра [0, maxVal]
 	 */
 	protected static int param(DNA dna, int index, double maxVal) {
 		return (int) Math.round(maxVal * param(dna,index) / CommandList.COUNT_COMAND);
@@ -181,10 +246,16 @@ public abstract class CommandDNA {
 	public int getCountBranch() {
 		return countBranch;
 	}
+	/**Возвращает размер комады.
+	 * @return 1 (сама команда) + количество параметров + количество ветвей
+	 */
+	public int size(){
+		return 1 + getCountParams() + getCountBranch();
+	}
 
 	@Override
 	public String toString() {
-		if (isFullMod)
+		if (isFullMod())
 			return getLongName();
 		else
 			return getShotName();
@@ -199,6 +270,22 @@ public abstract class CommandDNA {
 		return toString();
 	}
 	/**
+	 * Если фукция хочет написать, что она изменит в боте - то эта надпись будет тут
+	 * @param cell - клетка, функция которой исследуется
+	 * @return Строковое описание функции
+	 */
+	protected String value(AliveCell cell) {return null;}
+	
+	/**
+	 * Если фукция хочет написать, что она изменит в боте - то эта надпись будет тут
+	 * @param cell - клетка, функция которой исследуется
+	 * @param dna - "локальная" копия ДНК, в которой и хранится параметр
+	 * @return Строковое описание функции
+	 */
+	public String value(AliveCell cell, DNA dna) {
+		return value(cell);
+	}
+	/**
 	 * Возвращает описание параметра по переданному значению
 	 * @param cell - клетка, параметр который нам важен
 	 * @param numParam - номер этого параметра, считая от 0
@@ -206,26 +293,58 @@ public abstract class CommandDNA {
 	 * @return текстовое описание параметра
 	 */
 	public String getParam(AliveCell cell, int numParam, DNA dna){
-		if(countParams != 0)
-			throw new UnsupportedOperationException("Забыл подписать параметр для " + toString() + " " + this.getClass());
-		else
-			return nonParam();
+		throw new UnsupportedOperationException("Забыл подписать параметр для " + toString() + " " + this.getClass());
 	};
 	/**
-	 * Заглушка для функции без параметров
-	 * @return ""
+	 * Возвращает описание ветви, по которой может идти программа
+	 * @param cell - клетка, ветвь который нам важен
+	 * @param numBranch - номер этой ветви, считая от 0
+	 * @param dna - "локальная" копия ДНК, в которой и хранится параметр
+	 * @return текстовое описание ветви
 	 */
-	protected String nonParam() {return "";};
+	public String getBranch(AliveCell cell, int numBranch, DNA dna){
+		System.err.println("Забыл подписать ветвь для " + toString() + " " + this.getClass());
+		StringBuilder sb = new StringBuilder();
+		sb.append(" (");
+		var atr = dna.get(1 + this.getCountParams() + numBranch, false);
+		sb.append((dna.getPC() + atr) % dna.size);
+		sb.append(")");
+		return sb.toString();
+	};
+	/**
+	 * Стандартный ответ, если ветвей 2 и они показывают больше или меньше параметра
+	 * @param cell клетка
+	 * @param numBranch номер параметра
+	 * @param dna ДНК клетки
+	 * @return текст с подписью, где первая ветвь - равен или больше параметра, а вторая ветвь - меньше параметра
+	 *			V >= П ? 0 : 1;
+	 */
+	protected String branchMoreeLees(AliveCell cell, int numBranch, DNA dna) {
+		return switch (numBranch) {
+			case 0 -> parametrMoreOrEqual;
+			case 1 -> parametrLess;
+			default -> getBranch(cell,numBranch,dna);
+		};
+	}
 	/**
 	 * Переводит значение в абсолютное направление
 	 * @param value - значение параметра
 	 * @return Текстовое описание направления
 	 */
 	protected String absoluteDirection(int value) {
-		if (isFullMod)
+		if (isFullMod())
 			return DIRECTION.toEnum(value).toSString();
 		else
 			return DIRECTION.toEnum(value).toString();
+	};
+	/**
+	 * Переводит значение в абсолютное направление
+	 * @param dna - "локальная" копия ДНК, в которой и хранится параметр
+	 * @param value - значение параметра
+	 * @return Текстовое описание направления
+	 */
+	protected String absoluteDirection(DNA dna, int value) {
+		return absoluteDirection(param(dna,0, DIRECTION.size()));
 	};
 
 	/**
@@ -235,7 +354,7 @@ public abstract class CommandDNA {
 	 * @return Текстовое описание направления
 	 */
 	protected String relativeDirection(AliveCell cell, int value) {
-		if (isFullMod)
+		if (isFullMod())
 			return cell.direction.next(value).name();
 		else
 			return cell.direction.next(value).toString();
@@ -252,5 +371,8 @@ public abstract class CommandDNA {
 	 */
 	public int getInterrupt(AliveCell cell, DNA dna) {
 		throw new UnsupportedOperationException("Если у вас есть прерывание - будьте любезны его реализовать для " + toString() + " " + this.getClass());
+	}
+	public static boolean isFullMod() {
+		return isFullMod;
 	}
 }

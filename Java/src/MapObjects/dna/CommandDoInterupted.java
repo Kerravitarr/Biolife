@@ -13,8 +13,9 @@ public abstract class CommandDoInterupted extends CommandDo {
 	private boolean isAbsolute;
 	private int numParam;
 
-	protected CommandDoInterupted(String shotName,String longName) {this(0,shotName,longName);};
-	protected CommandDoInterupted(int countParams,String shotName,String longName) {super(countParams,shotName,longName); isInterrupt = true;}	
+	protected CommandDoInterupted() {this(0);};
+	protected CommandDoInterupted(int countParams) {super(countParams); isInterrupt = true;}	
+	protected CommandDoInterupted(boolean isAbsolute,int countParams) {super(isAbsolute,countParams); isInterrupt = true;}	
 
 	@Override
 	public final int getInterrupt(AliveCell cell, DNA dna) {

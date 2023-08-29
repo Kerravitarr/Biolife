@@ -1,10 +1,12 @@
 package MapObjects;
 
+import static MapObjects.AliveCellProtorype.MAX_MP;
 import java.awt.Color;
 import java.awt.Graphics;
 
 import Utils.JSON;
 import Utils.Utils;
+import main.Configurations;
 import main.Point.DIRECTION;
 import panels.Legend;
 
@@ -15,14 +17,16 @@ import panels.Legend;
  */
 public class Fossil extends CellObject {
 	/**Цвет стены*/
-    private static final Color COLOR_DO = new Color(64, 56, 56,200);
+    private static final Color COLOR_DO = Color.BLACK;
 	/**Сколько у нас энергии*/
 	private double energy = 0;
+	/**Стены не бессмертны, напротив, эроизия разлагает их*/
+	private static final int MAX_AGE = 1_000_000;
 
-	public Fossil(JSON poison) {
+	public Fossil(JSON poison, long version) {
 		super(poison);
-		setHealth(Math.round((double)poison.get("energy")));
-		 super.color_DO = COLOR_DO;
+		energy = (double)poison.get("energy");
+		super.color_DO = COLOR_DO;
 		repaint();
 	}
 
@@ -30,7 +34,7 @@ public class Fossil extends CellObject {
 	public Fossil(AliveCell cell) {
 		super(cell.getStepCount(), LV_STATUS.LV_WALL);
 		setPos(cell.getPos());
-		energy = Math.abs(cell.getHealth()) + AliveCell.MAX_HP/10.0 + cell.getMineral()/10.0; //Превращается в органику всё, что только может
+		energy = Math.abs(cell.getHealth()) + cell.getFoodTank() + (cell.getMineral() + cell.getMineralTank()) * 10; //Превращается в органику всё, что только может
 	    super.color_DO = COLOR_DO;
 		repaint();
 	}
@@ -40,6 +44,8 @@ public class Fossil extends CellObject {
 	void step() {
 		if (energy <= 1) { // Наша энергия
 			destroy();
+		} else if(getAge() > MAX_AGE){
+			energy--;
 		}
 	}
 	
@@ -48,7 +54,7 @@ public class Fossil extends CellObject {
 	 */
 	@Override
 	public boolean move(DIRECTION direction) {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -66,9 +72,11 @@ public class Fossil extends CellObject {
 		g.setColor(super.color_DO);
 		
 		int r = (int) Math.round(getPos().getRr()*1);
-		int rx = getPos().getRx();
-		int ry = getPos().getRy();
-		Utils.fillSquare(g,rx,ry,r);
+		int xCenter = getPos().getRx();
+		int yCenter = getPos().getRy();
+		
+		g.fillRect(xCenter-r/2, yCenter-r/6,r, r/3);
+		g.fillRect(xCenter-r/6, yCenter-r/2,r/3, r);
 	}
 
 	@Override
@@ -79,12 +87,10 @@ public class Fossil extends CellObject {
 
 	@Override
 	public double getHealth() {
-		return Math.round(energy);
+		return energy;
 	}
 	@Override
 	void setHealth(double h) {
-		if(h > 0)
-			energy = h;
 		energy = h;
 	}
 
@@ -99,5 +105,12 @@ public class Fossil extends CellObject {
 	}
 
 	@Override
-	public void repaint() {	}
+	public void repaint() {
+		final var legend = Configurations.legend;
+		switch (legend.getMode()) {
+			case HP -> color_DO = legend.HPtToColor(getHealth());
+			case YEAR -> color_DO = legend.AgeToColor(((double)getAge())/MAX_AGE);
+			default -> color_DO = COLOR_DO;
+		}
+	}
 }

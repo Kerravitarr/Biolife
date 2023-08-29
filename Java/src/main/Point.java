@@ -50,6 +50,7 @@ public class Point{
 		/**
 		 * Превращает направление в символ
 		 */
+		@Override
 		public String toString() {
 			switch (this) {
 				case DOWN->{return "↓";}
@@ -98,12 +99,22 @@ public class Point{
 	public int getRx() {
 		return getRx(x);
 	}
+	/**
+	 * Переводит координаты клетки в координаты экрана
+	 * @param x координата в масштабах клетки
+	 * @return x координата в масштабе окна, пк
+	 */
 	public static int getRx(int x) {
 		return (int) Math.round(x*Configurations.scale + pixelXDel);
 	}
 	public int getRy() {
 		return getRy(y);
 	}
+	/**
+	 * Переводит координаты клетки в координаты экрана
+	 * @param y координата в масштабах клетки
+	 * @return x координата в масштабе окна, пк
+	 */
 	public static int getRy(int y) {
 		return (int) Math.round(y*Configurations.scale + pixelYDel);
 	}
@@ -113,6 +124,26 @@ public class Point{
 	public static int getRr(int r) {
 		return (int) Math.round(r * Configurations.scale) ;
 	}
+	/**
+	 * Переводит координаты экрана в координаты клетки
+	 * @param x координата на экране
+	 * @return x координата на поле. Эта координата может выходить за размеры мира!!!
+	 */
+	public static int rxToX(int x) {
+		return (int) Math.round((x - Configurations.border.width)/Configurations.scale - 0.5);
+	}
+	/**
+	 * Переводит координаты экрана в координаты клетки
+	 * @param y координата на экране
+	 * @return x координата на поле. Эта координата может выходить за размеры мира!!!
+	 */
+	public static int ryToY(int y) {
+		return (int) Math.round((y - Configurations.border.height)/Configurations.scale - 0.5);
+	}
+	/**Получить точку в указанном направлении от текущей
+	 * @param dir в каком направлении нужна точка
+	 * @return точка в нужном направлении
+	 */
 	public Point next(DIRECTION dir) {
 		return new Point(x + dir.addX,y + dir.addY);
 	}
@@ -132,6 +163,7 @@ public class Point{
 		make.add("y", y);
 		return make;
 	}
+	@Override
 	public String toString() {
 		return "x: " + x + " y: " + y;
 	}
@@ -148,4 +180,52 @@ public class Point{
     }
 	public int getX() {return x;}
 	public int getY() {return y;}
+	
+	/**
+	 * Вычисляет расстояние между двумя точками
+	 * @param next следующая точка
+	 * @return расстояние
+	 */
+	public double hypotenuse(Point next) {
+		var delx = subtractionX(x,next.x);
+		var dely = y - next.y;
+		return Math.sqrt(delx*delx+dely*dely);
+	}
+	/**
+	 * Функция нахождения минимального расстояния между двумя точками по Х
+	 * @param xf первая точка по Х
+	 * @param xs вторая точка по У
+	 * @return Расстояние между двумя точками.
+	 */
+	public static int subtractionX(int xf, int xs) {
+		var del = xs - xf;
+		var cdel = del + (xf <= xs ?  - Configurations.MAP_CELLS.width : + Configurations.MAP_CELLS.width);
+		return Math.abs(del) < Math.abs(cdel) ? del : cdel;
+	}
+	
+	/**
+	 * Возвращает направление от f к s
+	 * @param f первая клетка
+	 * @param s вторая клетка
+	 * @return направление стрелки от f к s
+	 */
+	public static DIRECTION direction(Point f, Point s){
+		var dy = s.y - f.y;
+		var dx = subtractionX(f.x, s.x);
+		for(var d : DIRECTION.myEnumValues)
+			if(d.addX == dx && dy == d.addY)
+				return d;
+		throw new IllegalArgumentException("Расстояние между точками не должно быть больше 1!");
+	}
+	
 }
+
+
+
+
+
+
+
+
+
+

@@ -12,24 +12,25 @@ import panels.Legend;
 
 public class Poison extends CellObject {
 	/**Максимальная токсичность яда*/
-	static final int MAX_TOXIC = 2000;
+	public static final int MAX_TOXIC = 2000;
+	/**Максимальная вязкость яда.*/
+	public static final int MAX_STREAM = 20_000;
 	
+	/**Все возможные типы яда*/
 	public enum TYPE {
 		/**Без яда, используется для клеток*/
-		UNEQUIPPED("НЕТ"),
+		UNEQUIPPED(),
 		/**Химический активный, наносит урон*/
-		YELLOW("ЯД"), 
+		YELLOW(), 
 		/**Безвредный для клеток, но может разрушать стены*/
-		PINK("РАСТВ"), 
+		PINK(), 
 		/**Безвредный для здоровья, но вызывает мутацию в клетке*/
-		BLACK("МУТ");
-		private static TYPE[] vals = values();
+		BLACK();
+		public static TYPE[] vals = values();
 		
 		private String name;
 
-		TYPE(String n) {
-			name = n;
-		}
+		TYPE() {name = Configurations.getProperty(getClass(), super.name());}
 
 		public static TYPE toEnum(int num) {
 			while (num >= vals.length)
@@ -43,111 +44,173 @@ public class Poison extends CellObject {
 			return vals.length;
 		}
 		
+		@Override
 		public String toString() {return name;}
 	};
 	/**Сколько у нас энергии*/
 	private double energy = 0;
 	/**Каков тип яда*/
-	public TYPE type;
+	private TYPE type;
 	/**Каков наш радиус в частях одной клетки!!!!*/
 	public double radius = 1;
 	/**Когда следующее деление*/
 	public int nextDouble;
+	/**Вязкость яда*/
+	private int stream = 150;
 
-	public Poison(JSON poison) {
+	public Poison(JSON poison, long version) {
 		super(poison);
 		setHealth(Math.round((double)poison.get("energy")));
 		type = TYPE.toEnum(poison.getI("type"));
 		nextDouble = getTimeToNextDouble();
+		stream = poison.get("stream");
 		repaint();
 	}
 
-	public Poison(TYPE type, long stepCount, Point point, double newEnergy) {
+	public Poison(TYPE type, long stepCount, Point point, double energy, int stream) {
 		super(stepCount, LV_STATUS.LV_POISON);
 		setPos(point);
-		setHealth(newEnergy);
+		setHealth(energy);
+		
 		this.type=type;
+		this.stream = stream;
 		nextDouble = getTimeToNextDouble();
 		repaint();
 	}
 
 	@Override
 	void step() {
-		if(Configurations.POISON_STREAM == 0) //При таком уровне разложения, яд сразу исчезает
-			destroy();
+		if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
 		if ((getAge()) >= nextDouble) { // Вязкость яда
 			DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
-			switch (see(dir)) {
-				case WALL: return; //Ну что мы можем сделать со стеной? О_О
-				case CLEAN:{
-					energy /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
-					if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
-					Point point = getPos().next(dir);
-					Poison newPoison = new Poison(type,getStepCount(),point,getHealth());
-		            Configurations.world.add(newPoison);//Сделали новую каплю
-				}break;
-				case ORGANIC :
-				case ENEMY:
-				case FRIEND:
-				case POISON:
-				case OWALL:
-				case NOT_POISON:{
-					energy /= 2.1; // 10% выветривается каждый раз, а половину своей энергии отдаём новой калпе
-					if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
-					Point point = getPos().next(dir);
-					CellObject cell = Configurations.world.get(point);
-					if(cell.toxinDamage(type,(int) (getHealth()))) {
-						cell.remove_NE();
-						Poison newPoison = new Poison(type,getStepCount(),point,Math.abs(cell.getHealth()));
-			            Configurations.world.add(newPoison);//Сделали новую каплю
-					} // А иначе мы не создаём просто нашу копию, нас-же переварили
-				}break;
-				case BOT: throw new IllegalArgumentException("Unexpected value: " + see(dir));
+			energy *= 0.9;// 10% выветривается каждый раз
+			var nen = energy / 2; // Половину своей энергии отдаём новой калпе
+			if(createPoison(getPos().next(dir),getType(),getStepCount(), nen, getStream())) {
+				energy = nen;
 			}
-			nextDouble = getTimeToNextDouble();
-			repaint();
+ 			nextDouble = getTimeToNextDouble();
+			if(getHealth() < 1) destroy();//Мы растартили всю нашу ядовитость, мы того - усё
 		}
+	}
+	/**
+	 * Создаёт каплю яда в определённой позиции
+	 * @param pos где создать
+	 * @param type какого типа капля
+	 * @param stepCount шаг моделирования. Нужно для того, чтобы дети не ходили в ход родителя
+	 * @param energy сколько энергии у капли
+	 * @param stream тягучесть капли
+	 * @return true, если яд был истрачен и false, если по каким-то причинам яд не потратился
+	 */
+	public static boolean createPoison(Point pos, TYPE type, long stepCount, double energy, int stream) {
+		switch (Configurations.world.test(pos)) {
+			case WALL: return false; //Ну что мы можем сделать со стеной? О_О
+			case CLEAN:
+	            Configurations.world.add(new Poison(type,stepCount,pos,energy, stream));//Сделали новую каплю
+			return true;
+			case OWALL:{
+				if(type != TYPE.PINK)
+					return false;	//Кроме розового яда - все остальные для стен непрохдимы
+				var cell = (Fossil) Configurations.world.get(pos);
+				if(cell.toxinDamage(type,(int) (energy))) {
+					energy = Math.abs(cell.getHealth());	//Сколько тут осталось?
+					cell.remove_NE();
+					if(energy > 1)
+			            Configurations.world.add(new Poison(type,stepCount,pos,energy, stream));//Сделали новую каплю
+				} // А иначе мы не создаём просто нашу копию, нас-же переварили
+			}return true;
+			case ORGANIC:
+				Configurations.world.get(pos).toxinDamage(type,(int) (energy));
+			return true;	//Органику потравили, да и всё
+			case BOT:{
+				AliveCell cell = (AliveCell) Configurations.world.get(pos);
+				if(cell.toxinDamage(type,(int) (energy))) {	//Умерли, надо превратить живого в мёртвого
+					try {cell.bot2Organic();} catch (CellObjectRemoveException e) {}	//Создаём органику
+					var organic = (Organic)Configurations.world.get(pos);
+					if(type == cell.getPosionType())	//Родной яд действует слабже
+						energy /= 2;
+					organic.toxinDamage(type,(int) (energy - organic.getHealth())); //И отравляем её. Умерли то от яда!
+				}
+			}return true;	//Потравили, да и всё
+			case POISON:{
+				var cell = (Poison) Configurations.world.get(pos);
+				if(cell.toxinDamage(type,(int) (energy))) {
+					energy = Math.abs(cell.getHealth());	//Сколько тут осталось?
+					cell.remove_NE();
+					if(energy > 1)
+			            Configurations.world.add(new Poison(type,stepCount,pos,energy, stream));//Сделали новую каплю
+				} // А иначе мы не создаём просто нашу копию, нас-же переварили
+			}return true;	//Потравили, да и всё
+			case ENEMY:
+			case NOT_POISON:
+			case FRIEND: throw new IllegalArgumentException("Unexpected value: " + Configurations.world.test(pos));
+		}
+		//Это вместо default. Зато позволяет не писать злополучное слово и лучше видеть подскзаки по коду!
+		throw new IllegalArgumentException("Unexpected value: " + Configurations.world.test(pos));
 	}
 	
 	private int getTimeToNextDouble() {
-		return (int) Math.round(getAge() + Configurations.POISON_STREAM * (2 - energy / MAX_TOXIC));
+		return (int) Math.round(getAge() + getStream() * (2 - energy / MAX_TOXIC));
 	}
 
 	public boolean move(DIRECTION direction) {
-		switch (see(direction)) {
+		var pos = getPos().next(direction);
+		switch (Configurations.world.test(pos)) {
 			case WALL :
 			case CLEAN : 
 				return super.move(direction);
-			case POISON :
-			case NOT_POISON :{
-				Point point = getPos().next(direction);
-				Poison cell = (Poison) Configurations.world.get(point);
-				if(cell.toxinDamage(type,(int) getHealth())) {
-					cell.type = type;
-					cell.setHealth(Math.abs(cell.getHealth()));
-				}
-				destroy(); // Не важно что мы вернём - мы того
-			}return true;
-			case ORGANIC :
-			case ENEMY :
-			case OWALL :
-			case FRIEND :{
-				Point point = getPos().next(direction);
-				CellObject cell = Configurations.world.get(point);
-				if(cell.toxinDamage(type,(int) getHealth())) {
-					addHealth(Math.abs(cell.getHealth())); // Вот мы и покушали свежатинкой
+			case OWALL:{
+				if(getType() != TYPE.PINK)
+					return false;	//Кроме розового яда - все остальные для стен непрохдимы
+				var cell = (Fossil) Configurations.world.get(pos);
+				if(cell.toxinDamage(getType(),(int) (getHealth()))) {
+					energy = Math.abs(cell.getHealth());	//Сколько теперь у нас энергии
 					cell.remove_NE();
+					if(energy > 1)
+						return super.move(direction); //А теперь двигаемся на освободившуюся клетку
+					else
+						destroy();	//Упс, мы не смогли :/
+				} else {
+					destroy();	//Упс, мы не смогли :/
+				}
+			}case ORGANIC :
+				Configurations.world.get(pos).toxinDamage(getType(),(int) (getHealth()));
+			return false;
+			case BOT :{
+				AliveCell cell = (AliveCell) Configurations.world.get(pos);
+				if(cell.toxinDamage(getType(),(int) getHealth())) {
+					try {cell.bot2Organic();} catch (CellObjectRemoveException e) {}	//Создаём органику
+					var organic = (Organic)Configurations.world.get(pos);
+					var energy = getHealth();
+					if(getType() == cell.getPosionType())	//Родной яд действует слабже
+						energy /= 2;
+					organic.toxinDamage(getType(),(int) (energy - organic.getHealth())); //И отравляем её. Умерли то от яда!
+					destroy();	//А мы что? Мы всё, теперь там ядовитая плоть
 				} else { // Покушали нами
 					destroy();
 				}
+			}
+			case POISON :{
+				Poison cell = (Poison) Configurations.world.get(pos);
+				if(cell.toxinDamage(getType(),(int) getHealth())) {
+					energy = Math.abs(cell.getHealth());	//Сколько тут осталось?
+					cell.remove_NE();
+					if(energy > 1)
+						return super.move(direction); //А теперь двигаемся на освободившуюся клетку
+					else
+						destroy();	//Упс, мы не смогли :/
+				} else {
+					destroy();	//Упс, мы не смогли :/
+				}
 			}return true;
-			default :
-				throw new IllegalArgumentException("Unexpected value: " + see(direction));
+			case ENEMY:
+			case NOT_POISON:
+			case FRIEND: throw new IllegalArgumentException("Unexpected value: " + Configurations.world.test(pos));
 		}
+		throw new IllegalArgumentException("Unexpected value: " + Configurations.world.test(getPos().next(direction)));
 	}
 	
 	public boolean toxinDamage(TYPE type, int damag) {
-		if (this.type == type) {
+		if (this.getType() == type) {
 			addHealth(damag);
 		} else {
 			damag = (int) Math.min(damag, getHealth()*2); // Мы не можем принять больше яда, чем в нас хп
@@ -169,7 +232,8 @@ public class Poison extends CellObject {
 	@Override
 	public JSON toJSON(JSON make) {
 		make.add("energy", energy);
-		make.add("type", type.ordinal());
+		make.add("stream", getStream());
+		make.add("type", getType().ordinal());
 		return make;
 	}
 
@@ -180,34 +244,51 @@ public class Poison extends CellObject {
 
 	@Override
 	void setHealth(double h) {
-		energy = h;//Math.min(h, MAX_TOXIC);
+		energy = h;
 		radius = Math.min(1, 0.3 + 0.7 * energy/MAX_TOXIC);
 		nextDouble = Math.min(nextDouble,getTimeToNextDouble());
 	}
 
 	@Override
 	boolean isRelative(CellObject cell0) {
-		if (cell0 instanceof Poison) {
-			Poison poison = (Poison) cell0;
-		    return poison.type == type;
-		} else {
+		if (cell0 instanceof Poison poison)
+			return poison.getType() == getType();
+		else
 			return false;
-		}
 	}
 
 	@Override
 	public void repaint() {
-		switch (Legend.Graph.getMode()) {
-			case HP -> color_DO = new Color((int) Math.min(255, (255.0*Math.max(0,getHealth())/MAX_TOXIC)),0,0,255);
+		final var legend = Configurations.legend;
+		switch (legend.getMode()) {
+			case HP -> color_DO = legend.HPtToColor(energy/MAX_TOXIC);
+			case YEAR -> color_DO = legend.AgeToColor(getAge());
 			default -> {
-				switch (type) {
+				switch (getType()) {
 					case YELLOW -> color_DO = (Color.YELLOW);
 					case PINK -> color_DO = (Color.PINK);
 					case BLACK -> color_DO = (Color.BLACK);
-					case UNEQUIPPED -> throw new IllegalArgumentException("Unexpected value: " + type);
+					case UNEQUIPPED -> throw new IllegalArgumentException("Unexpected value: " + getType());
+				}
+			}
+			case POISON -> {
+				var rg = (int) Utils.betwin(0, getHealth() / MAX_TOXIC, 1.0) * 255;
+				switch (getType()) {
+					case BLACK -> color_DO = new Color(255-rg,255- rg,255- rg);
+					case PINK -> color_DO = new Color(rg, rg / 2, rg / 2);
+					case YELLOW -> color_DO = new Color(rg, rg, 0);
+					case UNEQUIPPED -> throw new IllegalArgumentException("Unexpected value: " + getType());
 				}
 			}
 		}
+	}
+
+	public TYPE getType() {
+		return type;
+	}
+
+	public int getStream() {
+		return stream;
 	}
 
 

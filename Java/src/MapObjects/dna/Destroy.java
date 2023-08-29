@@ -8,7 +8,7 @@ import MapObjects.AliveCell;
  */
 public class Destroy extends CommandDo {
 
-	protected Destroy() {super("х-х","Смерть");}
+	protected Destroy() {super();}
 
 	@Override
 	protected void doing(AliveCell cell) {

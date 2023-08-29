@@ -1,7 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import main.Configurations;
+import Utils.MyMessageFormat;
 
 /**
  * Фотосинтез.
@@ -10,18 +10,27 @@ import main.Configurations;
  * используя минералы
  */
 public class Photosynthesis extends CommandDo {
+	
+	private final MyMessageFormat valueFormat = new MyMessageFormat("HP += {0, number, #.#}");
 
-	protected Photosynthesis() {super("☀","Фотосинтез");}
+	protected Photosynthesis() {super();}
 
 	@Override
 	protected void doing(AliveCell cell) {
-        //Показывает эффективность нашего фотосинтеза
-        double t = (1+cell.photosynthesisEffect) * cell.getMineral() / AliveCell.MAX_MP;
-        // формула вычисления энергии
-        double hlt = Configurations.sun.getEnergy(cell.getPos()) + t;
-        if (hlt > 0) {
+        var hlt = cell.sunAround();
+		if (hlt > 0) {
+			if (cell.getMineral() > 0)
+				cell.addMineral(-1);
         	cell.addHealth(Math.round(hlt));   // прибавляем полученную энергия к энергии бота
         	cell.color(AliveCell.ACTION.EAT_SUN,hlt);
         }
+	}
+	
+	protected String value(AliveCell cell) {
+        double hlt = cell.sunAround();
+		if (hlt > 0)
+			return valueFormat.format(hlt);
+		else
+			return null;
 	}
 }

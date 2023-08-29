@@ -1,6 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
+import Utils.MyMessageFormat;
 
 /**
  * Является безусловным переходом на следующую команду
@@ -9,7 +10,9 @@ import MapObjects.AliveCell;
  */
 public class Jump extends CommandDNA {
 
-	public Jump() {super(1,0,"PC+=","Сл. Команда");}
+	private final MyMessageFormat paramFormat = new MyMessageFormat("{0} ({1})");
+
+	public Jump() {super(1,0);}
 
 	@Override
 	protected int perform(AliveCell cell) {
@@ -20,12 +23,11 @@ public class Jump extends CommandDNA {
 	
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){
-		StringBuilder sb = new StringBuilder();
-		var value = param(dna, 0);
-		sb.append(value);
-		sb.append(" (");
-		sb.append((value+dna.getIndex())%dna.size);
-		sb.append(")");
-		return sb.toString();
+		var value = param(dna, numParam);
+		return paramFormat.format(value,(value+dna.getPC())%dna.size);
 	};
+	
+	public String value(AliveCell cell, DNA dna) {
+        return Integer.toString((param(dna, 0) + dna.getPC()) % dna.size);
+	}
 }
