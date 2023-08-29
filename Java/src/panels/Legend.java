@@ -278,7 +278,15 @@ public class Legend extends JPanel{
 		 * @return Цвет
 		 */
 		public static Color AgeToColor(long age) {
-			return Utils.getHSBColor(Utils.betwin(0.0, ((double)age)/maxAge, 1.0), 1, 1,1);
+			return AgeToColor(((double)age)/maxAge);
+		}
+		/**
+		 * Превращает возраст клетки в конкретный цвет
+		 * @param age возраст, в процентах от максимального. [0;1]
+		 * @return Цвет
+		 */
+		public static Color AgeToColor(double age) {
+			return Utils.getHSBColor(Utils.betwin(0.0, age, 1.0), 1, 1,1);
 		}
 		
 		public static Color HPtToColor(double hp){

@@ -107,7 +107,7 @@ public class Fossil extends CellObject {
 	public void repaint() {
 		switch (Legend.Graph.getMode()) {
 			case HP -> color_DO = Legend.Graph.HPtToColor(getHealth());
-			case YEAR -> color_DO = Legend.Graph.AgeToColor(getAge());
+			case YEAR -> color_DO = Legend.Graph.AgeToColor(((double)getAge())/MAX_AGE);
 			default -> color_DO = COLOR_DO;
 		}
 	}
