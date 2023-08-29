@@ -24,8 +24,10 @@ import java.awt.Font;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import panels.BotInfo;
 import panels.EvolTreeDialog;
+import panels.Legend;
 import panels.Menu;
 import panels.Settings;
 
@@ -110,6 +112,8 @@ public class Configurations extends JsonSave.JSONSerialization{
 	public static Settings settings = null;
 	/**Меню мира со всеми его кнопочками*/
 	public static Menu menu = null;
+	/**Легенда мира, как его раскрашивать?*/
+	public static Legend legend = null;
 	/**Дерево эволюции*/
 	public static EvolTreeDialog evolTreeDialog = null;
 	
@@ -118,7 +122,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 	/**ГСЧ для симуляции*/
 	public static SplittableRandom rnd = new SplittableRandom();
 	/**Основной потоковый пулл для всяких задач которым нужно выполняться периодически*/
-	public static final ScheduledThreadPoolExecutor TIME_OUT_POOL = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,new ThreadFactory(){
+	private static final ScheduledThreadPoolExecutor TIME_OUT_POOL = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1,new ThreadFactory(){
 		@Override
 		public Thread newThread(Runnable task) {return new Thread(task, "TIME_OUT_TASK");}
 	});
@@ -131,7 +135,11 @@ public class Configurations extends JsonSave.JSONSerialization{
 	
 	/**Переводчик для всех названий. В теории*/
 	private static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
-	
+	/**Задача, выплоняемая примерно раз в секунду, но без жёсткого ограничения*/
+	public interface EvrySecondTask{
+		/**Функция, вызываемая каждую секунду. Примерно*/
+		public void taskStep();
+	}
 	
 	@Override
 	public String getName() {
@@ -325,5 +333,16 @@ public class Configurations extends JsonSave.JSONSerialization{
 			}
 		}
 		return ret;
+	}
+	public static void addTask(EvrySecondTask task){
+		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(() -> 
+			{
+				try {
+					task.taskStep();
+				} catch (Exception ex) {
+					System.err.println(ex);
+					ex.printStackTrace(System.err);
+				}
+			}, 1, 1, TimeUnit.SECONDS);
 	}
 }

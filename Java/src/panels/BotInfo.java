@@ -45,7 +45,7 @@ import java.util.Map;
 import main.Configurations;
 import main.Point;
 
-public class BotInfo extends JPanel {
+public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 	
 	private static final Color RED = new Color(255, 0, 0, 30);
 	private static final Color RED2 = new Color(255, 0, 0, 60);
@@ -54,7 +54,56 @@ public class BotInfo extends JPanel {
 	public static final Color ARG = new Color(100, 100, 100, 30);
 	public static final Color PAR = new Color(255, 255, 255, 30);
 	
-	/**Одна строка в таблице*/
+	private TextPair photos;
+	private TextPair state;
+	private TextPair hp;
+	private TextPair hpTank;
+	private TextPair mp;
+	private TextPair direction;
+	private TextPair age;
+	private TextPair generation;
+	private TextPair phenotype;
+	
+	/**Филогинетическое дерево*/
+	private TextPair filogen;
+	/**Позиция*/
+	private TextPair pos;
+	/**Поле токсикации*/
+	private TextPair toxicFIeld;
+	/**Плотность*/
+	private TextPair buoyancy;
+	/**Слизь*/
+	private TextPair mucosa;
+	/**Список тех полей, которые нужно автоматически проматывать*/
+	private final Set<TextPair> scrolFieldList;
+	/**Лист всех полей*/
+	List<TextPair> listFields;
+	/**Выбранная клетка*/
+	private CellObject cell = null;
+	private long oldYear = -1;
+	private int oldIndex = -1;
+	/**Режим подписей полный или в виде значков*/
+	private boolean isFullMod = false;
+	/**Развёрнутая в лист ДНК*/
+	private final JList<JListRow> listDNA;
+	/**Панель, на которой написано про ДНК*/
+	private final JPanel panel_DNA;
+	/**Панель со всеми константами*/
+	private final JPanel panelConstant;
+	/**Список с прерываниями*/
+	private final JList<String> list_inter;
+	/**Панель с прерываниями*/
+	private final JScrollPane scrollPane_inter;
+	/**Главная панель, на которой всё и размещается*/
+	private final JPanel panel;
+	/**Тестовая клетка, для работы с командами без конца*/
+	private TextAL testCell = null;
+	//Специальный счётчик, который нужен для обновления инфы по клетке
+	private SameStepCounter counter = new SameStepCounter(2);
+	/**Форматирование чисел*/
+	private static final MyMessageFormat numberFormat = new MyMessageFormat("{0,number,###,###}");
+	
+	/**Одна строка в таблице ДНК*/
 	private class JListRow {
 		enum TYPE{
 			CMD_I,CMD_D,CMD,PARAM,ARG
@@ -207,7 +256,7 @@ public class BotInfo extends JPanel {
 			return "TextPair " + text.getText() + " " + field.getText();
 		}
 	}
-	/**Клетка-затычка*/
+	/**Клетка-затычка для симулирования дальнейших шагов*/
 	private class TextAL extends AliveCell{
 		DNA interDNA = null;
 		private final Map<Point,AliveCell> friends;
@@ -241,81 +290,6 @@ public class BotInfo extends JPanel {
 		public Map<Point,AliveCell> getFriends(){return friends;}
 	}
 	
-	private TextPair photos;
-	private TextPair state;
-	private TextPair hp;
-	private TextPair hpTank;
-	private TextPair mp;
-	private TextPair direction;
-	private TextPair age;
-	private TextPair generation;
-	private TextPair phenotype;
-	/**Филогинетическое дерево*/
-	private TextPair filogen;
-	/**Позиция*/
-	private TextPair pos;
-	/**Поле токсикации*/
-	private TextPair toxicFIeld;
-	/**Плотность*/
-	private TextPair buoyancy;
-	/**Слизь*/
-	private TextPair mucosa;
-	/**Список тех полей, которые нужно автоматически проматывать*/
-	private final Set<TextPair> scrolFieldList;
-	/**Лист всех полей*/
-	List<TextPair> listFields;
-	
-	private CellObject cell = null;
-	private long oldYear = -1;
-	private int oldIndex = -1;
-	private boolean isFullMod = false;
-	private final JList<JListRow> listDNA;
-	/**Панель, на которой написано про ДНК*/
-	private final JPanel panel_DNA;
-	/**Панель со всеми константами*/
-	private final JPanel panelConstant;
-	/**Список с прерываниями*/
-	private final JList<String> list_inter;
-	private final JScrollPane scrollPane_inter;
-	/**Главная панель, на которой всё и размещается*/
-	private final JPanel panel;
-	/**Тестовая клетка, для работы с командами без конца*/
-	private TextAL testCell = null;
-	//Специальный счётчик, который нужен для обновления инфы по клетке
-	private SameStepCounter counter = new SameStepCounter(2);
-	/**Форматирование чисел*/
-	private static final MyMessageFormat numberFormat = new MyMessageFormat("{0,number,###,###}");
-	
-	class WorkTask implements Runnable{
-		@Override
-		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
-		
-		public void runE() {
-			if(isVisible() && getCell() != null && !getCell().aliveStatus(AliveCell.LV_STATUS.GHOST)) {
-				setDinamicHaracteristiks();
-				if(getCell() instanceof AliveCell lcell) {
-					/**Индекс с которого идёт пеерсчёт*/
-					long age = lcell.getAge();
-					if(age != oldYear || oldIndex != lcell.getDna().getPC()) {
-						oldYear = age;
-						oldIndex = lcell.getDna().getPC();
-						testCell = null;
-						printDNA(lcell); 
-					} else {
-						listDNA.repaint();
-					}
-				}
-				counter.step(0);
-			} else {
-				if(cell != null) {
-					cell = null;
-					clearText();
-					listDNA.setModel(new DefaultListModel<> ());
-				}
-			}
-		}
-	}
-
 	/**
 	 * Create the panel.
 	 */
@@ -406,10 +380,35 @@ public class BotInfo extends JPanel {
 		listDNA.setSelectedIndex(0);
 		panel.setLayout(gl_panel);
 		
-		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new WorkTask(), 100, 100, TimeUnit.MILLISECONDS);
+		Configurations.addTask(this);
 	}
 	
-	
+	@Override
+	public void taskStep(){
+		if(isVisible() && getCell() != null && !getCell().aliveStatus(AliveCell.LV_STATUS.GHOST)) {
+			setDinamicHaracteristiks();
+			if(getCell() instanceof AliveCell lcell) {
+				/**Индекс с которого идёт пеерсчёт*/
+				long age = lcell.getAge();
+				if(age != oldYear || oldIndex != lcell.getDna().getPC()) {
+					oldYear = age;
+					oldIndex = lcell.getDna().getPC();
+					testCell = null;
+					printDNA(lcell); 
+				} else {
+					listDNA.repaint();
+				}
+			}
+			counter.step(0);
+		} else {
+			if(cell != null) {
+				cell = null;
+				clearText();
+				listDNA.setModel(new DefaultListModel<>());
+			}
+		}
+	}
+	/**Создаёт все текстовые поля информации*/
 	private void makeParamsPanel() {
 		panelConstant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), getProperty("ConstPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
 		
@@ -455,6 +454,9 @@ public class BotInfo extends JPanel {
 		);
 		panelConstant.setLayout(gl_panel_const);
 	}
+	/**Выбрать объект карты для исследования
+	 * @param cellObject объект карты, который отобразит панель
+	 */
 	public void setCell(CellObject cellObject) {
 		clearText();
 		this.cell=cellObject;
@@ -494,9 +496,7 @@ public class BotInfo extends JPanel {
 		updateVisibleParams();
 	}
 
-	/**
-	 * Обновляет значения динамических полей - возраст, направление т.д.
-	 */
+	/**Обновляет значения динамических полей - возраст, направление т.д.*/
 	private void setDinamicHaracteristiks() {
 		pos.setText(cell.getPos().toString());
 		state.setText(getCell().getAlive().toString());
@@ -562,7 +562,7 @@ public class BotInfo extends JPanel {
 		panelConstant.repaint();
 		updateVisibleParams();
 	}
-	
+	/**Очищает все поля*/
 	private void clearText() {
 		for(var i : listFields) {
 			i.clear();

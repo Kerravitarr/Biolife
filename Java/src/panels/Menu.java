@@ -25,27 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import main.Configurations;
 
-public class Menu extends JPanel {
-	/**Для выбора кнопочек меню*/
-	enum MENU_SELECT{NONE,REMOVE}
-	/**Перечисление для удаления только определённых объектов*/
-	enum REMOVE_O{
-		ORGANIC("organic"),POISON("poison"),OWALL("fossil"),BOT("alive"),ALL("all"),
-		;
-		public static final REMOVE_O[] values = REMOVE_O.values();
-		/**Описание пункта меню*/
-		private final String text;
-		private REMOVE_O(String n){text = Configurations.getHProperty(Menu.class,"remove." + n);}
-	}
-	/**Поток автоматического обновления*/
-	private class WorkTask implements Runnable{
-		@Override
-		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
-		public void runE() {
-			update_per_second();
-		}
-	}
-	
+public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	/**Какая из кнопок выбрана*/
 	private MENU_SELECT select = MENU_SELECT.NONE;
 	/**Объекты какого типа удаляем*/
@@ -60,7 +40,20 @@ public class Menu extends JPanel {
 	private GifSequenceWriter gifs = null;
 	/**Флаг, что мы пишем гифки*/
 	private boolean gifRecord = false;
-
+	
+	
+	/**Для выбора кнопочек меню*/
+	enum MENU_SELECT{NONE,REMOVE}
+	/**Перечисление для удаления только определённых объектов*/
+	enum REMOVE_O{
+		ORGANIC("organic"),POISON("poison"),OWALL("fossil"),BOT("alive"),ALL("all"),
+		;
+		public static final REMOVE_O[] values = REMOVE_O.values();
+		/**Описание пункта меню*/
+		private final String text;
+		private REMOVE_O(String n){text = Configurations.getHProperty(Menu.class,"remove." + n);}
+	}
+	
 	/**
 	 * Create the panel.
 	 */
@@ -94,38 +87,11 @@ public class Menu extends JPanel {
 			}
 		});
 
-		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new WorkTask(), 100, 100, TimeUnit.MILLISECONDS);
-	}
-
-	private JButton makeButton(String name, ActionListener al) {
-		
-		JButton button = new JButton();
-		Configurations.setIcon(button,name);
-		button.setMaximumSize (new Dimension(40,20));
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setContentAreaFilled(false);
-        button.addActionListener(e -> EventQueue.invokeLater(() -> al.actionPerformed(e)));
-        button.setToolTipText(Configurations.getHProperty(Menu.class,name));
-        button.setFocusable(false);
-		return button;
-	}
-	/**Запускает удаление объектов на карте
-	 * @param o тип объектов, подлежащих удалению
-	 */
-	private void remove(REMOVE_O o) {
-		Configurations.world.stop();
-		removeO = o;
-		select = MENU_SELECT.REMOVE;
-		Configurations.world.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
-	}
-	private void toDefault() {
-		select = MENU_SELECT.NONE;
-		Configurations.world.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+		Configurations.addTask(this);
 	}
 	
-	/**Функция, вызываемая каждую секунду автоматически*/
-	private void update_per_second() {
+	@Override
+	public void taskStep(){
 		var isA = Configurations.world.isActiv();
 		if(isA != startButtonIsStart) {
 			startButtonIsStart = isA;
@@ -154,9 +120,37 @@ public class Menu extends JPanel {
 		}
 	}
 
+	private JButton makeButton(String name, ActionListener al) {
+		
+		JButton button = new JButton();
+		Configurations.setIcon(button,name);
+		button.setMaximumSize (new Dimension(40,20));
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setContentAreaFilled(false);
+        button.addActionListener(e -> EventQueue.invokeLater(() -> al.actionPerformed(e)));
+        button.setToolTipText(Configurations.getHProperty(Menu.class,name));
+        button.setFocusable(false);
+		return button;
+	}
+	/**Запускает удаление объектов на карте
+	 * @param o тип объектов, подлежащих удалению
+	 */
+	private void remove(REMOVE_O o) {
+		Configurations.world.stop();
+		removeO = o;
+		select = MENU_SELECT.REMOVE;
+		Configurations.world.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+	}
+	private void toDefault() {
+		select = MENU_SELECT.NONE;
+		Configurations.world.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+	}
+
 	public void setCell(List<CellObject> cellObjects) {
 		if(cellObjects == null) return;
 		for(var cellObject : cellObjects){
+			if(cellObject == null) continue;
 			switch (select) {
 				case NONE -> {}
 				case REMOVE -> {
@@ -194,11 +188,13 @@ public class Menu extends JPanel {
 			}
 		}
 	}
-	
+	/**Режим выбора клеток для меню?
+	 * @return true, если мы должны нарисовать квадратик и выбрать некоторые клетки
+	 */
 	public boolean isSelectedCell(){
 		return select == MENU_SELECT.REMOVE;
 	}
-	
+	/**Функция активации и остановки записи видео */
 	private void record(){
 		if(gifs == null) { //Запуск
 			Configurations.world.stop();

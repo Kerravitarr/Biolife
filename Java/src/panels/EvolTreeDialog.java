@@ -4,12 +4,10 @@
  */
 package panels;
 
-import MapObjects.CellObject;
 import Utils.MyMessageFormat;
 import Utils.SameStepCounter;
 import Utils.Utils;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
@@ -30,71 +28,20 @@ import main.EvolutionTree;
  *
  * @author rjhjk
  */
-public class EvolTreeDialog extends javax.swing.JDialog {	
-	/**Задача по обновлению экрана*/
-	private class UpdateScrinTask implements Runnable {
-		/**Пара чисел, для вычисления количества детей и узлов*/
-		private class Pair{	private int countAllChild,countChildCell; Pair(int cac, int ccc){countAllChild = cac; countChildCell = ccc;}}
-		/**Пара значений - количество живых потомков и количество ветвей после узла*/
-		private Pair rootPair = new Pair(0,0);
-		//Специальный счётчик, который нужен для обновления инфы по клетке
-		private SameStepCounter counter = new SameStepCounter(2);
-		@Override
-		public void run() {try{runE();}catch(java.lang.NullPointerException e){}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
-		
-		public void runE() {
-			if (Legend.Graph.getMode() == Legend.Graph.MODE.EVO_TREE){
-				updateColor();
-			}
-			if(EvolTreeDialog.this.isVisible()){
-				rootPair = countPair(rootNode);
-			}
-			counter.step(0);
-		}
-		public void updateColor(){
-			EvolutionTree.root.resetColor();
-			if(rootNode.getPerrent() != null)
-				colorNode(rootNode.getPerrent());
-			colorNode(rootNode,0.0,0.8);
-		}
-		/**
-		 * Раскрашивает дерево потомков
-		 * @param root сам изображаемый узел
-		 */
-	    private void colorNode(EvolutionTree.Node root, double colorStart, double colorEnd) {
-			var delColor = (colorEnd - colorStart);
-			if(delColor > 0.5)
-				root.setColor(Utils.getHSBColor(1.0, 0.0, 1.0, 1.0));
-			else
-				root.setColor(Utils.getHSBColor(colorStart + delColor / 2, 1.0, 1.0, 1.0));
-
-			List<EvolutionTree.Node> childs = root.getChild();		
-			var stepColor = delColor / childs.size();
-			
-			for(int i = 0 ; i < childs.size() ; i++) {
-				colorNode(childs.get(i),colorStart + stepColor * i,colorStart + stepColor * (i + 1));
-			}
-		}
-		/**
-		 * Раскрашивает дерево потомков
-		 * @param root сам изображаемый узел
-		 */
-	    private void colorNode(EvolutionTree.Node root) {
-			root.setColor(Utils.getHSBColor(1.0, 0.0, 1.0, 1.0));
-			if(root.getPerrent() != null)
-				colorNode(root.getPerrent());
-		}
-		/**Возвращает число узлов наследования и число живых клеток*/
-		private Pair countPair(EvolutionTree.Node root) {
-			var next = new Pair(root.getChild().size(), root.countAliveCell());
-			for(var i : root.getChild()){
-				var add = countPair(i);
-				next.countAllChild += add.countAllChild;
-				next.countChildCell += add.countChildCell;
-			}
-			return next;
-		}
-	}
+public class EvolTreeDialog extends javax.swing.JDialog implements Configurations.EvrySecondTask{	
+	/**Сколько пунктов по оси Y должно пройти*/
+	static final int DEF_DEL_Y = 25;
+	/**Ключевой узел, от которого рисуем*/
+	private EvolutionTree.Node rootNode = EvolutionTree.root;
+	/**Пара чисел, для вычисления количества детей и узлов*/
+	private class Pair{	private int countAllChild,countChildCell; Pair(int cac, int ccc){countAllChild = cac; countChildCell = ccc;}}
+	/**Пара значений - количество живых потомков и количество ветвей после узла*/
+	private Pair rootPair = new Pair(0,0);
+	/**Дата рождения*/
+	private static final MyMessageFormat dateBirth = new MyMessageFormat(Configurations.getProperty(EvolTreeDialog.class,"dateBirth"));
+	/**Возраст основателя*/
+	private static final MyMessageFormat founderYear = new MyMessageFormat(Configurations.getProperty(EvolTreeDialog.class,"founderYear"));
+	
 	/**Одоин отображающийся узел*/
 	private class NodeJpanel extends JPanel{
 		/**Реальный узел, который мы изображаем*/
@@ -176,7 +123,6 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		
 		@Override
 		public void paintComponent(Graphics g) {
-			relaintFun.counter.step(1);
 			int xStart = 0;
 			int xEnd = getWidth();
 			var yStart = getHeight() - DEF_DEL_Y * 3;
@@ -197,23 +143,6 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 					paint(g,xStart,xEnd, yStart + DEF_DEL_Y);
 				paint(g,rootNode,xStart,xEnd, yStart,0,0.8);
 			}catch(Exception e){} //Нормально всё, асинхронность выполнения и всё прочее
-			try{
-				//printText(g);
-			}catch(java.lang.NullPointerException e){
-				restart();
-			}
-		}
-
-		/**
-		 * Пишет информацию о выбранной клетке на панели
-		 * @param g - панель, куда пишем
-		 * @throws java.lang.NullPointerException - может выбрасывать исключение, когда клетка удаляется 
-		 */
-		private void printText(Graphics g) throws java.lang.NullPointerException{
-			var yStart = getHeight() - DEF_DEL_Y;
-			g.setColor(Color.BLACK);
-			String text = formatNode(rootNode,(relaintFun.counter.get() / 2) % 7);
-			g.drawString(text, 0, yStart);
 		}
 		
 		/**
@@ -301,18 +230,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		}
 		
 	}
-
 	
-	/**Сколько пунктов по оси Y должно пройти*/
-	static final int DEF_DEL_Y = 25;
-	/**Ключевой узел, от которого рисуем*/
-	private EvolutionTree.Node rootNode = EvolutionTree.root;
-	/**Закрашивалка узлов*/
-	private final UpdateScrinTask relaintFun;
-	/**Дата рождения*/
-	private static final MyMessageFormat dateBirth = new MyMessageFormat(Configurations.getProperty(EvolTreeDialog.class,"dateBirth"));
-	/**Возраст основателя*/
-	private static final MyMessageFormat founderYear = new MyMessageFormat(Configurations.getProperty(EvolTreeDialog.class,"founderYear"));
 	
 	/** Creates new form E */
 	public EvolTreeDialog() {
@@ -324,14 +242,64 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 		
 		Configurations.evolTreeDialog = this;
 		
-		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(relaintFun = new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
+		Configurations.addTask(this);
 		restart();
 	}
 	
 	@Override
-    public void repaint() {
-    	super.repaint();
+    public void taskStep() {
+		if (Configurations.legend.getMode() == Legend.MODE.EVO_TREE){
+			updateColor();
+		}
+		if(EvolTreeDialog.this.isVisible()){
+			rootPair = countPair(rootNode);
+		}
     }
+	/**Обновляет цвета узлов*/
+	private void updateColor(){
+		EvolutionTree.root.resetColor();
+		if(rootNode.getPerrent() != null)
+			colorNode(rootNode.getPerrent());
+		colorNode(rootNode,0.0,0.8);
+	}
+	/**
+	 * Раскрашивает дерево потомков
+	 * @param root сам изображаемый узел
+	 */
+	private void colorNode(EvolutionTree.Node root, double colorStart, double colorEnd) {
+		var delColor = (colorEnd - colorStart);
+		if(delColor > 0.5)
+			root.setColor(Utils.getHSBColor(1.0, 0.0, 1.0, 1.0));
+		else
+			root.setColor(Utils.getHSBColor(colorStart + delColor / 2, 1.0, 1.0, 1.0));
+
+		List<EvolutionTree.Node> childs = root.getChild();		
+		var stepColor = delColor / childs.size();
+
+		for(int i = 0 ; i < childs.size() ; i++) {
+			colorNode(childs.get(i),colorStart + stepColor * i,colorStart + stepColor * (i + 1));
+		}
+	}
+	/**
+	 * Раскрашивает дерево потомков
+	 * @param root сам изображаемый узел
+	 */
+	private void colorNode(EvolutionTree.Node root) {
+		root.setColor(Utils.getHSBColor(1.0, 0.0, 1.0, 1.0));
+		if(root.getPerrent() != null)
+			colorNode(root.getPerrent());
+	}
+	/**Возвращает число узлов наследования и число живых клеток*/
+	private Pair countPair(EvolutionTree.Node root) {
+		var next = new Pair(root.getChild().size(), root.countAliveCell());
+		for(var i : root.getChild()){
+			var add = countPair(i);
+			next.countAllChild += add.countAllChild;
+			next.countChildCell += add.countChildCell;
+		}
+		return next;
+	}
+	
 	/**
 	 * Сбрасывает корневой узел дерева
 	 */
@@ -342,7 +310,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 	private void setRootNode(EvolutionTree.Node newNode){
 		EvolutionTree.root.resetColor();
 		rootNode = newNode;
-		relaintFun.updateColor();
+		updateColor();
 		DrawPanelEvoTree.isNeedUpdate = true;
 		resetButton.setVisible(newNode != EvolutionTree.root);
 		repaint();
@@ -352,7 +320,7 @@ public class EvolTreeDialog extends javax.swing.JDialog {
 	private String formatNode(EvolutionTree.Node node, int row){
 		var index = row % 7;
 		try{
-			UpdateScrinTask.Pair p = index == 2 ? relaintFun.countPair(node) : null;
+			Pair p = index == 2 ? countPair(node) : null;
 			return switch (index) {
 				default -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodeDescriptionNode"), node.getBranch());
 				case 1 -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodeDaughter"),node.getChild().size());

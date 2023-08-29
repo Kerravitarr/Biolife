@@ -42,70 +42,35 @@ import panels.Legend;
 import panels.Menu;
 import panels.Settings;
 
-public class BioLife extends JFrame {
-	private class UpdateScrinTask implements Runnable {
-		/**Предыдущий шаг сохранения*/
-		private long lastSave = 0;
-		/**Период сохранения, шаги эволюции*/
-		private long savePeriod = 100_000;
-		/**Сколько файлов автосохранения держать*/
-		private final int COUNT_SAVE = 3;
-		
-		/**Фабрика создания всплывающей подсказки*/
-		private PopupFactory popupFactory;
-		/**Окно подсказки*/
-		private static Popup popup;
-		/**Сама подсказка*/
-		private JToolTip t;
-		
-		public UpdateScrinTask(){
-			t = Configurations.world.createToolTip();
-			t.setTipText(Configurations.getProperty(BioLife.class,"autosave"));
-			popupFactory = PopupFactory.getSharedInstance();
-		}
-
-		@Override
-		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
-		
-		public void runE() {
-			final var world = Configurations.world;
-			String title = MessageFormat.format(Configurations.getProperty(BioLife.class,"title"), world.fps.FPS(), world.step,
-					world.sps.FPS(), world.countLife, world.countOrganic, world.countPoison, world.countWall, world.isActiv() ? ">" : "||");
-			setTitle(title);
-			if (dialog.isVisible())
-				dialog.repaint();
-			world.repaint();
-			
-			//Автосохранение
-			if(Math.abs(world.step - lastSave) > savePeriod){
-				if(world.isActiv()){
-					//Если мир пассивный - то с чего мы вдруг решили его начать сохранять? Может он только загружен?
-					final var loc = scrollPane.getLocationOnScreen();
-					if(popup != null)
-						popup.hide();
-					popup = popupFactory.getPopup(Configurations.world, t,loc.x + scrollPane.getWidth() / 2, loc.y + scrollPane.getHeight() / 2);
-					popup.show();
-
-					var list = new File[COUNT_SAVE];
-					for(var i = 0 ; i < COUNT_SAVE ; i++){
-						list[i] = new File("autosave" + (i+1) + ".zbmap");
-					}
-					var save = list[0];
-					for(var i = 1 ; i < COUNT_SAVE && save.exists(); i++){
-						if(!list[i].exists() || save.lastModified() > list[i].lastModified())
-							save = list[i];
-					}
-					Configurations.settings.save(save.getName());
-					if(popup != null){
-						popup.hide();
-						popup = null;
-					}
-				}
-				lastSave = world.step;
-			}
-		}
-	}
+public class BioLife extends JFrame implements Configurations.EvrySecondTask{
+	/**Центральная панель, на которой всё и происходит*/
+	private final JPanel contentPane;
+	/**Где последний раз видели мышку*/
+	private java.awt.Point mousePoint = null;
+	/**Панелька с миром*/
+	private JScrollPane scrollPane;
+	/**Дерево эволюции*/
+	private final EvolTreeDialog dialog = new EvolTreeDialog();
 	
+	private JMenuItem startRecord;
+	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
+	private	static final double PIXEL_PER_CELL = 10;
+	
+	/**Предыдущий шаг сохранения*/
+	private long lastSave = 0;
+	/**Период сохранения, шаги эволюции*/
+	private long savePeriod = 100_000;
+	/**Сколько файлов автосохранения держать*/
+	private final int COUNT_SAVE = 3;
+
+	/**Фабрика создания всплывающей подсказки*/
+	private PopupFactory popupFactory;
+	/**Окно подсказки*/
+	private static Popup popup;
+	/**Сама подсказка*/
+	private JToolTip t;
+	
+	/**Слушатель событий мыши*/
 	private class MouseMoveAdapter extends MouseAdapter{
 		private Point origin;
 
@@ -136,20 +101,8 @@ public class BioLife extends JFrame {
 		
 
 	}
-	/**Центральная панель, на которой всё и происходит*/
-	private final JPanel contentPane;
-	/**Где последний раз видели мышку*/
-	private java.awt.Point mousePoint = null;
-	/**Легенда карты*/
-	private final Legend legend;
-	/**Панелька с миром*/
-	private JScrollPane scrollPane;
-	/**Дерево эволюции*/
-	private final EvolTreeDialog dialog = new EvolTreeDialog();
-	
-	private JMenuItem startRecord;
-	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
-	private	static final double PIXEL_PER_CELL = 10;
+	/**Поток, который автоматически стартует при создании*/
+	class AutostartThread extends Thread{private AutostartThread(Runnable target){super(target);start();} private static void start(Runnable target){new Thread(target).start();}}
 
 	/**Точка входа в приложение
 	 * @param args аргументы командной строки
@@ -187,6 +140,7 @@ public class BioLife extends JFrame {
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
 		Configurations.makeWorld((int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL)); //120 - пикселей на верхнюю и нижнюю шапочки
 		Configurations.settings = new Settings();
+		Configurations.legend = new Legend();
 		Configurations.info = new BotInfo();
 		Configurations.world = new World();
 		Configurations.menu = new Menu();
@@ -231,8 +185,7 @@ public class BioLife extends JFrame {
 		setContentPane(contentPane);
 
 		contentPane.add(makePanel(Configurations.settings, "Settings", BorderLayout.EAST), BorderLayout.EAST);
-		legend = new Legend();
-		contentPane.add(makePanel(legend, "Legend", BorderLayout.SOUTH), BorderLayout.SOUTH);
+		contentPane.add(makePanel(Configurations.legend, "Legend", BorderLayout.SOUTH), BorderLayout.SOUTH);
 		contentPane.add(makePanel(Configurations.info,"BotInfo", BorderLayout.WEST), BorderLayout.WEST);
 		contentPane.add(makeWorldPanel(), BorderLayout.CENTER);
 		contentPane.add(makePanel(Configurations.menu, "Menu", BorderLayout.NORTH), BorderLayout.NORTH);
@@ -248,7 +201,50 @@ public class BioLife extends JFrame {
 			}
 		});
 		
-		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
+		t = Configurations.world.createToolTip();
+		t.setTipText(Configurations.getProperty(BioLife.class,"autosave"));
+		popupFactory = PopupFactory.getSharedInstance();
+		
+		Configurations.addTask(this);
+	}
+	
+	@Override
+	public void taskStep() {
+		final var world = Configurations.world;
+		String title = MessageFormat.format(Configurations.getProperty(BioLife.class,"title"), world.fps.FPS(), world.step,
+				world.sps.FPS(), world.countLife, world.countOrganic, world.countPoison, world.countWall, world.isActiv() ? ">" : "||");
+		setTitle(title);
+		if (dialog.isVisible())
+			dialog.repaint();
+		world.repaint();
+
+		//Автосохранение
+		if(Math.abs(world.step - lastSave) > savePeriod){
+			if(world.isActiv()){
+				//Если мир пассивный - то с чего мы вдруг решили его начать сохранять? Может он только загружен?
+				final var loc = scrollPane.getLocationOnScreen();
+				if(popup != null)
+					popup.hide();
+				popup = popupFactory.getPopup(Configurations.world, t,loc.x + scrollPane.getWidth() / 2, loc.y + scrollPane.getHeight() / 2);
+				popup.show();
+
+				var list = new File[COUNT_SAVE];
+				for(var i = 0 ; i < COUNT_SAVE ; i++){
+					list[i] = new File("autosave" + (i+1) + ".zbmap");
+				}
+				var save = list[0];
+				for(var i = 1 ; i < COUNT_SAVE && save.exists(); i++){
+					if(!list[i].exists() || save.lastModified() > list[i].lastModified())
+						save = list[i];
+				}
+				Configurations.settings.save(save.getName());
+				if(popup != null){
+					popup.hide();
+					popup = null;
+				}
+			}
+			lastSave = world.step;
+		}
 	}
 
 	/**Так как мир несколько особенный, то тут создаётся центральная панель, на которой будет рисоваться мир
@@ -345,7 +341,10 @@ public class BioLife extends JFrame {
 		mouseClicked_panel(panel,label,name,false, borderLayoutConst);
 		return panel_2;
 	}
-	
+	/**Превращает текст в вертикальный
+	 * @param text текст, который надо преобразовать
+	 * @return текст, записанный на языке html который уже будет отображён как вертикальный
+	 */
 	private String toVerticalText(String text) {
 		StringBuilder sb = new StringBuilder(20 + text.length() * 5);
 		sb.append("<html>");
@@ -357,7 +356,13 @@ public class BioLife extends JFrame {
 		sb.append("<br>");
 		return sb.toString();
 	}
-
+	/**Клик на панели с целью её выдвинуть
+	 * @param panel панель, которую двигаем
+	 * @param panel_Label объект текста панели
+	 * @param name название панели
+	 * @param isActive выдвинули панель или задвинули?
+	 * @param borderLayoutConst какое местоположение панели?
+	 */
 	private void mouseClicked_panel(JPanel panel ,JLabel panel_Label, String name, boolean isActive, String borderLayoutConst) {
 		String symbol =  "" + switch (borderLayoutConst) {
 			case BorderLayout.EAST -> isActive ? "&GT;" : "&lt;";
@@ -370,18 +375,24 @@ public class BioLife extends JFrame {
 		switch (borderLayoutConst) {
 			case BorderLayout.EAST , BorderLayout.WEST -> panel_Label.setText(toVerticalText(Configurations.getProperty(BioLife.class, name)) + symbol);
 			case BorderLayout.SOUTH, BorderLayout.NORTH -> panel_Label.setText(Configurations.getProperty(BioLife.class, name) + symbol);
-		};
+		}
 		
 		if (!isActive) {
 			BioLife.this.toFront();
 			BioLife.this.requestFocus();
 		}
 	}
+	/**Колёсико мышки
+	 * @param e 
+	 */
 	private void mouseWheel(MouseWheelEvent e) {
 		if (e.isControlDown()) {
 			Configurations.settings.addScale(-e.getWheelRotation() * 10);
         }
 	}
+	/**Нажали какую-то кнопку
+	 * @param e 
+	 */
 	private void keyPressed(KeyEvent e) {
 		//System.out.println(e);
        		switch (e.getKeyCode()) {
@@ -395,16 +406,16 @@ public class BioLife extends JFrame {
 				if ((e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0)
 					Configurations.settings.save();
 				else
-					Configurations.TIME_OUT_POOL.execute(() -> Configurations.world.step());
+					AutostartThread.start(() -> Configurations.world.step());
 			}
 			case KeyEvent.VK_W ->
-				Configurations.TIME_OUT_POOL.execute(() -> {
+				AutostartThread.start(() -> {
 					CellObject cell = Configurations.info.getCell();
 					if (cell != null)
-						new Thread(() -> cell.step(Math.round(Math.random() * 1000))).start();
+						cell.step(Math.round(Math.random() * 1000));
 				});
 			case KeyEvent.VK_E ->
-				Configurations.TIME_OUT_POOL.execute(() -> {
+				AutostartThread.start(() -> {
 					CellObject cell = Configurations.info.getCell();
 					if (cell != null)
 						Configurations.info.step();

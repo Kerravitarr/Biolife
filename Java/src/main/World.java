@@ -51,106 +51,12 @@ import start.BioLife;
 public class World extends JPanel implements Runnable,ComponentListener,MouseListener,MouseMotionListener{	
 	/**Симуляция запущена?*/
 	private boolean isActiv = true;
-	/**Произошла авария?*/
+	/**Произошла авария? Значит больше задача моделироваться не может, игра закончена*/
 	public static boolean isError = false;
 	/**Сколько кадров отрисовывать перед ходом. Если = 0, то как можно меньше. Если = 1, то считать всё на одном процессоре, если >1, то ФПС будет во столько раз больше ППС*/
 	public static int msTimeout = 0;
-
-	class AutostartThread extends Thread{AutostartThread(Runnable target){super(target);start();}}
-	final ForkJoinWorkerThreadFactory factory = new ForkJoinWorkerThreadFactory() {
-		private final AtomicInteger branshCount = new AtomicInteger(0);
-		@Override
-		public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
-			final ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
-			worker.setName("World map thread " + branshCount.incrementAndGet());
-			return worker;
-		}
-	};
-	class WorldTask implements Callable<Boolean>{
-		class WorkThread{
-			public WorkThread(Point[] cells) {
-				points = cells;
-				startX = points[0].getX();
-			}
-			/**Точки потока*/
-			Point [] points;
-			/**Начальный Х потока*/
-			int startX;
-		}
-		
-		WorkThread first;
-		WorkThread second;
-		WorldTask(Point [] cellsFirst, Point[] cellsSecond){
-			first = new WorkThread(cellsFirst);
-			second = new WorkThread(cellsSecond);
-		}
-		@Override
-		public Boolean call(){
-			WorkThread activ = isFirst ? first : second;
-			Point[] points = activ.points;
-			for (int i = points.length - 1; i >= 0 && !isError; i--) {
-				Point t = points[i];
-				if(get(t) == null) continue; //Чего мы будем пустые клетки мешать?
-				int j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
-				points[i] = points[j];
-				points[j] = t;
-				action(points[i]);
-			}
-			return null;
-		}
-
-		private void action(Point point) throws HeadlessException {
-			CellObject cell = get(point);
-			if(cell != null && cell.canStep(step)) {
-				try {
-					cell.step(step);					
-				} catch (Exception e) {
-					isError = true;
-					isActiv = false;
-					e.printStackTrace();
-					System.out.println(cell);
-					System.out.println(point);
-					JOptionPane.showMessageDialog(null,	MessageFormat.format(Configurations.getHProperty(World.class,"error.exception"), cell, point, e.getMessage()),	"BioLife", JOptionPane.ERROR_MESSAGE);
-				}
-			}
-		}
-	}
-	/**Задача выполняемая ежесекундно, для всяких там работ с картой*/
-	private class UpdateScrinTask implements Runnable {
-		@Override
-		public void run() {try{runE();}catch(Exception ex){System.err.println(ex);ex.printStackTrace(System.err);}}
-		
-		public void runE() {
-			int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
-			var minH = Configurations.MAP_CELLS.height * (1d  - Configurations.LEVEL_MINERAL);//Высота минирализации
-			for (CellObject[] cellByY : Configurations.worldMap) {
-				var coByH = 0;
-				var coByHd = 0;
-				for (CellObject cell2 : cellByY) {
-					if(cell2 == null) continue;
-					cell2.repaint();
-					if(cell2.aliveStatus(LV_STATUS.LV_ALIVE))
-						localCl++;
-					else if(cell2.aliveStatus(LV_STATUS.LV_POISON))
-						localCP++;
-					else if(cell2.aliveStatus(LV_STATUS.LV_WALL))
-						localCW++;
-					else if(cell2.getPos().getY() > minH)
-						coByHd++;
-					else
-						coByH++;
-				}
-				localCO += coByH + coByHd;
-			}
-			if(isActiv()){
-				countLife = localCl;
-				countOrganic = localCO;
-				countPoison = localCP;
-				countWall = localCW;
-			}
-		}
-	}
-	
+	/**Фабрика создания потоков обсчёта мира*/
+	final ForkJoinWorkerThreadFactory factory;
 	/**Шаги мира*/
 	public long step = 0;
 	/**Шаг, который должен завершиться, чтобы быть уверенным - мир остановлен*/
@@ -178,7 +84,6 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	/**Все цвета, которые мы должны отобразить на поле*/
 	private final ColorRec [] colors = new ColorRec[2];
 	/**Это мы, наш поток, в нём мы рисуем всё и всяк*/
-	@SuppressWarnings("unused")
 	private final AutostartThread worldThread;
 	/**Показывает, что остановка была сделана специально для перерисовки*/
 	private int repaint_stop = 0;
@@ -186,6 +91,59 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 	private final Point[] visible = new Point[2];
 	/**Координаты выделения клеток при использовании мыши в качестве выделителя*/
 	private final Point[] selectPoint = new Point[2];
+	
+	/**Поток, который автоматически стартует при создании*/
+	class AutostartThread extends Thread{AutostartThread(Runnable target){super(target);start();}}
+	
+	/**Один блок, состоящий из двух вертекалей, карты*/
+	class WorldTask implements Callable<Boolean>{
+		/**Один вертикальный столбик карты, который обсчитвыает этот поток*/
+		class WorkThread{
+			/**Точки потока*/
+			final Point [] points;
+			/**Начальный Х потока*/
+			final int startX;
+			public WorkThread(Point[] cells) {points = cells;startX = points[0].getX();}
+		}
+		/**Первая вертикаль блока*/
+		private final WorkThread first;
+		/**Вторая вертикаль блока*/
+		private final WorkThread second;
+		WorldTask(Point [] cellsFirst, Point[] cellsSecond){first = new WorkThread(cellsFirst);second = new WorkThread(cellsSecond);}
+		@Override
+		public Boolean call(){
+			final Point[] points = (isFirst ? first : second).points;
+			for (int i = points.length - 1; i >= 0 && !isError; i--) {
+				Point t = points[i];
+				if(get(t) == null) continue; //Чего мы будем пустые клетки мешать?
+				int j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
+				//Меняем местами клетки, чтобы каждый раз вызывать их в разной последовательности
+				points[i] = points[j];
+				points[j] = t;
+				action(points[i]);
+			}
+			return null;
+		}
+		/** Выполняет обработку шага клетки
+		 * @param point точка, клетка из которой нас интересует
+		 */
+		private void action(Point point){
+			final CellObject cell = get(point);
+			if(cell != null && cell.canStep(step)) {
+				try {
+					cell.step(step);					
+				} catch (Exception e) {
+					isError = true;
+					isActiv = false;
+					e.printStackTrace();
+					System.out.println(cell);
+					System.out.println(point);
+					JOptionPane.showMessageDialog(null,	MessageFormat.format(Configurations.getHProperty(World.class,"error.exception"), cell, point, e.getMessage()),	"BioLife", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Create the panel.
 	 */
@@ -193,6 +151,15 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		super();
 		Configurations.world = this;
 		setVisible(new Point(0,0),new Point(0,0));
+		factory = new ForkJoinWorkerThreadFactory() {
+			private final AtomicInteger branshCount = new AtomicInteger(0);
+			@Override
+			public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+				final ForkJoinWorkerThread worker = ForkJoinPool.defaultForkJoinWorkerThreadFactory.newThread(pool);
+				worker.setName("World map thread " + branshCount.incrementAndGet());
+				return worker;
+			}
+		};
 		maxExecutor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1), factory, null, true); // Один поток нужен системе для отрисовки
 		
 		worldGenerate();
@@ -209,7 +176,7 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 		addMouseListener(this);
 		addMouseMotionListener(this);
 		worldThread = new AutostartThread(this);
-		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(new UpdateScrinTask(), 1, 1, TimeUnit.SECONDS);
+		Configurations.addTask(() -> evrySecondTask());
 	}
 	@Override
 	public void run() {
@@ -221,6 +188,36 @@ public class World extends JPanel implements Runnable,ComponentListener,MouseLis
 				Utils.pause(1);
 			if(countLife == 0 && countOrganic == 0 && countPoison == 0 && countWall == 0 && isActiv())
 				stop();
+		}
+	}
+	/**Задача, выполняющаяся каждую секунду*/
+	private void evrySecondTask(){
+		int localCl = 0,localCO = 0,localCP = 0, localCW = 0;
+		var minH = Configurations.MAP_CELLS.height * (1d  - Configurations.LEVEL_MINERAL);//Высота минирализации
+		for (CellObject[] cellByY : Configurations.worldMap) {
+			var coByH = 0;
+			var coByHd = 0;
+			for (CellObject cell2 : cellByY) {
+				if(cell2 == null) continue;
+				cell2.repaint();
+				if(cell2.aliveStatus(LV_STATUS.LV_ALIVE))
+					localCl++;
+				else if(cell2.aliveStatus(LV_STATUS.LV_POISON))
+					localCP++;
+				else if(cell2.aliveStatus(LV_STATUS.LV_WALL))
+					localCW++;
+				else if(cell2.getPos().getY() > minH)
+					coByHd++;
+				else
+					coByH++;
+			}
+			localCO += coByH + coByHd;
+		}
+		if(isActiv()){
+			countLife = localCl;
+			countOrganic = localCO;
+			countPoison = localCP;
+			countWall = localCW;
 		}
 	}
 	/**Генерирует карту - добавляет солнце, гейзеры, обновляет константы мира, разбивает мир на потоки процессора */
