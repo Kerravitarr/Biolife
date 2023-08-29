@@ -78,11 +78,17 @@ function build {
 }
 
 function tests {
+	echo -e "======================================="
+	echo -e "STEP 1. Compiling test files to bytecode."
+	echo -e "======================================="
 	rm -r ./testBinFiles/
 	javac --release 16 -encoding UTF-8 -classpath  tests/:src/:tests/testLib/junit-4.13.2.jar:tests/testLib/hamcrest-core-1.3.jar -d testBinFiles tests/start/TestList.java
 	if [[  $? != 0 ]]; then
 		error
 	fi
+	echo -e "======================================="
+	echo -e "STEP 2. Run tests."
+	echo -e "======================================="
 	cp -r "./src/locales" "./testBinFiles/"
 	java -cp testBinFiles/:tests/testLib/junit-4.13.2.jar:tests/testLib/hamcrest-core-1.3.jar org.junit.runner.JUnitCore start.TestList
 	if [[  $? != 0 ]]; then
