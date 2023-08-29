@@ -40,6 +40,7 @@ import MapObjects.dna.DNA;
 import Utils.MyMessageFormat;
 import Utils.SameStepCounter;
 import Utils.Utils;
+import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.util.Map;
 import main.Configurations;
@@ -99,7 +100,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 	/**Тестовая клетка, для работы с командами без конца*/
 	private TextAL testCell = null;
 	//Специальный счётчик, который нужен для обновления инфы по клетке
-	private SameStepCounter counter = new SameStepCounter(2);
+	private int counter = 0;
 	/**Форматирование чисел*/
 	private static final MyMessageFormat numberFormat = new MyMessageFormat("{0,number,###,###}");
 	
@@ -146,7 +147,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 				if (nextRow.textwidth > maxW) {
 					var lenght = nextRow.text.length();
 					int countVChir = (int) (lenght * maxW / nextRow.textwidth);
-					var pos = counter.get() % (2 * (lenght + timeout));
+					var pos = counter % (2 * (lenght + timeout));
 					if (pos < lenght + timeout)
 						setText(nextRow.text.substring(Utils.betwin(0, pos, lenght - countVChir)));
 					else
@@ -201,9 +202,10 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 				@Override
 				public void mouseClicked(MouseEvent e) {
 					if(e.getButton() == MouseEvent.BUTTON1)
-						counter.scroll(-10);
+						counter -= 10;
 					else if(e.getButton() == MouseEvent.BUTTON3)
-						counter.scroll(10);
+						counter += 10;
+					counter &= 0xFFFF;
 				}
 			};
 			addMouseListener(adapter);
@@ -245,7 +247,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 		/**Автоматически проматывает текст поля на один символ дальше*/
 		public void scrol() {
 			var max = (scroll.getHorizontalScrollBar().getMaximum() - scroll.getHorizontalScrollBar().getVisibleAmount());
-			var pos = counter.get() % (2 * (max + timeout));
+			var pos = counter % (2 * (max + timeout));
 			if (pos < max + timeout)
 				scroll.getHorizontalScrollBar().setValue(pos);
 			else
@@ -304,10 +306,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 		panel.setToolTipText(getProperty("main"));
 		add(panel, BorderLayout.CENTER);
 
-		panelConstant = new JPanel(){public void paintComponent(Graphics g){
-			super.paintComponent(g);
-			counter.step(1);
-		}};
+		panelConstant = new JPanel();
 		makeParamsPanel();
 		
 		panel_DNA = new JPanel();
@@ -380,7 +379,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 		listDNA.setSelectedIndex(0);
 		panel.setLayout(gl_panel);
 		
-		Configurations.addTask(this);
+		Configurations.addTask(this, 100);
 	}
 	
 	@Override
@@ -399,7 +398,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 					listDNA.repaint();
 				}
 			}
-			counter.step(0);
+			EventQueue.invokeLater(() -> {counter++;});
 		} else {
 			if(cell != null) {
 				cell = null;

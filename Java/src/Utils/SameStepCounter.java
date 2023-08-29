@@ -43,7 +43,7 @@ public class SameStepCounter {
 		}
 	}
 	/**Dthyenm */
-	public int get(){return count;};
+	public int get(){return count & 0xFFFFFF;};
 	/**Перелистывает счётчик, априорно, на заданое число тактов*/
 	public void scroll(int i) {
 		count += i;

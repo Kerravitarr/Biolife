@@ -334,7 +334,17 @@ public class Configurations extends JsonSave.JSONSerialization{
 		}
 		return ret;
 	}
+	/**Добавить задачу на выполнение
+	 * @param task задача, которая будет выполняться каждую секунду
+	 */
 	public static void addTask(EvrySecondTask task){
+		addTask(task,1000);
+	}
+	/**Добавить задачу на выполнение
+	 * @param task задача, которая будет выполняться с определённым интервалом
+	 * @param ms время в мс, как часто задача будет выполняться
+	 */
+	public static void addTask(EvrySecondTask task, int ms){
 		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(() -> 
 			{
 				try {
@@ -343,6 +353,6 @@ public class Configurations extends JsonSave.JSONSerialization{
 					System.err.println(ex);
 					ex.printStackTrace(System.err);
 				}
-			}, 1, 1, TimeUnit.SECONDS);
+			}, ms, ms, TimeUnit.MILLISECONDS);
 	}
 }
