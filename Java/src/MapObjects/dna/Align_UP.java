@@ -1,7 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import main.Point.DIRECTION;
+import Calculations.Point.DIRECTION;
 
 /**
  * Ориентирует клетку вверх.

@@ -5,10 +5,10 @@ import java.awt.Graphics;
 
 import Utils.JSON;
 import Utils.Utils;
-import main.Configurations;
-import main.Point;
-import main.Point.DIRECTION;
-import panels.Legend;
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
+import GUI.Legend;
 
 public class Poison extends CellObject {
 	/**Максимальная токсичность яда*/

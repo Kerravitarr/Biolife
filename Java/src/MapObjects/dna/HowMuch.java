@@ -2,8 +2,8 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
-import main.Configurations;
-import main.Point;
+import Calculations.Configurations;
+import Calculations.Point;
 /**
  * Функция, которая проверяет на допустимость, некоторый параметр клетки
  * @author Kerravitarr

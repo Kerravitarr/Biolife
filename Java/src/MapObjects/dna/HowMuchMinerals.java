@@ -1,7 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import main.Configurations;
+import Calculations.Configurations;
 /**
  * Проверяет, можем ли мы добывать минералы хоть сколько да ни будь
  * @author Kerravitarr

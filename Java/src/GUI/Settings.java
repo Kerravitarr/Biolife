@@ -34,8 +34,8 @@ import Utils.MyMessageFormat;
 import java.text.MessageFormat;
 import java.util.concurrent.TimeUnit;
 import javax.swing.JScrollPane;
-import main.Configurations;
-import main.World;
+import Calculations.Configurations;
+import Calculations.World;
 import start.BioLife;
 
 public class Settings extends JPanel{

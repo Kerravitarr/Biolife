@@ -17,11 +17,11 @@ import Utils.JSON;
 import Utils.Utils;
 import java.text.MessageFormat;
 import java.util.Iterator;
-import main.Configurations;
-import main.EvolutionTree;
-import main.Point;
-import main.Point.DIRECTION;
-import panels.Legend;
+import Calculations.Configurations;
+import Calculations.EvolutionTree;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
+import GUI.Legend;
 import start.BioLife;
 
 public class AliveCell extends AliveCellProtorype {

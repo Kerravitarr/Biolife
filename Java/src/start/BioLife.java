@@ -18,7 +18,6 @@ import java.awt.event.MouseWheelEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.text.MessageFormat;
-import java.util.concurrent.TimeUnit;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -34,13 +33,13 @@ import javax.swing.JToolTip;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
 import javax.swing.UIManager;
-import main.Configurations;
-import main.World;
-import panels.BotInfo;
-import panels.EvolTreeDialog;
-import panels.Legend;
-import panels.Menu;
-import panels.Settings;
+import Calculations.Configurations;
+import Calculations.World;
+import GUI.BotInfo;
+import GUI.EvolTreeDialog;
+import GUI.Legend;
+import GUI.Menu;
+import GUI.Settings;
 
 public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 	/**Центральная панель, на которой всё и происходит*/
@@ -142,7 +141,6 @@ public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 		Configurations.settings = new Settings();
 		Configurations.legend = new Legend();
 		Configurations.info = new BotInfo();
-		Configurations.world = new World();
 		Configurations.menu = new Menu();
 				
 		setUIFont(new javax.swing.plaf.FontUIResource(Configurations.defaultFont));
@@ -212,7 +210,7 @@ public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 	public void taskStep() {
 		final var world = Configurations.world;
 		String title = MessageFormat.format(Configurations.getProperty(BioLife.class,"title"), world.fps.FPS(), world.step,
-				world.sps.FPS(), world.countLife, world.countOrganic, world.countPoison, world.countWall, world.isActiv() ? ">" : "||");
+				world.pps.FPS(), world.countLife, world.countOrganic, world.countPoison, world.countWall, world.isActiv() ? ">" : "||");
 		setTitle(title);
 		if (dialog.isVisible())
 			dialog.repaint();
@@ -297,13 +295,13 @@ public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 			if(Configurations.settings.getScale() > 1){
 				var horizont = scrollPane.getHorizontalScrollBar();
 				var vertical = scrollPane.getVerticalScrollBar();
-				var xMin = Math.max(0, main.Point.rxToX(horizont.getValue()));
-				var xMax = Math.min(Configurations.MAP_CELLS.width - 1,main.Point.rxToX(horizont.getValue() + viewport.getSize().width));
-				var yMin = Math.max(0, main.Point.ryToY(vertical.getValue()));
-				var yMax = Math.min(Configurations.MAP_CELLS.height - 1,main.Point.ryToY(vertical.getValue() + viewport.getSize().height));
-				Configurations.world.setVisible(new main.Point(xMin, yMin),new main.Point(xMax, yMax));
+				var xMin = Math.max(0, Calculations.Point.rxToX(horizont.getValue()));
+				var xMax = Math.min(Configurations.MAP_CELLS.width - 1,Calculations.Point.rxToX(horizont.getValue() + viewport.getSize().width));
+				var yMin = Math.max(0, Calculations.Point.ryToY(vertical.getValue()));
+				var yMax = Math.min(Configurations.MAP_CELLS.height - 1,Calculations.Point.ryToY(vertical.getValue() + viewport.getSize().height));
+				Configurations.world.setVisible(new Calculations.Point(xMin, yMin),new Calculations.Point(xMax, yMax));
 			} else {
-				Configurations.world.setVisible(new main.Point(0, 0),new main.Point(Configurations.MAP_CELLS.width - 1, Configurations.MAP_CELLS.height - 1));
+				Configurations.world.setVisible(new Calculations.Point(0, 0),new Calculations.Point(Configurations.MAP_CELLS.width - 1, Configurations.MAP_CELLS.height - 1));
 			}
 		}));
 		Configurations.settings.setListener(scrollPane);

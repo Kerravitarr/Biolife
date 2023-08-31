@@ -7,7 +7,7 @@ import static MapObjects.CellObject.OBJECT.WALL;
 import static MapObjects.CellObject.OBJECT.OWALL;
 
 import MapObjects.AliveCell;
-import main.Point.DIRECTION;
+import Calculations.Point.DIRECTION;
 
 /**
  * Клетка должна сделать шаг

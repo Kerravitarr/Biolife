@@ -3,8 +3,8 @@ package MapObjects.dna;
 import MapObjects.AliveCell;
 import MapObjects.Poison;
 import MapObjects.CellObject.OBJECT;
-import main.Configurations;
-import main.Point;
+import Calculations.Configurations;
+import Calculations.Point;
 
 /**
  * Деление, то есть заставляет одну клетку превратиться в две

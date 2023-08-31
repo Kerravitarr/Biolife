@@ -9,9 +9,9 @@ import Utils.Utils;
 import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
-import main.Configurations;
-import main.Point.DIRECTION;
-import panels.Legend;
+import Calculations.Configurations;
+import Calculations.Point.DIRECTION;
+import GUI.Legend;
 
 public class Organic extends CellObject {
 	/**Цвет орагиники*/

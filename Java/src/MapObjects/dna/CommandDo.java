@@ -2,7 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
-import main.Point;
+import Calculations.Point;
 
 /**
  * Абстрактный класс для всех команд действий 

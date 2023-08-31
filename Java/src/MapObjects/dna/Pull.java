@@ -7,9 +7,9 @@ import static MapObjects.CellObject.OBJECT.OWALL;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.CellObjectRemoveException;
-import main.Configurations;
-import main.Point;
-import main.Point.DIRECTION;
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
 
 /**
  * Толкает объект рядом.

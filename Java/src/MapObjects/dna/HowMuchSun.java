@@ -1,7 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import main.Configurations;
+import Calculations.Configurations;
 
 /**
  * Проверят как много солнца, можем ли мы получтить хотя бы что ни будь из него

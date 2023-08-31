@@ -7,9 +7,9 @@ import static MapObjects.CellObject.OBJECT.OWALL;
 import static MapObjects.CellObject.OBJECT.WALL;
 
 import MapObjects.AliveCell;
-import main.Configurations;
-import main.Point;
-import main.Point.DIRECTION;
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
 
 /**
  * Клонируется и присасывается к потомку

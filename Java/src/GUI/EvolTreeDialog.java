@@ -21,8 +21,8 @@ import javax.swing.JPanel;
 import javax.swing.JToolTip;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
-import main.Configurations;
-import main.EvolutionTree;
+import Calculations.Configurations;
+import Calculations.EvolutionTree;
 
 /**
  *

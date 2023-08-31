@@ -4,9 +4,9 @@ import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
 import MapObjects.Poison;
-import main.Configurations;
-import main.Point;
-import main.Point.DIRECTION;
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
 
 /**
  * Крутится вокруг бота, выискивая свою цель

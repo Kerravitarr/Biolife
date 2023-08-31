@@ -7,7 +7,7 @@ import MapObjects.CellObject.OBJECT;
 import Utils.JSON;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import main.Configurations;
+import Calculations.Configurations;
 
 /**ДНК бота*/
 public class DNA {

@@ -1,9 +1,9 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import main.Configurations;
-import main.Point;
-import main.Point.DIRECTION;
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
 
 /**
  * Абстрактный класс, он является основой для любого гена ДНК

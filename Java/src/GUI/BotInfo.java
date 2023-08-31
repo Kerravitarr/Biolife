@@ -43,8 +43,8 @@ import Utils.Utils;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.util.Map;
-import main.Configurations;
-import main.Point;
+import Calculations.Configurations;
+import Calculations.Point;
 
 public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 	

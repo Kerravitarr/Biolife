@@ -13,9 +13,9 @@ import MapObjects.CellObject;
 import MapObjects.Fossil;
 import MapObjects.Organic;
 import MapObjects.Poison;
-import main.Configurations;
-import main.Point;
-import main.Point.DIRECTION;
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
 
 /**
  * Кушает клетку, которую выбирает своей жертвой

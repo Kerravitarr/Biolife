@@ -6,7 +6,7 @@ import static MapObjects.CellObject.OBJECT.FRIEND;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
 import static MapObjects.CellObject.OBJECT.OWALL;
 import static MapObjects.CellObject.OBJECT.WALL;
-import main.Configurations;
+import Calculations.Configurations;
 
 /**
  * Меняет клетку и её цель. 

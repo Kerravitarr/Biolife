@@ -5,13 +5,13 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import main.Configurations;
-import main.World;
+import Calculations.Configurations;
+import Calculations.World;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.BeforeClass;
-import panels.Legend;
+import GUI.Legend;
 
 /**
  *

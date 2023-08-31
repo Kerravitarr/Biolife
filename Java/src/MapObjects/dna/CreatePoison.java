@@ -4,7 +4,7 @@ import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import MapObjects.Poison;
 import MapObjects.Poison.TYPE;
-import main.Point.DIRECTION;
+import Calculations.Point.DIRECTION;
 
 /**
  * Создаёт капельку яда

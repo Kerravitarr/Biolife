@@ -1,7 +1,7 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import main.Configurations;
+import Calculations.Configurations;
 
 /**
  * Проверяет, мы выше или ниже высоты из параметра

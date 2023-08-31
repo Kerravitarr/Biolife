@@ -14,8 +14,8 @@ import static MapObjects.CellObject.OBJECT.WALL;
 import static MapObjects.dna.CommandDNA.nextPoint;
 import static MapObjects.dna.CommandDNA.param;
 import Utils.MyMessageFormat;
-import main.Configurations;
-import main.Point;
+import Calculations.Configurations;
+import Calculations.Point;
 
 /**
  * TODO

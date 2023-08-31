@@ -2,8 +2,8 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
-import main.Point;
-import main.Point.DIRECTION;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
 /**
  * Ищет первый попавшийся объект
  * @author Kerravitarr

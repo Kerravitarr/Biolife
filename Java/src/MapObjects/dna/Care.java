@@ -6,9 +6,9 @@ import static MapObjects.CellObject.OBJECT.ORGANIC;
 import static MapObjects.CellObject.OBJECT.POISON;
 import static MapObjects.CellObject.OBJECT.NOT_POISON;
 import static MapObjects.CellObject.OBJECT.WALL;
-import main.Configurations;
-import main.Point;
-import main.Point.DIRECTION;
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
 
 /**
  * Делится с окружающими.

@@ -10,11 +10,11 @@ import MapObjects.AliveCellProtorype.Specialization;
 import MapObjects.dna.DNA;
 import Utils.JSON;
 import Utils.Utils;
-import main.Configurations;
-import main.EvolutionTree.Node;
-import main.Point;
-import main.Point.DIRECTION;
-import panels.Legend;
+import Calculations.Configurations;
+import Calculations.EvolutionTree.Node;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
+import GUI.Legend;
 
 /**
  * Прототип живой клетки. Тут все константы, переменные и вложенные классы.

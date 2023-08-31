@@ -1,13 +1,14 @@
 package MapObjects;
 
+import Calculations.Stream;
 import java.awt.Color;
 import java.awt.Graphics;
 
 import MapObjects.Poison.TYPE;
 import Utils.JSON;
-import main.Configurations;
-import main.Point;
-import main.Point.DIRECTION;
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Point.DIRECTION;
 
 /**
  * Описывает некий объект на карте
@@ -20,6 +21,10 @@ public abstract class CellObject {
 		LV_ALIVE, LV_ORGANIC, LV_POISON, LV_WALL, GHOST;
 		/**Имя типа объекта*/
 		private String name;
+		/**Все возможные состояния*/
+		public final static LV_STATUS[] values = LV_STATUS.values();
+		/**Количество состояний*/
+		public final static int length = values.length;
 
 		LV_STATUS() {name = Configurations.getProperty(getClass(), super.name());}
 		
@@ -80,9 +85,7 @@ public abstract class CellObject {
 	};
 	
 	public class CellObjectRemoveException extends RuntimeException {
-		CellObjectRemoveException(){
-			super();
-		}
+		public CellObjectRemoveException(){super();}
 		@Override
 		public String getMessage(){
 			return "Удалили клетку " + CellObject.this;
@@ -130,15 +133,19 @@ public abstract class CellObject {
 		years++;
 
 		try {
-			/**
-			 * Дополнительное правило карте.
-			 * Слева есть восходящий поток жидкости и два нисходящих
-			 */
-			for(Geyser gz : Configurations.geysers)
+			//Воздействие всех потоков на объект
+			for(Stream gz : Configurations.streams)
 				gz.action(this);
+			//Воздействие источников минералов на живую клетку
+			switch (alive) {
+				case LV_ALIVE -> {}
+				case LV_ORGANIC, LV_POISON, LV_WALL -> {}
+				default -> throw new AssertionError("Мы не ожидали тут встретить объект типа " + alive);
+			}
+			//Ну и пусть теперь походит
 			step();
 		}catch (CellObjectRemoveException e) {
-			//Мы умерли, собственно пошли отсюда
+			//Мы умерли и уже удалили себя с поля. Помечаем себя призраком и уходим
 			if(!aliveStatus(LV_STATUS.GHOST))
 				throw e;
 		}

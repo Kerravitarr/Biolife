@@ -4,8 +4,8 @@ import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import MapObjects.Poison;
 import Utils.MyMessageFormat;
-import main.Configurations;
-import main.Point;
+import Calculations.Configurations;
+import Calculations.Point;
 
 /**
  * Отпочкование от клетки дочерних клеток вирусов

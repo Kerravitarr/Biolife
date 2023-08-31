@@ -18,8 +18,8 @@ import MapObjects.AliveCellProtorype;
 import MapObjects.CellObject;
 import MapObjects.Poison;
 import Utils.Utils;
-import main.Configurations;
-import main.Point;
+import Calculations.Configurations;
+import Calculations.Point;
 
 public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	private class Graph extends JPanel {
