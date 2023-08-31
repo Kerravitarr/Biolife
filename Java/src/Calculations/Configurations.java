@@ -15,12 +15,9 @@ import java.util.concurrent.ThreadFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 
-import MapObjects.CellObject;
 import Utils.JSON;
 import Utils.JsonSave;
-import java.awt.Font;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import GUI.BotInfo;
@@ -41,8 +38,16 @@ public class Configurations extends JsonSave.JSONSerialization{
 	public static final long VERSION = 7;
 	/**Количиство ячеек карты*/
 	public static Dimension MAP_CELLS = null;
-	/**Уровень загрязнения воды. Процент, где заканчивается Солнце. В норме от 0 до 200*/
-	public static int DIRTY_WATER = 0;
+	/**Тип созданного мира, в котором живут живики*/
+	public static WORLD_TYPE world_type;
+	/**Гравитация в созданном мире.
+	 * Может быть 0 или больше. При 0 - гравитации, ясное дело, нет.
+	 * При 1 все тела, что должны падать, будут стремиться падать каждый ход
+	 * При 2 - раз в 2 хода и т.д.
+	 */
+	public static int gravitation;
+	
+	
 	/**Степень мутагенности воды [0,100]*/
 	public static int AGGRESSIVE_ENVIRONMENT = 0;
 	/**Как часто органика теряет своё ХП. Если 1 - на каждый ход. Если 2 - каждые 2 хода и т.д.*/
@@ -51,8 +56,6 @@ public class Configurations extends JsonSave.JSONSerialization{
 	//Те-же переменные, только их значения по умолчанию.
 	//Значения по умолчанию рассчитываются исходя из размеров мира
 	//И не могут меняться пока мир неизменен
-	public static int DDIRTY_WATER = Configurations.DIRTY_WATER;
-	
 	public static int DAGGRESSIVE_ENVIRONMENT = Configurations.AGGRESSIVE_ENVIRONMENT;
 	public static int DTIK_TO_EXIT = Configurations.TIK_TO_EXIT;
 	
@@ -113,6 +116,22 @@ public class Configurations extends JsonSave.JSONSerialization{
 		/**Функция, вызываемая каждую секунду. Примерно*/
 		public void taskStep();
 	}
+	/**Возможные типы мира*/
+	public enum WORLD_TYPE{
+		/**Линейный мир представляет собой бесконечную полосу, ограниченную сверху и снизу. Справа и слева мир зациклен на себя.
+		 Это вертекальный срез бассейна*/
+		LINE_H,
+		/**Линейный мир, но на этот раз бесконечная полоса вертикальна. Это тип река, вид сверху, кусок течения*/
+		LINE_V,
+		/**Прямоугольный мир, ограниченный со всех сторох. Это аквариум*/
+		RECTANGLE,
+		/**Бесконечное прямоугольное поле - просто кусок океана*/
+		FIELD_R,
+		/**Круглый мир, представляющий собой чашку петри*/
+		CIRCLE,
+		/**И, наконец, круглое поле, но без стенок - просто кусок океана*/
+		FIELD_C,
+	}
 	
 	@Override
 	public String getName() {
@@ -122,7 +141,6 @@ public class Configurations extends JsonSave.JSONSerialization{
 	public JSON getJSON() {
 		JSON configWorld = new JSON();
 		configWorld.add("MAP_CELLS", new int[] {MAP_CELLS.width,MAP_CELLS.height});
-		configWorld.add("DIRTY_WATER", DIRTY_WATER);
 		configWorld.add("AGGRESSIVE_ENVIRONMENT", AGGRESSIVE_ENVIRONMENT);
 		configWorld.add("TIK_TO_EXIT", TIK_TO_EXIT);
 		return configWorld;
@@ -130,11 +148,12 @@ public class Configurations extends JsonSave.JSONSerialization{
 	/**Загрузка конфигурации мира*/
 	public void setJSON(JSON configWorld, long version) {
 		List<Integer> map = configWorld.getA("MAP_CELLS");
-		makeWorld(map.get(0),map.get(1));
-		DIRTY_WATER = configWorld.get("DIRTY_WATER");
-		AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
-		TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
 		if(version < 7){
+			makeWorld(WORLD_TYPE.LINE_H, map.get(0),map.get(1), 2);
+			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
+			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
+		
+			var DIRTY_WATER = configWorld.get("DIRTY_WATER");
 			var LEVEL_MINERAL = configWorld.get("LEVEL_MINERAL");
 			var CONCENTRATION_MINERAL = configWorld.get("CONCENTRATION_MINERAL");
 			var SUN_SPEED = configWorld.get("SUN_SPEED");
@@ -149,40 +168,48 @@ public class Configurations extends JsonSave.JSONSerialization{
 	}
 	
 	/**
-	 * Создаёт новый мир.
-	 * Если длина и высота мира изменяются - все объекты мира удаляются!
-	 * @param width ширина мира, в кубиках
+	 * Создаёт новый мир.Если длина и высота мира изменяются - все объекты мира удаляются!
+	 * В круглых мирах ширина и высота одинаковы, берётся максимальное из двух чисел
+	 *	означают-же они диаметр мира. Да, поле будет квадратным, но в некоторые точки попасть станет невозможно
+	 * @param type тип создаваемого мира
+	 * @param width ширина мира, в кубиках.
 	 * @param height высота мира, тоже в кубиках
+	 * @param gravitation гравитация в созданном мире
 	 */
-	public static void makeWorld(int width, int height) {
+	public static void makeWorld(WORLD_TYPE type, int width, int height, int gravitation) {
 		//Создаём мир
 		MAP_CELLS = new Dimension(width,height);
 		world = new World(MAP_CELLS);
+		//Солнца
+		suns = new ArrayList<>();
+		//Минералы
+		minerals = new ArrayList<>(0);
+		//Потоки
+		streams = new ArrayList<>(0);
+		//Мутагенность воды
+		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 25;
+		//Скорость разложения органики. За сколько шагов уходит 1 единица энергии
+		TIK_TO_EXIT = DTIK_TO_EXIT = 1000;
+		//И конечно создаём адама.
+		world.makeAdam();
+		
+		
 		
 		//Создаём солнце. Одно неподвижное, одно движущееся
-		suns = new ArrayList<>(2);
-		suns.add(new Sun(20,null,null,0, Integer.MIN_VALUE));
-		suns.add(new Sun(20,width / 5,25,width / 2, -3));
-		//И грязь воды
-		setDIRTY_WATER(DDIRTY_WATER = 33); //33% карты сверху - освщеено
-		//Создаём минералы. Один тип, покачивающийся вверх/вниз
-		minerals = new ArrayList<>(1);
-		//suns.add(new Sun(20,width / 5,25,width / 2, -3));
+		suns.add(new Sun(new Sun.Rectangle(new Point(0,0), MAP_CELLS.width, (int) (MAP_CELLS.height * 0.33), 20, Sun.SunForm.SHADOW.DOWN), null));
+		suns.add(new Sun(new Sun.SpecForm(width/2, width / 5, (int) (MAP_CELLS.height * 0.66), -3, 20, Sun.SunForm.SHADOW.DOWN), new Sun.LineMove(15, new Point(1,0))));
 		
-		DLEVEL_MINERAL = LEVEL_MINERAL = 1 - 0.33;	//33% снизу в минералах
-		DCONCENTRATION_MINERAL = CONCENTRATION_MINERAL = 20;
-		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 25;
-		TIK_TO_EXIT = DTIK_TO_EXIT = 1000; //1 единица энергии уходит за 1000 шагов!
 		
-		world.makeAdam();
-		streams = new Stream[0];
-		sun = new Sun(getWidth(),getHeight());
+		streams.add(new Stream.VerticalRectangle(new Point(MAP_CELLS.width / 8, 0), MAP_CELLS.width / 4, MAP_CELLS.height, 1, Stream.SHADOW.LINE, 100));
+		streams.add(new Stream.VerticalRectangle(new Point(MAP_CELLS.width / 2 + MAP_CELLS.width / 8, 0), MAP_CELLS.width / 4, MAP_CELLS.height, -10, Stream.SHADOW.PARABOLA, -100));
+		streams.add(new Stream.Ellipse(new Point(MAP_CELLS.width / 2, MAP_CELLS.height / 2), MAP_CELLS.width / 8, 1, Stream.SHADOW.PARABOLA, 10));
 	}
-	
-	public static void setDIRTY_WATER(int val) {
-		Configurations.DIRTY_WATER =  val;
-		if(sun != null)
-			sun.updateScrin();
+	/**Возвращает количество солнечной энергии в данной точке пространства
+	 * @param pos где интересует энергия
+	 * @return сколько в единицах HP энергии тут
+	 */
+	public static double getSunPower(Point pos){
+		return suns.stream().reduce(0d, (a,b) -> a + b.getEnergy(pos), Double::sum);
 	}
 	
 	/**

@@ -6,8 +6,8 @@ public class Point{
 	/**Направление, вектор среди точек*/
 	public enum DIRECTION {
 		UP(0,-1), UP_R(1,-1), RIGHT(1,0), DOWN_R(1,1), DOWN(0,1), DOWN_L(-1,1), LEFT(-1,0), UP_L(-1,-1);
-		
-		private static final DIRECTION[] values = DIRECTION.values();
+		/**Все возможные значения направлений*/
+		public static final DIRECTION[] values = DIRECTION.values();
 		public static DIRECTION toEnum(int direction) {
 			direction = direction % values.length;
 			if (direction < 0)
@@ -20,13 +20,12 @@ public class Point{
 		public static int size() {
 			return values.length;
 		}
-		
+		/**На сколько изменится X при движении в данную сторону*/
 		public final int addX;
+		/**На сколько изменится Y при движении в данную сторону*/
 		public final int addY;
-		DIRECTION(int x, int y){
-			addX = x;
-			addY = y;
-		}
+		DIRECTION(int x, int y){addX = x;addY = y;}
+		
 		/**Поворачивает вектор на direction*/
 		public DIRECTION next(DIRECTION direction) {
 			return next(toNum(direction));
@@ -78,8 +77,10 @@ public class Point{
 				default->{return null;}
 			}
 		}
-	};	
+	};
+	/**Координата по Х*/
 	private int x;
+	/**Координата по Y*/
 	private int y;
 	public Point(int x, int y){
 		setX(x);
@@ -107,26 +108,6 @@ public class Point{
 	public Point add(Point point) {
 		return new Point(x + point.x,y + point.y);
 	}
-	private void setX(int x) {
-		while(x >= Configurations.MAP_CELLS.width)
-			x -= Configurations.MAP_CELLS.width;
-		while(x < 0)
-			x += Configurations.MAP_CELLS.width;
-		this.x = x;
-	}
-	private void setY(int y) {
-		this.y=y;
-	}
-	public JSON toJSON() {
-		JSON make = new JSON();
-		make.add("x", x);
-		make.add("y", y);
-		return make;
-	}
-	@Override
-	public String toString() {
-		return "x: " + x + " y: " + y;
-	}
 	public void update(Point point) {
 		setX(point.x);
 		setY(point.y);
@@ -148,12 +129,25 @@ public class Point{
 		return Math.sqrt(delx*delx+dely*dely);
 	}
 	/**
-	 * Функция нахождения минимального расстояния между двумя точками по Х
-	 * @param xf первая точка по Х
-	 * @param xs вторая точка по X
+	 * Функция нахождения расстояния между двумя точками. Иными словами
+	 * [second.x-first.x, second.y-first.y]
+	 * Если x больше 0, то значит вторая точка правее
+	 * Если y больше 0, то значит вторая точка ниже
+	 * @param first первая точка
+	 * @param second вторая точка
 	 * @return Расстояние между двумя точками.
 	 */
-	public static int subtractionX(int xf, int xs) {
+	public static Point sub(Point first, Point second) {
+		switch (Configurations.world_type) {
+			case LINE_H -> {
+				var del = second.x - first.x;
+				if(del > 0 && del > Configurations.MAP_CELLS.width / 2)
+					del -= Configurations.MAP_CELLS.width / 2;
+				var cdel = del + (first.x <= second.x ?  - Configurations.MAP_CELLS.width : + Configurations.MAP_CELLS.width);
+				return new Point(Math.abs(del) < Math.abs(cdel) ? del : cdel, second.x - first.y);
+			}
+			default -> throw new AssertionError();
+		}
 		var del = xs - xf;
 		var cdel = del + (xf <= xs ?  - Configurations.MAP_CELLS.width : + Configurations.MAP_CELLS.width);
 		return Math.abs(del) < Math.abs(cdel) ? del : cdel;
@@ -181,6 +175,27 @@ public class Point{
 			if(d.addX == dx && dy == d.addY)
 				return d;
 		throw new IllegalArgumentException("Расстояние между точками не должно быть больше 1!");
+	}
+	
+	private void setX(int x) {
+		while(x >= Configurations.MAP_CELLS.width)
+			x -= Configurations.MAP_CELLS.width;
+		while(x < 0)
+			x += Configurations.MAP_CELLS.width;
+		this.x = x;
+	}
+	private void setY(int y) {
+		this.y=y;
+	}
+	public JSON toJSON() {
+		JSON make = new JSON();
+		make.add("x", x);
+		make.add("y", y);
+		return make;
+	}
+	@Override
+	public String toString() {
+		return "x: " + x + " y: " + y;
 	}
 	
 }
