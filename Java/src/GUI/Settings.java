@@ -1,4 +1,4 @@
-package panels;
+package GUI;
 
 import java.awt.Adjustable;
 import java.awt.BorderLayout;

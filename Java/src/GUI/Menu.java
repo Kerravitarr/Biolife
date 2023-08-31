@@ -1,4 +1,4 @@
-package panels;
+package GUI;
 
 import java.awt.Cursor;
 import java.awt.Dimension;
