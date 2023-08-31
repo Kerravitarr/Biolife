@@ -1,4 +1,4 @@
-package main;
+package Calculations;
 
 import Utils.JSON;
 
@@ -7,18 +7,18 @@ public class Point{
 	public enum DIRECTION {
 		UP(0,-1), UP_R(1,-1), RIGHT(1,0), DOWN_R(1,1), DOWN(0,1), DOWN_L(-1,1), LEFT(-1,0), UP_L(-1,-1);
 		
-		private static final DIRECTION[] myEnumValues = DIRECTION.values();
+		private static final DIRECTION[] values = DIRECTION.values();
 		public static DIRECTION toEnum(int direction) {
-			direction = direction % myEnumValues.length;
+			direction = direction % values.length;
 			if (direction < 0)
-				direction += myEnumValues.length;
-			return myEnumValues[direction];
+				direction += values.length;
+			return values[direction];
 		}
 		public static int toNum(DIRECTION direction) {
 			return direction.ordinal();
 		}
 		public static int size() {
-			return myEnumValues.length;
+			return values.length;
 		}
 		
 		public final int addX;
@@ -78,10 +78,7 @@ public class Point{
 				default->{return null;}
 			}
 		}
-	};
-	private static double pixelXDel;
-	private static double pixelYDel;
-	
+	};	
 	private int x;
 	private int y;
 	public Point(int x, int y){
@@ -96,56 +93,19 @@ public class Point{
 		setX(j.get("x"));
 		setY(j.get("y"));
 	}
-	public int getRx() {
-		return getRx(x);
-	}
-	/**
-	 * Переводит координаты клетки в координаты экрана
-	 * @param x координата в масштабах клетки
-	 * @return x координата в масштабе окна, пк
-	 */
-	public static int getRx(int x) {
-		return (int) Math.round(x*Configurations.scale + pixelXDel);
-	}
-	public int getRy() {
-		return getRy(y);
-	}
-	/**
-	 * Переводит координаты клетки в координаты экрана
-	 * @param y координата в масштабах клетки
-	 * @return x координата в масштабе окна, пк
-	 */
-	public static int getRy(int y) {
-		return (int) Math.round(y*Configurations.scale + pixelYDel);
-	}
-	public int getRr() {
-		return getRr(1);
-	}
-	public static int getRr(int r) {
-		return (int) Math.round(r * Configurations.scale) ;
-	}
-	/**
-	 * Переводит координаты экрана в координаты клетки
-	 * @param x координата на экране
-	 * @return x координата на поле. Эта координата может выходить за размеры мира!!!
-	 */
-	public static int rxToX(int x) {
-		return (int) Math.round((x - Configurations.border.width)/Configurations.scale - 0.5);
-	}
-	/**
-	 * Переводит координаты экрана в координаты клетки
-	 * @param y координата на экране
-	 * @return x координата на поле. Эта координата может выходить за размеры мира!!!
-	 */
-	public static int ryToY(int y) {
-		return (int) Math.round((y - Configurations.border.height)/Configurations.scale - 0.5);
-	}
 	/**Получить точку в указанном направлении от текущей
 	 * @param dir в каком направлении нужна точка
 	 * @return точка в нужном направлении
 	 */
 	public Point next(DIRECTION dir) {
 		return new Point(x + dir.addX,y + dir.addY);
+	}
+	/**Суммировать две точки
+	 * @param point к какой точке прибавляем
+	 * @return точка , являющаяся суммой этой и добавочной
+	 */
+	public Point add(Point point) {
+		return new Point(x + point.x,y + point.y);
 	}
 	private void setX(int x) {
 		while(x >= Configurations.MAP_CELLS.width)
@@ -171,10 +131,6 @@ public class Point{
 		setX(point.x);
 		setY(point.y);
 	}
-	public static void update() {
-		pixelXDel = Configurations.border.width + Configurations.scale/2;
-		pixelYDel = Configurations.border.height + Configurations.scale/2;
-	}
 	public boolean equals(Point obj) {
         return (this.x == obj.x) && (this.y == obj.y);
     }
@@ -194,13 +150,22 @@ public class Point{
 	/**
 	 * Функция нахождения минимального расстояния между двумя точками по Х
 	 * @param xf первая точка по Х
-	 * @param xs вторая точка по У
+	 * @param xs вторая точка по X
 	 * @return Расстояние между двумя точками.
 	 */
 	public static int subtractionX(int xf, int xs) {
 		var del = xs - xf;
 		var cdel = del + (xf <= xs ?  - Configurations.MAP_CELLS.width : + Configurations.MAP_CELLS.width);
 		return Math.abs(del) < Math.abs(cdel) ? del : cdel;
+	}
+	/**
+	 * Функция нахождения минимального расстояния между двумя точками по Y
+	 * @param yf первая точка по Y
+	 * @param ys вторая точка по Y
+	 * @return Расстояние между двумя точками.
+	 */
+	public static int subtractionY(int yf, int ys) {
+		return ys - yf;
 	}
 	
 	/**
@@ -212,7 +177,7 @@ public class Point{
 	public static DIRECTION direction(Point f, Point s){
 		var dy = s.y - f.y;
 		var dx = subtractionX(f.x, s.x);
-		for(var d : DIRECTION.myEnumValues)
+		for(var d : DIRECTION.values)
 			if(d.addX == dx && dy == d.addY)
 				return d;
 		throw new IllegalArgumentException("Расстояние между точками не должно быть больше 1!");

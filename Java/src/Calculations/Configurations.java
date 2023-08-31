@@ -1,4 +1,4 @@
-package main;
+package Calculations;
 
 import java.awt.Dimension;
 import java.awt.Image;
@@ -16,8 +16,6 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 
 import MapObjects.CellObject;
-import MapObjects.Geyser;
-import MapObjects.Sun;
 import Utils.JSON;
 import Utils.JsonSave;
 import java.awt.Font;
@@ -25,11 +23,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import panels.BotInfo;
-import panels.EvolTreeDialog;
-import panels.Legend;
-import panels.Menu;
-import panels.Settings;
+import GUI.BotInfo;
+import GUI.EvolTreeDialog;
+import GUI.Legend;
+import GUI.Menu;
+import GUI.Settings;
+import java.util.ArrayList;
 
 /**
  * Так как некоторые переменные мира используются повсеместно
@@ -39,48 +38,20 @@ import panels.Settings;
  */
 public class Configurations extends JsonSave.JSONSerialization{
 	/**Версия приложения. Нужна на тот случай, если вдруг будет загружаться старое приложение*/
-	public static final long VERSION = 6;
-	
-	//Карта
+	public static final long VERSION = 7;
 	/**Количиство ячеек карты*/
-	public static Dimension MAP_CELLS = new Dimension(0,0);
-	/**Сам мир*/
-	public static CellObject [][] worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
-	/**Базовая освещённость карты, то есть сколько света падает постоянно*/
-	public static int BASE_SUN_POWER = 0;
-	/**Освещённость карты*/
-	public static int ADD_SUN_POWER = 0;
-	/**Скорость движения солнца в тиках мира*/
-	public static int SUN_SPEED = 15;
-	/**Положение солнца в частях экрана*/
-	public static int SUN_POSITION = 0;
-	/**"Ширина" солнечного света в частях экрана*/
-	public static int SUN_LENGHT = 0;
-	/**Форма солнца*/
-	public static int SUN_FORM = 0;
+	public static Dimension MAP_CELLS = null;
 	/**Уровень загрязнения воды. Процент, где заканчивается Солнце. В норме от 0 до 200*/
 	public static int DIRTY_WATER = 0;
-	/**Как глубоко лежат минералы. При этом 1.0 - ни где, а 0.0 - везде... Ну да, так получилось :)*/
-	public static double LEVEL_MINERAL = 0;
-	/**Концентрация минералов. Другими словами - количество всасываемых минералов в секунду при максимальной специализации*/
-	public static int CONCENTRATION_MINERAL = 0;
 	/**Степень мутагенности воды [0,100]*/
 	public static int AGGRESSIVE_ENVIRONMENT = 0;
-	/**Сколько ходов до разложения органики*/
+	/**Как часто органика теряет своё ХП. Если 1 - на каждый ход. Если 2 - каждые 2 хода и т.д.*/
 	public static int TIK_TO_EXIT;
 	
 	//Те-же переменные, только их значения по умолчанию.
 	//Значения по умолчанию рассчитываются исходя из размеров мира
 	//И не могут меняться пока мир неизменен
-	public static int DBASE_SUN_POWER = Configurations.BASE_SUN_POWER;
-	public static int DADD_SUN_POWER = Configurations.ADD_SUN_POWER;
-	public static int DSUN_LENGHT = Configurations.SUN_LENGHT;
-	public static int DSUN_SPEED = Configurations.SUN_SPEED;
-	public static int DSUN_FORM = Configurations.SUN_FORM;
 	public static int DDIRTY_WATER = Configurations.DIRTY_WATER;
-	
-	public static double DLEVEL_MINERAL = Configurations.LEVEL_MINERAL;
-	public static int DCONCENTRATION_MINERAL = Configurations.CONCENTRATION_MINERAL;
 	
 	public static int DAGGRESSIVE_ENVIRONMENT = Configurations.AGGRESSIVE_ENVIRONMENT;
 	public static int DTIK_TO_EXIT = Configurations.TIK_TO_EXIT;
@@ -98,12 +69,14 @@ public class Configurations extends JsonSave.JSONSerialization{
 	//Разные глобальные объекты, отвечающие за мир
 	/**Глобальный мир!*/
 	public static World world = null;
-	/**Солнце нашего мира*/
-	public static Sun sun = null;
-	/**Гейзер, некая область где вода поднимается снизу вверх*/
-	public static Geyser[] geysers = null;
-	/**Эволюция ботов нашего мира*/
-	public static EvolutionTree tree = new EvolutionTree();
+	/**Звёзды нашего мира*/
+	public static List<Sun> suns = null;
+	/**Минералы нашего мира*/
+	public static List<Object> minerals = null;
+	/**Потоки воды, которые заставлют клетки двигаться*/
+	public static List<Stream> streams = null;
+	/**Эволюционное дерево мира*/
+	public static EvolutionTree tree = null;
 
 	//Вспомогательные панели
 	/**Сюда отправляем бота, для его изучения*/
@@ -148,18 +121,10 @@ public class Configurations extends JsonSave.JSONSerialization{
 	/**Сохраняет конфигурацию мира*/
 	public JSON getJSON() {
 		JSON configWorld = new JSON();
-		configWorld.add("BASE_SUN_POWER", BASE_SUN_POWER);
-		configWorld.add("ADD_SUN_POWER", ADD_SUN_POWER);
 		configWorld.add("MAP_CELLS", new int[] {MAP_CELLS.width,MAP_CELLS.height});
 		configWorld.add("DIRTY_WATER", DIRTY_WATER);
 		configWorld.add("AGGRESSIVE_ENVIRONMENT", AGGRESSIVE_ENVIRONMENT);
-		configWorld.add("LEVEL_MINERAL", LEVEL_MINERAL);
-		configWorld.add("CONCENTRATION_MINERAL", CONCENTRATION_MINERAL);
 		configWorld.add("TIK_TO_EXIT", TIK_TO_EXIT);
-		configWorld.add("SUN_SPEED", SUN_SPEED);
-		configWorld.add("SUN_LENGHT", SUN_LENGHT);
-		configWorld.add("SUN_POSITION", SUN_POSITION);
-		configWorld.add("SUN_FORM", SUN_FORM);
 		return configWorld;
 	}
 	/**Загрузка конфигурации мира*/
@@ -168,15 +133,19 @@ public class Configurations extends JsonSave.JSONSerialization{
 		makeWorld(map.get(0),map.get(1));
 		DIRTY_WATER = configWorld.get("DIRTY_WATER");
 		AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
-		LEVEL_MINERAL = configWorld.get("LEVEL_MINERAL");
-		CONCENTRATION_MINERAL = configWorld.get("CONCENTRATION_MINERAL");
 		TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
-		SUN_SPEED = configWorld.get("SUN_SPEED");
-		SUN_LENGHT = configWorld.get("SUN_LENGHT");
-		SUN_POSITION = configWorld.get("SUN_POSITION");
-		BASE_SUN_POWER = configWorld.get("BASE_SUN_POWER");
-		ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
-		SUN_FORM = configWorld.get("SUN_FORM");
+		if(version < 7){
+			var LEVEL_MINERAL = configWorld.get("LEVEL_MINERAL");
+			var CONCENTRATION_MINERAL = configWorld.get("CONCENTRATION_MINERAL");
+			var SUN_SPEED = configWorld.get("SUN_SPEED");
+			var SUN_LENGHT = configWorld.get("SUN_LENGHT");
+			var SUN_POSITION = configWorld.get("SUN_POSITION");
+			var BASE_SUN_POWER = configWorld.get("BASE_SUN_POWER");
+			var ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
+			var SUN_FORM = configWorld.get("SUN_FORM");
+		} else {
+			
+		}
 	}
 	
 	/**
@@ -186,67 +155,35 @@ public class Configurations extends JsonSave.JSONSerialization{
 	 * @param height высота мира, тоже в кубиках
 	 */
 	public static void makeWorld(int width, int height) {
-		if(width != MAP_CELLS.width || height != MAP_CELLS.height) {
-			MAP_CELLS.width = width;
-			MAP_CELLS.height = height;
-			worldMap = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
-		}
-		//Освещение
-		setBASE_SUN_POWER(DBASE_SUN_POWER = 20);
-		setADD_SUN_POWER(DADD_SUN_POWER = DBASE_SUN_POWER);
-		setSUN_LENGHT(DSUN_LENGHT = width / 5);
-		setSUN_SPEED(DSUN_SPEED = 25); //Раз в 25 шагов сдвигается
-		setSUN_FORM(DSUN_FORM = -3);
-		SUN_POSITION = width / 2;
+		//Создаём мир
+		MAP_CELLS = new Dimension(width,height);
+		world = new World(MAP_CELLS);
+		
+		//Создаём солнце. Одно неподвижное, одно движущееся
+		suns = new ArrayList<>(2);
+		suns.add(new Sun(20,null,null,0, Integer.MIN_VALUE));
+		suns.add(new Sun(20,width / 5,25,width / 2, -3));
+		//И грязь воды
 		setDIRTY_WATER(DDIRTY_WATER = 33); //33% карты сверху - освщеено
+		//Создаём минералы. Один тип, покачивающийся вверх/вниз
+		minerals = new ArrayList<>(1);
+		//suns.add(new Sun(20,width / 5,25,width / 2, -3));
 		
 		DLEVEL_MINERAL = LEVEL_MINERAL = 1 - 0.33;	//33% снизу в минералах
 		DCONCENTRATION_MINERAL = CONCENTRATION_MINERAL = 20;
 		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 25;
 		TIK_TO_EXIT = DTIK_TO_EXIT = 1000; //1 единица энергии уходит за 1000 шагов!
+		
+		world.makeAdam();
+		streams = new Stream[0];
+		sun = new Sun(getWidth(),getHeight());
 	}
 	
-	public static void setBASE_SUN_POWER(int val) {
-		Configurations.BASE_SUN_POWER =  val;
-		if(sun != null)
-			sun.updateScrin();
-	}
-	public static void setADD_SUN_POWER(int val) {
-		Configurations.ADD_SUN_POWER =  val;
-		if(sun != null)
-			sun.updateScrin();
-	}
-	public static void setSUN_LENGHT(int val) {
-		Configurations.SUN_LENGHT =  val;
-		if(sun != null)
-			sun.updateScrin();
-	}
-	public static void setSUN_SPEED(int val) {
-		Configurations.SUN_SPEED =  val;
-		if(sun != null)
-			sun.updateScrin();
-	}
 	public static void setDIRTY_WATER(int val) {
 		Configurations.DIRTY_WATER =  val;
 		if(sun != null)
 			sun.updateScrin();
 	}
-	public static void setCONCENTRATION_MINERAL(int val) {
-		Configurations.CONCENTRATION_MINERAL =  val;
-		if(sun != null)
-			sun.updateScrin();
-	}
-	public static void setLEVEL_MINERAL(double val) {
-		Configurations.LEVEL_MINERAL =  val;
-		if(sun != null)
-			sun.updateScrin();
-	}
-	public static void setSUN_FORM(int val) {
-		Configurations.SUN_FORM =  val;
-		if(sun != null)
-			sun.updateScrin();
-	}
-	
 	
 	/**
 	 * Возвращает строку описания для определённого класса

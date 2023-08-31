@@ -1,4 +1,4 @@
-package main;
+package Calculations;
 
 import java.awt.Color;
 import java.util.ArrayList;
@@ -16,8 +16,13 @@ import javax.swing.JOptionPane;
 
 //@Deprecated
 public class EvolutionTree extends JsonSave.JSONSerialization{
-
-	static public class Node{
+	/**Корень эволюционного дерева, адам*/
+	public static Node root = new Node(0, null, 0);
+	/**Список узлов, подлежащих удалению по окночании шага*/
+	private static Set<Node> removeNode = new java.util.concurrent.CopyOnWriteArraySet <>();
+	
+	/**Узел дерева эволюции */
+	public static class Node{
 		private static final Color DEFAULT_COLOR = new Color(255,255,255,50);
 		
 		/**Время, когда узел появился*/
@@ -250,11 +255,6 @@ public class EvolutionTree extends JsonSave.JSONSerialization{
 		}
 	}
 	
-	/**Корень эволюционного дерева, адам*/
-	public static Node root = new Node(0, null, 0);
-	/***/
-	private static Set<Node> removeNode = new java.util.concurrent.CopyOnWriteArraySet <>();
-	
 	public EvolutionTree() {};
 
 	@Override
@@ -262,14 +262,17 @@ public class EvolutionTree extends JsonSave.JSONSerialization{
 		return root.toString();
 	}
 
+	@Override
 	public String getName() {
 		return "EVOLUTION_TREE";
 	}
+	@Override
 	public JSON getJSON() {
 		JSON make = new JSON();
 		make.add("Node", root.toJSON());
 		return make;
 	}
+	@Override
 	public void setJSON(JSON json, long version) {
 		root = new Node(json.getJ("Node"), null,version);
 	}
@@ -292,9 +295,7 @@ public class EvolutionTree extends JsonSave.JSONSerialization{
 		ret.countAliveCell.incrementAndGet(); //Подсчитали ещё одного живчика
 		return ret;
 	}
-	/**
-	 * Обновляет дерево эволюции - проверяет все узлы на их правильность и перерисовывает дерево
-	 */
+	/**Обновляет дерево эволюции - проверяет все узлы на их правильность и перерисовывает дерево*/
 	public void updatre() {
 		for(Node node : root.getEndNode()) {
 			if(node.countAliveCell.get() <= 0)
