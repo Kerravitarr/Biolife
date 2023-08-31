@@ -1,10 +1,6 @@
 package MapObjects;
 
-import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Stroke;
 
 import MapObjects.Poison.TYPE;
 import MapObjects.dna.Birth;
@@ -16,13 +12,11 @@ import MapObjects.dna.TankMineral;
 import Utils.JSON;
 import Utils.Utils;
 import java.text.MessageFormat;
-import java.util.Iterator;
 import Calculations.Configurations;
 import Calculations.EvolutionTree;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
 import GUI.Legend;
-import start.BioLife;
 
 public class AliveCell extends AliveCellProtorype {
 
@@ -124,7 +118,6 @@ public class AliveCell extends AliveCellProtorype {
         dna = new DNA(cell.getDna());
 
         setGeneration(cell.Generation);
-        repaint();
 
         //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
         if (Utils.random(0, 100) < Configurations.AGGRESSIVE_ENVIRONMENT) {
@@ -161,7 +154,6 @@ public class AliveCell extends AliveCellProtorype {
         setGeneration(cell.Generation + 1); //Вирусные клетки имеют следующее поколение, хотя формально в них мутаций целый вагон
         evolutionNode = cell.evolutionNode.clone();
         evolutionNode = evolutionNode.newNode(this, getStepCount());
-        repaint();
 
         //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
         if (Utils.random(0, 100) < Configurations.AGGRESSIVE_ENVIRONMENT) {
@@ -208,10 +200,6 @@ public class AliveCell extends AliveCellProtorype {
         //Если есть друзья - делимся с ними едой
         if (!getFriends().isEmpty()) {
             clingFriends();
-        }
-        //Если есть минералы - получаем их
-        if (this.getPos().getY() >= (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL)) {
-            this.addMineral(Math.round(mineralAround()));
         }
         //Меняем цвет, если бездельничаем
         if (getAge() % 50 == 0) {
@@ -568,62 +556,6 @@ public class AliveCell extends AliveCellProtorype {
         color_cell.addG(color_cell.g > act.g ? -Math.min(num, color_cell.g - act.g) : Math.min(num, act.g - color_cell.g));
         color_cell.addB(color_cell.b > act.b ? -Math.min(num, color_cell.b - act.b) : Math.min(num, act.b - color_cell.b));
         color_DO = color_cell.getC();
-    }
-
-    @Override
-    public void paint(Graphics g) {
-        g.setColor(color_DO);
-
-        int r = getPos().getRr();
-        int rx = getPos().getRx();
-        int ry = getPos().getRy();
-        if (getFriends().isEmpty()) {
-            Utils.fillCircle(g, rx, ry, r);
-        } else if (r < 5) {
-            Utils.fillSquare(g, rx, ry, r);
-        } else {
-            Utils.fillCircle(g, rx, ry, r);
-			int[][] points = new int[DIRECTION.size()][2];
-			var values = getFriends().values();
-			try {
-				//Посчитаем наших друзей
-				int index = 0;
-				for (Iterator<AliveCell> iterator = values.iterator(); iterator.hasNext(); index++) {
-					AliveCell i = iterator.next();
-					int rxc = i.getPos().getRx();
-					if (getPos().getX() == 0 && i.getPos().getX() == Configurations.MAP_CELLS.width - 1) {
-						rxc = rx - r;
-					} else if (i.getPos().getX() == 0 && getPos().getX() == Configurations.MAP_CELLS.width - 1) {
-						rxc = rx + r;
-					}
-					points[index][0] = rxc;
-					points[index][1] = i.getPos().getRy();
-				}
-				//Приходится рисовать в два этапа, иначе получается ужас страшный.
-				//Этап первый - основные связи
-
-				Graphics2D g2 = (Graphics2D) g;
-				Stroke oldStr = g2.getStroke();
-				g.setColor(color_DO);
-				g2.setStroke(new BasicStroke(r / 2));
-				for (int i = 0; i < index; i++) {
-					int delx = points[i][0] - rx;
-					int dely = points[i][1] - ry;
-					g.drawLine(rx, ry, rx + delx / 3, ry + dely / 3);
-				}
-				g2.setStroke(oldStr);
-				g.setColor(Color.BLACK);
-				//Этап второй, всё тоже самое, но теперь лишь тонкие линии
-				for (int i = 0; i < index; i++) {
-					g.drawLine(rx, ry, points[i][0], points[i][1]);
-				}
-			} catch (java.util.ConcurrentModificationException e) {/* Выскакивает, если кто-то из наших друзей погиб*/                }
-        }
-        if (r > 10) {
-            g.setColor(Color.PINK);
-            g.drawLine(rx, ry, rx + direction.addX * r / 2, ry + direction.addY * r / 2);
-        }
-
     }
 
     @Override

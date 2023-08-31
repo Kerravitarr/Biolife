@@ -27,7 +27,6 @@ public class Fossil extends CellObject {
 		super(poison);
 		energy = (double)poison.get("energy");
 		super.color_DO = COLOR_DO;
-		repaint();
 	}
 
 
@@ -36,7 +35,6 @@ public class Fossil extends CellObject {
 		setPos(cell.getPos());
 		energy = Math.abs(cell.getHealth()) + cell.getFoodTank() + (cell.getMineral() + cell.getMineralTank()) * 10; //Превращается в органику всё, что только может
 	    super.color_DO = COLOR_DO;
-		repaint();
 	}
 
 
@@ -68,18 +66,6 @@ public class Fossil extends CellObject {
 	}
 
 	@Override
-	public void paint(Graphics g) {
-		g.setColor(super.color_DO);
-		
-		int r = (int) Math.round(getPos().getRr()*1);
-		int xCenter = getPos().getRx();
-		int yCenter = getPos().getRy();
-		
-		g.fillRect(xCenter-r/2, yCenter-r/6,r, r/3);
-		g.fillRect(xCenter-r/6, yCenter-r/2,r/3, r);
-	}
-
-	@Override
 	public JSON toJSON(JSON make) {
 		make.add("energy", energy);
 		return make;
@@ -96,21 +82,6 @@ public class Fossil extends CellObject {
 
 	@Override
 	boolean isRelative(CellObject cell0) {
-		if (cell0 instanceof Fossil) {
-			//Fossil poison = (Fossil) cell0;
-		    return true;
-		} else {
-			return false;
-		}
-	}
-
-	@Override
-	public void repaint() {
-		final var legend = Configurations.legend;
-		switch (legend.getMode()) {
-			case HP -> color_DO = legend.HPtToColor(getHealth());
-			case YEAR -> color_DO = legend.AgeToColor(((double)getAge())/MAX_AGE);
-			default -> color_DO = COLOR_DO;
-		}
+		return cell0 instanceof Fossil;
 	}
 }

@@ -330,30 +330,6 @@ public abstract class AliveCellProtorype extends CellObject{
 	public void setMineral(long mineral) {
 		this.mineral = Math.min(mineral, MAX_MP);
 	}
-	
-	@Override
-	public void repaint() {
-		final var legend = Configurations.legend;
-		switch (legend.getMode()) {
-			case MINERALS -> color_DO = legend.MPtToColor(getMineral());
-			case GENER -> color_DO = legend.generationToColor(Generation);
-			case YEAR -> color_DO = legend.AgeToColor(getAge());
-			case HP -> color_DO = legend.HPtToColor(health);
-			case PHEN -> color_DO = new Color(phenotype.getRed(), phenotype.getGreen(), phenotype.getBlue());
-			case DOING -> {/*color_DO = color_DO*/}
-			case POISON -> {
-				var rg = (int) Utils.betwin(0, getPosionPower() / Poison.MAX_TOXIC, 1.0) * 255;
-				switch (getPosionType()) {
-					case BLACK -> color_DO = new Color(255-rg, 255-rg, 255-rg);
-					case PINK -> color_DO = new Color(rg, rg / 2, rg / 2);
-					case YELLOW -> color_DO = new Color(rg, rg, 0);
-					case UNEQUIPPED -> color_DO = Color.BLACK;
-				}
-			}
-			case EVO_TREE -> color_DO = evolutionNode.getColor();
-		}
-	}
-
 	/**
 	 * @return Ветвь эволюции
 	 */
@@ -462,19 +438,11 @@ public abstract class AliveCellProtorype extends CellObject{
 		this.mineralTank = mineralTank;
 	}
 
-	/**Добавляет или уменьшает размер танка для минералов*/
+	/**Добавляет или уменьшает размер танка для минералов
+	 * @param add сколько в танк кладём (или достаём, если отрицательное значение
+	 */
 	public void addMineralTank(int add) {
 		mineralTank += add;
-	}
-	
-	/**
-	 * Возвращает количество минералов вокруг
-	 * @return Количество минералов, которое клетка может получить из окружающей среды
-	 */
-	public double mineralAround() {
-		double realLv = getPos().getY() - (Configurations.MAP_CELLS.height * Configurations.LEVEL_MINERAL);
-		double dist = Configurations.MAP_CELLS.height * (1 - Configurations.LEVEL_MINERAL);
-		return specMaxVal(Configurations.CONCENTRATION_MINERAL * (realLv / dist), AliveCellProtorype.Specialization.TYPE.MINERALIZATION);
 	}
 	/**
 	 * Возвращает количество солнца вокруг
@@ -484,7 +452,7 @@ public abstract class AliveCellProtorype extends CellObject{
 		//+5 бонусных частичек света при наличии миниралов
         double t = 5 * getMineral() / AliveCell.MAX_MP;	
         //Ну и энергию от солнца не забываем
-		return specMaxVal(Configurations.sun.getEnergy(getPos()) + t, Specialization.TYPE.PHOTOSYNTHESIS);
+		return specMaxVal(Configurations.getSunPower(getPos()) + t, Specialization.TYPE.PHOTOSYNTHESIS);
 	}
 
 	/**

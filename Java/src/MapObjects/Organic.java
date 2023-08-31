@@ -136,22 +136,6 @@ public class Organic extends CellObject {
         return false;
 	}
 
-	@Override
-	public void paint(Graphics g) {	
-		g.setColor(color_DO);
-		
-		int r = getPos().getRr();
-		int xCenter = getPos().getRx();
-		int yCenter = getPos().getRy();
-		if (g instanceof Graphics2D g2d) {
-			Stroke old = g2d.getStroke();
-			g2d.setStroke(new BasicStroke(r/3));
-			Utils.drawCircle(g, xCenter, yCenter, r * 2 / 3);
-			g2d.setStroke(old);
-		} else {
-			Utils.fillCircle(g,xCenter,yCenter,r);
-		}
-	}
 
 	@Override
 	public JSON toJSON(JSON make) {
@@ -160,7 +144,6 @@ public class Organic extends CellObject {
 		make.add("poisonCount", poisonCount);
 		return make;
 	}
-
 
 	@Override
 	public double getHealth() {
@@ -181,27 +164,6 @@ public class Organic extends CellObject {
 
 	public int getStream() {
 		return (int) Math.min(Poison.MAX_STREAM, Poison.MAX_STREAM * getHealth() / AliveCell.MAX_HP);
-	}
-
-
-	@Override
-	public void repaint() {
-		final var legend = Configurations.legend;
-		switch (legend.getMode()) {
-			case POISON -> {
-				var rg = (int) Utils.betwin(0, getHealth() / Poison.MAX_TOXIC, 1.0) * 255;
-				switch (poison) {
-					case BLACK -> color_DO = new Color(255-rg,255- rg,255- rg);
-					case PINK -> color_DO = new Color(rg, rg / 2, rg / 2);
-					case YELLOW -> color_DO = new Color(rg, rg, 0);
-					case UNEQUIPPED ->  color_DO = ORGANIC_COLOR;
-				}
-				
-			}
-			case HP -> color_DO = legend.HPtToColor(getHealth());
-			case YEAR -> color_DO = legend.AgeToColor(getAge());
-			default -> color_DO = ORGANIC_COLOR;
-		}
 	}
 
 	/**Возвращает тип яда, которым пропитанна органик

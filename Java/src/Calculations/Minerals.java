@@ -5,7 +5,7 @@ package Calculations;
  * @author Илья
  *
  */
-public class Sun {
+public class Minerals {
 	/**Форма солнца*/
 	private final SunForm form;
 	/**Траектория движения солнца*/
@@ -274,7 +274,7 @@ public class Sun {
 	 * @param form форма солнца. Доступны изначально Rectangle, Ellipse и SpecForm
 	 * @param move форма движения солнца. Доступны изначально LineMove и EllipseMove
 	 */
-	public Sun(SunForm form, SunMove move){
+	public Minerals(SunForm form, SunMove move){
 		this.form = form;
 		this.move = move;
 	}

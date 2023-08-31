@@ -225,7 +225,7 @@ public class World implements Runnable{
 	}
 	/**Операции, которые должны быть выполнены после шага*/
 	private void postStep(){
-		Configurations.sun.step(step);
+		Configurations.suns.forEach( s -> s.step(step));
 		Configurations.tree.step();
 
 		pps.interapt();

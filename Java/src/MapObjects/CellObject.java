@@ -134,11 +134,14 @@ public abstract class CellObject {
 
 		try {
 			//Воздействие всех потоков на объект
-			for(Stream gz : Configurations.streams)
+			for(final var gz : Configurations.streams)
 				gz.action(this);
 			//Воздействие источников минералов на живую клетку
 			switch (alive) {
-				case LV_ALIVE -> {}
+				case LV_ALIVE -> {
+					//for(final var o : Configurations.minerals)
+						//minerals.action(this);
+				}
 				case LV_ORGANIC, LV_POISON, LV_WALL -> {}
 				default -> throw new AssertionError("Мы не ожидали тут встретить объект типа " + alive);
 			}
@@ -155,11 +158,6 @@ public abstract class CellObject {
 	 * @param step
 	 */
 	abstract void step();
-	/**
-	 * Рисует объект на экране
-	 * @param g
-	 */
-	public abstract void paint(Graphics g);
 	/**
 	 * Проверяет, такой-ли статус о объекта
 	 * @param lvAlive
@@ -325,10 +323,9 @@ public abstract class CellObject {
 			destroy();
 		}catch (CellObjectRemoveException e) {}
 	}
-	/**
-	 * Экстренно перерисовывает объект
+	/**Возвращает возраст объекта
+	 * @return возраст, в шагах мира
 	 */
-	public abstract void repaint();
 	public long getAge() {
 		return years;
 	}

@@ -64,7 +64,6 @@ public class Poison extends CellObject {
 		type = TYPE.toEnum(poison.getI("type"));
 		nextDouble = getTimeToNextDouble();
 		stream = poison.get("stream");
-		repaint();
 	}
 
 	public Poison(TYPE type, long stepCount, Point point, double energy, int stream) {
@@ -75,7 +74,6 @@ public class Poison extends CellObject {
 		this.type=type;
 		this.stream = stream;
 		nextDouble = getTimeToNextDouble();
-		repaint();
 	}
 
 	@Override
@@ -220,16 +218,6 @@ public class Poison extends CellObject {
 	}
 
 	@Override
-	public void paint(Graphics g) {
-		g.setColor(color_DO);
-		
-		int r = (int) Math.round(getPos().getRr()*radius);
-		int rx = getPos().getRx();
-		int ry = getPos().getRy();
-		Utils.drawCircle(g,rx,ry,r);
-	}
-
-	@Override
 	public JSON toJSON(JSON make) {
 		make.add("energy", energy);
 		make.add("stream", getStream());
@@ -255,32 +243,6 @@ public class Poison extends CellObject {
 			return poison.getType() == getType();
 		else
 			return false;
-	}
-
-	@Override
-	public void repaint() {
-		final var legend = Configurations.legend;
-		switch (legend.getMode()) {
-			case HP -> color_DO = legend.HPtToColor(energy/MAX_TOXIC);
-			case YEAR -> color_DO = legend.AgeToColor(getAge());
-			default -> {
-				switch (getType()) {
-					case YELLOW -> color_DO = (Color.YELLOW);
-					case PINK -> color_DO = (Color.PINK);
-					case BLACK -> color_DO = (Color.BLACK);
-					case UNEQUIPPED -> throw new IllegalArgumentException("Unexpected value: " + getType());
-				}
-			}
-			case POISON -> {
-				var rg = (int) Utils.betwin(0, getHealth() / MAX_TOXIC, 1.0) * 255;
-				switch (getType()) {
-					case BLACK -> color_DO = new Color(255-rg,255- rg,255- rg);
-					case PINK -> color_DO = new Color(rg, rg / 2, rg / 2);
-					case YELLOW -> color_DO = new Color(rg, rg, 0);
-					case UNEQUIPPED -> throw new IllegalArgumentException("Unexpected value: " + getType());
-				}
-			}
-		}
 	}
 
 	public TYPE getType() {
