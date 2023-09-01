@@ -294,7 +294,7 @@ public class Settings extends JPanel{
 	}
 	
 	private JScrollPane makeParamsPanel() {
-		final var panelConstant = new JPanel();
+		/*final var panelConstant = new JPanel();
 		panelConstant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), Configurations.getHProperty(Settings.class,"mainPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
 		
 		listFields = new ArrayList<>();
@@ -362,7 +362,7 @@ public class Settings extends JPanel{
 	
 		final var scroll = new JScrollPane(panelConstant);
 		scroll.setBorder(null);
-		return scroll;
+		return scroll;*/ throw new AssertionError();
 	}
 
 	/**

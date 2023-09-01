@@ -103,7 +103,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 				Configurations.setIcon(record,"record_stop");
 				gifRecord = true;
 			}
-			try {
+			/*try {
 				System.out.println("Start frame");
 				gifs.nextFrame(g -> Configurations.world.paintComponent(g, true));
 				System.out.println("End frame");
@@ -113,7 +113,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 				JOptionPane.showMessageDialog(null, Configurations.getHProperty(Menu.class,"record.break")
 						+ e.getMessage(), "BioLife", JOptionPane.ERROR_MESSAGE);
 				gifs = null;
-			}
+			}*/ throw new AssertionError();
 		} else if(gifRecord){
 			Configurations.setIcon(record,"record");
 			gifRecord = false;
@@ -140,11 +140,11 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		Configurations.world.stop();
 		removeO = o;
 		select = MENU_SELECT.REMOVE;
-		Configurations.world.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+		/*Configurations.world.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));*/ throw new AssertionError();
 	}
 	private void toDefault() {
 		select = MENU_SELECT.NONE;
-		Configurations.world.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+		/*Configurations.world.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));*/ throw new AssertionError();
 	}
 
 	public void setCell(List<CellObject> cellObjects) {
@@ -198,7 +198,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	private void record(){
 		if(gifs == null) { //Запуск
 			Configurations.world.stop();
-			int result = javax.swing.JOptionPane.showConfirmDialog(null, 
+			/*int result = javax.swing.JOptionPane.showConfirmDialog(null, 
 					MessageFormat.format(Configurations.getHProperty(Menu.class,"record.warning"),Configurations.world.getWidth(),Configurations.world.getHeight()),
 					"BioLife", javax.swing.JOptionPane.OK_CANCEL_OPTION);
 			if(result == javax.swing.JOptionPane.CANCEL_OPTION) return;
@@ -221,7 +221,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			} catch (IOException e1) {
 				JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"record.error")
 						+ e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
-			}
+			}*/ throw new AssertionError();
 		} else { // Закончили
 			Configurations.world.stop();
 			try {gifs.close();} catch (IOException e1) {e1.printStackTrace();}

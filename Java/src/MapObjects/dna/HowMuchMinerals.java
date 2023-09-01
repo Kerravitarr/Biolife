@@ -13,12 +13,12 @@ public class HowMuchMinerals extends CommandExplore {
 
 	@Override
 	protected int explore(AliveCell cell) {
-		var param = param(cell, 0,Configurations.CONCENTRATION_MINERAL*10);
-		return cell.mineralAround() >= param ? 0 : 1;
+		/*var param = param(cell, 0,Configurations.CONCENTRATION_MINERAL*10);
+		return cell.mineralAround() >= param ? 0 : 1;*/ throw new AssertionError();
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		return String.valueOf(param(dna, 0,Configurations.CONCENTRATION_MINERAL*10));
+		/*return String.valueOf(param(dna, 0,Configurations.CONCENTRATION_MINERAL*10));*/ throw new AssertionError();
 	}
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
 		return branchMoreeLees(cell,numBranch,dna);

@@ -89,7 +89,7 @@ public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 				view.x += deltaX;
 				view.y += deltaY;
 
-				Configurations.world.scrollRectToVisible(view);
+				/*Configurations.world.scrollRectToVisible(view);*/ throw new AssertionError();
 			}
 		}
 
@@ -137,7 +137,7 @@ public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 		Configurations.smalFont = Configurations.defaultFont.deriveFont(10f);
 		//Создаём мир
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
-		Configurations.makeWorld((int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL)); //120 - пикселей на верхнюю и нижнюю шапочки
+		//Configurations.makeWorld((int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL)); //120 - пикселей на верхнюю и нижнюю шапочки
 		Configurations.settings = new Settings();
 		Configurations.legend = new Legend();
 		Configurations.info = new BotInfo();
@@ -198,16 +198,16 @@ public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 				Configurations.settings.save();
 			}
 		});
-		
+		/*
 		t = Configurations.world.createToolTip();
 		t.setTipText(Configurations.getProperty(BioLife.class,"autosave"));
 		popupFactory = PopupFactory.getSharedInstance();
 		
-		Configurations.addTask(this);
+		Configurations.addTask(this);*/ throw new AssertionError();
 	}
 	
 	@Override
-	public void taskStep() {
+	public void taskStep() {/*
 		final var world = Configurations.world;
 		String title = MessageFormat.format(Configurations.getProperty(BioLife.class,"title"), world.fps.FPS(), world.step,
 				world.pps.FPS(), world.countLife, world.countOrganic, world.countPoison, world.countWall, world.isActiv() ? ">" : "||");
@@ -242,14 +242,14 @@ public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 				}
 			}
 			lastSave = world.step;
-		}
+		}*/ throw new AssertionError();
 	}
 
 	/**Так как мир несколько особенный, то тут создаётся центральная панель, на которой будет рисоваться мир
 	 * @return панель мира
 	 */
 	private Component makeWorldPanel() {
-		scrollPane = new JScrollPane(){
+		/*scrollPane = new JScrollPane(){
 		    @Override
 		    protected void processMouseWheelEvent(MouseWheelEvent e) {
 		    	mouseWheel(e);
@@ -309,7 +309,7 @@ public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 		var adapter = new MouseMoveAdapter();
 		Configurations.world.addMouseListener(adapter);
 		Configurations.world.addMouseMotionListener(adapter);
-		return scrollPane;
+		return scrollPane;*/ throw new AssertionError();
 	}
 	
 	private Component makePanel(JPanel panel, String name, String borderLayoutConst) {

@@ -524,11 +524,11 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 					sb.append(" +");
 					sb.append(alive.getMineralTank());
 				}
-				if(alive.mineralAround() > 0){
+				/*if(alive.mineralAround() > 0){
 					sb.append(" →← ");
 					sb.append((int) alive.mineralAround());
 				}
-				mp.setText(sb.toString());
+				mp.setText(sb.toString());*/ throw new AssertionError();
 			} else {
 				mp.clear();
 			}

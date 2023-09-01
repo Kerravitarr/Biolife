@@ -47,7 +47,7 @@ public abstract class Stream {
 
 		@Override
 		public void action(CellObject cell) {
-			final var pos = cell.getPos();
+			/*final var pos = cell.getPos();
 			final var delX = Math.abs(Point.subtractionX(position.getX(), pos.getX()));
 			var delY = Point.subtractionY(position.getY(), pos.getY());
 			if(delX*2 > width || Math.abs(delY)*2 > height) return;
@@ -62,7 +62,7 @@ public abstract class Stream {
 			if(F > 0 && cell.getAge() % F == 0)
 				cell.moveD(DIRECTION.UP); // Поехали по направлению!
 			else if(F < 0 && cell.getAge() % -F == 0)
-				cell.moveD(DIRECTION.DOWN); // Поехали по направлению!
+				cell.moveD(DIRECTION.DOWN); // Поехали по направлению!*/ throw new AssertionError();
 		}
 	}
 	/**Прямоугольный вертикальный поток*/
@@ -104,7 +104,7 @@ public abstract class Stream {
 
 		@Override
 		public void action(CellObject cell) {
-			final var pos = cell.getPos();
+			/*final var pos = cell.getPos();
 			final var delX = Math.abs(Point.subtractionX(position.getX(), pos.getX()));
 			var delY = Point.subtractionY(position.getY(), pos.getY());
 			if(delX*2 > width || Math.abs(delY)*2 > height) return;
@@ -119,7 +119,7 @@ public abstract class Stream {
 			if(F > 0 && cell.getAge() % F == 0)
 				cell.moveD(DIRECTION.RIGHT); // Поехали по направлению!
 			else if(F < 0 && cell.getAge() % -F == 0)
-				cell.moveD(DIRECTION.LEFT); // Поехали по направлению!
+				cell.moveD(DIRECTION.LEFT); // Поехали по направлению!*/ throw new AssertionError();
 		}
 	}
 	/**Круглый поток*/
@@ -180,7 +180,7 @@ public abstract class Stream {
 		
 		@Override
 		public void action(CellObject cell) {
-			final var pos = cell.getPos();
+			/*final var pos = cell.getPos();
 			final double delY = Point.subtractionY(position.getY(), pos.getY());
 			final double delX = Point.subtractionX(position.getX(), pos.getX());
 			if(Math.pow(delX*2 / a2, 2) + Math.pow(delY*2 / b2, 2) <= 1) return;
@@ -219,7 +219,7 @@ public abstract class Stream {
 					if(dx == i.addX && dy == i.addY)
 						cell.moveD(DIRECTION.LEFT);
 				}
-			}
+			}*/ throw new AssertionError();
 		}
 	}
 

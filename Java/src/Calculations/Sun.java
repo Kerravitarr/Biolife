@@ -33,7 +33,7 @@ public class Sun {
 
 		@Override
 		protected double getEnergy(Point pos) {
-			final var delX = Math.abs(Point.subtractionX(position.getX(), pos.getX()));
+			/*final var delX = Math.abs(Point.subtractionX(position.getX(), pos.getX()));
 			var delY = Point.subtractionY(position.getY(), pos.getY());
 			if(delX*2 > width || Math.abs(delY)*2 > height) return 0d;
 			switch (shadow) {
@@ -52,7 +52,7 @@ public class Sun {
 					return power;
 				}
 				default -> throw new AssertionError();
-			}
+			}*/ throw new AssertionError();
 		}
 	}
 	/**Круглое солнце*/
@@ -86,7 +86,7 @@ public class Sun {
 
 		@Override
 		protected double getEnergy(Point pos) {
-			final var delY = (double) Point.subtractionY(position.getY(), pos.getY());
+			/*final var delY = (double) Point.subtractionY(position.getY(), pos.getY());
 			final var delX = (double) Math.abs(Point.subtractionX(position.getX(), pos.getX()));
 			if(Math.pow(delX*2 / a2, 2) + Math.pow(delY*2 / b2, 2) <= 1) return 0d;
 			switch (shadow) {
@@ -105,7 +105,7 @@ public class Sun {
 					return power;
 				}
 				default -> throw new AssertionError();
-			}
+			}*/ throw new AssertionError();
 		}
 	}
 	/**Фирменное, форменное солнце, прижатое к верхней части экрана*/
@@ -137,7 +137,7 @@ public class Sun {
 
 		@Override
 		protected double getEnergy(Point pos) {
-			final double delX = Math.abs(Point.subtractionX(position.getX(), pos.getX()));
+			/*final double delX = Math.abs(Point.subtractionX(position.getX(), pos.getX()));
 			if(pos.getY() > h || delX * 2 > w) return 0;
 			switch (shadow) {
 				case DOWN, CENTER -> {
@@ -147,7 +147,7 @@ public class Sun {
 					return power * Math.pow(1 - delX / w, form == 0 ? 1 : (form > 0 ? form + 1 : -(1d / (form - 1))));
 				}
 				default -> throw new AssertionError();
-			}
+			}*/ throw new AssertionError();
 		}
 	}
 	/**Движения солнца по прямой в какую-то одну сторону*/
