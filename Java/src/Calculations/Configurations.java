@@ -25,7 +25,10 @@ import GUI.EvolTreeDialog;
 import GUI.Legend;
 import GUI.Menu;
 import GUI.Settings;
+import MapObjects.CellObject;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Так как некоторые переменные мира используются повсеместно
@@ -45,7 +48,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 	 * При 1 все тела, что должны падать, будут стремиться падать каждый ход
 	 * При 2 - раз в 2 хода и т.д.
 	 */
-	public static int gravitation;
+	public static Map<CellObject.LV_STATUS, Integer> gravitation;
 	
 	
 	/**Степень мутагенности воды [0,100]*/
@@ -149,7 +152,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 	public void setJSON(JSON configWorld, long version) {
 		List<Integer> map = configWorld.getA("MAP_CELLS");
 		if(version < 7){
-			makeWorld(WORLD_TYPE.LINE_H, map.get(0),map.get(1), 2);
+			makeWorld(WORLD_TYPE.LINE_H, map.get(0),map.get(1), new HashMap<CellObject.LV_STATUS, Integer>(){{put(CellObject.LV_STATUS.LV_ORGANIC, 2);}});
 			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
 			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
 		
@@ -174,11 +177,13 @@ public class Configurations extends JsonSave.JSONSerialization{
 	 * @param type тип создаваемого мира
 	 * @param width ширина мира, в кубиках.
 	 * @param height высота мира, тоже в кубиках
-	 * @param gravitation гравитация в созданном мире
+	 * @param gravitation гравитация в созданном мире для каждого типа объектов. 
+	 *				Если не указывать тип, гравитация на него действовать не будет
 	 */
-	public static void makeWorld(WORLD_TYPE type, int width, int height, int gravitation) {
+	public static void makeWorld(WORLD_TYPE type, int width, int height, Map<CellObject.LV_STATUS, Integer> gravitation) {
 		//Создаём мир
 		MAP_CELLS = new Dimension(width,height);
+		world_type = type;
 		world = new World(MAP_CELLS);
 		//Солнца
 		suns = new ArrayList<>();
@@ -190,6 +195,11 @@ public class Configurations extends JsonSave.JSONSerialization{
 		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 25;
 		//Скорость разложения органики. За сколько шагов уходит 1 единица энергии
 		TIK_TO_EXIT = DTIK_TO_EXIT = 1000;
+		//Создаём магическое притяжение
+		Configurations.gravitation = gravitation;
+		
+		//А теперь дерево эволюции
+		tree = new EvolutionTree();
 		//И конечно создаём адама.
 		world.makeAdam();
 		

@@ -12,5 +12,6 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     MapObjects.dna.CommandListTest.class,
     MapObjects.dna.DNATest.class,
+    Calculations.PointTest.class,
 })
 public class TestList {}
