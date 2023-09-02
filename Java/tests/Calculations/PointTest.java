@@ -91,35 +91,35 @@ public class PointTest {
 		Configurations.makeWorld(Configurations.WORLD_TYPE.LINE_V, 10, 10, null);
 	}
 	/**Создаёт круглый мир
-	 ____________
+	      __
+	      |*|
+	   |*******|
+	  |*********|
+	  |*********|
+	  |*********|
 	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 ‾‾‾‾‾‾‾‾‾‾‾‾
+	  |*********|
+	  |*********|
+	  |*********|
+	   |*******|
+	   ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
 	 */
 	public void makeCIRCLEWorld(){
 		Configurations.makeWorld(Configurations.WORLD_TYPE.CIRCLE, 10, 10, null);
 	}
 	/**Создаёт круглый кусок океана
-	 ____________
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 |**********|
-	 ‾‾‾‾‾‾‾‾‾‾‾‾
+		 
+	      *
+	   *******
+	  *********
+	  *********
+	  *********
+	 **********
+	  *********
+	  *********
+	  *********
+	   *******
+	   
 	 */
 	public void makeFIELD_CWorld(){
 		Configurations.makeWorld(Configurations.WORLD_TYPE.FIELD_C, 10, 10, null);
@@ -233,12 +233,28 @@ public class PointTest {
 		makeFIELD_CWorld();
 		//На поле круга координаты так лего не выбрать...
 		
-		for (int x = -20; x < 20; x++) {
-			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
-				System.out.println("["+ x + ":" + y + "] => " + p.toJSON().toString());
+		//Для начала пройдёмся по внутреннему кругу
+		for (int x = 0; x < 10; x++) {
+			for (int y = 0; y < 10; y++) {
+				var dx = 5 - x;
+				var dy = 5 - y;
+				//Все точки, находящиеся в круге. То есть от которых до центра, не больше радиуса
+				if(dx*dx + dy*dy <= 5){
+					assertEquals("(P (" + x + "; " + y + "))", new Point(x,y).toString());
+				}
 			}
 		}
+		//Теперь по оставшемуся квадрату
+		//assertEquals("(P (8; 8))", new Point(1,1).toString());
+		assertEquals("(P (7; 7))", new Point(0,0).toString());
+	assertEquals("(P (7; 7))", new Point(1,0).toString());
+	assertEquals("(P (7; 8))", new Point(2,0).toString());
+		assertEquals("(P (6; 9))", new Point(3,0).toString());
+		assertEquals("(P (5; 9))", new Point(4,0).toString());
+		assertEquals("(P (4; 9))", new Point(6,0).toString());
+		assertEquals("(P (3; 9))", new Point(7,0).toString());
+	assertEquals("(P (2; 8))", new Point(8,0).toString());
+	assertEquals("(P (2; 7))", new Point(9,0).toString());
 		
 	}
 	
@@ -359,24 +375,16 @@ public class PointTest {
 
 	@Test
 	public void testToJSON() {
-		System.out.println("toJSON");
-		Point instance = null;
-		JSON expResult = null;
-		JSON result = instance.toJSON();
-		assertEquals(expResult, result);
-		// TODO review the generated test code and remove the default call to fail.
-		fail("The test case is a prototype.");
+		makeRECTANGLEWorld();
+		final var p = new Point(64,65);
+		assertEquals("{\"x\":64,\"y\":65}", p.toJSON().toString());
 	}
 
 	@Test
 	public void testToString() {
-		System.out.println("toString");
-		Point instance = null;
-		String expResult = "";
-		String result = instance.toString();
-		assertEquals(expResult, result);
-		// TODO review the generated test code and remove the default call to fail.
-		fail("The test case is a prototype.");
+		makeRECTANGLEWorld();
+		final var p = new Point(64,65);
+		assertEquals("(P (64; 65))", p.toString());
 	}
 	
 }

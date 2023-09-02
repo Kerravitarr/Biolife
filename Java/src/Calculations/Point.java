@@ -110,7 +110,8 @@ public class Point{
 		private Double h = null;
 		
 		private Vector(int x, int y){this.x = x;this.y = y;};
-		/**Возвращает гипотинузу вектора*/
+		/**Возвращает гипотинузу вектор
+		 * @return агипотенуза вектора в клетках мира*/
 		public double getHypotenuse(){
 			if(h == null){
 				h = Math.sqrt(x*x+y*y);
@@ -119,7 +120,7 @@ public class Point{
 		}
 		@Override
 		public String toString() {
-			return "[x: " + x + " y: " + y + "] => " + h;
+			return "V⃗ (" + x + "; " + y + "). |V⃗|="+getHypotenuse();
 		}
 	}
 	
@@ -243,25 +244,7 @@ public class Point{
 					//Эллипс.... Ну всё. Писец.
 					//Я пока не понял, как работает телепортация в мире эллипсов, так что не в этот раз :)
 					//Надо найти радиус, тогда можно провернуть тоже, что и с кругом. Но какой радиус в конкретной точке... Вопрос
-					if(0 == 0) //Чтобы компилятор не ругался
-						throw new IllegalArgumentException("К сожалению, разомкнутый мир должен быть только круглым! Я не придумал как обсчитывать элипсы");
-					final var r = 0;
-					var dx = second.x - first.x;
-					var dy = second.y - first.y;
-					final var h = Math.sqrt(dx*dx + dy*dy);
-					if(!(-r <= h && h <= r)){
-						//Расстояние больше радиуса. А всем известно, что в таком случае надо тупо идти в другую сторону
-						//Иными словами мы переносим точку через центр
-						if(dx > 0)
-							dx = (int) ((dx * r / h) - dx);
-						else
-							dx += (dx * r / h);
-						if(dy > 0)
-							dy = (int) ((dy * r / h) - dy);
-						else
-							dy += (dy * r / h);
-					}
-					return new Vector(dx, dy);
+					throw new IllegalArgumentException("К сожалению, разомкнутый мир должен быть только круглым! Я не придумал как обсчитывать элипсы");
 				}
 			}
 			case RECTANGLE, CIRCLE -> {
@@ -371,7 +354,8 @@ public class Point{
 					if(vec.getHypotenuse() > r){
 						//Мы находимся от центра дальше радиуса... Надо двигаться к центру
 						//Вот на столько шагов
-						final var scale = ((int) vec.getHypotenuse()) / Configurations.MAP_CELLS.width;
+						final var h = ((int)vec.getHypotenuse()) + r;
+						final var scale = h - h % Configurations.MAP_CELLS.width;
 						this.x = (int) (x + (vec.x / vec.getHypotenuse()) * scale);
 						this.y = (int) (y + (vec.y / vec.getHypotenuse()) * scale);
 					} else {
@@ -397,7 +381,7 @@ public class Point{
 	}
 	@Override
 	public String toString() {
-		return "x: " + x + " y: " + y;
+		return "(P (" + x + "; " + y + "))";
 	}
 	
 }
