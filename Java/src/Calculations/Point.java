@@ -169,6 +169,18 @@ public class Point{
 	
 	/**
 	 * Функция нахождения расстояния между двумя точками.
+		Иными словами. Полученный вектор указывает от точки this к точке second.
+		this + return = second
+	 * Если x больше 0, то значит вторая точка правее
+	 * Если y больше 0, то значит вторая точка ниже
+	 * @param second вторая точка
+	 * @return Расстояние между двумя точками.
+	 */
+	public Vector distance(Point second) {
+		return distance(this,second);
+	}
+	/**
+	 * Функция нахождения расстояния между двумя точками.
 		Иными словами. Полученный вектор указывает от точки first к точке second.
 		furst + return = second
 	 * Если x больше 0, то значит вторая точка правее
@@ -186,7 +198,7 @@ public class Point{
 					//Как только расстояние между двумя точками больше половины ширины экрана.
 					//Нам ближе будет пройти с обратной стороны
 					if(del > 0)
-						del = Configurations.MAP_CELLS.width - del;
+						del -= Configurations.MAP_CELLS.width;
 					else 
 						del += Configurations.MAP_CELLS.width;
 				}
@@ -196,7 +208,7 @@ public class Point{
 				var del = second.y - first.y;
 				if(!(-Configurations.MAP_CELLS.height / 2 <= del && del <= Configurations.MAP_CELLS.height / 2)){
 					if(del > 0)
-						del = Configurations.MAP_CELLS.height - del;
+						del -= Configurations.MAP_CELLS.height;
 					else 
 						del += Configurations.MAP_CELLS.height;
 				}
@@ -206,52 +218,35 @@ public class Point{
 				var dx = second.x - first.x;
 				if(!(-Configurations.MAP_CELLS.width / 2 <= dx && dx <= Configurations.MAP_CELLS.width / 2)){
 					if(dx > 0)
-						dx = Configurations.MAP_CELLS.width - dx;
+						dx -= Configurations.MAP_CELLS.width;
 					else 
 						dx += Configurations.MAP_CELLS.width;
 				}
 				var dy = second.y - first.y;
 				if(!(-Configurations.MAP_CELLS.height / 2 <= dy && dy <= Configurations.MAP_CELLS.height / 2)){
 					if(dy > 0)
-						dy = Configurations.MAP_CELLS.height - dy;
+						dy -= Configurations.MAP_CELLS.height;
 					else 
 						dy += Configurations.MAP_CELLS.height;
 				}
 				return new Vector(dx, dy);
-			}
-			case FIELD_C -> {
-				if(Configurations.MAP_CELLS.height == Configurations.MAP_CELLS.width){
-					//У нас круглый мир. Это сильно упрощает картину!
-					final var r = Configurations.MAP_CELLS.width / 2;
-					//Хотя даже в круглом мире упрощение до жути относительное
-					var dx = second.x - first.x;
-					var dy = second.y - first.y;
-					final var h = Math.sqrt(dx*dx + dy*dy);
-					if(!(-r <= h && h <= r)){
-						//Расстояние больше радиуса. А всем известно, что в таком случае надо тупо идти в другую сторону
-						//Иными словами мы переносим точку через центр
-						if(dx > 0)
-							dx = (int) ((dx * r / h) - dx);
-						else
-							dx += (dx * r / h);
-						if(dy > 0)
-							dy = (int) ((dy * r / h) - dy);
-						else
-							dy += (dy * r / h);
-					}
-					return new Vector(dx, dy);
-				} else {
-					//Эллипс.... Ну всё. Писец.
-					//Я пока не понял, как работает телепортация в мире эллипсов, так что не в этот раз :)
-					//Надо найти радиус, тогда можно провернуть тоже, что и с кругом. Но какой радиус в конкретной точке... Вопрос
-					throw new IllegalArgumentException("К сожалению, разомкнутый мир должен быть только круглым! Я не придумал как обсчитывать элипсы");
-				}
 			}
 			case RECTANGLE, CIRCLE -> {
 				return new Vector(second.x - first.x, second.y - first.y);
 			}
 			default -> throw new AssertionError();
 		}
+	}
+	/**
+	 * Возвращает направление от this к s
+		при условии, если две точки находятся рядом друг с другом
+	 * @param s вторая клетка
+	 * @return направление стрелки от this к s
+
+	 * @throws IllegalArgumentException если расстояние между точками больш 1
+	 */
+	public DIRECTION direction(Point s){
+		return direction(this,s);
 	}
 	/**
 	 * Возвращает направление от f к s
@@ -267,7 +262,7 @@ public class Point{
 		for(var d : DIRECTION.values)
 			if(d.addX == v.x && v.y == d.addY)
 				return d;
-		throw new IllegalArgumentException("Расстояние между точками не должно быть больше 1!");
+		throw new IllegalArgumentException("Расстояние между точками должно быть ровно 1 клетка!");
 	}
 	/**Проверяте точку на принадлежность текущему миру
 	 * @return true, если точка находится на поле
@@ -275,23 +270,23 @@ public class Point{
 	public boolean valid(){
 		switch (Configurations.world_type) {
 			case LINE_H -> {
-				return y > 0 && y < Configurations.MAP_CELLS.height;
+				return y >= 0 && y < Configurations.MAP_CELLS.height;
 			}
 			case LINE_V -> {
-				return x > 0 && x < Configurations.MAP_CELLS.width;
+				return x >= 0 && x < Configurations.MAP_CELLS.width;
 			}
 			case RECTANGLE -> {
-				return y > 0 && y < Configurations.MAP_CELLS.height && x > 0 && x < Configurations.MAP_CELLS.width;
+				return y >= 0 && y < Configurations.MAP_CELLS.height && x >= 0 && x < Configurations.MAP_CELLS.width;
 			}
 			case CIRCLE -> {
 				if(Configurations.MAP_CELLS.height == Configurations.MAP_CELLS.width){
-					final var r = Configurations.MAP_CELLS.width / 2;
-					return Math.pow(r - x, 2) + Math.pow(r - y, 2) < r*r; //Уравнение окружности - x*x + y*y = r*r
+					final var r = Configurations.MAP_CELLS.width / 2d;
+					return Math.pow((r - 0.5) - x, 2) + Math.pow((r-0.5) - y, 2) < r*r; //Уравнение окружности - x*x + y*y = r*r
 				} else {
 					throw new IllegalArgumentException("К сожалению, разомкнутый мир должен быть только круглым! Я не придумал как обсчитывать элипсы");
 				}
 			}
-			case FIELD_R, FIELD_C-> {
+			case FIELD_R-> {
 				return true;
 			}
 			default -> throw new AssertionError();
@@ -343,27 +338,6 @@ public class Point{
 						this.y += Configurations.MAP_CELLS.height;
 				}else{
 					this.y = y;
-				}
-			}
-			case FIELD_C -> {
-				if(Configurations.MAP_CELLS.height == Configurations.MAP_CELLS.width){
-					//У нас круг. Точки телепортируются через центр поля
-					final var r = Configurations.MAP_CELLS.width / 2;
-					//Найдём расстояние от заданных координат до центра окружности
-					final var vec = new Vector(r - x, r - y);
-					if(vec.getHypotenuse() > r){
-						//Мы находимся от центра дальше радиуса... Надо двигаться к центру
-						//Вот на столько шагов
-						final var h = ((int)vec.getHypotenuse()) + r;
-						final var scale = h - h % Configurations.MAP_CELLS.width;
-						this.x = (int) (x + (vec.x / vec.getHypotenuse()) * scale);
-						this.y = (int) (y + (vec.y / vec.getHypotenuse()) * scale);
-					} else {
-						this.x = x;
-						this.y = y;
-					}
-				} else {
-					throw new IllegalArgumentException("К сожалению, разомкнутый мир должен быть только круглым! Я не придумал как обсчитывать элипсы");
 				}
 			}
 			default -> throw new AssertionError();
