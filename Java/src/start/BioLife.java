@@ -1,113 +1,33 @@
 package start;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
-import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Toolkit;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.text.MessageFormat;
 
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.SwingConstants;
-import javax.swing.border.EmptyBorder;
-
-import MapObjects.CellObject;
-import java.io.File;
-import javax.swing.JToolTip;
-import javax.swing.Popup;
-import javax.swing.PopupFactory;
 import javax.swing.UIManager;
 import Calculations.Configurations;
-import Calculations.World;
-import GUI.BotInfo;
-import GUI.EvolTreeDialog;
-import GUI.Legend;
-import GUI.Menu;
-import GUI.Settings;
+import static Calculations.Configurations.world;
+import GUI.MainFrame;
+import MapObjects.CellObject;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.text.MessageFormat;
+import java.util.HashMap;
 
-public class BioLife extends JFrame implements Configurations.EvrySecondTask{
-	/**Центральная панель, на которой всё и происходит*/
-	private final JPanel contentPane;
-	/**Где последний раз видели мышку*/
-	private java.awt.Point mousePoint = null;
-	/**Панелька с миром*/
-	private JScrollPane scrollPane;
-	/**Дерево эволюции*/
-	private final EvolTreeDialog dialog = new EvolTreeDialog();
-	
-	private JMenuItem startRecord;
+public class BioLife{
 	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
-	private	static final double PIXEL_PER_CELL = 10;
+	public	static final double PIXEL_PER_CELL = 10;
 	
-	/**Предыдущий шаг сохранения*/
-	private long lastSave = 0;
-	/**Период сохранения, шаги эволюции*/
-	private long savePeriod = 100_000;
-	/**Сколько файлов автосохранения держать*/
-	private final int COUNT_SAVE = 3;
-
-	/**Фабрика создания всплывающей подсказки*/
-	private PopupFactory popupFactory;
-	/**Окно подсказки*/
-	private static Popup popup;
-	/**Сама подсказка*/
-	private JToolTip t;
-	
-	/**Слушатель событий мыши*/
-	private class MouseMoveAdapter extends MouseAdapter{
-		private Point origin;
-
-		@Override
-		public void mousePressed(MouseEvent e) {
-			origin = new Point(e.getPoint());
-		}
-
-		@Override
-		public void mouseDragged(MouseEvent e) {
-			if (origin != null && !Configurations.menu.isSelectedCell()) {
-				final var viewport = scrollPane.getViewport();
-				int deltaX = origin.x - e.getX();
-				int deltaY = origin.y - e.getY();
-
-				Rectangle view = viewport.getViewRect();
-				view.x += deltaX;
-				view.y += deltaY;
-
-				/*Configurations.world.scrollRectToVisible(view);*/ throw new AssertionError();
-			}
-		}
-
-		@Override
-		public void mouseMoved(MouseEvent e){mousePoint = e.getPoint();}
-		@Override
-		public void mouseExited(MouseEvent e) { mousePoint = null;}
-		
-
-	}
-	/**Поток, который автоматически стартует при создании*/
-	class AutostartThread extends Thread{private AutostartThread(Runnable target){super(target);start();} private static void start(Runnable target){new Thread(target).start();}}
-
 	/**Точка входа в приложение
 	 * @param args аргументы командной строки
 	 */
 	public static void main(String[] args) {
 		final var _opts = new Utils.CMDOptions(args);
+		_opts.add(new Utils.CMDOptions.Option('V',"Не запускать GUI, приложение останется в консольном варианте"));
+		_opts.add(new Utils.CMDOptions.Option('W',100,700,10000,1d,"Ширина мира для запуска без GUI"));
+		_opts.add(new Utils.CMDOptions.Option('H',100,700,10000,1d,"Высота мира для запуска без GUI"));
 		_opts.add(new Utils.CMDOptions.Option('h',"Печать справки по драйверу"));
 		//Обработка опций
 		var print_help = _opts.get('h').get(Boolean.class) ? (false ? 1 : 2) : 0;
@@ -131,22 +51,27 @@ public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 				optsStr += String.format("-%s%s ",i.getKey(), i.getValue());
 			System.out.println("Опции находятся в допустимых пределах. Параметры запуска: " + optsStr);
 		}
-		//Обработка переменных окружения
-		//Настраиваем буковки
-		Configurations.defaultFont = new java.awt.Font("Default", Font.BOLD, 12);
-		Configurations.smalFont = Configurations.defaultFont.deriveFont(10f);
 		//Создаём мир
-		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
-		//Configurations.makeWorld((int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL)); //120 - пикселей на верхнюю и нижнюю шапочки
-		Configurations.settings = new Settings();
-		Configurations.legend = new Legend();
-		Configurations.info = new BotInfo();
-		Configurations.menu = new Menu();
-				
-		setUIFont(new javax.swing.plaf.FontUIResource(Configurations.defaultFont));
-		
-		//Запускаем приложение!
-		EventQueue.invokeLater(() -> {try {new BioLife().setVisible(true);} catch (Exception e) {e.printStackTrace();}});		
+		if(!_opts.get('V').get(Boolean.class)){
+			//С графической частью
+			Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
+			 //120 - пикселей на верхнюю и нижнюю шапочки
+			Configurations.makeWorld(Configurations.WORLD_TYPE.LINE_H,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL), new HashMap<CellObject.LV_STATUS, Integer>(){{put(CellObject.LV_STATUS.LV_ORGANIC, 2);}});
+			
+			//Обработка переменных окружения
+			//Настраиваем буковки
+			Configurations.defaultFont = new java.awt.Font("Default", Font.BOLD, 12);
+			Configurations.smalFont = Configurations.defaultFont.deriveFont(10f);
+			setUIFont(new javax.swing.plaf.FontUIResource(Configurations.defaultFont));
+			
+			EventQueue.invokeLater(() -> {try {new MainFrame().setVisible(true);} catch (Exception e) {e.printStackTrace();}});
+			//Configurations.world.start();
+		} else {
+			//Только с матаном
+			Configurations.makeWorld(Configurations.WORLD_TYPE.LINE_H,_opts.get('W').get(Integer.class), _opts.get('H').get(Integer.class), new HashMap<CellObject.LV_STATUS, Integer>(){{put(CellObject.LV_STATUS.LV_ORGANIC, 2);}});
+			Configurations.world.start();
+			start();
+		}
 	}
 	/**Сохраняет шрифты по умолчанию для всего приложения
 	 * @param f 
@@ -161,263 +86,66 @@ public class BioLife extends JFrame implements Configurations.EvrySecondTask{
 			}
 		}
 	}
-
-	/**
-	 * Create the frame.
-	 */
-	public BioLife() {
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
-		//8 - это потому что 5/8 это примерно 60% экрана. 
-		//А 4.5 - потому что именно при соотношении в 5 раз начинается детальная отрисовка клеток
-		//а это нехило так роняет ФПС
-		if(PIXEL_PER_CELL > 8)
-			setBounds(100, 100, (int) (sSize.getWidth() * 4.5 / PIXEL_PER_CELL), (int)((sSize.getHeight()) * 4.5 / PIXEL_PER_CELL));
-		else
-			setBounds(100, 100, (int) (sSize.getWidth() / 2), (int)((sSize.getHeight()) / 2));
+	/**Функция управления миром через консоль */
+	private static void start() {
+		printTitle();
+		System.out.println(Configurations.getProperty(BioLife.class,"help"));
 		
-		contentPane = new JPanel();
-		contentPane.setBackground(Color.WHITE);
-		contentPane.setBorder(new EmptyBorder(5, 5, 5, 2));
-		contentPane.setLayout(new BorderLayout(0, 0));
-		setContentPane(contentPane);
-
-		contentPane.add(makePanel(Configurations.settings, "Settings", BorderLayout.EAST), BorderLayout.EAST);
-		contentPane.add(makePanel(Configurations.legend, "Legend", BorderLayout.SOUTH), BorderLayout.SOUTH);
-		contentPane.add(makePanel(Configurations.info,"BotInfo", BorderLayout.WEST), BorderLayout.WEST);
-		contentPane.add(makeWorldPanel(), BorderLayout.CENTER);
-		contentPane.add(makePanel(Configurations.menu, "Menu", BorderLayout.NORTH), BorderLayout.NORTH);
-		
-		addKeyListener(new KeyAdapter() {
-			@Override
-			public void keyPressed(KeyEvent e) {BioLife.this.keyPressed(e);}
-		});
-		
-		addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e) {
-				Configurations.settings.save();
+		try(final var reader = new BufferedReader(new InputStreamReader(System.in));){
+			var lut = System.currentTimeMillis() / 1000;
+			var lastSave = 0l;
+			while(true){
+				var nut = System.currentTimeMillis() / 1000;
+				if(reader.ready()){
+					final var ch = reader.readLine();
+					switch (ch) {
+						case "p","P" -> {
+							if(Configurations.world.isActiv()) {
+								Configurations.world.stop();
+								printTitle();
+							} else {
+								Configurations.world.start();
+							}
+						}
+						default -> {
+							System.out.println(Configurations.getProperty(BioLife.class,"help"));
+						}
+					}
+				}
+				if(nut - lut > 10){ //Каждые 60 с
+					if(Configurations.world.isActiv()){
+						printTitle();
+						//Автосохранение
+						if(Math.abs(world.step - lastSave) > Configurations.SAVE_PERIOD){
+							var list = new File[Configurations.COUNT_SAVE];
+							for(var i = 0 ; i < Configurations.COUNT_SAVE ; i++){
+								list[i] = new File("autosave" + (i+1) + ".zbmap");
+							}
+							var save = list[0];
+							for(var i = 1 ; i < Configurations.COUNT_SAVE && save.exists(); i++){
+								if(!list[i].exists() || save.lastModified() > list[i].lastModified())
+									save = list[i];
+							}
+							Configurations.save(save.getName());
+						}
+						lastSave = world.step;
+					}
+					lut = nut;
+				}
+				Utils.Utils.pause(1);
 			}
-		});
-		/*
-		t = Configurations.world.createToolTip();
-		t.setTipText(Configurations.getProperty(BioLife.class,"autosave"));
-		popupFactory = PopupFactory.getSharedInstance();
-		
-		Configurations.addTask(this);*/ throw new AssertionError();
+		} catch(IOException ex){
+			System.out.println(ex);
+			System.out.println("Закончили работу...");
+		}
 	}
 	
-	@Override
-	public void taskStep() {/*
-		final var world = Configurations.world;
-		String title = MessageFormat.format(Configurations.getProperty(BioLife.class,"title"), world.fps.FPS(), world.step,
-				world.pps.FPS(), world.countLife, world.countOrganic, world.countPoison, world.countWall, world.isActiv() ? ">" : "||");
-		setTitle(title);
-		if (dialog.isVisible())
-			dialog.repaint();
-		world.repaint();
-
-		//Автосохранение
-		if(Math.abs(world.step - lastSave) > savePeriod){
-			if(world.isActiv()){
-				//Если мир пассивный - то с чего мы вдруг решили его начать сохранять? Может он только загружен?
-				final var loc = scrollPane.getLocationOnScreen();
-				if(popup != null)
-					popup.hide();
-				popup = popupFactory.getPopup(Configurations.world, t,loc.x + scrollPane.getWidth() / 2, loc.y + scrollPane.getHeight() / 2);
-				popup.show();
-
-				var list = new File[COUNT_SAVE];
-				for(var i = 0 ; i < COUNT_SAVE ; i++){
-					list[i] = new File("autosave" + (i+1) + ".zbmap");
-				}
-				var save = list[0];
-				for(var i = 1 ; i < COUNT_SAVE && save.exists(); i++){
-					if(!list[i].exists() || save.lastModified() > list[i].lastModified())
-						save = list[i];
-				}
-				Configurations.settings.save(save.getName());
-				if(popup != null){
-					popup.hide();
-					popup = null;
-				}
-			}
-			lastSave = world.step;
-		}*/ throw new AssertionError();
-	}
-
-	/**Так как мир несколько особенный, то тут создаётся центральная панель, на которой будет рисоваться мир
-	 * @return панель мира
-	 */
-	private Component makeWorldPanel() {
-		/*scrollPane = new JScrollPane(){
-		    @Override
-		    protected void processMouseWheelEvent(MouseWheelEvent e) {
-		    	mouseWheel(e);
-		        super.processMouseWheelEvent(e);
-		    }
-		};
-		final var viewport = scrollPane.getViewport();
-		scrollPane.addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentResized(ComponentEvent e) {
-				
-				var scale = (Math.pow(5,(Configurations.settings.getScale()-1) / 100d));
-				var newW = (int) (scrollPane.getWidth() * scale) - 10;
-				var newH = (int) (scrollPane.getHeight() * scale) - 10;
-				var horizont = scrollPane.getHorizontalScrollBar();
-				var vertical = scrollPane.getVerticalScrollBar(); 
-				
-				if(scale > 1) {
-					newH = (int) ((newW * (1 + (Configurations.UP_border + Configurations.DOWN_border)) * Configurations.MAP_CELLS.height) / Configurations.MAP_CELLS.width);
-					
-					horizont.setUnitIncrement(Math.max(1, newW / 100));
-					vertical.setUnitIncrement(Math.max(1, newH / 100));
-				}
-				
-				var lastP = mousePoint;
-				if(lastP == null){
-					lastP = viewport.getViewPosition();
-					lastP.x += viewport.getWidth()/2;
-					lastP.y += viewport.getHeight()/2;
-				}
-				var Zw = ((double) newW) / Configurations.world.getWidth();
-				var Zh = ((double) newH) / Configurations.world.getHeight();
-				
-				Configurations.world.setPreferredSize(new Dimension(newW,newH));
-
-				int newX = (int) ((lastP.x *= Zw) - viewport.getWidth()/2);
-				int newY = (int) ((lastP.y *= Zh) - viewport.getHeight()/2);
-				EventQueue.invokeLater(() -> viewport.setViewPosition(new Point(Math.max(0, newX), Math.max(0,newY))));
-			}
-		});
-		
-		viewport.addChangeListener(e -> EventQueue.invokeLater(() ->{
-			if(Configurations.settings.getScale() > 1){
-				var horizont = scrollPane.getHorizontalScrollBar();
-				var vertical = scrollPane.getVerticalScrollBar();
-				var xMin = Math.max(0, Calculations.Point.rxToX(horizont.getValue()));
-				var xMax = Math.min(Configurations.MAP_CELLS.width - 1,Calculations.Point.rxToX(horizont.getValue() + viewport.getSize().width));
-				var yMin = Math.max(0, Calculations.Point.ryToY(vertical.getValue()));
-				var yMax = Math.min(Configurations.MAP_CELLS.height - 1,Calculations.Point.ryToY(vertical.getValue() + viewport.getSize().height));
-				Configurations.world.setVisible(new Calculations.Point(xMin, yMin),new Calculations.Point(xMax, yMax));
-			} else {
-				Configurations.world.setVisible(new Calculations.Point(0, 0),new Calculations.Point(Configurations.MAP_CELLS.width - 1, Configurations.MAP_CELLS.height - 1));
-			}
-		}));
-		Configurations.settings.setListener(scrollPane);
-		scrollPane.setViewportView(Configurations.world);
-		var adapter = new MouseMoveAdapter();
-		Configurations.world.addMouseListener(adapter);
-		Configurations.world.addMouseMotionListener(adapter);
-		return scrollPane;*/ throw new AssertionError();
-	}
-	
-	private Component makePanel(JPanel panel, String name, String borderLayoutConst) {
-		JPanel panel_2 = new JPanel();
-		panel_2.setLayout(new BorderLayout(0, 0));
-		
-		JLabel label = new JLabel();
-		label.setFont(Configurations.smalFont);
-		switch (borderLayoutConst) {
-			case BorderLayout.EAST -> label.setHorizontalAlignment(SwingConstants.RIGHT);
-			case BorderLayout.WEST -> label.setHorizontalAlignment(SwingConstants.LEFT);
-			default -> label.setHorizontalAlignment(SwingConstants.CENTER);
-		}
-		label.addMouseListener(new MouseAdapter() {
-			boolean isActive = false;
-			@Override
-			public void mouseClicked(MouseEvent e) {mouseClicked_panel(panel,label,name,isActive=!isActive, borderLayoutConst);}
-		});
-		panel_2.add(panel, BorderLayout.CENTER);
-		switch (borderLayoutConst) {
-			case BorderLayout.EAST -> panel_2.add(label, BorderLayout.WEST);
-			case BorderLayout.WEST -> panel_2.add(label, BorderLayout.EAST);
-			case BorderLayout.SOUTH -> panel_2.add(label, BorderLayout.NORTH);
-			case BorderLayout.NORTH -> panel_2.add(label, BorderLayout.SOUTH);
-			default ->	throw new IllegalArgumentException("Unexpected value: " + borderLayoutConst);
-		};
-		mouseClicked_panel(panel,label,name,false, borderLayoutConst);
-		return panel_2;
-	}
-	/**Превращает текст в вертикальный
-	 * @param text текст, который надо преобразовать
-	 * @return текст, записанный на языке html который уже будет отображён как вертикальный
-	 */
-	private String toVerticalText(String text) {
-		StringBuilder sb = new StringBuilder(20 + text.length() * 5);
-		sb.append("<html>");
-		for(var i = 0 ; i < text.length() ; i++) {
-			sb.append(text.charAt(i));
-			sb.append("<br>");
-		}
-		//И ещё небольшой отпуск снизу
-		sb.append("<br>");
-		return sb.toString();
-	}
-	/**Клик на панели с целью её выдвинуть
-	 * @param panel панель, которую двигаем
-	 * @param panel_Label объект текста панели
-	 * @param name название панели
-	 * @param isActive выдвинули панель или задвинули?
-	 * @param borderLayoutConst какое местоположение панели?
-	 */
-	private void mouseClicked_panel(JPanel panel ,JLabel panel_Label, String name, boolean isActive, String borderLayoutConst) {
-		String symbol =  "" + switch (borderLayoutConst) {
-			case BorderLayout.EAST -> isActive ? "&GT;" : "&lt;";
-			case BorderLayout.WEST -> !isActive ? "&GT;" : "&lt;";
-			case BorderLayout.SOUTH -> isActive ? "  \\/" : "  /\\";
-			case BorderLayout.NORTH -> !isActive ? "  \\/" : "  /\\";
-			default ->	throw new IllegalArgumentException("Unexpected value: " + borderLayoutConst);
-		};
-		panel.setVisible(isActive);
-		switch (borderLayoutConst) {
-			case BorderLayout.EAST , BorderLayout.WEST -> panel_Label.setText(toVerticalText(Configurations.getProperty(BioLife.class, name)) + symbol);
-			case BorderLayout.SOUTH, BorderLayout.NORTH -> panel_Label.setText(Configurations.getProperty(BioLife.class, name) + symbol);
-		}
-		
-		if (!isActive) {
-			BioLife.this.toFront();
-			BioLife.this.requestFocus();
-		}
-	}
-	/**Колёсико мышки
-	 * @param e 
-	 */
-	private void mouseWheel(MouseWheelEvent e) {
-		if (e.isControlDown()) {
-			Configurations.settings.addScale(-e.getWheelRotation() * 10);
-        }
-	}
-	/**Нажали какую-то кнопку
-	 * @param e 
-	 */
-	private void keyPressed(KeyEvent e) {
-		//System.out.println(e);
-       		switch (e.getKeyCode()) {
-			case KeyEvent.VK_SPACE -> {
-				if (Configurations.world.isActiv())
-					Configurations.world.stop();
-				else
-					Configurations.world.start();
-			}
-			case KeyEvent.VK_S -> {
-				if ((e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0)
-					Configurations.settings.save();
-				else
-					AutostartThread.start(() -> Configurations.world.step());
-			}
-			case KeyEvent.VK_W ->
-				AutostartThread.start(() -> {
-					CellObject cell = Configurations.info.getCell();
-					if (cell != null)
-						cell.step(Math.round(Math.random() * 1000));
-				});
-			case KeyEvent.VK_E ->
-				AutostartThread.start(() -> {
-					CellObject cell = Configurations.info.getCell();
-					if (cell != null)
-						Configurations.info.step();
-				});
-		}
+	private static void printTitle(){
+		System.out.println("\n-------------------");
+		String title = MessageFormat.format(Configurations.getProperty(BioLife.class,"title"), world.step,
+				world.pps.FPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
+				world.getCount(CellObject.LV_STATUS.LV_POISON), world.getCount(CellObject.LV_STATUS.LV_WALL), world.isActiv() ? ">" : "||");
+		System.out.println(title);
+        System.out.println("-------------------\n");
 	}
 }

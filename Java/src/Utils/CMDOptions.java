@@ -557,6 +557,9 @@ public class CMDOptions implements java.lang.Iterable{
 			} else if(aClass == String.class){
 				if (type == opt_type._string) return (T) real_value;
 				else throw new IllegalArgumentException(String.format("Опция %c имеет тип %s, отличный от строчного",name,type.toString()));
+			}  else if(aClass == java.lang.Integer.class){
+				if (type == opt_type._int) return (T) real_value;
+				else throw new IllegalArgumentException(String.format("Опция %c имеет тип %s, отличный от числового",name,type.toString()));
 			} else {
 				throw new IllegalArgumentException(String.format("Опция %c имеет тип %s, отличный от %s",name,type.toString(),aClass.toString()));
 			}
