@@ -4,16 +4,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.EventListener;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -174,10 +174,13 @@ public class JsonSave {
 					case JOptionPane.CANCEL_OPTION-> {return false;}
 				}
 			}
-			if(save(fileName,isBeautiful,sers)){
+			try{
+				save(fileName,isBeautiful,sers);
 				JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	projectName, JOptionPane.INFORMATION_MESSAGE);
 				return true;
-			} else {
+			}catch(IOException ex){
+				Logger.getLogger(this.getName()).log(Level.SEVERE, null, ex);
+				JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
 				return false;
 			}
 		}
@@ -188,9 +191,10 @@ public class JsonSave {
 	 * @param pathToFile - файл в который будет произведено сохранение
 	 * @param isBeautiful красивое сохранине или в одну строчку
 	 * @param sers объекты, которые надо сохранить
-	 * @return true, если сохранение завершилось успешно
+	 * 
+	 * @throws java.io.IOException возникает при невозможности сохраниться
 	 */
-	public boolean save(String pathToFile,boolean isBeautiful, Serialization ... sers){
+	public void save(String pathToFile,boolean isBeautiful, Serialization ... sers) throws IOException{
 		var startMC = System.currentTimeMillis();
 		var prefMC = startMC;
 		try (ZipOutputStream zout = new ZipOutputStream(new FileOutputStream(pathToFile))) {
@@ -206,11 +210,6 @@ public class JsonSave {
 			}
 			var nmc = System.currentTimeMillis();
 			dispatchEvent(new SaveLoadListener.Event(SaveLoadListener.Event.TYPE.SAVE, sers.length,sers.length,nmc - startMC,nmc - prefMC));
-			return true;
-		} catch (IOException | java.lang.RuntimeException e1) {
-			e1.printStackTrace();
-			JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
-			return false;
 		}
 	}
 	
@@ -238,7 +237,7 @@ public class JsonSave {
 			obj.parse(reader);
 			return true;
 		} catch (Exception e1) {
-			e1.printStackTrace();
+			Logger.getLogger(this.getName()).log(Level.SEVERE, null, ex);
 			JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
@@ -297,7 +296,7 @@ public class JsonSave {
 			JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>Не найден файл " + name, projectName, JOptionPane.ERROR_MESSAGE);
 			return false;
 		} catch (Exception e1) {
-			e1.printStackTrace();
+			Logger.getLogger(this.getName()).log(Level.SEVERE, null, ex);
 			JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
