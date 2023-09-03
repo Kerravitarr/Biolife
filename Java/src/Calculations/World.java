@@ -57,6 +57,8 @@ public class World implements Runnable{
 	private final Thread worldThread;
 	/**Сумма всех живых объектов на начало текущего шага*/
 	private int[] _all_live_cell = new int[CellObject.LV_STATUS.length];
+	/**Указывает, что программа находится в цикле шага*/
+	private boolean isStepCucle = false;
 	
 	
 	/**Возвожное состояние мира*/
@@ -183,7 +185,11 @@ public class World implements Runnable{
 		cellsTask.add(new WorldTask(firstList.toArray(Point[]::new),secondList.toArray(Point[]::new)));
 	}
 	/**Оперции, которые должны быть выполнены до совершения шага мира*/
-	private void preStep(){
+	private synchronized void preStep(){
+		if(isStepCucle)
+			throw new SecurityException("Попытка запустить уже запущенный поток провалена!");
+		else
+			isStepCucle = true;
 		isFirst = Configurations.rnd.nextBoolean();
 	}
 	/**
@@ -224,12 +230,17 @@ public class World implements Runnable{
 		postStep();
 	}
 	/**Операции, которые должны быть выполнены после шага*/
-	private void postStep(){
+	private synchronized void postStep(){
 		Configurations.suns.forEach( s -> s.step(step));
 		Configurations.tree.step();
 
 		pps.interapt();
 		step++;
+		
+		if(!isStepCucle)
+			throw new SecurityException("Попытка остановить не запущенный поток!");
+		else
+			isStepCucle = false;
 	}
 	
 	/**
@@ -240,7 +251,7 @@ public class World implements Runnable{
 	 * 			Вместо OBJECT.NOT_POISON возвращается OBJECT.POISON
 	 */
 	public OBJECT test(Point point) {
-		if(point.getY() < 0 || point.getY() >= Configurations.MAP_CELLS.height)
+		if(!point.valid())
 			return OBJECT.WALL;
 		CellObject cell = get(point);
 		if(cell == null || cell.aliveStatus(LV_STATUS.GHOST))
@@ -259,6 +270,7 @@ public class World implements Runnable{
 	 * @return объект, который там находится. Или null, если там ни чего нет
 	 */
 	public CellObject get(Point point) {
+		assert point.valid() : "Точка " + point + " находится за пределами поля! Её невозможно получить!";
 		return _WORLD_MAP[point.getX()][point.getY()];
 	}
 	/**Добавляет определённый объект на карту в то место, куда он хочет
@@ -266,26 +278,18 @@ public class World implements Runnable{
 	 * @param cell объект, который надо добавить
 	 */
 	public void add(CellObject cell) {
-		if(get(cell.getPos()) != null) {
-			throw new IllegalArgumentException("Объект " + cell + " решил вступть на " + cell.getPos() + ",но тут занято " + get(cell.getPos()) + "!!!");
-		} else if(cell.aliveStatus(LV_STATUS.GHOST)) {
-			throw new IllegalArgumentException("Требуется добавить " + cell + " только вот он уже мёртв!!! ");
-		} else {
-			_WORLD_MAP[cell.getPos().getX()][cell.getPos().getY()] = cell;	
-		}
+		assert get(cell.getPos()) == null : "Объект " + cell + " решил вступть на " + cell.getPos() + ",но тут занято " + get(cell.getPos()) + "!!!";
+		assert !cell.aliveStatus(LV_STATUS.GHOST) : "Требуется добавить " + cell + " только вот он уже мёртв!!! ";
+		_WORLD_MAP[cell.getPos().getX()][cell.getPos().getY()] = cell;	
 	}
 	/**Удаляет объект с карты, с места, которое он занимает
 	 * дополнительно проверяя, что данное поле действительно занято этим объектом
 	 * @param cell объект, которому больше нет места на поле
 	 */
 	public void clean(CellObject cell) {
-		if(get(cell.getPos()) == null) {
-			throw new IllegalArgumentException("Объект нужно удалить с " + cell.getPos() + ", да тут свободо, вот в чём проблема!!!");
-		}else if(cell.aliveStatus(LV_STATUS.GHOST)){
-			throw new IllegalArgumentException("Объект нужно удалить, но " + cell + " уже мёртв!!!");
-		}else {
-			_WORLD_MAP[cell.getPos().getX()][cell.getPos().getY()] = null;
-		}
+		assert get(cell.getPos()) != null : "Объект нужно удалить с " + cell.getPos() + ", да тут свободо, вот в чём проблема!!!";
+		assert !cell.aliveStatus(LV_STATUS.GHOST) : "Объект нужно удалить, но " + cell + " уже мёртв!!!";
+		_WORLD_MAP[cell.getPos().getX()][cell.getPos().getY()] = null;
 	}
 	/**
 	 * Перемещает клетку в новую позицию
@@ -324,9 +328,92 @@ public class World implements Runnable{
 				add(cell);
 			}
 		}
-		
+	}
+	/**
+	 * Показывает состояние работы мира 
+	 * @return true, если включён автоматических ход мира
+	 */
+	public boolean isActiv(){
+		return _status == STATUS.ACTIV_ALL ||  _status == STATUS.ACTIV_SLOW;
+	}
+	/**Останавливает работу мира*/
+	public void stop(){
+		if(_status == STATUS.ACTIV_ALL)
+			_status = STATUS.STOP;
+	}
+	/**Останавливает работу мира и не возвращает управление, пока мир действительно не остановится*/
+	public void awaitStop(){
+		if(!isActiv()) return;
+		stop();
+		Utils.pause_ms(100);
+		while(isStepCucle){
+			Utils.pause_ms(100);
+		}
+	}
+	/**Запускает работу мира*/
+	public void start(){
+		if(_status != STATUS.ERROR)
+			_status = STATUS.ACTIV_ALL;
+	}
+	/**Возвращает количество существующих объектов того или иного типа
+	 * 
+	 * @param type тип интересующего объекта
+	 * @return количество объектов такого типа
+	 */
+	public int getCount(CellObject.LV_STATUS type){
+		return _all_live_cell[type.ordinal()];
+	}
+	
+	/**
+	 * Загружает только одну клетку по координатам
+	 * @param cell описание клетки
+	 * @param x координата Х
+	 * @param y координата У
+	 * @return true только для подходящей клетки
+	 */
+	@SuppressWarnings("unused")
+	private boolean loadOneCell(JSON cell, int x, int y) {
+		Point pos = new Point(cell.getJ("pos"));
+		return pos.getX() == x && pos.getY() == y;
+	}
+	/**
+	 * Загружает только один столбец
+	 * @param cell описание клетки
+	 * @param x координата Х
+	 * @return true только для подходящей клетки
+	 */
+	@SuppressWarnings("unused")
+	private boolean loadColumn(JSON cell, int x) {
+		Point pos = new Point(cell.getJ("pos"));
+		return pos.getX() == x;
+	}
+	/**
+	 * Загружает все клетки в радиусе
+	 * @param cell описание клетки
+	 * @param x координата Х
+	 * @param y координата У
+	 * @param r радиус
+	 * @return true только для подходящей клетки
+	 */
+	@SuppressWarnings("unused")
+	private boolean loadR(JSON cell,  int x, int y, int r) {
+		Point pos = new Point(cell.getJ("pos"));
+		int delx = Math.abs(pos.getX() - x);
+		int dely = Math.abs(pos.getY() - y);
+		return dely <= r && (delx <= r || delx >= (Configurations.MAP_CELLS.width-r));
 	}
 
+	/**
+	 * Загружает клетку и её соседенй по координатам
+	 * @param cell описание клетки
+	 * @param x координата Х
+	 * @param y координата У
+	 * @return true только для подходящей клетки
+	 */
+	@SuppressWarnings("unused")
+	private boolean loadNineCell(JSON cell, int x, int y) {
+		return loadR(cell,x,y,1);
+	}
 	public synchronized void update(JSON json) {
 		StreamProgressBar sb = new StreamProgressBar();
 		sb.addEvent("Загрузка началась");
@@ -395,76 +482,6 @@ public class World implements Runnable{
 		worldGenerate();
 		sb.event();
 		sb.event();
-	}
-	
-	/**
-	 * Загружает только одну клетку по координатам
-	 * @param cell описание клетки
-	 * @param x координата Х
-	 * @param y координата У
-	 * @return true только для подходящей клетки
-	 */
-	@SuppressWarnings("unused")
-	private boolean loadOneCell(JSON cell, int x, int y) {
-		Point pos = new Point(cell.getJ("pos"));
-		return pos.getX() == x && pos.getY() == y;
-	}
-	/**
-	 * Загружает только один столбец
-	 * @param cell описание клетки
-	 * @param x координата Х
-	 * @return true только для подходящей клетки
-	 */
-	@SuppressWarnings("unused")
-	private boolean loadColumn(JSON cell, int x) {
-		Point pos = new Point(cell.getJ("pos"));
-		return pos.getX() == x;
-	}
-	/**
-	 * Загружает все клетки в радиусе
-	 * @param cell описание клетки
-	 * @param x координата Х
-	 * @param y координата У
-	 * @param r радиус
-	 * @return true только для подходящей клетки
-	 */
-	@SuppressWarnings("unused")
-	private boolean loadR(JSON cell,  int x, int y, int r) {
-		Point pos = new Point(cell.getJ("pos"));
-		int delx = Math.abs(pos.getX() - x);
-		int dely = Math.abs(pos.getY() - y);
-		return dely <= r && (delx <= r || delx >= (Configurations.MAP_CELLS.width-r));
-	}
-
-	/**
-	 * Загружает клетку и её соседенй по координатам
-	 * @param cell описание клетки
-	 * @param x координата Х
-	 * @param y координата У
-	 * @return true только для подходящей клетки
-	 */
-	@SuppressWarnings("unused")
-	private boolean loadNineCell(JSON cell, int x, int y) {
-		return loadR(cell,x,y,1);
-	}
-
-	
-	/**
-	 * Показывает состояние работы мира 
-	 * @return true, если включён автоматических ход мира
-	 */
-	public boolean isActiv(){
-		return _status == STATUS.ACTIV_ALL ||  _status == STATUS.ACTIV_SLOW;
-	}
-	/**Останавливает работу мира*/
-	public void stop(){
-		if(_status == STATUS.ACTIV_ALL)
-			_status = STATUS.STOP;
-	}
-	/**Запускает работу мира*/
-	public void start(){
-		if(_status != STATUS.ERROR)
-			_status = STATUS.ACTIV_ALL;
 	}
 	private class JSONSerialization extends JsonSave.JSONSerialization{
 
