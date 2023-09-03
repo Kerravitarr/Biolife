@@ -13,10 +13,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.GroupLayout;
@@ -38,10 +36,8 @@ import MapObjects.Poison;
 import MapObjects.dna.CommandDNA;
 import MapObjects.dna.DNA;
 import Utils.MyMessageFormat;
-import Utils.SameStepCounter;
 import Utils.Utils;
 import java.awt.EventQueue;
-import java.awt.Graphics;
 import java.util.Map;
 import Calculations.Configurations;
 import Calculations.Point;
@@ -296,7 +292,6 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 	 * Create the panel.
 	 */
 	public BotInfo() {
-		Configurations.info = this;
 		
 		scrolFieldList = new HashSet<>();
 		

@@ -21,14 +21,20 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import GUI.BotInfo;
+import GUI.DefaultViewer;
 import GUI.EvolTreeDialog;
 import GUI.Legend;
 import GUI.Menu;
 import GUI.Settings;
+import GUI.Viewers;
 import MapObjects.CellObject;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 
 /**
  * Так как некоторые переменные мира используются повсеместно
@@ -50,6 +56,10 @@ public class Configurations extends JsonSave.JSONSerialization{
 	 */
 	public static Map<CellObject.LV_STATUS, Integer> gravitation;
 	
+	/**Период сохранения, шаги эволюции*/
+	public static final long SAVE_PERIOD = 100_000;
+	/**Сколько файлов автосохранения держать*/
+	public static final int COUNT_SAVE = 3;
 	
 	/**Степень мутагенности воды [0,100]*/
 	public static int AGGRESSIVE_ENVIRONMENT = 0;
@@ -61,17 +71,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 	//И не могут меняться пока мир неизменен
 	public static int DAGGRESSIVE_ENVIRONMENT = Configurations.AGGRESSIVE_ENVIRONMENT;
 	public static int DTIK_TO_EXIT = Configurations.TIK_TO_EXIT;
-	
-	//Отображение карты на экране
-	/**Масштаб*/
-	public static double scale = 1;
-	/**Высота" неба в процентах"*/
-	public static double UP_border = 0.01;
-	/**Высота" земли в процентах"*/
-	public static double DOWN_border = 0.01;
-	/**Дополнительный край из-за не совершенства арены*/
-	public static Dimension border = new Dimension();
-	
+
 	//Разные глобальные объекты, отвечающие за мир
 	/**Глобальный мир!*/
 	public static World world = null;
@@ -83,19 +83,12 @@ public class Configurations extends JsonSave.JSONSerialization{
 	public static List<Stream> streams = null;
 	/**Эволюционное дерево мира*/
 	public static EvolutionTree tree = null;
-
-	//Вспомогательные панели
-	/**Сюда отправляем бота, для его изучения*/
-	public static BotInfo info = null;
-	/**Настройки мира*/
-	public static Settings settings = null;
-	/**Меню мира со всеми его кнопочками*/
-	public static Menu menu = null;
-	/**Легенда мира, как его раскрашивать?*/
-	public static Legend legend = null;
-	/**Дерево эволюции*/
-	public static EvolTreeDialog evolTreeDialog = null;
 	
+	//Графическая часть
+	/**Указатель на глобальный объект отображения. Тут прячутся все наборы панелей, которые в настоящий момент показываются на экране*/
+	private static Viewers _viewers = null;
+	/**Отдельное окно с отображением дерева эволюции*/
+	public static EvolTreeDialog evolTreeDialog = null;	
 	
 	//Общие классы для программы
 	/**ГСЧ для симуляции*/
@@ -132,8 +125,14 @@ public class Configurations extends JsonSave.JSONSerialization{
 		FIELD_R,
 		/**Круглый мир, представляющий собой чашку петри*/
 		CIRCLE,
-		/**И, наконец, круглое поле, но без стенок - просто кусок океана*/
-		FIELD_C,
+		/**И, наконец, круглое поле, но без стенок - просто кусок океана ,быть не может.
+		 Тут вообще хорошо-бы расписать доказательство, но сводится оно к простой истине - 
+		 длина стенки мира всегда меньше, чем длина стенки на 1 клетку дальше. Поэтому отображения
+		 1 к 1 быть не может
+		 Ещё можно обосновать через сумму углов, которая становится больше 360... В общем в декартовой системе
+		 Это не реально
+		 */
+		//FIELD_C,
 	}
 	
 	@Override
@@ -221,7 +220,38 @@ public class Configurations extends JsonSave.JSONSerialization{
 	public static double getSunPower(Point pos){
 		return suns.stream().reduce(0d, (a,b) -> a + b.getEnergy(pos), Double::sum);
 	}
-	
+	/**Сохраняет текущий вид графического отображения
+	 * @param defaultViewer набор панелей, которые теперь будут на экране
+	 */
+	public static void setViewer(Viewers defaultViewer) {
+		_viewers = defaultViewer;
+	}
+	/**Возвращает текущий комплект отображения
+	 * @return defaultViewer набор панелей, которые теперь будут на экране
+	 */
+	public static Viewers getViewer() {
+		return _viewers;
+	}
+
+	/**Функция сохранения - сохранит мир в определённый файл
+	 * @param filePatch - путь, куда сохранить мир
+	 * @throws java.io.IOException так как мы работаем с файловой системой, мы всегда имеем шансы уйти с ошибкой
+	 */
+	public static void save(String filePatch) throws IOException {
+		boolean oldStateWorld = Configurations.world.isActiv();		
+		while(Configurations.world.isActiv()){ //На всякий случай убеждаемся, что мир прям точно встал!
+			Configurations.world.stop();
+			Utils.Utils.pause(1);
+		}
+
+		var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
+		js.addActionListener( e-> System.out.println("Автосохранение " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
+		js.save(filePatch,true, new Configurations(), Configurations.tree, Configurations.world.serelization());
+		if (oldStateWorld)
+			Configurations.world.start();
+		else
+			Configurations.world.stop();
+	}
 	/**
 	 * Возвращает строку описания для определённого класса
 	 * @param cls - класс, в котором эта строка находится
@@ -289,6 +319,11 @@ public class Configurations extends JsonSave.JSONSerialization{
 			button.setRolloverIcon(new ImageIcon(icon_select.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
 		else if(icon_const != null)
 			button.setRolloverIcon(new ImageIcon(icon_const.getImage().getScaledInstance(10, 10, Image.SCALE_SMOOTH)));
+		
+		button.setBorderPainted(false);
+		button.setFocusPainted(false);
+		button.setContentAreaFilled(false);
+		button.setFocusable(false);
 	}
 	
 	/**Тестирует шрифт на возможность вывода на экран всех ключей.
@@ -324,8 +359,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 				try {
 					task.taskStep();
 				} catch (Exception ex) {
-					System.err.println(ex);
-					ex.printStackTrace(System.err);
+					Logger.getLogger(Configurations.class.getName()).log(Level.SEVERE, null, ex);
 				}
 			}, ms, ms, TimeUnit.MILLISECONDS);
 	}

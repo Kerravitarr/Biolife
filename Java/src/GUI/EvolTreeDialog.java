@@ -248,9 +248,9 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	
 	@Override
     public void taskStep() {
-		if (Configurations.legend.getMode() == Legend.MODE.EVO_TREE){
+		/*if (Configurations.legend.getMode() == Legend.MODE.EVO_TREE){
 			updateColor();
-		}
+		}*/
 		if(EvolTreeDialog.this.isVisible()){
 			rootPair = countPair(rootNode);
 		}

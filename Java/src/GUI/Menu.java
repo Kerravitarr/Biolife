@@ -1,9 +1,7 @@
 package GUI;
 
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.event.ActionListener;
-import java.util.concurrent.TimeUnit;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -17,12 +15,8 @@ import java.awt.EventQueue;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.List;
-import javax.swing.JFileChooser;
 import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import Calculations.Configurations;
 
 public class Menu extends JPanel implements Configurations.EvrySecondTask{
@@ -58,13 +52,12 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	 * Create the panel.
 	 */
 	public Menu() {
-		Configurations.menu = this;
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 		
 		//Конфигурация мира
 		//Рестарт
-		add(makeButton("save", e-> Configurations.settings.save()));
-		add(makeButton("load", e-> Configurations.settings.load()));
+		add(makeButton("save", e-> save()));
+		add(makeButton("load", e-> load()));
 		//add(makeButton("search", e-> System.out.println(e)));
 		add(start = makeButton("play", e -> {if (Configurations.world.isActiv())Configurations.world.stop();else Configurations.world.start();} ));
 		add(record = makeButton("record", e-> record()));
@@ -227,5 +220,14 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			try {gifs.close();} catch (IOException e1) {e1.printStackTrace();}
 			gifs = null;
 		}
+	}
+	
+	/**Открывает окошечко сохранения мира и... Сохраняет мир, собственно*/
+	public void save() {
+		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+	}
+	/**Открывает окошечко загрузки мира и... Загружает мир, собственно*/
+	public void load() {
+		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
 	}
 }

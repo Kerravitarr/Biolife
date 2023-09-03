@@ -86,9 +86,8 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	 * Create the panel.
 	 */
 	public Legend() {
-		setLayout(new BorderLayout(0, 0));
-		Configurations.legend = this;
-		
+		setName("Legend");
+		setLayout(new BorderLayout(0, 0));		
 		
 		panel = new JPanel();
 		panel.setBorder(new BevelBorder(BevelBorder.LOWERED, null, null, null, null));
