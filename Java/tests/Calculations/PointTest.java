@@ -54,10 +54,10 @@ public class PointTest {
 	 ‾‾‾‾‾‾‾‾‾‾‾‾
 	 */
 	public void makeRECTANGLEWorld(){
-		Configurations.makeWorld(Configurations.WORLD_TYPE.RECTANGLE, 10, 10, null);
+		Configurations.buildMap(Configurations.WORLD_TYPE.RECTANGLE, 10, 10, null);
 	}
 	/**Создаёт Пруд мир
-	 ____________
+	 __________
 	 **********
 	 **********
 	 **********
@@ -68,10 +68,10 @@ public class PointTest {
 	 **********
 	 **********
 	 **********
-	 ‾‾‾‾‾‾‾‾‾‾‾‾
+	 ‾‾‾‾‾‾‾‾‾‾
 	 */
 	public void makeLINE_HWorld(){
-		Configurations.makeWorld(Configurations.WORLD_TYPE.LINE_H, 10, 10, null);
+		Configurations.buildMap(Configurations.WORLD_TYPE.LINE_H, 10, 10, null);
 	}
 	/**Создаёт реку мир
 	 
@@ -88,7 +88,7 @@ public class PointTest {
 	
 	 */
 	public void makeLINE_VWorld(){
-		Configurations.makeWorld(Configurations.WORLD_TYPE.LINE_V, 10, 10, null);
+		Configurations.buildMap(Configurations.WORLD_TYPE.LINE_V, 10, 10, null);
 	}
 	/**Создаёт круглый мир
 	     _____
@@ -102,10 +102,22 @@ public class PointTest {
 	  |********|
 	  |********|
 	    |****|
-	    ‾‾‾‾‾‾‾‾‾‾
+	    ‾‾‾‾‾‾
 	 */
 	public void makeCIRCLEWorld(){
-		Configurations.makeWorld(Configurations.WORLD_TYPE.CIRCLE, 10, 10, null);
+		Configurations.buildMap(Configurations.WORLD_TYPE.CIRCLE, 10, 10, null);
+	}
+	/**Создаёт круглый мир
+	    ________
+	    |******|
+	  |**********|
+	  |**********|
+	  |**********|
+	    |******|
+	    ‾‾‾‾‾‾‾‾
+	 */
+	public void makeELLIPSEWorld(){
+		Configurations.buildMap(Configurations.WORLD_TYPE.CIRCLE, 10, 5, null);
 	}
 	/**Создаёт квадртаный кусок океана
 	
@@ -122,24 +134,23 @@ public class PointTest {
 	 
 	 */
 	public void makeFIELD_RWorld(){
-		Configurations.makeWorld(Configurations.WORLD_TYPE.FIELD_R, 10, 10, null);
+		Configurations.buildMap(Configurations.WORLD_TYPE.FIELD_R, 10, 10, null);
 	}
 	@Test
 	public void testConstructor() {
-		makeRECTANGLEWorld();
-		//В квадратном мире координаты всегда соответствуют себе
-		for (int x = -20; x < 20; x++) {
-			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
-				assertEquals("{\"x\":" + x + ",\"y\":" + y + "}", p.toJSON().toString());
+		//В этих мирах координаты не меняются
+		consts: for (int i = 0; ; i++) {
+			switch (i) {
+				case 0 -> makeRECTANGLEWorld();
+				case 1 -> makeCIRCLEWorld();
+				case 2 -> makeELLIPSEWorld();
+				default -> {break consts;}
 			}
-		}
-		makeCIRCLEWorld();
-		//В круглом мире координаты всегда свои
-		for (int x = -20; x < 20; x++) {
-			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
-				assertEquals("{\"x\":" + x + ",\"y\":" + y + "}", p.toJSON().toString());
+			for (int x = -20; x < 20; x++) {
+				for (int y = -20; y < 20; y++) {
+					var p = new Point(x,y);
+					assertEquals("{\"x\":" + x + ",\"y\":" + y + "}", p.toJSON().toString());
+				}
 			}
 		}
 		makeLINE_HWorld();
@@ -224,6 +235,7 @@ public class PointTest {
 				case 2 -> makeLINE_VWorld();
 				case 3 -> makeCIRCLEWorld();
 				case 4 -> makeFIELD_RWorld();
+				case 5 -> makeELLIPSEWorld();
 				default -> {return;}
 			}
 			
@@ -284,20 +296,30 @@ public class PointTest {
 		assertEquals(expResult, instance.equals(obj));
 		makeFIELD_RWorld();
 		assertEquals(expResult, instance.equals(obj));
+		makeELLIPSEWorld();
+		assertEquals(expResult, instance.equals(obj));
 	}
 
 	@Test
 	public void testDistance() {
-		makeRECTANGLEWorld();
-		for (int x1 = 0; x1 < 10; x1++) {
-			for (int y1 = 0; y1 < 10; y1++) {
-				var p1 = new Point(x1, y1);
-				for (int x2 = 0; x2 < 10; x2++) {
-					for (int y2 = 0; y2 < 10; y2++) {
-						var p2 = new Point(x2, y2);
-						var d = p1.distance(p2);
-						assertEquals(String.format("От %s к %s", p1,p2),d.x, x2-x1);
-						assertEquals(String.format("От %s к %s", p1,p2),d.y, y2-y1);
+		//У них нет телепортации, так что расстояние между точками фиксированное
+		consts: for (int i = 0; ; i++) {
+			switch (i) {
+				case 0 -> makeRECTANGLEWorld();
+				case 1 -> makeCIRCLEWorld();
+				case 2 -> makeELLIPSEWorld();
+				default -> {break consts;}
+			}
+			for (int x1 = 0; x1 < 10; x1++) {
+				for (int y1 = 0; y1 < 10; y1++) {
+					var p1 = new Point(x1, y1);
+					for (int x2 = 0; x2 < 10; x2++) {
+						for (int y2 = 0; y2 < 10; y2++) {
+							var p2 = new Point(x2, y2);
+							var d = p1.distance(p2);
+							assertEquals(String.format("От %s к %s в мире %d", p1,p2,i),d.x, x2-x1);
+							assertEquals(String.format("От %s к %s в мире %d", p1,p2,i),d.y, y2-y1);
+						}
 					}
 				}
 			}
@@ -344,23 +366,6 @@ public class PointTest {
 				}
 			}
 		}
-		
-		makeCIRCLEWorld();
-		for (int x1 = 0; x1 < 10; x1++) {
-			for (int y1 = 0; y1 < 10; y1++) {
-				var p1 = new Point(x1, y1);
-				if(!p1.valid()) continue;
-				for (int x2 = 0; x2 < 10; x2++) {
-					for (int y2 = 0; y2 < 10; y2++) {
-						var p2 = new Point(x2, y2);
-						if(!p2.valid()) continue;
-						var d = p1.distance(p2);
-						assertEquals(String.format("От %s к %s", p1,p2),d.x, x2-x1);
-						assertEquals(String.format("От %s к %s", p1,p2),d.y, y2-y1);
-					}
-				}
-			}
-		}
 		makeFIELD_RWorld();
 		for (int x1 = 0; x1 < 10; x1++) {
 			for (int y1 = 0; y1 < 10; y1++) {
@@ -396,6 +401,7 @@ public class PointTest {
 				case 2 -> makeLINE_VWorld();
 				case 3 -> makeCIRCLEWorld();
 				case 4 -> makeFIELD_RWorld();
+				case 5 -> makeELLIPSEWorld();
 				default -> {return;}
 			}
 			
@@ -460,22 +466,51 @@ public class PointTest {
 		
 		makeCIRCLEWorld();
 		var valid = new boolean[][]{
-			new boolean[]{false,false,false,true ,true ,true ,true ,false,false,false},
-			new boolean[]{false,true ,true ,true ,true ,true ,true ,true ,true ,false},
-			new boolean[]{false,true ,true ,true ,true ,true ,true ,true ,true ,false},
-			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true },
-			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true },
-			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true },
-			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true },
-			new boolean[]{false,true ,true ,true ,true ,true ,true ,true ,true ,false},
-			new boolean[]{false,true ,true ,true ,true ,true ,true ,true ,true ,false},
-			new boolean[]{false,false,false,true ,true ,true ,true ,false,false,false}
+						// x0     x1   x2    x3    x4    x5    x6    x7    x8    x9
+			new boolean[]{false,false,false,true ,true ,true ,true ,false,false,false}, //y0
+			new boolean[]{false,true ,true ,true ,true ,true ,true ,true ,true ,false}, //y1
+			new boolean[]{false,true ,true ,true ,true ,true ,true ,true ,true ,false}, //y2
+			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true }, //y3
+			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true }, //y4
+			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true }, //y5
+			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true }, //y6
+			new boolean[]{false,true ,true ,true ,true ,true ,true ,true ,true ,false}, //y7
+			new boolean[]{false,true ,true ,true ,true ,true ,true ,true ,true ,false}, //y8
+			new boolean[]{false,false,false,true ,true ,true ,true ,false,false,false}, //y9
 		};
 		for (int x = -20; x < 20; x++) {
 			for (int y = -20; y < 20; y++) {
 				var p = new Point(x,y);
 				if(x >= 0 && x < 10 && y >= 0 && y < 10){
-					if(valid[x][y])
+					if(valid[y][x])
+						assertTrue(p.toString(),p.valid());
+					else
+						assertFalse(p.toString(),p.valid());
+				}else{
+					assertFalse(p.toString(),p.valid());
+				}
+			}
+		}
+		
+		makeELLIPSEWorld();
+		valid = new boolean[][]{
+						// x0     x1   x2    x3    x4    x5    x6    x7    x8    x9
+			new boolean[]{false,false,true ,true ,true ,true ,true ,true ,false,false}, //y0
+			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true },	//y1
+			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true }, //y2
+			new boolean[]{true ,true ,true ,true ,true ,true ,true ,true ,true ,true }, //y3
+			new boolean[]{false,false,true ,true ,true ,true ,true ,true ,false,false}, //y4
+			new boolean[]{false,false,false,false,false,false,false,false,false,false},
+			new boolean[]{false,false,false,false,false,false,false,false,false,false},
+			new boolean[]{false,false,false,false,false,false,false,false,false,false},
+			new boolean[]{false,false,false,false,false,false,false,false,false,false},
+			new boolean[]{false,false,false,false,false,false,false,false,false,false},
+		};
+		for (int x = -20; x < 20; x++) {
+			for (int y = -20; y < 20; y++) {
+				var p = new Point(x,y);
+				if(x >= 0 && x < 10 && y >= 0 && y < 10){
+					if(valid[y][x])
 						assertTrue(p.toString(),p.valid());
 					else
 						assertFalse(p.toString(),p.valid());

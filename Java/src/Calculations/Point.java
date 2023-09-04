@@ -281,9 +281,11 @@ public class Point{
 			case CIRCLE -> {
 				if(Configurations.MAP_CELLS.height == Configurations.MAP_CELLS.width){
 					final var r = Configurations.MAP_CELLS.width / 2d;
-					return Math.pow((r - 0.5) - x, 2) + Math.pow((r-0.5) - y, 2) < r*r; //Уравнение окружности - x*x + y*y = r*r
+					return Math.pow((r - 0.5) - x, 2) + Math.pow((r-0.5) - y, 2) <= r*r; //Уравнение окружности - x*x + y*y = r*r
 				} else {
-					throw new IllegalArgumentException("К сожалению, разомкнутый мир должен быть только круглым! Я не придумал как обсчитывать элипсы");
+					final var a = Configurations.MAP_CELLS.width / 2d;
+					final var b = Configurations.MAP_CELLS.height / 2d;
+					return Math.pow((a - 0.5) - x, 2) / (a * a) + Math.pow((b-0.5) - y, 2) / (b * b) <= 1; //Уравнение эллипса - (x*x)/(a*a) + (y*y)/(b*b) = 1
 				}
 			}
 			case FIELD_R-> {
