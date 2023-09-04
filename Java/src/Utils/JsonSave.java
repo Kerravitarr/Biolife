@@ -179,8 +179,8 @@ public class JsonSave {
 				JOptionPane.showMessageDialog(null,	"Сохранение заверешно",	projectName, JOptionPane.INFORMATION_MESSAGE);
 				return true;
 			}catch(IOException ex){
-				Logger.getLogger(this.getName()).log(Level.SEVERE, null, ex);
-				JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
+				Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
+				JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + ex.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
 				return false;
 			}
 		}
@@ -237,7 +237,7 @@ public class JsonSave {
 			obj.parse(reader);
 			return true;
 		} catch (Exception e1) {
-			Logger.getLogger(this.getName()).log(Level.SEVERE, null, ex);
+			Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e1);
 			JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
@@ -296,7 +296,7 @@ public class JsonSave {
 			JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>Не найден файл " + name, projectName, JOptionPane.ERROR_MESSAGE);
 			return false;
 		} catch (Exception e1) {
-			Logger.getLogger(this.getName()).log(Level.SEVERE, null, ex);
+			Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e1);
 			JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage(), projectName, JOptionPane.ERROR_MESSAGE);
 			return false;
 		}

@@ -30,9 +30,7 @@ public class CommandListTest {
 	
 	@Before
 	public void setUp() {
-		Configurations.makeWorld(Configurations.WORLD_TYPE.RECTANGLE, 10, 10, null);
-		//new World().stop();
-		Configurations.legend = new Legend();
+		Configurations.buildMap(Configurations.WORLD_TYPE.RECTANGLE, 10, 10, null);
 	}
 	
 	@Test

@@ -546,9 +546,6 @@ public class AliveCell extends AliveCellProtorype {
      * @param num
      */
     public void color(ACTION act, double num) {
-        if (Configurations.legend.getMode() != Legend.MODE.DOING) {
-            return;
-        }
         if (act.p != 1) {
             num *= act.p;
         }

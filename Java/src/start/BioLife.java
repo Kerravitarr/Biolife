@@ -56,7 +56,7 @@ public class BioLife{
 			//С графической частью
 			Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
 			 //120 - пикселей на верхнюю и нижнюю шапочки
-			Configurations.makeWorld(Configurations.WORLD_TYPE.LINE_H,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL), new HashMap<CellObject.LV_STATUS, Integer>(){{put(CellObject.LV_STATUS.LV_ORGANIC, 2);}});
+			Configurations.makeDefaultWord(Configurations.WORLD_TYPE.LINE_H,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL));
 			
 			//Обработка переменных окружения
 			//Настраиваем буковки
@@ -65,10 +65,10 @@ public class BioLife{
 			setUIFont(new javax.swing.plaf.FontUIResource(Configurations.defaultFont));
 			
 			EventQueue.invokeLater(() -> {try {new MainFrame().setVisible(true);} catch (Exception e) {e.printStackTrace();}});
-			//Configurations.world.start();
+			Configurations.world.start();
 		} else {
 			//Только с матаном
-			Configurations.makeWorld(Configurations.WORLD_TYPE.LINE_H,_opts.get('W').get(Integer.class), _opts.get('H').get(Integer.class), new HashMap<CellObject.LV_STATUS, Integer>(){{put(CellObject.LV_STATUS.LV_ORGANIC, 2);}});
+			Configurations.makeDefaultWord(Configurations.WORLD_TYPE.LINE_H,_opts.get('W').get(Integer.class), _opts.get('H').get(Integer.class));
 			Configurations.world.start();
 			start();
 		}
