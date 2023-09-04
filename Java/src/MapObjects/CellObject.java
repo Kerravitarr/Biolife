@@ -9,6 +9,7 @@ import Utils.JSON;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
+import GUI.Legend;
 
 /**
  * Описывает некий объект на карте
@@ -92,8 +93,6 @@ public abstract class CellObject {
 		}
 	}
 	
-    /**Цвет бота зависит от того, что он делает*/
-	public Color color_DO;
     /**Позиция объекта*/
 	private Point pos = new Point(0,0);
     //Счётчик, показывает ходил объект в этот ход или нет
@@ -360,4 +359,13 @@ public abstract class CellObject {
 	public LV_STATUS getAlive() {
 		return alive;
 	}
+	/** * Не смог я в этот раз уйти от рисования...Очень жаль :(
+ Эта функция должна отобразить объект на холсте согласно установленному режиму
+	 * @param g где рисуем
+	 * @param legend легенда, по которой рисуем
+	 * @param cx координата ЦЕНТРА на холсте, где клетка находится
+	 * @param cy координата ЦЕНТРА на холсте, где клетка находится
+	 * @param r размер в пк квадрата, которым клетка окружена
+	 */
+	public abstract void paint(Graphics g, Legend legend, int cx, int cy, int r);
 }

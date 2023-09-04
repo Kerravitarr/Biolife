@@ -253,5 +253,32 @@ public class Poison extends CellObject {
 		return stream;
 	}
 
+	@Override
+	public void paint(Graphics g, Legend legend, int cx, int cy, int r){
+		Color color_DO;
+		switch (legend.getMode()) {
+			case HP -> color_DO = legend.HPtToColor(getHealth()/Poison.MAX_TOXIC);
+			case YEAR -> color_DO = legend.AgeToColor(getAge());
+			default -> {
+				switch (getType()) {
+					case YELLOW -> color_DO = (Color.YELLOW);
+					case PINK -> color_DO = (Color.PINK);
+					case BLACK -> color_DO = (Color.BLACK);
+					default -> throw new IllegalArgumentException("Unexpected value: " + getType());
+				}
+			}
+			case POISON -> {
+				var rg = (int) Utils.betwin(0, getHealth() / Poison.MAX_TOXIC, 1.0) * 255;
+				switch (getType()) {
+					case BLACK -> color_DO = new Color(255-rg,255- rg,255- rg);
+					case PINK -> color_DO = new Color(rg, rg / 2, rg / 2);
+					case YELLOW -> color_DO = new Color(rg, rg, 0);
+					default -> throw new IllegalArgumentException("Unexpected value: " + getType());
+				}
+			}
+		}
+		g.setColor(color_DO);
+		Utils.drawCircle(g,cx,cy,(int) Math.round(r*radius));
+	}
 
 }

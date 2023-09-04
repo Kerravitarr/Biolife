@@ -30,7 +30,6 @@ public class Organic extends CellObject {
 		super(cell.getStepCount(), LV_STATUS.LV_ORGANIC);
 		setPos(cell.getPos());
 		energy = Math.abs(cell.getHealth()) + cell.getFoodTank() + (cell.getMineral() + cell.getMineralTank()) * 10; //Превращается в органику всё, что только может
-	    super.color_DO = ORGANIC_COLOR;
 	    nextDouble = getTimeToNextDouble();
 	}
 	/**
@@ -43,7 +42,6 @@ public class Organic extends CellObject {
     	energy = cell.get("energy");
     	poison = TYPE.toEnum(cell.getI("poison"));
     	poisonCount = cell.get("poisonCount");
-    	super.color_DO = ORGANIC_COLOR;
     	nextDouble = getTimeToNextDouble();
 	}
 
@@ -177,5 +175,37 @@ public class Organic extends CellObject {
 	 */
 	public int getPoisonCount() {
 		return (int) poisonCount;
+	}
+	
+	
+	@Override
+	public void paint(Graphics g, Legend legend, int cx, int cy, int r){
+		Color color_DO;
+		switch (legend.getMode()) {
+			case POISON -> {
+				var rg = (int) Utils.betwin(0, getHealth() / Poison.MAX_TOXIC, 1.0) * 255;
+				switch (getPoison()) {
+					case BLACK -> color_DO = new Color(255-rg,255- rg,255- rg);
+					case PINK -> color_DO = new Color(rg, rg / 2, rg / 2);
+					case YELLOW -> color_DO = new Color(rg, rg, 0);
+					case UNEQUIPPED ->  color_DO = ORGANIC_COLOR;
+					default ->  throw new IllegalArgumentException("Unexpected value: " + getPoison());
+				}
+
+			}
+			case HP -> color_DO = legend.HPtToColor(getHealth());
+			case YEAR -> color_DO = legend.AgeToColor(getAge());
+			default -> color_DO = ORGANIC_COLOR;
+		}
+		g.setColor(color_DO);
+
+		if (g instanceof Graphics2D g2d) {
+			Stroke old = g2d.getStroke();
+			g2d.setStroke(new BasicStroke(r/3));
+			Utils.drawCircle(g, cx, cy, r * 2 / 3);
+			g2d.setStroke(old);
+		} else {
+			Utils.fillCircle(g,cx,cy,r);
+		}
 	}
 }

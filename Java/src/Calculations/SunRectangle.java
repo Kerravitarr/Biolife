@@ -47,4 +47,8 @@ public class SunRectangle extends SunAbstract {
 
 	
 	
+	@Override
+	public void paint(Graphics g) {
+		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+	}
 }

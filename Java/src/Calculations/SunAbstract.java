@@ -1,5 +1,7 @@
 package Calculations;
 
+import java.awt.Graphics;
+
 /**
  * Болванка солнышка. Любое солнце должно быть похоже на это!
  * @author Илья
@@ -40,4 +42,8 @@ public abstract class SunAbstract {
 			move();
 		}
 	}
+	/**Рисует солнце на экране
+	 * @param g холст, на котором надо начертить солнышко
+	 */
+	public abstract void paint(Graphics g);
 }

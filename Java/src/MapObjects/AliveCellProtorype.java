@@ -256,6 +256,8 @@ public abstract class AliveCellProtorype extends CellObject{
     protected int mucosa = 0;
 	/**Количество энергии для деления*/
 	protected int hp_by_div = 999;
+    /**Цвет бота зависит от того, что он делает*/
+	public Color color_DO;
     
     //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
     /**Поколение (мутационное). Другими словами - как далеко клетка ушла от изначальной*/

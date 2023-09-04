@@ -45,7 +45,7 @@ public class DefaultViewer extends Viewers{
 			case "Settings" -> settings;
 			case "BotInfo" -> getBotInfo();
 			case "Menu" -> getMenu();
-			case "Legend" -> legend;
+			case "Legend" -> getLegend();
 			case "World" -> getWorld();
 			default -> throw new IllegalArgumentException("Панели" + panelName + " нет в наборе " + this);
 		};
@@ -53,6 +53,7 @@ public class DefaultViewer extends Viewers{
 	public Menu getMenu(){return menu;}
 	public WorldView getWorld(){return view;}
 	public BotInfo getBotInfo(){return info;}
+	public Legend getLegend(){return legend;}
 	@Override
 	public String toString(){
 		return "Основная панель для отображения данных";

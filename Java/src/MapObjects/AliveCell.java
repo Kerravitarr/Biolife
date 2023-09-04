@@ -17,6 +17,10 @@ import Calculations.EvolutionTree;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
 import GUI.Legend;
+import java.awt.BasicStroke;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Stroke;
 
 public class AliveCell extends AliveCellProtorype {
 
@@ -610,6 +614,80 @@ public class AliveCell extends AliveCellProtorype {
 
         return make;
     }
+	
+	@Override
+	public void paint(Graphics g, Legend legend, int cx, int cy, int r){
+		switch (legend.getMode()) {
+			case MINERALS -> g.setColor(legend.MPtToColor(getMineral()));
+			case GENER -> g.setColor(legend.generationToColor(getGeneration()));
+			case YEAR -> g.setColor(legend.AgeToColor(getAge()));
+			case HP -> g.setColor(legend.HPtToColor(getHealth()));
+			case PHEN -> g.setColor(new Color(phenotype.getRed(), phenotype.getGreen(), phenotype.getBlue()));
+			case DOING -> g.setColor(color_DO);
+			case POISON -> {
+				var rg = (int) Utils.betwin(0, getPosionPower() / Poison.MAX_TOXIC, 1.0) * 255;
+				switch (getPosionType()) {
+					case BLACK -> g.setColor(new Color(255-rg, 255-rg, 255-rg));
+					case PINK -> g.setColor(new Color(rg, rg / 2, rg / 2));
+					case YELLOW -> g.setColor(new Color(rg, rg, 0));
+					default -> g.setColor(Color.BLACK);
+				}
+			}
+			case EVO_TREE -> g.setColor(evolutionNode.getColor());
+			default -> throw new AssertionError();
+		}
+		//Клетка
+		if (getFriends().isEmpty()) {
+			Utils.fillCircle(g, cx, cy, r);
+		} else if (r < 5) {
+			Utils.fillSquare(g, cx, cy, r);
+		} else {
+			Utils.fillCircle(g, cx, cy, r);
+			int[][] points = new int[Point.DIRECTION.size()][2];
+			var values = getFriends().values();
+			try {
+				//Друзья
+				int index = 0;
+				for (final var iterator = values.iterator(); iterator.hasNext(); index++) {
+					final var i = iterator.next();
+					final var v = i.getPos().distance(getPos());
+					int rxf = cx + v.x * r;
+					int ryf = cy + v.y * r;
+					final var lx = Math.abs(rxf - cx);
+					final var ly = Math.abs(ryf - cy);
+					if(lx > 2*r){
+						//у нас расстояние больше радиуса - такого быть не может, так что мы должны нарисовать линию в другую сторону
+						rxf = cx + (rxf < cx ? +r : -r);
+					}
+					if(ly > 2*r)
+						ryf = cy + (ryf < cy ? +r : -r);
+					points[index][0] = rxf;
+					points[index][1] = ryf;
+				}
+				//Приходится рисовать в два этапа, иначе получается ужас страшный.
+				//Этап первый - основные связи
+
+				Graphics2D g2 = (Graphics2D) g;
+				Stroke oldStr = g2.getStroke();
+				g2.setStroke(new BasicStroke(r / 2));
+				for (int i = 0; i < index; i++) {
+					int delx = points[i][0] - cx;
+					int dely = points[i][1] - cy;
+					g.drawLine(cx, cy, cx + delx / 3, cy + dely / 3);
+				}
+				g2.setStroke(oldStr);
+				g.setColor(Color.BLACK);
+				//Этап второй, всё тоже самое, но теперь лишь тонкие линии
+				for (int i = 0; i < index; i++) {
+					g.drawLine(cx, cy, points[i][0], points[i][1]);
+				}
+			} catch (java.util.ConcurrentModificationException e) {/* Выскакивает, если кто-то из наших друзей погиб*/                }
+		}
+		if (r > 10) {
+			g.setColor(Color.PINK);
+			g.drawLine(cx, cy, cx + direction.addX * r / 2, cy + direction.addY * r / 2);
+		}
+	}
 	
 	@Override
 	public String toString(){

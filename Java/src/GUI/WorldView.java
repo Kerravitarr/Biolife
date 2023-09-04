@@ -7,15 +7,21 @@ package GUI;
 import Calculations.Configurations;
 import static Calculations.Configurations.WORLD_TYPE.LINE_H;
 import Calculations.Point;
+import MapObjects.AliveCell;
 import MapObjects.CellObject;
+import MapObjects.Fossil;
+import MapObjects.Organic;
+import MapObjects.Poison;
 import Utils.ColorRec;
 import Utils.FPScounter;
 import Utils.Utils;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Stroke;
 import java.util.ArrayList;
 
 /**
@@ -144,25 +150,23 @@ public class WorldView extends javax.swing.JPanel {
 	public void paintComponent(Graphics g, boolean isAll) {
 		super.paintComponent(g);
 		
+		var v = Configurations.getViewer();
+		if(!(v instanceof DefaultViewer)) return;
+		var legend = ((DefaultViewer) v ).getLegend();
+		
 		paintField(g);
+		int r = getRr(1);
 		for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 			for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 				if(isAll || (visible[0].getX() <= x && x <= visible[1].getX()
 						&& visible[0].getY() <= y && y <= visible[1].getY())){
 					final var pos = new Point(x, y);
-					//if(!pos.valid()) continue;
-					final var c = mixColors(waterColor);
-					g.setColor(c);
-					int r = getRr(1);
-					int rx = getRx(x);
-					int ry = getRy(y);
-					Utils.fillSquare(g, rx, ry, r);
-					
+					//if(!pos.valid()) continue;					
 					final var cell = Configurations.world.get(pos);
 					if(cell != null){
-						g.setColor(Color.BLACK);
-						Utils.fillCircle(g, rx, ry, r);
-						//cell.paint(g);
+						int cx = getRx(cell.getPos());
+						int cy = getRy(cell.getPos());
+						cell.paint(g, legend, cx, cy, r);
 					}
 				}
 			}
@@ -196,6 +200,7 @@ public class WorldView extends javax.swing.JPanel {
 				//Небо
 				colors[0].paint((Graphics2D) g);
 				//Вода
+				colors[1].paint((Graphics2D)g);
 				//Configurations.sun.paint((Graphics2D) g);
 				//Минералы
 				//colors[1].paint((Graphics2D) g);
@@ -204,10 +209,12 @@ public class WorldView extends javax.swing.JPanel {
 				//	gz.paint(g);
 
 				//Земля
-				colors[1].paint((Graphics2D)g);
+				colors[2].paint((Graphics2D)g);
 			}
 			default -> 	throw new AssertionError();
 		}
+		//А теперь, поверх мира, рисуем солнышки
+		Configurations.suns.forEach(s -> s.paint(g));
 		//Вспомогательное построение
 		//paintLine(g);
 		//paintProc(g);
@@ -265,21 +272,25 @@ public class WorldView extends javax.swing.JPanel {
 				//Верхнее небо
 				int xs[] = new int[4];
 				int ys[] = new int[4];
+				//Поле, вода
+				int yw[] = new int[4];
 				//Дно
-				int xb[] = new int[4];
 				int yb[] = new int[4];
 
-				xs[0] = xs[1] = xb[0] = xb[1] = getRx(0);
-				xs[2] = xs[3] = xb[2] = xb[3] = getRx(Configurations.MAP_CELLS.width);
+				xs[0] = xs[1] = getRx(0);
+				xs[2] = xs[3] = getRx(Configurations.MAP_CELLS.width);
+				
 
 				ys[0] = ys[3] = 0;
-				ys[1] = ys[2] = getRy(0);
-				yb[0] = yb[3] = getRy(Configurations.MAP_CELLS.height - 1);
+				ys[1] = ys[2] = yw[0] = yw[3] = getRy(0);
+				yb[0] = yb[3] = yw[1] = yw[2] = getRy(Configurations.MAP_CELLS.height - 1);
 				yb[1] = yb[2] = getHeight();
 				//Небо
 				colors[0] = new ColorRec(xs,ys, new Color(224, 255, 255, 255));
+				//Вода
+				colors[1] = new ColorRec(xs,yw, COLOR_WATER);
 				//Земля
-				colors[1] = new ColorRec(xb,yb, new Color(139, 69, 19, 255));
+				colors[2] = new ColorRec(xs,yb, new Color(139, 69, 19, 255));
 			}
 			default -> 	throw new AssertionError();
 		}
@@ -414,7 +425,8 @@ public class WorldView extends javax.swing.JPanel {
 	public final FPScounter fps = new FPScounter();
 	
 	/**Все цвета, которые мы должны отобразить на поле*/
-	private final ColorRec [] colors = new ColorRec[2];
+	private final ColorRec [] colors = new ColorRec[3];
 	/**Цвет водички*/
-	private final Color waterColor = Utils.getHSBColor(240d / 360, 1, 1, 0.7);
+	private final Color COLOR_WATER = Utils.getHSBColor(240d / 360, 1, 1, 0.7);
+
 }

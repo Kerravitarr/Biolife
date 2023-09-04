@@ -4,6 +4,8 @@
  */
 package Calculations;
 
+import java.awt.Graphics;
+
 /**
  * Пипец какое необычное эллипсоидное солнце
  * Может быть, конечно, круглы, но ведь может и не быть.
@@ -137,5 +139,11 @@ public class SunEllipse extends SunAbstract {
 
 	@Override
 	protected void move() {}
+
+	
+	@Override
+	public void paint(Graphics g) {
+		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+	}
 	
 }
