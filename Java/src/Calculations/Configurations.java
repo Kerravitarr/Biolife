@@ -20,12 +20,7 @@ import Utils.JsonSave;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import GUI.BotInfo;
-import GUI.DefaultViewer;
 import GUI.EvolTreeDialog;
-import GUI.Legend;
-import GUI.Menu;
-import GUI.Settings;
 import GUI.Viewers;
 import MapObjects.CellObject;
 import java.io.IOException;
@@ -34,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JOptionPane;
 
 /**
  * Так как некоторые переменные мира используются повсеместно
@@ -65,18 +59,21 @@ public class Configurations extends JsonSave.JSONSerialization{
 	public static int AGGRESSIVE_ENVIRONMENT = 0;
 	/**Как часто органика теряет своё ХП. Если 1 - на каждый ход. Если 2 - каждые 2 хода и т.д.*/
 	public static int TIK_TO_EXIT;
+	/**Степень загрязнённости воды. На сколько падает уровень освещения за каждую клетку от источника света*/
+	public static double DIRTY_WATER;
 	
 	//Те-же переменные, только их значения по умолчанию.
 	//Значения по умолчанию рассчитываются исходя из размеров мира
 	//И не могут меняться пока мир неизменен
 	public static int DAGGRESSIVE_ENVIRONMENT = Configurations.AGGRESSIVE_ENVIRONMENT;
 	public static int DTIK_TO_EXIT = Configurations.TIK_TO_EXIT;
+	public static double DDIRTY_WATER = Configurations.DIRTY_WATER;
 
 	//Разные глобальные объекты, отвечающие за мир
 	/**Глобальный мир!*/
 	public static World world = null;
 	/**Звёзды нашего мира*/
-	public static List<Sun> suns = null;
+	public static List<SunAbstract> suns = null;
 	/**Минералы нашего мира*/
 	public static List<Object> minerals = null;
 	/**Потоки воды, которые заставлют клетки двигаться*/
@@ -151,7 +148,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 	public void setJSON(JSON configWorld, long version) {
 		List<Integer> map = configWorld.getA("MAP_CELLS");
 		if(version < 7){
-			makeWorld(WORLD_TYPE.LINE_H, map.get(0),map.get(1), new HashMap<CellObject.LV_STATUS, Integer>(){{put(CellObject.LV_STATUS.LV_ORGANIC, 2);}});
+			makeDefaultWord(WORLD_TYPE.LINE_H, map.get(0),map.get(1));
 			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
 			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
 		
@@ -170,16 +167,42 @@ public class Configurations extends JsonSave.JSONSerialization{
 	}
 	
 	/**
-	 * Создаёт новый мир.Если длина и высота мира изменяются - все объекты мира удаляются!
-	 * В круглых мирах ширина и высота одинаковы, берётся максимальное из двух чисел
-	 *	означают-же они диаметр мира. Да, поле будет квадратным, но в некоторые точки попасть станет невозможно
+	 * Создаёт базовый мир заданных размеров
+	 * @param type тип создаваемого мира
+	 * @param width ширина мира, в кубиках.
+	 * @param height высота мира, тоже в кубиках
+	 */
+	public static void makeDefaultWord(WORLD_TYPE type, int width, int height) {
+		switch (type) {
+			case LINE_H -> {
+				buildMap(type, width, height, new HashMap<CellObject.LV_STATUS, Integer>(){{put(CellObject.LV_STATUS.LV_ORGANIC, 2);}});
+				DDIRTY_WATER = DIRTY_WATER = Math.max(1, 20 / (width * 3.3)); //Чтобы освещалось только 33 % мира при силе света в 20 единиц
+				suns.add(new SunRectangle(20, new Trajectory(new Point(MAP_CELLS.width/2,0)),MAP_CELLS.width, 1));
+			}
+			default -> throw new AssertionError();
+		}
+		//И конечно создаём адама.
+		world.makeAdam();
+		
+		
+		
+		//Создаём солнце. Одно неподвижное, одно движущееся
+		//suns.add(new Sun(new Sun.Rectangle(new Point(0,0), MAP_CELLS.width, (int) (MAP_CELLS.height * 0.33), 20, Sun.SunForm.SHADOW.DOWN), null));
+		//suns.add(new Sun(new Sun.SpecForm(width/2, width / 5, (int) (MAP_CELLS.height * 0.66), -3, 20, Sun.SunForm.SHADOW.DOWN), new Sun.LineMove(15, new Point(1,0))));
+		
+		
+		//streams.add(new Stream.VerticalRectangle(new Point(MAP_CELLS.width / 8, 0), MAP_CELLS.width / 4, MAP_CELLS.height, 1, Stream.SHADOW.LINE, 100));
+		//streams.add(new Stream.VerticalRectangle(new Point(MAP_CELLS.width / 2 + MAP_CELLS.width / 8, 0), MAP_CELLS.width / 4, MAP_CELLS.height, -10, Stream.SHADOW.PARABOLA, -100));
+		//streams.add(new Stream.Ellipse(new Point(MAP_CELLS.width / 2, MAP_CELLS.height / 2), MAP_CELLS.width / 8, 1, Stream.SHADOW.PARABOLA, 10));
+	}
+	/**Создаёт поле мира. Только поле. Пустая карта, да дерево эволюции.
 	 * @param type тип создаваемого мира
 	 * @param width ширина мира, в кубиках.
 	 * @param height высота мира, тоже в кубиках
 	 * @param gravitation гравитация в созданном мире для каждого типа объектов. 
 	 *				Если не указывать тип, гравитация на него действовать не будет
 	 */
-	public static void makeWorld(WORLD_TYPE type, int width, int height, Map<CellObject.LV_STATUS, Integer> gravitation) {
+	public static void buildMap(WORLD_TYPE type, int width, int height, Map<CellObject.LV_STATUS, Integer> gravitation){
 		//Создаём мир
 		MAP_CELLS = new Dimension(width,height);
 		world_type = type;
@@ -199,20 +222,8 @@ public class Configurations extends JsonSave.JSONSerialization{
 		
 		//А теперь дерево эволюции
 		tree = new EvolutionTree();
-		//И конечно создаём адама.
-		world.makeAdam();
-		
-		
-		
-		//Создаём солнце. Одно неподвижное, одно движущееся
-		suns.add(new Sun(new Sun.Rectangle(new Point(0,0), MAP_CELLS.width, (int) (MAP_CELLS.height * 0.33), 20, Sun.SunForm.SHADOW.DOWN), null));
-		suns.add(new Sun(new Sun.SpecForm(width/2, width / 5, (int) (MAP_CELLS.height * 0.66), -3, 20, Sun.SunForm.SHADOW.DOWN), new Sun.LineMove(15, new Point(1,0))));
-		
-		
-		streams.add(new Stream.VerticalRectangle(new Point(MAP_CELLS.width / 8, 0), MAP_CELLS.width / 4, MAP_CELLS.height, 1, Stream.SHADOW.LINE, 100));
-		streams.add(new Stream.VerticalRectangle(new Point(MAP_CELLS.width / 2 + MAP_CELLS.width / 8, 0), MAP_CELLS.width / 4, MAP_CELLS.height, -10, Stream.SHADOW.PARABOLA, -100));
-		streams.add(new Stream.Ellipse(new Point(MAP_CELLS.width / 2, MAP_CELLS.height / 2), MAP_CELLS.width / 8, 1, Stream.SHADOW.PARABOLA, 10));
 	}
+	
 	/**Возвращает количество солнечной энергии в данной точке пространства
 	 * @param pos где интересует энергия
 	 * @return сколько в единицах HP энергии тут
@@ -259,19 +270,29 @@ public class Configurations extends JsonSave.JSONSerialization{
 	 * @return Строка в формате HTML
 	 */
 	public static String getHProperty(Class<?> cls, String name) {
-		return MessageFormat.format("<HTML>{0}",getProperty(cls,name));
+		return "<HTML>"+getProperty(cls,name);
 	}
 	/**
 	 * Возвращает строку описания для определённого класса
 	 * @param cls - класс, в котором эта строка находится
 	 * @param name - ключ
-	 * @return Строка в формате HTML
+	 * @return Строка
 	 */
 	public static String getProperty(Class<?> cls, String name) {
+		return getProperty(MessageFormat.format("{0}.{1}", cls.getTypeName(),name));
+	}
+	
+	/**
+	 * Возвращает строку описания
+	 * @param name - ключ
+	 * @return Строка для текущей локали
+	 */
+	public static String getProperty(String name) {
 		try {
-			return Configurations.bundle.getString(MessageFormat.format("{0}.{1}", cls.getTypeName(),name));
+			return Configurations.bundle.getString(name);
 		} catch (MissingResourceException e) {
-			var err = MessageFormat.format("Не найдено свойство {0}.{1}", cls.getTypeName(),name);
+			var err = "Не найдено свойство " + name;
+			Logger.getLogger(Configurations.class.getName()).log(Level.WARNING, err, e);
 			System.err.println(err);
 			return err;
 		}
