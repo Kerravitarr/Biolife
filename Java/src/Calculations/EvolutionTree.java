@@ -314,9 +314,7 @@ public class EvolutionTree extends JsonSave.JSONSerialization{
 					continue;
 				else if (child.isEmpty()){// У нас нет детей, всё, удаляем у родителя
 				if(node.getPerrent() == null) { //Ой. У нас и родителя нет... Упс
-					java.awt.Toolkit.getDefaultToolkit().beep();
-					Configurations.world.stop();
-					JOptionPane.showMessageDialog(null, "Симуляция завершена, не осталось выживших", "BioLife", JOptionPane.WARNING_MESSAGE);
+					//Симуляция закончена. Больше нет живых клеток
 				} else {
 					node.getPerrent().remove(node);
 				}

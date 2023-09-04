@@ -82,12 +82,13 @@ public class World implements Runnable{
 			var count_step = new int[CellObject.LV_STATUS.length];
 			for (int i = points.length - 1; i >= 0 && _status != STATUS.ERROR; i--) {
 				Point t = points[i];
-				if(get(t) == null) continue; //Чего мы будем пустые клетки мешать?
+				if(!t.valid() || get(t) == null) continue; //Чего мы будем пустые клетки мешать?
 				final var j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
 				//Меняем местами клетки, чтобы каждый раз вызывать их в разной последовательности
 				final var p = points[i] = points[j];
 				points[j] = t;
 				final var cell = get(p);
+				if(cell == null) continue; //Аай, и тут пусто. Ну и ладно
 				action(cell,p);
 				count_step[cell.getAlive().ordinal()]++;
 			}
@@ -101,7 +102,7 @@ public class World implements Runnable{
 			if(cell.canStep(step)) {
 				try {
 					cell.step(step);					
-				} catch (Exception e) {
+				} catch (Throwable e) {
 					_status = STATUS.ERROR;
 					Logger.getLogger(World.class.getName()).log(Level.WARNING, null, e);
 					System.out.println(cell);

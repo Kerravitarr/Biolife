@@ -232,6 +232,12 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 			dialog.repaint();
 		wv.repaint();
 		
+		if(world.getCount(CellObject.LV_STATUS.LV_ALIVE) == 0 && Configurations.world.isActiv()){
+			java.awt.Toolkit.getDefaultToolkit().beep();
+			Configurations.world.stop();
+			JOptionPane.showMessageDialog(null, Configurations.getProperty(MainFrame.class,"noAlive"), "BioLife", JOptionPane.WARNING_MESSAGE);
+		}
+		
 		
 		//Автосохранение
 		if(Math.abs(world.step - lastSave) > Configurations.SAVE_PERIOD){
@@ -252,12 +258,12 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 					if(!list[i].exists() || save.lastModified() > list[i].lastModified())
 						save = list[i];
 				}
-				/*try {
+				try {
 					Configurations.save(save.getName());
 				} catch (IOException ex) {
 					Logger.getLogger(this.getName()).log(Level.SEVERE, null, ex);
 					JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + ex.getMessage(), "BioLife", JOptionPane.ERROR_MESSAGE);
-				}*/
+				}
 				if(popup != null){
 					popup.hide();
 					popup = null;
