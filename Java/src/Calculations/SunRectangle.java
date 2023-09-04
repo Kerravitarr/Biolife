@@ -4,6 +4,8 @@
  */
 package Calculations;
 
+import java.awt.Graphics;
+
 /**
  *Самое обычное прямоугольное солнце.
  * Представляет собой стандартную длинную лампочку
@@ -37,10 +39,12 @@ public class SunRectangle extends SunAbstract {
 		if(absX <= width / 2 && absY <= height / 2 )
 			return power;
 		else
-			return power - Configurations.DIRTY_WATER * Math.max(Math.abs(absX - width / 2), Math.abs(absY - height / 2));
+			return power - Configurations.DIRTY_WATER * Math.max(absX - width / 2, absY - height / 2);
 	}
 
 	@Override
 	protected void move() {}
+
+	
 	
 }
