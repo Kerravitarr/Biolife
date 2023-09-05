@@ -4,7 +4,16 @@
  */
 package Calculations;
 
-import java.awt.Graphics;
+import GUI.AllColors;
+import GUI.WorldView.Transforms;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.MultipleGradientPaint;
+import java.awt.MultipleGradientPaint.CycleMethod;
+import java.awt.RadialGradientPaint;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
+import java.awt.geom.Point2D;
 
 /**
  * Пипец какое необычное эллипсоидное солнце
@@ -57,7 +66,7 @@ public class SunEllipse extends SunAbstract {
 	}
 
 	@Override
-	public double getEnergy(Point pos) {
+	public double getPoint(Point pos) {
 		//Расстояние от центра до точки
 		var d = pos.distance(position);
 		if(isLine){
@@ -142,8 +151,57 @@ public class SunEllipse extends SunAbstract {
 
 	
 	@Override
-	public void paint(Graphics g) {
-		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {
+		final var x0 = transform.toScrinX(posX);
+		final var y0 = transform.toScrinY(posY);
+
+		final var maxAlf = (255 * power / Configurations.getMaxSunPower());
+		final var colorMaxLight = AllColors.toDark(AllColors.SUN, (int)maxAlf );
+		
+		//Где солнышко заканчивается
+		final var a0 = transform.toScrin(Math.max(a2, b2))/2;
+		//Сколько энергии в солнышке
+		final var p = transform.toScrin((int)Math.round(power / Configurations.DIRTY_WATER));
+		//Где заканчивается свет от него
+		final var s = Math.max(1, a0 + p);
+		//А в процентах расстояние от 0 до границы солнца
+		final var sunP = ((float)a0) / s;
+		if(sunP == 0) return;
+			
+		float[] fractions;
+		Color[] colors;
+		if(isLine){
+			//Соотношение цветов
+			fractions = new float[] {(p >= a0 ? 0f : sunP * p / a0), sunP, 1.0f };
+			//Сами цвета
+			colors = new Color[] { AllColors.toDark(AllColors.SUN, (int) (a0 > p ? 0 : (maxAlf - maxAlf * a0 / p))) ,colorMaxLight , AllColors.SUN_DARK};
+		} else {
+			//Соотношение цветов
+			fractions = new float[] { 0.0f, sunP, 1.0f };
+			//Сами цвета
+			 colors = new Color[]{colorMaxLight, colorMaxLight, AllColors.SUN_DARK};
+		}
+			
+		if(a2 == b2){
+			//Круглое солнышко - это збс
+			g.setPaint(new RadialGradientPaint(
+					new Point2D.Double(x0, y0), s,fractions, colors,CycleMethod.NO_CYCLE));
+			g.fill(new Ellipse2D.Double(x0 - s, y0 - s, s*2,s*2));
+		} else {
+			//А эллипс надо сначала деформировать
+			if(a > b) {
+				final var at = AffineTransform.getScaleInstance(1, b / a);
+				final var center = new Point2D.Double(x0, y0 * a / b);
+				g.setPaint(new RadialGradientPaint(center, s, center, fractions, colors, CycleMethod.NO_CYCLE, MultipleGradientPaint.ColorSpaceType.SRGB, at));
+				g.fill(new Ellipse2D.Double(x0 - s, y0 - s, s * 2, s * 2));
+			} else {
+				final var at = AffineTransform.getScaleInstance(a / b, 1);
+				final var center = new Point2D.Double(x0 * b / a, y0);
+				g.setPaint(new RadialGradientPaint(center, s, center, fractions, colors, CycleMethod.NO_CYCLE, MultipleGradientPaint.ColorSpaceType.SRGB, at));
+				g.fill(new Ellipse2D.Double(x0 - s, y0 - s, s*2,s*2));
+			}
+		}
+		
 	}
 	
 }

@@ -75,7 +75,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 	/**Звёзды нашего мира*/
 	public static List<SunAbstract> suns = null;
 	/**Минералы нашего мира*/
-	public static List<Object> minerals = null;
+	public static List<MineralAbstract> minerals = null;
 	/**Потоки воды, которые заставлют клетки двигаться*/
 	public static List<Stream> streams = null;
 	/**Эволюционное дерево мира*/
@@ -176,8 +176,17 @@ public class Configurations extends JsonSave.JSONSerialization{
 		switch (type) {
 			case LINE_H -> {
 				buildMap(type, width, height, new HashMap<CellObject.LV_STATUS, Integer>(){{put(CellObject.LV_STATUS.LV_ORGANIC, 2);}});
-				DDIRTY_WATER = DIRTY_WATER = Math.max(1, 20 / (width * 3.3)); //Чтобы освещалось только 33 % мира при силе света в 20 единиц
-				suns.add(new SunRectangle(20, new Trajectory(new Point(MAP_CELLS.width/2,0)),MAP_CELLS.width, 1));
+				DDIRTY_WATER = DIRTY_WATER =  20d / (height * 0.33); //Чтобы освещалось только 33 % мира при силе света в 20 единиц
+				suns.add(new SunRectangle(20, new Trajectory(new Point(MAP_CELLS.width/2,0)),MAP_CELLS.width/2, 1, false));
+				suns.add(new SunEllipse(
+						20, 
+						new TrajectoryLine(
+								100, 
+								new Point(0, 0),
+								new Point(MAP_CELLS.width/2, 0),
+								new Point(MAP_CELLS.width-1, 0)), 
+						width/8,height/2, 
+						false));
 			}
 			default -> throw new AssertionError();
 		}
@@ -229,7 +238,20 @@ public class Configurations extends JsonSave.JSONSerialization{
 	 * @return сколько в единицах HP энергии тут
 	 */
 	public static double getSunPower(Point pos){
-		return suns.stream().reduce(0d, (a,b) -> a + b.getEnergy(pos), Double::sum);
+		return suns.stream().reduce(0d, (a,b) -> a + Math.max(0, b.getPoint(pos)), Double::sum);
+	}
+	/**Возвращает максимально возможное количество солнечной энергии в мире
+	 * @return сколько в единицах HP энергии всего в мире
+	 */
+	public static double getMaxSunPower(){
+		return suns.stream().reduce(0d, (a,b) -> a + b.power, Double::sum);
+	}
+	/**Возвращает концентрацию минералов вокруг клетки
+	 * @param pos где смотрим параметр
+	 * @return сколько в единицах MP энергии тут
+	 */
+	public static double getConcentrationMinerals(Point pos){
+		return minerals.stream().reduce(0d, (a,b) -> a + Math.max(0, b.getPoint(pos)), Double::sum);
 	}
 	/**Сохраняет текущий вид графического отображения
 	 * @param defaultViewer набор панелей, которые теперь будут на экране
