@@ -650,7 +650,7 @@ public class AliveCell extends AliveCellProtorype {
 				int index = 0;
 				for (final var iterator = values.iterator(); iterator.hasNext(); index++) {
 					final var i = iterator.next();
-					final var v = i.getPos().distance(getPos());
+					final var v = getPos().distance(i.getPos());
 					int rxf = cx + v.x * r;
 					int ryf = cy + v.y * r;
 					final var lx = Math.abs(rxf - cx);
