@@ -215,6 +215,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		if (Configurations.getViewer() instanceof DefaultViewer dv) {
 			if (evt.isControlDown()) {
 				dv.getWorld().addZoom(-evt.getWheelRotation() * 10);
+				scrollPane.dispatchEvent(new ComponentEvent(scrollPane, ComponentEvent.COMPONENT_RESIZED));
 			}
 		}
     }//GEN-LAST:event_contentPaneMouseWheelMoved
@@ -323,7 +324,6 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		scrollPane.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
-				
 				var scale = (Math.pow(5,(world.getZoom()-1) / 100d));
 				var newW = (int) (scrollPane.getWidth() * scale) - 10;
 				var newH = (int) (scrollPane.getHeight() * scale) - 10;
@@ -359,12 +359,13 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		
 		viewport.addChangeListener(e -> EventQueue.invokeLater(() ->{
 			if(world.getZoom() > 1){
+				final var transform = world.getTransform();
 				var horizont = scrollPane.getHorizontalScrollBar();
 				var vertical = scrollPane.getVerticalScrollBar();
-				var xMin = Math.max(0, world.rxToX(horizont.getValue()));
-				var xMax = Math.min(Configurations.MAP_CELLS.width - 1,world.rxToX(horizont.getValue() + viewport.getSize().width));
-				var yMin = Math.max(0, world.ryToY(vertical.getValue()));
-				var yMax = Math.min(Configurations.MAP_CELLS.height - 1,world.ryToY(vertical.getValue() + viewport.getSize().height));
+				var xMin = Math.max(0, transform.toWorldX(horizont.getValue()));
+				var xMax = Math.min(Configurations.MAP_CELLS.width - 1,transform.toWorldX(horizont.getValue() + viewport.getSize().width));
+				var yMin = Math.max(0, transform.toWorldY(vertical.getValue()));
+				var yMax = Math.min(Configurations.MAP_CELLS.height - 1,transform.toWorldY(vertical.getValue() + viewport.getSize().height));
 				world.setVisible(new Calculations.Point(xMin, yMin),new Calculations.Point(xMax, yMax));
 			} else {
 				world.setVisible(new Calculations.Point(0, 0),new Calculations.Point(Configurations.MAP_CELLS.width - 1, Configurations.MAP_CELLS.height - 1));

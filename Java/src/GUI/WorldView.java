@@ -7,21 +7,15 @@ package GUI;
 import Calculations.Configurations;
 import static Calculations.Configurations.WORLD_TYPE.LINE_H;
 import Calculations.Point;
-import MapObjects.AliveCell;
 import MapObjects.CellObject;
-import MapObjects.Fossil;
-import MapObjects.Organic;
-import MapObjects.Poison;
 import Utils.ColorRec;
 import Utils.FPScounter;
 import Utils.Utils;
-import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Stroke;
 import java.util.ArrayList;
 
 /**
@@ -29,6 +23,92 @@ import java.util.ArrayList;
  * @author Kerravitarr
  */
 public class WorldView extends javax.swing.JPanel {
+	/**Класс для всех преобразований из размеров мира в размеры пиксеелй на экране*/
+	public class Transforms{
+		/**Масштаб - количество пикселей на 1 ячейку мира*/
+		private double scalePxPerCell = 1;
+		/**Верхний и нижний бордюр. Нужен, чтобы мир не упиралдся прям в потолок, а имел небольшой зазор сверху и снизу*/
+		private static final java.awt.geom.Point2D UP_DOWN_border = new java.awt.Point.Double(0.02, 0.02);
+		/**Верхний и нижний бордюр. Нужен, чтобы мир не упиралдся прям в края, а имел небольшой зазор слева и справа*/
+		private static final java.awt.geom.Point2D LEFT_RIGHT_border = new java.awt.Point.Double(0.02, 0.02);
+		/**Дополнительный край из-за не совершенства арены*/
+		public static final Dimension border = new Dimension();
+		/**Количество пиксеелй на сколько мир смещается от верхней границы из за необходимости отрисовки границы*/
+		private double pixelXDel = 0d;
+		/**Количество пиксеелй на сколько мир смещается от левой границы из за необходимости отрисовки границы*/
+		private double pixelYDel = 0d;
+		
+		/**
+		* Переводит координаты мира в координаты экрана
+		* @param x координата в масштабах клеток
+		* @return x координата в масштабе окна, пк
+		*/
+	   public int toScrinX(int x) {return (int) Math.round(x*scalePxPerCell + pixelXDel);}
+	   /**
+		* Переводит координаты мира в координаты экрана
+		* @param point объект с координатами, из которого выбирается только Х
+		* @return x координата в масштабе окна, пк
+		*/
+	   public int toScrinX(Point point) {return toScrinX(point.getX());}
+	   /**
+		* Переводит координаты мира в координаты экрана
+		* @param y координата в масштабах клетки
+		* @return y координата в масштабе окна, пк
+		*/
+	   public int toScrinY(int y) {return (int) Math.round(y*scalePxPerCell + pixelYDel);}
+	   /**
+		* Переводит координаты мира в координаты экрана
+		* @param point объект с координатами, из которого выбирается только Y
+		* @return y координата в масштабе окна, пк
+		*/
+	   public int toScrinY(Point point) {return toScrinY(point.getY());}
+	   /**
+		* Переводит координаты мира в координаты экрана
+		* @param point объект с координатами мира
+		* @return объект с координатами экрана
+		*/
+	   public java.awt.Point toScrin(Point point) {return new java.awt.Point(toScrinX(point),toScrinY(point));}
+	   
+	   /**Возвращает размеры мира в пикселях
+		* @param r размер объекта в клетках мира
+		* @return радиус объекта в пикселях
+		*/
+	   public int toScrin(int r) {return (int) Math.round(r * scalePxPerCell) ;}
+	   /**
+		* Переводит координаты экрана в координаты мира
+		* @param x координата на экране
+		* @return x координата на поле. Эта координата может выходить за размеры мира!!!
+		*/
+	   public int toWorldX(int x) {return (int) Math.round((x - border.width)/scalePxPerCell - 0.5);}
+	   /**
+		* Переводит координаты экрана в координаты мира
+		* @param y координата на экране
+		* @return x координата на поле. Эта координата может выходить за размеры мира!!!
+		*/
+	   public int toWorldY(int y) {return (int) Math.round((y - border.height)/scalePxPerCell - 0.5);}
+	   
+	   /**Специальная функция, которая обновляет все масштабные коэффициенты*/
+	   private void recalculate(){
+		   final double h = Math.max(10d,  getHeight());
+		   final double w = Math.max(10d,  getWidth());
+			//Пересчёт размера мира
+			double wDel, hDel;
+			if(Configurations.MAP_CELLS.width > Configurations.MAP_CELLS.height){
+				hDel = h * (1d - (UP_DOWN_border.getX() + UP_DOWN_border.getY())) / (Configurations.MAP_CELLS.height);
+				wDel = w / (Configurations.MAP_CELLS.width);
+			} else {
+				hDel = h / (Configurations.MAP_CELLS.height);
+				wDel = w * (1d - (LEFT_RIGHT_border.getX() + LEFT_RIGHT_border.getY()))/ (Configurations.MAP_CELLS.width);
+			}
+			scalePxPerCell = Math.min(hDel, wDel);
+			border.width = (int) Math.round((w - Configurations.MAP_CELLS.width*scalePxPerCell)/2);
+			border.height = (int) Math.round((h - Configurations.MAP_CELLS.height*scalePxPerCell)/2);
+			{
+				pixelXDel = border.width + scalePxPerCell/2;
+				pixelYDel = border.height + scalePxPerCell/2;
+			}
+	   }
+	}
 
 	/** Creates new form WorldView */
 	public WorldView() {
@@ -141,13 +221,13 @@ public class WorldView extends javax.swing.JPanel {
 	
 	@Override
 	public void paintComponent(Graphics g) {
-		paintComponent(g,false);
+		paintComponent((Graphics2D)g,false);
 	}
 	/**Отрисовывает мир на холст
 	 * @param g куда рисовать
 	 * @param isAll рисовать всё или только то, что видно на экране?
 	 */
-	public void paintComponent(Graphics g, boolean isAll) {
+	public void paintComponent(Graphics2D g, boolean isAll) {
 		super.paintComponent(g);
 		
 		var v = Configurations.getViewer();
@@ -155,7 +235,7 @@ public class WorldView extends javax.swing.JPanel {
 		var legend = ((DefaultViewer) v ).getLegend();
 		
 		paintField(g);
-		int r = getRr(1);
+		int r = transforms.toScrin(1);
 		for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
 			for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
 				if(isAll || (visible[0].getX() <= x && x <= visible[1].getX()
@@ -164,8 +244,8 @@ public class WorldView extends javax.swing.JPanel {
 					//if(!pos.valid()) continue;					
 					final var cell = Configurations.world.get(pos);
 					if(cell != null){
-						int cx = getRx(cell.getPos());
-						int cy = getRy(cell.getPos());
+						int cx = transforms.toScrinX(cell.getPos());
+						int cy = transforms.toScrinY(cell.getPos());
 						cell.paint(g, legend, cx, cy, r);
 					}
 				}
@@ -175,15 +255,15 @@ public class WorldView extends javax.swing.JPanel {
 		final var infoCell = view instanceof DefaultViewer ? ((DefaultViewer) view).getBotInfo().getCell() : null;
 		if(infoCell != null) {
 			g.setColor(Color.GRAY);
-			g.drawLine(getRx(infoCell.getPos()), border.height, getRx(infoCell.getPos()), getHeight()-border.height);
-			g.drawLine(border.width, getRy(infoCell.getPos()), getWidth()-border.width, getRy(infoCell.getPos()));
+			g.drawLine(transforms.toScrinX(infoCell.getPos()), 0, transforms.toScrinX(infoCell.getPos()), getHeight());
+			g.drawLine(0, transforms.toScrinY(infoCell.getPos()), getWidth(), transforms.toScrinY(infoCell.getPos()));
 		}
 		if(selectPoint[0] != null && selectPoint[1] != null){
 			g.setColor(new Color(255,255,255,25));
-			var x0 = getRx(selectPoint[0]);
-			var y0 = getRy(selectPoint[0]);
-			var x1 = getRx(selectPoint[1]);
-			var y1 = getRy(selectPoint[1]);
+			var x0 = transforms.toScrinX(selectPoint[0]);
+			var y0 = transforms.toScrinY(selectPoint[0]);
+			var x1 = transforms.toScrinX(selectPoint[1]);
+			var y1 = transforms.toScrinY(selectPoint[1]);
 			g.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x0 - x1), Math.abs(y0 - y1));
 		}
 		
@@ -194,27 +274,29 @@ public class WorldView extends javax.swing.JPanel {
 	/**Закрашивает картину, согласно текущему раскладу
 	 * @param g полотно, которое красим
 	 */
-	private void paintField(Graphics g) {
+	private void paintField(Graphics2D g) {
+		//Рисуем игровое поле
+		switch (Configurations.world_type) {
+			case LINE_H ->{
+				//Вода
+				colors[1].paint((Graphics2D)g);
+			}
+			default -> 	throw new AssertionError();
+		}
+		
+		//А теперь, поверх воды, рисуем солнышки
+		Configurations.suns.forEach(s -> s.paint(g,getTransform()));
+		
+		//Рисуем всё остальное
 		switch (Configurations.world_type) {
 			case LINE_H ->{
 				//Небо
 				colors[0].paint((Graphics2D) g);
-				//Вода
-				colors[1].paint((Graphics2D)g);
-				//Configurations.sun.paint((Graphics2D) g);
-				//Минералы
-				//colors[1].paint((Graphics2D) g);
-				//Гейзеры
-				//for(Geyser gz : Configurations.geysers)
-				//	gz.paint(g);
-
 				//Земля
 				colors[2].paint((Graphics2D)g);
 			}
 			default -> 	throw new AssertionError();
 		}
-		//А теперь, поверх мира, рисуем солнышки
-		Configurations.suns.forEach(s -> s.paint(g));
 		//Вспомогательное построение
 		//paintLine(g);
 		//paintProc(g);
@@ -239,25 +321,7 @@ public class WorldView extends javax.swing.JPanel {
 	public synchronized void recalculate() {
 		var oActiv = Configurations.world.isActiv();
 		Configurations.world.awaitStop();
-		//Пересчёт размера мира
-		double wDel, hDel;
-		if(Configurations.MAP_CELLS.width > Configurations.MAP_CELLS.height){
-			hDel = ((double) getHeight()) * (1d - (UP_DOWN_border.getX() + UP_DOWN_border.getY())) / (Configurations.MAP_CELLS.height);
-			wDel = ((double) getWidth()) / (Configurations.MAP_CELLS.width);
-		} else {
-			hDel = ((double) getHeight()) / (Configurations.MAP_CELLS.height);
-			wDel = ((double) getWidth()) * (1d - (LEFT_RIGHT_border.getX() + LEFT_RIGHT_border.getY()))/ (Configurations.MAP_CELLS.width);
-		}
-		scalePxPerCell = Math.min(hDel, wDel);
-		border.width = (int) Math.round((getWidth() - Configurations.MAP_CELLS.width*scalePxPerCell)/2);
-		border.height = (int) Math.round((getHeight() - Configurations.MAP_CELLS.height*scalePxPerCell)/2);
-		{
-			pixelXDel = border.width + scalePxPerCell/2;
-			pixelYDel = border.height + scalePxPerCell/2;
-		}
-		//for(Geyser gz : Configurations.geysers)
-		//	gz.updateScreen(getWidth(),getHeight());
-		//Configurations.sun.resize(getWidth(), getHeight());
+		transforms.recalculate();
 		
 		updateScrin();
 		
@@ -277,20 +341,19 @@ public class WorldView extends javax.swing.JPanel {
 				//Дно
 				int yb[] = new int[4];
 
-				xs[0] = xs[1] = getRx(0);
-				xs[2] = xs[3] = getRx(Configurations.MAP_CELLS.width);
+				xs[0] = xs[1] = transforms.toScrinX(0);
+				xs[2] = xs[3] = transforms.toScrinX(Configurations.MAP_CELLS.width);
 				
-
 				ys[0] = ys[3] = 0;
-				ys[1] = ys[2] = yw[0] = yw[3] = getRy(0);
-				yb[0] = yb[3] = yw[1] = yw[2] = getRy(Configurations.MAP_CELLS.height - 1);
+				ys[1] = ys[2] = yw[0] = yw[3] = transforms.toScrinY(0);
+				yb[0] = yb[3] = yw[1] = yw[2] = transforms.toScrinY(Configurations.MAP_CELLS.height - 1);
 				yb[1] = yb[2] = getHeight();
 				//Небо
-				colors[0] = new ColorRec(xs,ys, new Color(224, 255, 255, 255));
+				colors[0] = new ColorRec(xs,ys,AllColors.SKY);
 				//Вода
-				colors[1] = new ColorRec(xs,yw, COLOR_WATER);
+				colors[1] = new ColorRec(xs,yw, AllColors.WATER);
 				//Земля
-				colors[2] = new ColorRec(xs,yb, new Color(139, 69, 19, 255));
+				colors[2] = new ColorRec(xs,yb, AllColors.DRY);
 			}
 			default -> 	throw new AssertionError();
 		}
@@ -309,15 +372,19 @@ public class WorldView extends javax.swing.JPanel {
 	 *					y - нижний блок, в % от размера мира
 	 */
 	public java.awt.geom.Point2D getUDborder(){
-		return UP_DOWN_border;
+		return Transforms.UP_DOWN_border;
 	}
 	/**Левый и правый бордюр, необходимый для отрисовки боковин реки или ещё чего
 	 * @return точка, у которой x - левый блок, в % от размера мира, а
 	 *					y - правый блок, в % от размера мира
 	 */
 	public java.awt.geom.Point2D getLRborder(){
-		return LEFT_RIGHT_border;
+		return Transforms.LEFT_RIGHT_border;
 	}
+	/**Возвращает преобразователь координат
+	 * @return класс, который может преобразовать коррдинаты из ячеестых в пиксельные и наоборот
+	 */
+	public Transforms getTransform(){return transforms;}
 	/**Добавляет к текущему зуму ещё кусочек. Или убирает кусочек.
 	 * В общем изменяет на сколько пользователь будет видеть экран
 	 * @param add на сколько нужно изменить зум
@@ -331,102 +398,31 @@ public class WorldView extends javax.swing.JPanel {
 	
 	/**
 	 * Пересчитыавет координаты мировые в пикселях в координаты ячейки
-	 * @param x мировая координата х
-	 * @param y мировая координата у
+	 * @param x экранная координата х
+	 * @param y экранная координата у
 	 * @return точку в реальном пространстве или null, если эта точка за гранью
 	 */
 	private Point recalculation(int x, int y) {
-		x = Utils.betwin(border.width, x, getWidth() - border.width);
-		y = Utils.betwin(border.height, y, getWidth() - border.height);
-		x -= border.width;
-		y -= border.height;
-		x = (int) Math.round(x/scalePxPerCell-0.5);
-		y = (int) Math.round(y/scalePxPerCell-0.5);
-		return new Point(x,y);
-	}
-	/**
-	 * Переводит координаты клетки в координаты экрана
-	 * @param x координата в масштабах клетки
-	 * @return x координата в масштабе окна, пк
-	 */
-	public int getRx(int x) {
-		return (int) Math.round(x*scalePxPerCell + pixelXDel);
-	}
-	/**
-	 * Переводит координаты клетки в координаты экрана
-	 * @param point объект с координатами, из которого выбирается только Х
-	 * @return x координата в масштабе окна, пк
-	 */
-	public int getRx(Point point) {
-		return getRx(point.getX());
-	}
-	
-	/**
-	 * Переводит координаты клетки в координаты экрана
-	 * @param y координата в масштабах клетки
-	 * @return y координата в масштабе окна, пк
-	 */
-	public int getRy(int y) {
-		return (int) Math.round(y*scalePxPerCell + pixelYDel);
-	}
-	/**
-	 * Переводит координаты клетки в координаты экрана
-	 * @param point объект с координатами, из которого выбирается только Y
-	 * @return y координата в масштабе окна, пк
-	 */
-	public int getRy(Point point) {
-		return getRy(point.getY());
-	}
-	/**Возвращает радиус клетки в пикселях
-	 * @param r радиус объекта в клетках мира
-	 * @return радиус объекта в пикселях
-	 */
-	public int getRr(int r) {
-		return (int) Math.round(r * scalePxPerCell) ;
-	}
-	/**
-	 * Переводит координаты экрана в координаты клетки
-	 * @param x координата на экране
-	 * @return x координата на поле. Эта координата может выходить за размеры мира!!!
-	 */
-	public int rxToX(int x) {
-		return (int) Math.round((x - border.width)/scalePxPerCell - 0.5);
-	}
-	/**
-	 * Переводит координаты экрана в координаты клетки
-	 * @param y координата на экране
-	 * @return x координата на поле. Эта координата может выходить за размеры мира!!!
-	 */
-	public int ryToY(int y) {
-		return (int) Math.round((y - border.height)/scalePxPerCell - 0.5);
+		x = Utils.betwin(transforms.border.width, x, getWidth() - transforms.border.width);
+		y = Utils.betwin(transforms.border.height, y, getWidth() - transforms.border.height);
+		return new Point(transforms.toWorldX(x),transforms.toWorldY(y));
 	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables
-	/**Масштаб - количество пикселей на 1 ячейку мира*/
-	private static double scalePxPerCell = 1;
+
 	/**Увеличение экрана, на сколько он больше, чем 1 к 1*/
-	private static int zoom = 1;
-	/**Верхний и нижний бордюр. Нужен, чтобы мир не упиралдся прям в потолок, а имел небольшой зазор сверху и снизу*/
-	private static final java.awt.geom.Point2D UP_DOWN_border = new java.awt.Point.Double(0.02, 0.02);
-	/**Верхний и нижний бордюр. Нужен, чтобы мир не упиралдся прям в края, а имел небольшой зазор слева и справа*/
-	private static final java.awt.geom.Point2D LEFT_RIGHT_border = new java.awt.Point.Double(0.02, 0.02);
-	/**Дополнительный край из-за не совершенства арены*/
-	public static Dimension border = new Dimension();
-	/**Количество пиксеелй на сколько мир смещается от верхней границы из за необходимости отрисовки границы*/
-	private static double pixelXDel;
-	/**Количество пиксеелй на сколько мир смещается от левой границы из за необходимости отрисовки границы*/
-	private static double pixelYDel;
+	private int zoom = 1;
 	/**Координаты видимой части экрана. Специально для перерисовки только ограниченной части. Две точки - верхний угол и нижний*/
 	private final Point[] visible = new Point[2];
 	/**Координаты выделения клеток при использовании мыши в качестве выделителя*/
 	private final Point[] selectPoint = new Point[2];
 	/**Счётчик шагов. Puls Per Second*/
 	public final FPScounter fps = new FPScounter();
-	
 	/**Все цвета, которые мы должны отобразить на поле*/
 	private final ColorRec [] colors = new ColorRec[3];
-	/**Цвет водички*/
-	private final Color COLOR_WATER = Utils.getHSBColor(240d / 360, 1, 1, 0.7);
+	/**Преобразователь из одних координат в другие*/
+	private final Transforms transforms = new Transforms();
+	
 
 }
