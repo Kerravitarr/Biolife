@@ -33,6 +33,6 @@ public class AllColors {
 	 * @return цвет с установленной альфой
 	 */
 	public static Color toDark(Color from, int alfa){
-		return new Color(from.getRed(), from.getGreen(), from.getBlue(), alfa);
+		return new Color(from.getRed(), from.getGreen(), from.getBlue(), Utils.betwin(0, alfa, 255));
 	}
 }

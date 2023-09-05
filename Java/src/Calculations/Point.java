@@ -114,7 +114,7 @@ public class Point{
 		 * @return агипотенуза вектора в клетках мира*/
 		public double getHypotenuse(){
 			if(h == null){
-				h = Math.sqrt(x*x+y*y);
+				h = Math.hypot(x, y);
 			}
 			return h;
 		}

@@ -102,7 +102,8 @@ public class SunEllipse extends SunAbstract {
 					t += delta_t;
 					t = Math.min(Math.PI / 2, Math.max(0, t));
 				}
-				return power - Configurations.DIRTY_WATER * (Math.sqrt(x * x + y * y));
+				final var dist = Math.hypot(y - d.y, x - d.x);
+				return power - Configurations.DIRTY_WATER * dist;
 			}
 		} else {
 			if(a2 == b2){
@@ -115,7 +116,7 @@ public class SunEllipse extends SunAbstract {
 				if(Math.pow(d.x, 2) / (aa) + Math.pow(d.y, 2) / (bb) <= 1){
 					return power;
 				} else {
-					var t = Math.PI / 4;
+					/*var t = Math.PI / 4;
 					double x = 0,y = 0;
 					for (int i = 0; i < 3; i++) {
 						final var ct = Math.cos(t);
@@ -124,7 +125,7 @@ public class SunEllipse extends SunAbstract {
 						y = b * st;
 
 						final var ex = (aa - bb) * Math.pow(ct, 3) / a;
-						final var ey = (bb-aa) * Math.pow(st, 3) / b;
+						final var ey = (bb - aa) * Math.pow(st, 3) / b;
 
 						final var rx = x - ex;
 						final var ry = y - ey;
@@ -140,7 +141,34 @@ public class SunEllipse extends SunAbstract {
 						t += delta_t;
 						t = Math.min(Math.PI / 2, Math.max(0, t));
 					}
-					return power - Configurations.DIRTY_WATER * (Math.sqrt(x * x + y * y));
+					final var dist = Math.hypot(y - d.y, x - d.x);*/
+					
+					double tx = 0.707,ty = 0.707;
+					for (int i = 0; i < 3; i++) {
+						final var x = a * tx;
+						final var y = b * ty;
+						
+						final var ex = (aa - bb) * Math.pow(tx, 3) / a;
+						final var ey = (bb - aa) * Math.pow(ty, 3) / b;
+						
+						final var rx = x - ex;
+						final var ry = y - ey;
+
+						final var qx = d.x - ex;
+						final var qy = d.y - ey;
+						
+						final var r = Math.hypot(ry, rx);
+						final var q = Math.hypot(qy, qx);
+						
+						tx = Utils.Utils.betwin(0, (qx * r / q + ex) / a, 1);
+						ty = Utils.Utils.betwin(0, (qy * r / q + ey) / b, 1);
+						
+						final var t = Math.hypot(tx,ty);
+						tx /= t;
+						ty /= t;
+					}
+					final var dist = Math.hypot(a*tx, b*ty);
+					return power - Configurations.DIRTY_WATER * dist;
 				}
 			}
 		}
