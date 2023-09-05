@@ -456,6 +456,13 @@ public abstract class AliveCellProtorype extends CellObject{
         //Ну и энергию от солнца не забываем
 		return specMaxVal(Configurations.getSunPower(getPos()) + t, Specialization.TYPE.PHOTOSYNTHESIS);
 	}
+	/**
+	 * Возвращает количество минералов вокруг
+	 * @return количество солнца, которое может получить клетка. [0, Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER + 5]
+	 */
+	public double mineralAround() {
+		return specMaxVal(Configurations.getConcentrationMinerals(getPos()), Specialization.TYPE.MINERALIZATION);
+	}
 
 	/**
 	 * @return the mucosa
