@@ -17,10 +17,6 @@ public class TrajectoryEllipse extends Trajectory{
 	private final double a;
 	/**Малая ось*/
 	private final double b;
-	/**Эксцентреситет*/
-	private final double e;
-	/**Эксцентреситет в квадрате*/
-	private final double ee;
 	
 	
 	/**Движение по орбите
@@ -37,8 +33,6 @@ public class TrajectoryEllipse extends Trajectory{
 		this.angle = startAngle;
 		this.a = a2 / 2d;
 		this.b = b2 / 2d;
-		this.ee = 1 - (b*b) / (a*a);
-		this.e = Math.sqrt(this.ee);
 	}
 	/**Движдение объекта по кругу
 	 * @param speed скорость движения. Как часто солнце будет шагать. При 1 - каждый раз, при 2 - каждые 2 хода и т.д.
@@ -61,13 +55,12 @@ public class TrajectoryEllipse extends Trajectory{
 		final var angle = startAngle;
 		final var a = a2 / 2d;
 		final var b = b2 / 2d;
-		final var e = Math.sqrt(1 - (b*b) / (a*a));
-		return new Point((int)Math.round(center.getX() + a * (Math.cos(angle) - e)) ,(int)Math.round( center.getY() + a * Math.sqrt(1 - e * e) * Math.sin(angle)));
+		return new Point((int)Math.round(center.getX() + a * Math.cos(angle)) ,(int)Math.round(center.getY() +  b * Math.sin(angle)));
 	}
 
 	@Override
 	protected Point step() {
 		angle += Math.PI / 180;
-		return new Point((int)Math.round(center.getX() + a * (Math.cos(angle) - e)) ,(int)Math.round( center.getY() + a * Math.sqrt(1 - ee) * Math.sin(angle)));
+		return new Point((int)Math.round(center.getX() + a * Math.cos(angle)) ,(int)Math.round(center.getY() +  b * Math.sin(angle)));
 	}
 }
