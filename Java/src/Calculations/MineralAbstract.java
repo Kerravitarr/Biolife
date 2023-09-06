@@ -10,33 +10,24 @@ import java.awt.Graphics2D;
  * @author Илья
  *
  */
-public abstract class MineralAbstract extends SunAbstract{
+public abstract class MineralAbstract extends DefaultEmitter{
+	/**Коээфициент "затухания" для минералов. Каждая минеральная нычка может иметь своё затухание*/
+	protected double attenuation;
 
 	/**Создаёт источник минералов
 	 * @param p максимальная энергия солнца, будто и не было тени
+	 * @param a затухание. На сколько единиц/клетку уменьшается количество минералов вдали от объекта
 	 * @param move форма движения солнца. Доступны изначально LineMove и EllipseMove
+	 * @param name название залежи
 	 */
-	public MineralAbstract(double p, Trajectory move){
-		super(p,move);
+	public MineralAbstract(double p,double a, Trajectory move, String name){
+		super(p,move,name);
+		attenuation = a;
 	}
 	/**
 	 * Возвращает концентрацию минералов в этой точке пространства
 	 * @param pos позиция в пространстве
 	 * @return количество энергии. Может быть отрицательным числом - это не поглащение минеравло, а удалённость от источника
 	 */
-	@Override
-	public abstract double getPoint(Point pos);
-	/**Этот метод будет вызываться каждый раз, когда изменится местоположение объекта*/
-	@Override
-	protected abstract void move();
-	/**
-	 * Функция непосредственного рисования залежей в указанных координатах.
-	 * Объект должн отрисовать себя так, будто он находится где ей сказанно
-	 * @param g холст, на котором надо начертить объект
-	 * @param transform преобразователь размеров мировых в размеры экранные
-	 * @param posX текущаяя координата
-	 * @param posY текущаяя координата
-	 */
-	@Override
-	protected abstract void paint(Graphics2D g, Transforms transform, int posX, int posY);
+	public abstract double getConcentration(Point pos);
 }
