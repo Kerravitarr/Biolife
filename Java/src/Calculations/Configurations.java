@@ -36,19 +36,18 @@ import java.util.logging.Logger;
  * @author Илья
  *
  */
-public class Configurations extends JsonSave.JSONSerialization{
+public class Configurations extends SaveAndLoad.JSONSerialization{
+	/**Переводчик для всех названий. В теории*/
+	private static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
+	
 	/**Версия приложения. Нужна на тот случай, если вдруг будет загружаться старое приложение*/
 	public static final long VERSION = 7;
 	/**Количиство ячеек карты*/
 	public static Dimension MAP_CELLS = null;
 	/**Тип созданного мира, в котором живут живики*/
 	public static WORLD_TYPE world_type;
-	/**Гравитация в созданном мире.
-	 * Может быть 0 или больше. При 0 - гравитации, ясное дело, нет.
-	 * При 1 все тела, что должны падать, будут стремиться падать каждый ход
-	 * При 2 - раз в 2 хода и т.д.
-	 */
-	public static Map<CellObject.LV_STATUS, Integer> gravitation;
+	/**Гравитация в созданном мире. */
+	public final static Gravitation[] gravitation = new Gravitation[CellObject.LV_STATUS.length];
 	
 	/**Период сохранения, шаги эволюции*/
 	public static final long SAVE_PERIOD = 100_000;
@@ -65,9 +64,9 @@ public class Configurations extends JsonSave.JSONSerialization{
 	//Те-же переменные, только их значения по умолчанию.
 	//Значения по умолчанию рассчитываются исходя из размеров мира
 	//И не могут меняться пока мир неизменен
-	public static int DAGGRESSIVE_ENVIRONMENT = Configurations.AGGRESSIVE_ENVIRONMENT;
-	public static int DTIK_TO_EXIT = Configurations.TIK_TO_EXIT;
-	public static double DDIRTY_WATER = Configurations.DIRTY_WATER;
+	public static int DAGGRESSIVE_ENVIRONMENT;
+	public static int DTIK_TO_EXIT;
+	public static double DDIRTY_WATER;
 
 	//Разные глобальные объекты, отвечающие за мир
 	/**Глобальный мир!*/
@@ -102,8 +101,6 @@ public class Configurations extends JsonSave.JSONSerialization{
 	/**Уменьешнный размер шрифта для необходимых элементов*/
 	public static java.awt.Font smalFont = null; 
 	
-	/**Переводчик для всех названий. В теории*/
-	private static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
 	/**Задача, выплоняемая примерно раз в секунду, но без жёсткого ограничения*/
 	public interface EvrySecondTask{
 		/**Функция, вызываемая каждую секунду. Примерно*/
@@ -136,15 +133,26 @@ public class Configurations extends JsonSave.JSONSerialization{
 	public String getName() {
 		return "CONFIG_WORLD";
 	}
-	/**Сохраняет конфигурацию мира*/
+	@Override
 	public JSON getJSON() {
 		JSON configWorld = new JSON();
 		configWorld.add("MAP_CELLS", new int[] {MAP_CELLS.width,MAP_CELLS.height});
 		configWorld.add("AGGRESSIVE_ENVIRONMENT", AGGRESSIVE_ENVIRONMENT);
 		configWorld.add("TIK_TO_EXIT", TIK_TO_EXIT);
+		configWorld.add("DIRTY_WATER", DIRTY_WATER);
+		configWorld.add("WORLD_TYPE", world_type);
+		/*final var jsuns = new ArrayList<JSON>(suns.size());
+		suns.forEach(s -> jsuns.add(s.getJSON()));
+		configWorld.add("SUNS", jsuns);
+		final var jminerals = new ArrayList<JSON>(minerals.size());
+		minerals.forEach(s -> jsuns.add(s.getJSON()));
+		configWorld.add("MINERALS", jminerals);
+		final var jstreams = new ArrayList<JSON>(streams.size());
+		streams.forEach(s -> jsuns.add(s.getJSON()));
+		configWorld.add("STREAMS", jstreams);*/
 		return configWorld;
 	}
-	/**Загрузка конфигурации мира*/
+	@Override
 	public void setJSON(JSON configWorld, long version) {
 		List<Integer> map = configWorld.getA("MAP_CELLS");
 		if(version < 7){
@@ -153,16 +161,23 @@ public class Configurations extends JsonSave.JSONSerialization{
 			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
 		
 			var DIRTY_WATER = configWorld.get("DIRTY_WATER");
-			var LEVEL_MINERAL = configWorld.get("LEVEL_MINERAL");
-			var CONCENTRATION_MINERAL = configWorld.get("CONCENTRATION_MINERAL");
 			var SUN_SPEED = configWorld.get("SUN_SPEED");
 			var SUN_LENGHT = configWorld.get("SUN_LENGHT");
 			var SUN_POSITION = configWorld.get("SUN_POSITION");
 			var BASE_SUN_POWER = configWorld.get("BASE_SUN_POWER");
 			var ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
 			var SUN_FORM = configWorld.get("SUN_FORM");
-		} else {
 			
+			var LEVEL_MINERAL = configWorld.get("LEVEL_MINERAL");
+			var CONCENTRATION_MINERAL = configWorld.get("CONCENTRATION_MINERAL");
+		} else {
+			makeDefaultWord(WORLD_TYPE.valueOf(configWorld.get("WORLD_TYPE")), map.get(0),map.get(1));
+			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
+			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
+			DIRTY_WATER = configWorld.get("DIRTY_WATER");
+			for(var s : configWorld.getAJ("SUNS")){
+				
+			}
 		}
 	}
 	
@@ -172,21 +187,22 @@ public class Configurations extends JsonSave.JSONSerialization{
 	 * @param width ширина мира, в кубиках.
 	 * @param height высота мира, тоже в кубиках
 	 */
-	public static void makeDefaultWord(WORLD_TYPE type, int width, int height) {
+	public static void makeDefaultWord(WORLD_TYPE type, int width, int height ) {
 		switch (type) {
 			case LINE_H -> {
-				buildMap(type, width, height, new HashMap<CellObject.LV_STATUS, Integer>(){{put(CellObject.LV_STATUS.LV_ORGANIC, 2);}});
-				DDIRTY_WATER = DIRTY_WATER =  20d / (height * 0.33); //Чтобы освещалось только 33 % мира при силе света в 20 единиц
-				suns.add(new SunRectangle(20, new Trajectory(new Point(MAP_CELLS.width/2,0)),MAP_CELLS.width/2, 1, false));
+				buildMap(type, width, height, new HashMap<CellObject.LV_STATUS, Gravitation>(){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(2, Gravitation.Direction.DOWN));}});
+				suns.add(new SunRectangle(20, new Trajectory(new Point(width/2,0)), (int) (width* 0.77), 1, false,"Постоянное"));
 				suns.add(new SunEllipse(
 						20, 
-						new TrajectoryLine(
-								100, 
-								new Point(0, 0),
-								new Point(MAP_CELLS.width/2, 0),
-								new Point(MAP_CELLS.width-1, 0)), 
+						new TrajectoryLine(50, new Point(0, 0),new Point(width/2, 0),new Point(width-1, 0)), 
 						width/8,height/2, 
-						false));
+						false,"Движущееся"));
+				//Эти минералы будут занимать только 33% мира
+				minerals.add(new MineralRectangle(20,20d / (height * 0.33), new Trajectory(new Point(0,height-1)),width/2, 1, false,"Постоянная"));
+				//А эти будут иногда подниматься достаточно высоко
+				minerals.add(new MineralEllipse(20,20d / (height * 0.33), 
+						new TrajectoryEllipse(500,new Point(width / 2, height * 7 / 8), -Math.PI, 1, height * 3 / 8)
+						,width * 1 / 4, height * 1 / 8, true,"Движущееся"));
 			}
 			default -> throw new AssertionError();
 		}
@@ -211,7 +227,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 	 * @param gravitation гравитация в созданном мире для каждого типа объектов. 
 	 *				Если не указывать тип, гравитация на него действовать не будет
 	 */
-	public static void buildMap(WORLD_TYPE type, int width, int height, Map<CellObject.LV_STATUS, Integer> gravitation){
+	public static void buildMap(WORLD_TYPE type, int width, int height, Map<CellObject.LV_STATUS, Gravitation> gravitation){
 		//Создаём мир
 		MAP_CELLS = new Dimension(width,height);
 		world_type = type;
@@ -226,8 +242,12 @@ public class Configurations extends JsonSave.JSONSerialization{
 		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 25;
 		//Скорость разложения органики. За сколько шагов уходит 1 единица энергии
 		TIK_TO_EXIT = DTIK_TO_EXIT = 1000;
+		 //Чтобы освещалось только 33 % мира при силе света в 20 единиц
+		DDIRTY_WATER = DIRTY_WATER =  20d / (height * 0.33);
 		//Создаём магическое притяжение
-		Configurations.gravitation = gravitation;
+		for(var i : CellObject.LV_STATUS.values){
+			Configurations.gravitation[i.ordinal()] = (gravitation != null && gravitation.containsKey(i)) ? gravitation.get(i) : Gravitation.NONE;
+		}
 		
 		//А теперь дерево эволюции
 		tree = new EvolutionTree();
@@ -238,7 +258,7 @@ public class Configurations extends JsonSave.JSONSerialization{
 	 * @return сколько в единицах HP энергии тут
 	 */
 	public static double getSunPower(Point pos){
-		return suns.stream().reduce(0d, (a,b) -> a + Math.max(0, b.getPoint(pos)), Double::sum);
+		return suns.stream().reduce(0d, (a,b) -> a + b.getEnergy(pos), Double::sum);
 	}
 	/**Возвращает максимально возможное количество солнечной энергии в мире
 	 * @return сколько в единицах HP энергии всего в мире
@@ -251,7 +271,13 @@ public class Configurations extends JsonSave.JSONSerialization{
 	 * @return сколько в единицах MP энергии тут
 	 */
 	public static double getConcentrationMinerals(Point pos){
-		return minerals.stream().reduce(0d, (a,b) -> a + Math.max(0, b.getPoint(pos)), Double::sum);
+		return minerals.stream().reduce(0d, (a,b) -> a + b.getConcentration(pos), Double::sum);
+	}
+	/**Возвращает максимально возможное количество минералов в мире
+	 * @return сколько в единицах MP энергии всего в мире
+	 */
+	public static double getMaxConcentrationMinerals(){
+		return minerals.stream().reduce(0d, (a,b) -> a + b.power, Double::sum);
 	}
 	/**Сохраняет текущий вид графического отображения
 	 * @param defaultViewer набор панелей, которые теперь будут на экране
