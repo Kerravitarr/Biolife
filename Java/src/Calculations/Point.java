@@ -161,6 +161,15 @@ public class Point{
 	public void update(Point point) {
 		setXY(point.x,point.y);
 	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof Point p) {
+			return equals(p);
+		} else {
+			return super.equals(obj);
+		}
+	}
 	public boolean equals(Point obj) {
         return (this.x == obj.x) && (this.y == obj.y);
     }
