@@ -13,5 +13,7 @@ import org.junit.runners.Suite;
     MapObjects.dna.CommandListTest.class,
     MapObjects.dna.DNATest.class,
     Calculations.PointTest.class,
+    Calculations.SunEllipseTest.class,
+    Calculations.TrajectoryEllipseTest.class
 })
 public class TestList {}
