@@ -279,21 +279,26 @@ public class WorldView extends javax.swing.JPanel {
 		switch (Configurations.world_type) {
 			case LINE_H ->{
 				//Вода
-				colors[1].paint((Graphics2D)g);
+				colors[1].paint(g);
 			}
 			default -> 	throw new AssertionError();
 		}
 		
 		//А теперь, поверх воды, рисуем солнышки
 		Configurations.suns.forEach(s -> s.paint(g,getTransform()));
+		//И минералки
+		Configurations.minerals.forEach(s -> s.paint(g,getTransform()));
 		
 		//Рисуем всё остальное
 		switch (Configurations.world_type) {
 			case LINE_H ->{
 				//Небо
-				colors[0].paint((Graphics2D) g);
+				colors[0].paint(g);
 				//Земля
-				colors[2].paint((Graphics2D)g);
+				colors[2].paint(g);
+				//ширмы
+				colors[3].paint(g);
+				colors[4].paint(g);
 			}
 			default -> 	throw new AssertionError();
 		}
@@ -340,20 +345,31 @@ public class WorldView extends javax.swing.JPanel {
 				int yw[] = new int[4];
 				//Дно
 				int yb[] = new int[4];
+				//Левая ширма
+				int xsl[] = new int[4];
+				int ysl[] = new int[4];
+				//Правая ширма
+				int xsr[] = new int[4];
 
-				xs[0] = xs[1] = transforms.toScrinX(0);
-				xs[2] = xs[3] = transforms.toScrinX(Configurations.MAP_CELLS.width);
+				xsl[0] = xsl[1] = 0;
+				xsl[2] = xsl[3] = xs[0] = xs[1] = transforms.toScrinX(0);
+				xsr[0] = xsr[1] = xs[2] = xs[3] = transforms.toScrinX(Configurations.MAP_CELLS.width);
+				xsr[2] = xsr[3] = getWidth();
 				
-				ys[0] = ys[3] = 0;
+				ysl[0] = ysl[3] = ys[0] = ys[3] = 0;
 				ys[1] = ys[2] = yw[0] = yw[3] = transforms.toScrinY(0);
 				yb[0] = yb[3] = yw[1] = yw[2] = transforms.toScrinY(Configurations.MAP_CELLS.height - 1);
-				yb[1] = yb[2] = getHeight();
+				ysl[1] = ysl[2] = yb[1] = yb[2] = getHeight();
 				//Небо
 				colors[0] = new ColorRec(xs,ys,AllColors.SKY);
 				//Вода
 				colors[1] = new ColorRec(xs,yw, AllColors.WATER);
 				//Земля
 				colors[2] = new ColorRec(xs,yb, AllColors.DRY);
+				
+				//А теперь два прямоугольника, скрывающие всякие артефакты
+				colors[3] = new ColorRec(xsl,ysl, Color.WHITE);
+				colors[4] = new ColorRec(xsr,ysl, Color.WHITE);
 			}
 			default -> 	throw new AssertionError();
 		}
@@ -420,7 +436,7 @@ public class WorldView extends javax.swing.JPanel {
 	/**Счётчик шагов. Puls Per Second*/
 	public final FPScounter fps = new FPScounter();
 	/**Все цвета, которые мы должны отобразить на поле*/
-	private final ColorRec [] colors = new ColorRec[3];
+	private final ColorRec [] colors = new ColorRec[3 + 2];
 	/**Преобразователь из одних координат в другие*/
 	private final Transforms transforms = new Transforms();
 	
