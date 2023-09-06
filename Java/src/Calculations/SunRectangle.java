@@ -34,16 +34,17 @@ public class SunRectangle extends SunAbstract {
 	 * @param width ширина полоски
 	 * @param height высота полоски
 	 * @param isLine если true, то солнце представляет собой только излучающую окружность
+	 * @param name название солнца
 	 */
-	public SunRectangle(double p, Trajectory move, int width, int height, boolean isLine) {
-		super(p, move);
+	public SunRectangle(double p, Trajectory move, int width, int height, boolean isLine, String name) {
+		super(p, move,name);
 		this.width = width;
 		this.height = height;
 		this.isLine = isLine;
 	}
 
 	@Override
-	public double getPoint(Point pos) {
+	public double getEnergy(Point pos) {
 		//Расстояние от точки до центра нашей полосы
 		final var d = pos.distance(position);
 		final var absX = Math.abs(d.x);
@@ -51,16 +52,16 @@ public class SunRectangle extends SunAbstract {
 		if (isLine) {
 			if (absX <= width / 2 && absY <= height / 2) {
 				//Внутри прямоугольника
-				return power - Configurations.DIRTY_WATER * Math.min(width / 2 - absX, height / 2 - absY);
+				return Math.max(0, power - Configurations.DIRTY_WATER * Math.min(width / 2 - absX, height / 2 - absY));
 			} else {
 				//Снаружи прямоугольника
-				return power - Configurations.DIRTY_WATER * Math.max(absX - width / 2, absY - height / 2);
+				return Math.max(0, power - Configurations.DIRTY_WATER * Math.max(absX - width / 2, absY - height / 2));
 			}
 		} else {
 			if(absX <= width / 2 && absY <= height / 2 )
 				return power;
 			else
-				return power - Configurations.DIRTY_WATER * Math.max(absX - width / 2, absY - height / 2);
+				return Math.max(0, power - Configurations.DIRTY_WATER * Math.max(absX - width / 2, absY - height / 2));
 		}
 	}
 

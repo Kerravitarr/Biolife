@@ -43,9 +43,10 @@ public class SunEllipse extends SunAbstract {
 	 * @param a2 большая ось эллипса. Находится на оси Х
 	 * @param b2 малая ось эллипса. Находится на оси Y
 	 * @param isLine если true, то солнце представляет собой только излучающую окружность
+	 * @param name название солнца
 	 */
-	public SunEllipse(double p, Trajectory move, int a2, int b2, boolean isLine) {
-		super(p, move);
+	public SunEllipse(double p, Trajectory move, int a2, int b2, boolean isLine, String name) {
+		super(p, move,name);
 		this.a2 = a2;
 		this.b2 = b2;
 		this.isLine = isLine;
@@ -60,116 +61,57 @@ public class SunEllipse extends SunAbstract {
 	 * @param move движение ЦЕНТРА этого эллипса
 	 * @param d диаметр круга
 	 * @param isLine если true, то солнце представляет собой только излучающую окружность
+	 * @param name название солнца
 	 */
-	public SunEllipse(double p, Trajectory move, int d, boolean isLine) {
-		this(p, move,d,d,isLine);
+	public SunEllipse(double p, Trajectory move, int d, boolean isLine, String name) {
+		this(p, move,d,d,isLine,name);
 	}
 
+	
 	@Override
-	public double getPoint(Point pos) {
+	public double getEnergy(Point pos) {
 		//Расстояние от центра до точки
 		var d = pos.distance(position);
-		if(isLine){
-			if(a2 == b2){
-				//У нас круг!
-				return power - Configurations.DIRTY_WATER * Math.abs(d.getHypotenuse() - a);
+		if (a2 == b2) {
+			//У нас круг!
+			if (!isLine && d.getHypotenuse() <= a) {
+				return power;
 			} else {
-				//У нас эллипс. Расстояние от некой точки до эллипса...
-				//Жесть это, а не матан.
-				//Стырено отсюда: https://github.com/0xfaded/ellipse_demo/blob/master/ellipse.py
-				var t = Math.PI / 4;
-				double x = 0,y = 0;
-				for (int i = 0; i < 3; i++) {
-					final var ct = Math.cos(t);
-					final var st = Math.sin(t);
-					x = a * ct;
-					y = b * st;
-					
-					final var ex = (aa - bb) * Math.pow(ct, 3) / a;
-					final var ey = (bb-aa) * Math.pow(st, 3) / b;
-					
-					final var rx = x - ex;
-					final var ry = y - ey;
-					
-					final var qx = d.x - ex;
-					final var qy = d.y - ey;
-					
-					final var r = Math.hypot(ry, rx);
-					final var q = Math.hypot(qy, qx);
-					
-					final var delta_c = r * Math.asin((rx*qy - ry*qx)/(r*q));
-					final var delta_t = delta_c / Math.sqrt(a*a + b*b - x*x - y*y);
-					t += delta_t;
-					t = Math.min(Math.PI / 2, Math.max(0, t));
-				}
-				final var dist = Math.hypot(y - d.y, x - d.x);
-				return power - Configurations.DIRTY_WATER * dist;
+				return Math.max(0, power - Configurations.DIRTY_WATER * Math.abs(d.getHypotenuse() - a));
 			}
 		} else {
-			if(a2 == b2){
-				//У нас круг!
-				if(d.getHypotenuse() <= a)
-					return power;
-				else
-					return power - Configurations.DIRTY_WATER * (d.getHypotenuse() - a);
+			//У нас эллипс. Расстояние от некой точки до эллипса...
+			//Жесть это, а не матан.
+			//Стырено отсюда: https://github.com/0xfaded/ellipse_demo/blob/master/ellipse.py
+			if (!isLine && Math.pow(d.x, 2) / (aa) + Math.pow(d.y, 2) / (bb) <= 1) {
+				return power;
 			} else {
-				if(Math.pow(d.x, 2) / (aa) + Math.pow(d.y, 2) / (bb) <= 1){
-					return power;
-				} else {
-					/*var t = Math.PI / 4;
-					double x = 0,y = 0;
-					for (int i = 0; i < 3; i++) {
-						final var ct = Math.cos(t);
-						final var st = Math.sin(t);
-						x = a * ct;
-						y = b * st;
+				double tx = 0.707, ty = 0.707;
+				for (int i = 0; i < 3; i++) {
+					final var x = a * tx;
+					final var y = b * ty;
 
-						final var ex = (aa - bb) * Math.pow(ct, 3) / a;
-						final var ey = (bb - aa) * Math.pow(st, 3) / b;
+					final var ex = (aa - bb) * Math.pow(tx, 3) / a;
+					final var ey = (bb - aa) * Math.pow(ty, 3) / b;
 
-						final var rx = x - ex;
-						final var ry = y - ey;
+					final var rx = x - ex;
+					final var ry = y - ey;
 
-						final var qx = d.x - ex;
-						final var qy = d.y - ey;
+					final var qx = Math.abs(d.x) - ex;
+					final var qy = Math.abs(d.y) - ey;
 
-						final var r = Math.hypot(ry, rx);
-						final var q = Math.hypot(qy, qx);
+					final var r = Math.hypot(ry, rx);
+					final var q = Math.hypot(qy, qx);
 
-						final var delta_c = r * Math.asin((rx*qy - ry*qx)/(r*q));
-						final var delta_t = delta_c / Math.sqrt(a*a + b*b - x*x - y*y);
-						t += delta_t;
-						t = Math.min(Math.PI / 2, Math.max(0, t));
-					}
-					final var dist = Math.hypot(y - d.y, x - d.x);*/
-					
-					double tx = 0.707,ty = 0.707;
-					for (int i = 0; i < 3; i++) {
-						final var x = a * tx;
-						final var y = b * ty;
-						
-						final var ex = (aa - bb) * Math.pow(tx, 3) / a;
-						final var ey = (bb - aa) * Math.pow(ty, 3) / b;
-						
-						final var rx = x - ex;
-						final var ry = y - ey;
+					tx = Utils.Utils.betwin(0, (qx * r / q + ex) / a, 1);
+					ty = Utils.Utils.betwin(0, (qy * r / q + ey) / b, 1);
 
-						final var qx = d.x - ex;
-						final var qy = d.y - ey;
-						
-						final var r = Math.hypot(ry, rx);
-						final var q = Math.hypot(qy, qx);
-						
-						tx = Utils.Utils.betwin(0, (qx * r / q + ex) / a, 1);
-						ty = Utils.Utils.betwin(0, (qy * r / q + ey) / b, 1);
-						
-						final var t = Math.hypot(tx,ty);
-						tx /= t;
-						ty /= t;
-					}
-					final var dist = Math.hypot(a*tx, b*ty);
-					return power - Configurations.DIRTY_WATER * dist;
+					final var t = Math.hypot(tx, ty);
+					tx /= t;
+					ty /= t;
 				}
+				final var dist = Math.hypot(d.x - Math.copySign(a * tx, d.x), d.y - Math.copySign(b * ty, d.y));
+				return Math.max(0, power - Configurations.DIRTY_WATER * dist);
 			}
 		}
 	}
