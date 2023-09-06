@@ -48,9 +48,6 @@ public class Organic extends CellObject {
 
 	@Override
 	public void step() {
-		if((getAge()) % 2 == 0) { //  Скорость падения
-			moveD(DIRECTION.DOWN);
-		}
 		energy -= 1.0/Configurations.TIK_TO_EXIT;
 		if(poison != Poison.TYPE.UNEQUIPPED) {
 			if (getAge() >= nextDouble) { // Вязкость яда

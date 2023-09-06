@@ -29,6 +29,7 @@ public abstract class CellObject {
 
 		LV_STATUS() {name = Configurations.getProperty(getClass(), super.name());}
 		
+		@Override
 		public String toString() {
 			return name;
 		}
@@ -138,11 +139,17 @@ public abstract class CellObject {
 			//Воздействие источников минералов на живую клетку
 			switch (alive) {
 				case LV_ALIVE -> {
-					//for(final var o : Configurations.minerals)
-						//minerals.action(this);
+					((AliveCell)this).addMineral((int)Configurations.getConcentrationMinerals(pos));
 				}
 				case LV_ORGANIC, LV_POISON, LV_WALL -> {}
 				default -> throw new AssertionError("Мы не ожидали тут встретить объект типа " + alive);
+			}
+			//Воздействие граввитации
+			final var g = Configurations.gravitation[alive.ordinal()];
+			if(g.isStep(this)){
+				var d = g.getDirection(pos);
+				if(d != null)
+					this.moveD(d);
 			}
 			//Ну и пусть теперь походит
 			step();
