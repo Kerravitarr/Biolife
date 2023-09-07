@@ -18,6 +18,13 @@ import java.io.IOException;
 import java.util.List;
 import javax.swing.JMenuItem;
 import Calculations.Configurations;
+import java.io.File;
+import java.text.MessageFormat;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	/**Какая из кнопок выбрана*/
@@ -96,17 +103,16 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 				Configurations.setIcon(record,"record_stop");
 				gifRecord = true;
 			}
-			/*try {
-				System.out.println("Start frame");
-				gifs.nextFrame(g -> Configurations.world.paintComponent(g, true));
-				System.out.println("End frame");
+			try {
+				final var vw = ((DefaultViewer) Configurations.getViewer()).getWorld();
+				gifs.nextFrame(g -> vw.paintComponent(g, true));
 			} catch (IOException e) {
 				Configurations.world.stop();
 				e.printStackTrace();
 				JOptionPane.showMessageDialog(null, Configurations.getHProperty(Menu.class,"record.break")
 						+ e.getMessage(), "BioLife", JOptionPane.ERROR_MESSAGE);
 				gifs = null;
-			}*/ throw new AssertionError();
+			}
 		} else if(gifRecord){
 			Configurations.setIcon(record,"record");
 			gifRecord = false;
@@ -190,9 +196,12 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	/**Функция активации и остановки записи видео */
 	private void record(){
 		if(gifs == null) { //Запуск
-			Configurations.world.stop();
-			/*int result = javax.swing.JOptionPane.showConfirmDialog(null, 
-					MessageFormat.format(Configurations.getHProperty(Menu.class,"record.warning"),Configurations.world.getWidth(),Configurations.world.getHeight()),
+			Configurations.world.awaitStop();
+			final var v = Configurations.getViewer();
+			if(!(v instanceof DefaultViewer)) return;
+			final var vw = ((DefaultViewer) v).getWorld();
+			int result = javax.swing.JOptionPane.showConfirmDialog(null, 
+					MessageFormat.format(Configurations.getHProperty(Menu.class,"record.warning"),vw.getWidth(),vw.getHeight()),
 					"BioLife", javax.swing.JOptionPane.OK_CANCEL_OPTION);
 			if(result == javax.swing.JOptionPane.CANCEL_OPTION) return;
 			
@@ -209,12 +218,12 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 				} else {
 					fileName += ".gif";
 				}
-				gifs = new GifSequenceWriter(fileName, true, Configurations.world.getSize());
+				gifs = new GifSequenceWriter(fileName, true, vw.getSize());
 				Configurations.world.start();
 			} catch (IOException e1) {
 				JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"record.error")
 						+ e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
-			}*/ throw new AssertionError();
+			}
 		} else { // Закончили
 			Configurations.world.stop();
 			try {gifs.close();} catch (IOException e1) {e1.printStackTrace();}
@@ -224,10 +233,67 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	
 	/**Открывает окошечко сохранения мира и... Сохраняет мир, собственно*/
 	public void save() {
-		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+		boolean oldStateWorld = Configurations.world.isActiv();	
+		Configurations.world.awaitStop();
+		
+		JFileChooser fileopen = new JFileChooser(System.getProperty("user.dir"));
+		final var extension = "zbmap";
+		final var title = "BioLife";
+		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
+		while(true) {
+			int ret = fileopen.showDialog(null, Configurations.getProperty(this.getClass(),"save.selectTitle"));
+			if (ret != JFileChooser.APPROVE_OPTION) return;
+			String fileName = fileopen.getSelectedFile().getPath();
+			if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
+				if(!fileName.substring(fileName.lastIndexOf(".")+1).equals(extension))
+					fileName += "."+extension;
+			} else {
+				fileName += "."+extension;
+			}
+			var file = new File(fileName);
+			if(file.exists()) {
+				int result;
+				if(fileName.lastIndexOf("\\") != -1)
+					result = JOptionPane.showConfirmDialog(null,MessageFormat.format(Configurations.getProperty(this.getClass(),"save.fileExist"),fileName.substring(fileName.lastIndexOf("\\")+1)), title,JOptionPane.YES_NO_CANCEL_OPTION);
+				else
+					result = JOptionPane.showConfirmDialog(null,MessageFormat.format(Configurations.getProperty(this.getClass(),"save.fileExist"),fileName), "BioLife",JOptionPane.YES_NO_CANCEL_OPTION);
+				switch (result) {
+					case JOptionPane.YES_OPTION-> {file.delete();}
+					case JOptionPane.NO_OPTION-> {continue;}
+					case JOptionPane.CANCEL_OPTION-> {return;}
+				}
+			}
+			try {
+				Configurations.save(fileName);
+				JOptionPane.showMessageDialog(null,	Configurations.getProperty(this.getClass(),"save.ok"),	title, JOptionPane.INFORMATION_MESSAGE);
+				break;
+			} catch (IOException ex) {
+				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+				JOptionPane.showMessageDialog(null,	Configurations.getHProperty(this.getClass(),"save.error") + ex,	title, JOptionPane.ERROR_MESSAGE);
+			}
+		}
+		if (oldStateWorld)
+			Configurations.world.start();
+		else
+			Configurations.world.stop();
 	}
 	/**Открывает окошечко загрузки мира и... Загружает мир, собственно*/
 	public void load() {
-		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+		boolean oldStateWorld = Configurations.world.isActiv();	
+		Configurations.world.awaitStop();
+		
+		JFileChooser fileopen = new JFileChooser(System.getProperty("user.dir"));
+		final var extension = "zbmap";
+		final var title = "BioLife";
+		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
+		int ret = fileopen.showDialog(null, Configurations.getProperty(this.getClass(),"load.selectTitle"));
+		if (ret == JFileChooser.APPROVE_OPTION) {
+			try {
+				Configurations.load(fileopen.getSelectedFile().getPath());
+			} catch (IOException ex) {
+				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+				JOptionPane.showMessageDialog(null,	Configurations.getHProperty(this.getClass(),"load.error") + ex,	title, JOptionPane.ERROR_MESSAGE);
+			}
+		}
 	}
 }

@@ -6,6 +6,7 @@ package Calculations;
 
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
+import Utils.JSON;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.MultipleGradientPaint;
@@ -66,6 +67,17 @@ public class SunEllipse extends SunAbstract {
 	public SunEllipse(double p, Trajectory move, int d, boolean isLine, String name) {
 		this(p, move,d,d,isLine,name);
 	}
+	protected SunEllipse(JSON j, long v) throws GenerateClassException{
+		super(j,v);
+		this.a2 = j.get("a2");
+		this.b2 = j.get("b2");
+		this.isLine = j.get("isLine");
+		
+		a = a2 / 2d;
+		aa = a * a;
+		b = b2 / 2d;
+		bb = b * b;
+	}
 
 	
 	@Override
@@ -115,10 +127,16 @@ public class SunEllipse extends SunAbstract {
 			}
 		}
 	}
-
 	@Override
 	protected void move() {}
-
+	@Override
+	public JSON toJSON(){
+		final var j = super.toJSON();
+		j.add("a2", a2);
+		j.add("b2", b2);
+		j.add("isLine", isLine);
+		return j;
+	}
 	
 	@Override
 	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {

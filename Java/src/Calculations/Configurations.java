@@ -16,7 +16,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 
 import Utils.JSON;
-import Utils.JsonSave;
+import Utils.SaveAndLoad;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 
 /**
  * Так как некоторые переменные мира используются повсеместно
@@ -36,7 +37,7 @@ import java.util.logging.Logger;
  * @author Илья
  *
  */
-public class Configurations extends SaveAndLoad.JSONSerialization{
+public class Configurations extends SaveAndLoad.JSONSerialization<Configurations>{
 	/**Переводчик для всех названий. В теории*/
 	private static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
 	
@@ -76,7 +77,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization{
 	/**Минералы нашего мира*/
 	public static List<MineralAbstract> minerals = null;
 	/**Потоки воды, которые заставлют клетки двигаться*/
-	public static List<Stream> streams = null;
+	public static List<StreamAbstract> streams = null;
 	/**Эволюционное дерево мира*/
 	public static EvolutionTree tree = null;
 	
@@ -128,32 +129,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization{
 		 */
 		//FIELD_C,
 	}
-	
-	@Override
-	public String getName() {
-		return "CONFIG_WORLD";
-	}
-	@Override
-	public JSON getJSON() {
-		JSON configWorld = new JSON();
-		configWorld.add("MAP_CELLS", new int[] {MAP_CELLS.width,MAP_CELLS.height});
-		configWorld.add("AGGRESSIVE_ENVIRONMENT", AGGRESSIVE_ENVIRONMENT);
-		configWorld.add("TIK_TO_EXIT", TIK_TO_EXIT);
-		configWorld.add("DIRTY_WATER", DIRTY_WATER);
-		configWorld.add("WORLD_TYPE", world_type);
-		/*final var jsuns = new ArrayList<JSON>(suns.size());
-		suns.forEach(s -> jsuns.add(s.getJSON()));
-		configWorld.add("SUNS", jsuns);
-		final var jminerals = new ArrayList<JSON>(minerals.size());
-		minerals.forEach(s -> jsuns.add(s.getJSON()));
-		configWorld.add("MINERALS", jminerals);
-		final var jstreams = new ArrayList<JSON>(streams.size());
-		streams.forEach(s -> jsuns.add(s.getJSON()));
-		configWorld.add("STREAMS", jstreams);*/
-		return configWorld;
-	}
-	@Override
-	public void setJSON(JSON configWorld, long version) {
+	private Configurations(){super(null,0);}
+	public Configurations(JSON configWorld, long version) {
+		super(configWorld,version);
 		List<Integer> map = configWorld.getA("MAP_CELLS");
 		if(version < 7){
 			makeDefaultWord(WORLD_TYPE.LINE_H, map.get(0),map.get(1));
@@ -175,10 +153,42 @@ public class Configurations extends SaveAndLoad.JSONSerialization{
 			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
 			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
 			DIRTY_WATER = configWorld.get("DIRTY_WATER");
-			for(var s : configWorld.getAJ("SUNS")){
-				
-			}
+			configWorld.getAJ("SUNS").forEach( j -> {
+				try {
+					suns.add(SunAbstract.generate(j, version));
+				} catch (GenerateClassException ex) {
+					Logger.getLogger(Configurations.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+					JOptionPane.showMessageDialog(null,	Configurations.getFormatProperty(this.getClass(),"loadSerror",j.toBeautifulJSONString(),ex),	"BioLife", JOptionPane.ERROR_MESSAGE);
+				}					
+			});
+			configWorld.getAJ("MINERALS").forEach( j -> {
+				try {
+					minerals.add(MineralAbstract.generate(j, version));
+				} catch (GenerateClassException ex) {
+					Logger.getLogger(Configurations.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+					JOptionPane.showMessageDialog(null,	Configurations.getFormatProperty(this.getClass(),"loadMerror",j.toBeautifulJSONString(),ex),	"BioLife", JOptionPane.ERROR_MESSAGE);
+				}
+			});
+			//configWorld.getAJ("STREAMS").forEach( j -> streams.add(Stream.generate(j, version)));
 		}
+	}
+	
+	@Override
+	public String getName() {
+		return "CONFIG_WORLD";
+	}
+	@Override
+	public JSON getJSON() {
+		JSON configWorld = new JSON();
+		configWorld.add("MAP_CELLS", new int[] {MAP_CELLS.width,MAP_CELLS.height});
+		configWorld.add("AGGRESSIVE_ENVIRONMENT", AGGRESSIVE_ENVIRONMENT);
+		configWorld.add("TIK_TO_EXIT", TIK_TO_EXIT);
+		configWorld.add("DIRTY_WATER", DIRTY_WATER);
+		configWorld.add("WORLD_TYPE", world_type);
+		configWorld.add("SUNS", suns.stream().map(s -> s.toJSON()).toList());
+		configWorld.add("MINERALS", minerals.stream().map(s -> s.toJSON()).toList());
+		//configWorld.add("STREAMS", streams.stream().map(s -> s.toJSON()).toList());
+		return configWorld;
 	}
 	
 	/**
@@ -298,18 +308,54 @@ public class Configurations extends SaveAndLoad.JSONSerialization{
 	 */
 	public static void save(String filePatch) throws IOException {
 		boolean oldStateWorld = Configurations.world.isActiv();		
-		while(Configurations.world.isActiv()){ //На всякий случай убеждаемся, что мир прям точно встал!
-			Configurations.world.stop();
-			Utils.Utils.pause(1);
-		}
+		Configurations.world.awaitStop();
 
-		var js = new JsonSave("BioLife", "zbmap", Configurations.VERSION);
-		js.addActionListener( e-> System.out.println("Автосохранение " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
-		js.save(filePatch,true, new Configurations(), Configurations.tree, Configurations.world.serelization());
+		var js = SaveAndLoad.save(filePatch, Configurations.VERSION);
+		js.addActionListener( e-> System.out.println("Сохранение " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
+		js.save(new Configurations(), Configurations.tree, Configurations.world);
 		if (oldStateWorld)
 			Configurations.world.start();
 		else
 			Configurations.world.stop();
+	}
+	/**Функция загрузки
+	 * @param filePatch - путь, куда сохранить мир
+	 * @throws java.io.IOException так как мы работаем с файловой системой, мы всегда имеем шансы уйти с ошибкой
+	 */
+	public static void load(String filePatch) throws IOException {
+		boolean oldStateWorld = Configurations.world.isActiv();			
+		Configurations.world.awaitStop();
+
+		var js = SaveAndLoad.load(filePatch);
+		js.addActionListener( e-> System.out.println("Загрузка " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
+		js.load(new Configurations());
+		Configurations.tree = js.load(Configurations.tree);
+		Configurations.world = js.load((j,v) -> new World(j, v, MAP_CELLS), Configurations.world.getName());
+		
+		if (oldStateWorld)
+			Configurations.world.start();
+		else
+			Configurations.world.stop();
+	}
+	/**
+	 * Возвращает форматированную строку описания для определённого класса
+	 * @param cls - класс, в котором эта строка находится
+	 * @param name - ключ
+	 * @param arguments аргументы, которые будут вставленны в строку свойств
+	 * @return Строка в формате HTML
+	 */
+	public static String getFormatHProperty(Class<?> cls, String name, Object ... arguments) {
+		return MessageFormat.format(Configurations.getHProperty(cls,name),arguments);
+	}
+	/**
+	 * Возвращает форматированную строку описания для определённого класса
+	 * @param cls - класс, в котором эта строка находится
+	 * @param name - ключ
+	 * @param arguments аргументы, которые будут вставленны в строку свойств
+	 * @return Строка текста
+	 */
+	public static String getFormatProperty(Class<?> cls, String name, Object ... arguments) {
+		return MessageFormat.format(Configurations.getProperty(cls,name),arguments);
 	}
 	/**
 	 * Возвращает строку описания для определённого класса
@@ -318,7 +364,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization{
 	 * @return Строка в формате HTML
 	 */
 	public static String getHProperty(Class<?> cls, String name) {
-		return "<HTML>"+getProperty(cls,name);
+		return "<HTML>"+getProperty(cls,name).replace("\n", " <br> ");
 	}
 	/**
 	 * Возвращает строку описания для определённого класса
@@ -428,7 +474,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization{
 				try {
 					task.taskStep();
 				} catch (Exception ex) {
-					Logger.getLogger(Configurations.class.getName()).log(Level.SEVERE, null, ex);
+					Logger.getLogger(Configurations.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 				}
 			}, ms, ms, TimeUnit.MILLISECONDS);
 	}

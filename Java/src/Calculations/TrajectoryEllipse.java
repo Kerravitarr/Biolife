@@ -4,6 +4,8 @@
  */
 package Calculations;
 
+import Utils.JSON;
+
 /**
  * Движение по эллипсу вокруг некоторого центра.
  * @author Kerravitarr
@@ -44,6 +46,13 @@ public class TrajectoryEllipse extends Trajectory{
 	public TrajectoryEllipse(long speed, Point center,double startAngle, int d){
 		this(speed, center, startAngle, d, d);
 	}
+	protected TrajectoryEllipse(JSON json, long version){
+		super(json,version);
+		this.center = new Point(json.getJ("center"));
+		this.angle = json.get("angle");
+		this.a = json.get("a");
+		this.b = json.get("b");
+	}
 	/**Затычка, для создания стартовой точки
 	 * @param center
 	 * @param startAngle
@@ -62,5 +71,14 @@ public class TrajectoryEllipse extends Trajectory{
 	protected Point step() {
 		angle += Math.PI / 180;
 		return new Point((int)Math.round(center.getX() + a * Math.cos(angle)) ,(int)Math.round(center.getY() +  b * Math.sin(angle)));
+	}
+	@Override
+	public JSON toJSON(){
+		final var j = super.toJSON();
+		j.add("angle", angle);
+		j.add("center", center.toJSON());
+		j.add("a", a);
+		j.add("b", b);
+		return j;
 	}
 }

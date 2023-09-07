@@ -6,6 +6,7 @@ package Calculations;
 
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
+import Utils.JSON;
 import java.awt.Color;
 import java.awt.GradientPaint;
 import java.awt.Graphics2D;
@@ -41,7 +42,14 @@ public class SunRectangle extends SunAbstract {
 		this.width = width;
 		this.height = height;
 		this.isLine = isLine;
+	}	
+	protected SunRectangle(JSON j, long v) throws GenerateClassException{
+		super(j,v);
+		this.width = j.get("width");
+		this.height = j.get("height");
+		this.isLine = j.get("isLine");
 	}
+
 
 	@Override
 	public double getEnergy(Point pos) {
@@ -67,6 +75,16 @@ public class SunRectangle extends SunAbstract {
 
 	@Override
 	protected void move() {}
+	@Override
+	public JSON toJSON(){
+		final var j = super.toJSON();
+		j.add("width", width);
+		j.add("height", height);
+		j.add("isLine", isLine);
+		return j;
+	}
+	
+	
 	@Override
 	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {
 		final var x0 = transform.toScrinX(posX - width/2);

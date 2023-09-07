@@ -4,6 +4,8 @@
  */
 package Calculations;
 
+import Utils.JSON;
+
 /**
  * Линейная траектория.
  * Хоть она и двигается по "линии", на самом деле движение описывается урвенением
@@ -48,6 +50,14 @@ public class TrajectoryLine extends Trajectory{
 	public TrajectoryLine(long speed, Point from,Point to){
 		this(speed, from, from, to);
 	}
+	protected TrajectoryLine(JSON j, long version){
+		super(j,version);
+		step = j.get("step");
+		lenght = j.get("lenght");
+		dx = j.get("dx");
+		dy = j.get("dy");
+		from = new Point(j.getJ("from"));
+	}
 
 	@Override
 	protected Point step() {
@@ -55,5 +65,15 @@ public class TrajectoryLine extends Trajectory{
 		if(step > lenght)
 			step -= lenght;
 		return new Point((int)(from.getX() + dx * step), (int) (from.getY() + dy*step));
+	}
+	@Override
+	public JSON toJSON(){
+		final var j = super.toJSON();
+		j.add("step", step);
+		j.add("lenght", lenght);
+		j.add("dx", dx);
+		j.add("dy", dy);
+		j.add("from", from.toJSON());
+		return j;
 	}
 }

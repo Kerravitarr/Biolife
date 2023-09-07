@@ -15,14 +15,13 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import Utils.JsonSave.SerializationOld;
 
 /**
  * Класс, который отвечает за стиль JSON
  * @author Илья
  *
  */
-public class JSON implements SerializationOld{
+public class JSON{
 	/**Перечисление разных состояний парсинга файла*/
 	private static enum JSON_TOKEN{
 		BEGIN_OBJECT("{"), END_OBJECT("}"), BEGIN_ARRAY("["), END_ARRAY("]"), NULL("null"), NUMBER("number"),
@@ -414,7 +413,7 @@ public class JSON implements SerializationOld{
 			}
 		}
 		private String getVal(T value_o) {
-			if(value_o instanceof String) {
+			if(value_o instanceof String || value_o instanceof Enum) {
 				var ret = value_o.toString().replace("\\", "\\\\")
 						.replace("\t", "\\t")
 						.replace("\b", "\\b")

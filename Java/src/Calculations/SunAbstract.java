@@ -24,6 +24,13 @@ public abstract class SunAbstract extends DefaultEmitter{
 	public SunAbstract(double p, Trajectory move, String n){
 		super(p,move,n);
 	}
+	/**Обязательный конструктор для восстановления объекта
+	 * @param j описание предка
+	 * @param v версия файла
+	 */
+	protected SunAbstract(JSON j, long v) throws GenerateClassException{
+		super(j,v);
+	}
 	/**
 	 * Возвращает количество солнечной энергии в этой точке пространства
 	 * @param pos позиция в пространстве
@@ -31,15 +38,30 @@ public abstract class SunAbstract extends DefaultEmitter{
 	 */
 	public abstract double getEnergy(Point pos);
 	
-	public static SunAbstract generate(JSON json){
+	@Override
+	public JSON toJSON(){
+		final var j = super.toJSON();
+		j.add("_className", this.getClass().getName());
+		return j;
+	}
+	
+	/** * Создаёт реальное солнце на основе JSON файла.Тут может быть любое из существующих солнц
+	 * @param json объект, описывающий солнце
+	 * @param version версия файла json в котором объект сохранён
+	 * @return найденное солнце... Или null, если такого солнца не бывает
+	 * @throws GenerateClassException исключение, вызываемое ошибкой
+	 */
+	public static SunAbstract generate(JSON json, long version) throws GenerateClassException{
 		String className = json.get("_className");
-		try {
-			Class<? extends SunAbstract> ac = Class.forName(className).asSubclass(SunAbstract.class);
-			var constructor = ac.getDeclaredConstructor(JSON.class);
-			return constructor.newInstance(json);
-		} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-			Logger.getLogger(SunAbstract.class.getName()).log(Level.SEVERE, null, ex);
-		}
-		return null;
+		try{
+			final var ac = Class.forName(className).asSubclass(SunAbstract.class);
+			var constructor = ac.getDeclaredConstructor(JSON.class, long.class);
+			return constructor.newInstance(json,version);
+		}catch (ClassNotFoundException ex)		{throw new GenerateClassException(ex,className);}
+		catch (NoSuchMethodException ex)		{throw new GenerateClassException(ex);}
+		catch (InstantiationException ex)		{throw new GenerateClassException(ex);}
+		catch (IllegalAccessException ex)		{throw new GenerateClassException(ex);} 
+		catch (IllegalArgumentException ex)		{throw new GenerateClassException(ex);}
+		catch (InvocationTargetException ex)	{throw new GenerateClassException(ex);}
 	}
 }

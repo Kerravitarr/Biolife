@@ -2,15 +2,17 @@ package Calculations;
 
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
+import Utils.JSON;
 import Utils.SaveAndLoad;
 import java.awt.Graphics2D;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Болванка любого излучателя - солнца или минералов
  * @author Илья
  *
  */
-public abstract class DefaultEmitter extends SaveAndLoad.JSONSerialization{
+public abstract class DefaultEmitter {
 	/**Траектория движения*/
 	private final Trajectory move;
 	/**Позиция ткущая. Это условная позиция, наследник может с ней делать что угодно*/
@@ -19,6 +21,13 @@ public abstract class DefaultEmitter extends SaveAndLoad.JSONSerialization{
 	protected double power;
 	/**Название*/
 	private String name;
+	
+	protected DefaultEmitter(JSON j, long v) throws GenerateClassException{
+		power = j.get("power");
+		name = j.get("name");
+		move = Trajectory.generate(j.getJ("move"),v);
+		position = new Point(j.getJ("position"));
+	}
 
 	/**Создаёт изулучатель
 	 * @param p максимальная энергия, будто и не было препятствий на пути
@@ -96,5 +105,16 @@ public abstract class DefaultEmitter extends SaveAndLoad.JSONSerialization{
 	@Override
 	public String toString(){
 		return name;
+	}
+	/**Превращает излучатель в серелизуемый объект
+	 * @return объект, который можно пересылать, засылать
+	 */
+	public JSON toJSON(){
+		final var j = new JSON();
+		j.add("power", power);
+		j.add("name", name);
+		j.add("move", move.toJSON());
+		j.add("position", position.toJSON());
+		return j;
 	}
 }

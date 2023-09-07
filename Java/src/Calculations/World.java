@@ -24,7 +24,7 @@ import MapObjects.Organic;
 import MapObjects.Poison;
 import Utils.FPScounter;
 import Utils.JSON;
-import Utils.JsonSave;
+import Utils.SaveAndLoad;
 import Utils.StreamProgressBar;
 import Utils.Utils;
 import java.awt.Dimension;
@@ -36,7 +36,7 @@ import java.util.logging.Logger;
 /**Класс, отвечающий за математическую обработку мира
  * @author 
  */
-public class World implements Runnable{
+public class World implements Runnable,SaveAndLoad.Serialization{
 	/**Сам мир, каждая его клеточка*/
 	private /*final*/ CellObject [][] _WORLD_MAP;
 	/**Симуляция запущена?*/
@@ -104,7 +104,7 @@ public class World implements Runnable{
 					cell.step(step);					
 				} catch (Throwable e) {
 					_status = STATUS.ERROR;
-					Logger.getLogger(World.class.getName()).log(Level.WARNING, null, e);
+					Logger.getLogger(World.class.getName()).log(Level.WARNING, e.getLocalizedMessage(), e);
 					System.out.println(cell);
 					System.out.println(point);
 					JOptionPane.showMessageDialog(null,	MessageFormat.format(Configurations.getHProperty(World.class,"error.exception"), cell, point, e.getMessage()),	"BioLife", JOptionPane.ERROR_MESSAGE);
@@ -117,7 +117,6 @@ public class World implements Runnable{
 	 * @param MAP_CELLS размер мира в высоту и ширину
 	 */
 	public World(Dimension MAP_CELLS) {
-		super();
 		_WORLD_MAP = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
 		factory = new ForkJoinWorkerThreadFactory() {
 			private final AtomicInteger branshCount = new AtomicInteger(0);
@@ -133,6 +132,55 @@ public class World implements Runnable{
 		worldThread = new Thread(this);
 		worldThread.start();
 	}
+	/**Создание мира на основе JSON
+	 * @param json
+	 * @param version 
+	 * @param MAP_CELLS размер мира в высоту и ширину
+	 */
+	public World(JSON json, long version, Dimension MAP_CELLS) {
+		this(MAP_CELLS);
+		step = json.getL("step");
+		List<JSON> cells = json.getAJ("Cells");
+		for (JSON cell : cells) {
+			try {
+				var t = LV_STATUS.values[cell.getI("alive")];
+				switch (t) {
+					case LV_ALIVE -> {
+						//if(loadOneCell(cell,31,31))
+							add(new AliveCell(cell, Configurations.tree, version));
+					}
+					case LV_ORGANIC -> add(new Organic(cell, version));
+					case LV_POISON -> add(new Poison(cell, version));
+					case LV_WALL -> add(new Fossil(cell, version));
+					default -> System.err.println("Ошибка загрузки строки: \n" + cell);
+				}
+				_all_live_cell[t.ordinal()]++;
+			} catch (java.lang.RuntimeException e1) {
+				Logger.getLogger(World.class.getName()).log(Level.WARNING, e1.getLocalizedMessage(), e1);
+				JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage() + "<br>Для объекта<br>" + cell.toJSONString(), "BioLife", JOptionPane.ERROR_MESSAGE);
+				throw e1;
+			}
+		}
+
+		//Когда все сохранены, обновялем список друзей
+		for (JSON cell : cells) {
+			if (!cell.containsKey("friends")) continue; // Мы не клетка
+			if (cell.getAJ("friends").isEmpty()) continue; // У нас нет друзей
+			Point pos = new Point(cell.getJ("pos"));
+			CellObject realCell = get(pos);
+			if (realCell == null || !(realCell instanceof AliveCell))
+				continue;
+			List<JSON> mindL = cell.getAJ("friends");
+			AliveCell new_name = (AliveCell) realCell;
+			for (JSON pointFriend : mindL) {
+				pos = new Point(pointFriend);
+				if (get(pos) instanceof AliveCell aliveCell)
+					new_name.setFriend(aliveCell);
+			}
+		}
+		Configurations.tree.updatre();
+	}
+	
 	@Override
 	public void run() {
 		Thread.currentThread().setName("World thread");
@@ -155,6 +203,7 @@ public class World implements Runnable{
 		adam.setPos(new Point(Configurations.MAP_CELLS.width/2,0));
 		Configurations.tree.setAdam(adam);
 		add(adam);
+		_all_live_cell[LV_ALIVE.ordinal()] += 1;
 	}
 	/**Генерирует карту - добавляет солнце, гейзеры, обновляет константы мира, разбивает мир на потоки процессора */
 	private void worldGenerate() {
@@ -212,7 +261,7 @@ public class World implements Runnable{
 			}
 			_all_live_cell = f;
 		} catch (InterruptedException e) {
-			Logger.getLogger(World.class.getName()).log(Level.WARNING, null, e);
+			Logger.getLogger(World.class.getName()).log(Level.WARNING, e.getLocalizedMessage(), e);
 		}
 		postStep();
 	}
@@ -233,6 +282,7 @@ public class World implements Runnable{
 	/**Операции, которые должны быть выполнены после шага*/
 	private synchronized void postStep(){
 		Configurations.suns.forEach( s -> s.step(step));
+		Configurations.minerals.forEach( s -> s.step(step));
 		Configurations.tree.step();
 
 		pps.interapt();
@@ -415,148 +465,28 @@ public class World implements Runnable{
 	private boolean loadNineCell(JSON cell, int x, int y) {
 		return loadR(cell,x,y,1);
 	}
-	public synchronized void update(JSON json) {
-		StreamProgressBar sb = new StreamProgressBar();
-		sb.addEvent("Загрузка началась");
-		sb.addEvent("Конфигурация мира - загружено");
-		sb.addEvent("Дерево эволюции - загружено");
-		sb.addEvent("Объекты на поле - загружено");
-		sb.addEvent("Друзья - загружено");
-		sb.addEvent("Эволюционное дерево перестроено");
-		sb.addEvent("Настройки обновлены");
-		sb.addEvent("Загрузка заверешена");
-		
-		sb.event();
-		
-		var version = json.getL("VERSION");
-		JSON configWorld = json.getJ("configWorld");
-		new Configurations().setJSON(configWorld,version);
-		step = configWorld.getL("step");
-		sb.event();
-		
-		Configurations.tree.setJSON(json.getJ("EvoTree"),version);
-		sb.event();
-		
-		List<JSON> cells = json.getAJ("Cells");		
-		_WORLD_MAP = new CellObject[Configurations.MAP_CELLS.width][Configurations.MAP_CELLS.height];
-		for (JSON cell : cells) {
-			try {
-				switch (LV_STATUS.values()[(int)cell.get("alive")]) {
-					case LV_ALIVE -> {
-						//if(loadR(cell,516,148,30))
-							add(new AliveCell(cell,Configurations.tree,version));
-					}
-					case LV_ORGANIC -> add(new Organic(cell,version));
-					case LV_POISON -> add(new Poison(cell,version));
-					case LV_WALL -> add(new Fossil(cell,version));
-					default -> System.err.println("Ошибка загрузки строки: \n" + cell);
-				}
-			} catch (java.lang.RuntimeException e1) {
-				Logger.getLogger(World.class.getName()).log(Level.WARNING, null, e1);
-				JOptionPane.showMessageDialog(null,	"<html>Ошибка загрузки!<br>" + e1.getMessage() + "<br>Для объекта<br>"+cell.toJSONString(),	"BioLife", JOptionPane.ERROR_MESSAGE);
-				throw e1;
-			} 
-		}
-		sb.event();
-		
-		//Когда все сохранены, обновялем список друзей
-		for (JSON cell : cells) {
-			if(!cell.containsKey("friends")) continue; // Мы не клетка
-			if(cell.getAJ("friends").isEmpty()) continue; // У нас нет друзей
-	    	Point pos = new Point(cell.getJ("pos"));
-	    	CellObject realCell = get(pos);
-	    	if(realCell == null || !(realCell instanceof AliveCell))
-	    		continue;
-	    	List<JSON> mindL = cell.getAJ("friends");
-			AliveCell new_name = (AliveCell) realCell;
-	    	for (JSON pointFriend : mindL) {
-	    		pos = new Point(pointFriend);
-	    		if (get(pos) instanceof AliveCell aliveCell)
-		    		new_name.setFriend(aliveCell);
-			}
-		}
-		sb.event();
-		
-		Configurations.tree.updatre();
-		sb.event();
-		
-		worldGenerate();
-		sb.event();
-		sb.event();
-	}
-	private class JSONSerialization extends JsonSave.JSONSerialization{
-
-		@Override
-		public String getName() {
-			return "WORLD";
-		}
-
-		@Override
-		public JSON getJSON() {
-			JSON make = new JSON();
-			var cells = new ArrayList<CellObject>();
-			for (CellObject[] cell : _WORLD_MAP) {
-				for (CellObject cell2 : cell) {
-					if (cell2 != null)
-						cells.add(cell2);
-				}
-			}
-			JSON[] nodes = new JSON[cells.size()];
-			for (int i = 0; i < nodes.length; i++) {
-				nodes[i] = cells.get(i).toJSON();
-			}
-			make.add("step", step);
-			make.add("Cells", nodes);
-			return make;
-		}
-
-		@Override
-		public void setJSON(JSON json, long version) {
-			step = json.getL("step");
-			List<JSON> cells = json.getAJ("Cells");
-			_WORLD_MAP = new CellObject[Configurations.MAP_CELLS.width][Configurations.MAP_CELLS.height];
-			for (JSON cell : cells) {
-				try {
-					switch (LV_STATUS.values()[(int) cell.get("alive")]) {
-						case LV_ALIVE -> {
-							//if(loadOneCell(cell,31,31))
-								add(new AliveCell(cell, Configurations.tree, version));
-						}
-						case LV_ORGANIC -> add(new Organic(cell, version));
-						case LV_POISON -> add(new Poison(cell, version));
-						case LV_WALL -> add(new Fossil(cell, version));
-						default -> System.err.println("Ошибка загрузки строки: \n" + cell);
-					}
-				} catch (java.lang.RuntimeException e1) {
-					Logger.getLogger(World.class.getName()).log(Level.WARNING, null, e1);
-					JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage() + "<br>Для объекта<br>" + cell.toJSONString(), "BioLife", JOptionPane.ERROR_MESSAGE);
-					throw e1;
-				}
-			}
-
-			//Когда все сохранены, обновялем список друзей
-			for (JSON cell : cells) {
-				if (!cell.containsKey("friends")) continue; // Мы не клетка
-				if (cell.getAJ("friends").isEmpty()) continue; // У нас нет друзей
-				Point pos = new Point(cell.getJ("pos"));
-				CellObject realCell = get(pos);
-				if (realCell == null || !(realCell instanceof AliveCell))
-					continue;
-				List<JSON> mindL = cell.getAJ("friends");
-				AliveCell new_name = (AliveCell) realCell;
-				for (JSON pointFriend : mindL) {
-					pos = new Point(pointFriend);
-					if (get(pos) instanceof AliveCell aliveCell)
-						new_name.setFriend(aliveCell);
-				}
-			}
-			Configurations.tree.updatre();
-			worldGenerate();
-		}
-		
-	}
-	public JsonSave.JSONSerialization serelization(){
-		return new JSONSerialization();
+	
+	@Override
+	public String getName() {
+		return "WORLD";
 	}
 
+	@Override
+	public JSON getJSON() {
+		JSON make = new JSON();
+		var cells = new ArrayList<CellObject>();
+		for (CellObject[] cell : _WORLD_MAP) {
+			for (CellObject cell2 : cell) {
+				if (cell2 != null)
+					cells.add(cell2);
+			}
+		}
+		JSON[] nodes = new JSON[cells.size()];
+		for (int i = 0; i < nodes.length; i++) {
+			nodes[i] = cells.get(i).toJSON();
+		}
+		make.add("step", step);
+		make.add("Cells", nodes);
+		return make;
+	}
 }

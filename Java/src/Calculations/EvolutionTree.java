@@ -11,11 +11,11 @@ import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.Poison;
 import Utils.JSON;
-import Utils.JsonSave;
+import Utils.SaveAndLoad;
 import javax.swing.JOptionPane;
 
 //@Deprecated
-public class EvolutionTree extends JsonSave.JSONSerialization{
+public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 	/**Корень эволюционного дерева, адам*/
 	public static Node root = new Node(0, null, 0);
 	/**Список узлов, подлежащих удалению по окночании шага*/
@@ -255,7 +255,14 @@ public class EvolutionTree extends JsonSave.JSONSerialization{
 		}
 	}
 	
-	public EvolutionTree() {};
+	public EvolutionTree() {
+		super(null,0);
+	};
+	
+	public EvolutionTree(JSON json, long version) {
+		this();
+		root = new Node(json.getJ("Node"), null,version);
+	};
 
 	@Override
 	public String toString() {
@@ -271,10 +278,6 @@ public class EvolutionTree extends JsonSave.JSONSerialization{
 		JSON make = new JSON();
 		make.add("Node", root.toJSON());
 		return make;
-	}
-	@Override
-	public void setJSON(JSON json, long version) {
-		root = new Node(json.getJ("Node"), null,version);
 	}
 	/**
 	 * Функция, используемая при загрузке. Заодно помогает понять у какой ветви сколько потомков
