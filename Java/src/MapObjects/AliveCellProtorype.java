@@ -14,15 +14,13 @@ import Calculations.Configurations;
 import Calculations.EvolutionTree.Node;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
-import GUI.Legend;
 
 /**
  * Прототип живой клетки. Тут все константы, переменные и вложенные классы.
  * @author Kerravitarr
  *
  */
-
-public abstract class AliveCellProtorype extends CellObject{	
+public abstract class AliveCellProtorype extends CellObject{
 
 	//КОНСТАНТЫ
 	/**Размер мозга изначальный*/
@@ -451,10 +449,14 @@ public abstract class AliveCellProtorype extends CellObject{
 	 * @return количество солнца, которое может получить клетка. [0, Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER + 5]
 	 */
 	public double sunAround() {
-		//+5 бонусных частичек света при наличии миниралов
-        double t = 5 * getMineral() / AliveCell.MAX_MP;	
-        //Ну и энергию от солнца не забываем
-		return specMaxVal(Configurations.getSunPower(getPos()) + t, Specialization.TYPE.PHOTOSYNTHESIS);
+		if(getMineral() > 0){
+			//+10% света при наличии миниралов
+			final var t = 100 + 10 * getMineral() / AliveCell.MAX_MP;	
+			//Ну и энергию от солнца не забываем
+			return specMaxVal(Configurations.getSunPower(getPos()) * t / 100, Specialization.TYPE.PHOTOSYNTHESIS);
+		} else {
+			return specMaxVal(Configurations.getSunPower(getPos()), Specialization.TYPE.PHOTOSYNTHESIS);
+		}
 	}
 	/**
 	 * Возвращает количество минералов вокруг
