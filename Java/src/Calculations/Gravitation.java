@@ -117,36 +117,10 @@ public class Gravitation {
 			case CENTER -> {
 				if(ws.width != Configurations.MAP_CELLS.width || ws.height != Configurations.MAP_CELLS.height)
 					target = new Point(Configurations.MAP_CELLS.height / 2,Configurations.MAP_CELLS.width / 2);
-				var d = pos.distance(target);
-				if(d.x < 0){
-					if(d.y < 0) return Point.DIRECTION.UP_L;
-					else if(d.y == 0) return Point.DIRECTION.LEFT;
-					else return Point.DIRECTION.DOWN_L;
-				} else if(d.x == 0){
-					if(d.y < 0) return Point.DIRECTION.UP;
-					else if(d.y == 0) return null;
-					else return Point.DIRECTION.DOWN;
-				} else {
-					if(d.y < 0) return Point.DIRECTION.UP_R;
-					else if(d.y == 0) return Point.DIRECTION.RIGHT;
-					else return Point.DIRECTION.DOWN_R;
-				}
+				return pos.distance(target).direction();
 			}
 			case TO_POINT -> {
-				var d = pos.distance(target);
-				if(d.x < 0){
-					if(d.y < 0) return Point.DIRECTION.UP_L;
-					else if(d.y == 0) return Point.DIRECTION.LEFT;
-					else return Point.DIRECTION.DOWN_L;
-				} else if(d.x == 0){
-					if(d.y < 0) return Point.DIRECTION.UP;
-					else if(d.y == 0) return null;
-					else return Point.DIRECTION.DOWN;
-				} else {
-					if(d.y < 0) return Point.DIRECTION.UP_R;
-					else if(d.y == 0) return Point.DIRECTION.RIGHT;
-					else return Point.DIRECTION.DOWN_R;
-				}
+				return pos.distance(target).direction();
 			}
 			default -> throw new AssertionError(direction.name());
 		}

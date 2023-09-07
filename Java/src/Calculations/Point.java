@@ -118,6 +118,82 @@ public class Point{
 			}
 			return h;
 		}
+		/**Возвращает направление этого вектора
+		 * @return направление. Но так как направления может не быть, если это
+		 *			таже самая точка, то возвращается null
+		 */
+		public DIRECTION direction(){
+			switch (x) {
+				case -1 -> {
+					switch (y) {
+						case -1 -> {return Point.DIRECTION.UP_L;}
+						case 0 -> {return Point.DIRECTION.LEFT;}
+						case 1 -> {return Point.DIRECTION.DOWN_L;}
+					}
+				}
+				case 0 -> {
+					switch (y) {
+						case -1 -> {return Point.DIRECTION.UP;}
+						case 0 -> {return null;}
+						case 1 -> {return Point.DIRECTION.DOWN;}
+					}
+				}
+				case 1 -> {
+					switch (y) {
+						case -1 ->{return Point.DIRECTION.UP_R;}
+						case 0 -> {return Point.DIRECTION.RIGHT;}
+						case 1 -> {return Point.DIRECTION.DOWN_R;}
+					}
+				}
+			}
+			//А жаль, могло-бы быть всё куда проще
+			if(x < 0){
+				if (y == 0) {
+					return Point.DIRECTION.LEFT;
+				} else if (y < 0) {
+					final var tan = y/x;
+					if(tan < 0.41421356)
+						return Point.DIRECTION.LEFT;
+					else if(tan > 2.41421356)
+						return Point.DIRECTION.UP;
+					else 
+						return Point.DIRECTION.UP_L;
+				} else {
+					final var tan = y/-x;
+					if(tan < 0.41421356)
+						return Point.DIRECTION.LEFT;
+					else if(tan > 2.41421356)
+						return Point.DIRECTION.DOWN;
+					else 
+						return Point.DIRECTION.DOWN_L;
+				}
+			} else if (x == 0) {
+				if(y < 0) return Point.DIRECTION.UP;
+				else if(y == 0) return null;
+				else return Point.DIRECTION.DOWN;
+			} else { //x > 0
+				if (y == 0) {
+					return Point.DIRECTION.RIGHT;
+				} else if(y < 0) {
+					final var tan = -y/x;
+					if(tan < 0.41421356) //Тангенс 22,5 градуса - примерно 0.41421356. Это-же даёт -0/+1
+						return Point.DIRECTION.RIGHT;
+					else if(tan > 2.41421356) //Тангенс 65,5 градусов - 2.41421356 Это-же даёт -1/+0
+						return Point.DIRECTION.UP;
+					else  //Это-же даёт -1/+1
+						return Point.DIRECTION.UP_R;
+				} else { //y > 0
+					final var tan = y/x;
+					if(tan < 0.41421356)
+						return Point.DIRECTION.RIGHT;
+					else if(tan > 2.41421356)
+						return Point.DIRECTION.DOWN;
+					else 
+						return Point.DIRECTION.DOWN_R;
+				}
+			}
+		}
+		
 		@Override
 		public String toString() {
 			return "V⃗ (" + x + "; " + y + "). |V⃗|="+getHypotenuse();
@@ -273,6 +349,7 @@ public class Point{
 				return d;
 		throw new IllegalArgumentException("Расстояние между точками должно быть ровно 1 клетка!");
 	}
+	
 	/**Проверяте точку на принадлежность текущему миру
 	 * @return true, если точка находится на поле
 	 */
