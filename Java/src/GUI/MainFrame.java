@@ -262,7 +262,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 				try {
 					Configurations.save(save.getName());
 				} catch (IOException ex) {
-					Logger.getLogger(this.getName()).log(Level.SEVERE, null, ex);
+					Logger.getLogger(this.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 					JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + ex.getMessage(), "BioLife", JOptionPane.ERROR_MESSAGE);
 				}
 				if(popup != null){

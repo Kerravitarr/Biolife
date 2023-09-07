@@ -1,6 +1,6 @@
 package MapObjects;
 
-import Calculations.Stream;
+import Calculations.StreamAbstract;
 import java.awt.Color;
 import java.awt.Graphics;
 
@@ -139,7 +139,7 @@ public abstract class CellObject {
 			//Воздействие источников минералов на живую клетку
 			switch (alive) {
 				case LV_ALIVE -> {
-					((AliveCell)this).addMineral((int)Configurations.getConcentrationMinerals(pos));
+					((AliveCellProtorype)this).addMineral((long)Configurations.getConcentrationMinerals(pos));
 				}
 				case LV_ORGANIC, LV_POISON, LV_WALL -> {}
 				default -> throw new AssertionError("Мы не ожидали тут встретить объект типа " + alive);

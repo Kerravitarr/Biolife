@@ -2,6 +2,7 @@ package Utils;
 
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -26,7 +27,7 @@ public class GifSequenceWriter {
 	/**Интерфейс для рисования кадров*/
 	public static interface FrameFun{
 		/**Нужно нарисовать картинку на переданном объекте*/
-		public void paint(Graphics g);
+		public void paint(Graphics2D g);
 	}
 	
 	/**Сам писака, поток, куда мы пишем*/
@@ -141,7 +142,7 @@ public class GifSequenceWriter {
 	/**Дорисовывает новый кадр*/
 	public synchronized void nextFrame(FrameFun f) throws IOException {
 		BufferedImage image = new BufferedImage(size.width, size.height,typeImg);
-		f.paint(image.getGraphics());
+		f.paint((Graphics2D)image.getGraphics());
 		writer.writeToSequence(new IIOImage(image, null, metadata), params);
 	}
 
