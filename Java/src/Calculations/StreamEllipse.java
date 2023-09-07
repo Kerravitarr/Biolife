@@ -130,5 +130,43 @@ public abstract class StreamEllipse extends StreamAbstract {
 		}
 		throw new AssertionError();
 	}
-	
+	/**Возвращает примерное значение арктангенса.
+	 * погрешность на отрезке [0, 1] не более .0049- радиана
+	 *
+	 * @param vec вектор, чей арктангенс вычисляем
+	 * @return значение угла этого вектора в радианах
+	 */
+	private static double atan2(Point.Vector vec) {
+		final var ONE_HALF_PI = Math.PI / 2;
+		var x = vec.x;
+		var y = vec.y;
+		if (y >= 0.0) {
+			if (x >= 0.0) {
+				if (x >= y) return atanImpl(y / x);
+				else return ONE_HALF_PI - atanImpl(x / y);
+			} else {
+				x = -x;
+				if (x < y) return ONE_HALF_PI + atanImpl(x / y);
+				else return Math.PI - atanImpl(y / x);
+			}
+		} else {
+			if (x <= 0.0) {
+				if (x <= y) return -Math.PI + atanImpl(y / x);
+				else return -ONE_HALF_PI - atanImpl(x / y);
+			} else {
+				x = -x;
+				if (x > y) return -ONE_HALF_PI + atanImpl(x / y);
+				else return -atanImpl(y / x);
+			}
+		}
+	}
+	/**
+	 * Реализация функции arctg(x)
+	 * (погрешность в районе 0.0049- радиана)
+	 * https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6010512/
+	 */
+	private static double atanImpl(double tan) {
+		return (8 * tan) / (3 + Math.sqrt(25 + tan*tan*80/3));
+	}
+
 }
