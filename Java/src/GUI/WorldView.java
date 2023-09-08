@@ -89,8 +89,8 @@ public class WorldView extends javax.swing.JPanel {
 	   
 	   /**Специальная функция, которая обновляет все масштабные коэффициенты*/
 	   private void recalculate(){
-		   final double h = Math.max(10d,  getHeight());
-		   final double w = Math.max(10d,  getWidth());
+		   final double h = getHeight();
+		   final double w = getWidth();
 			//Пересчёт размера мира
 			double wDel, hDel;
 			if(Configurations.MAP_CELLS.width > Configurations.MAP_CELLS.height){
@@ -288,6 +288,8 @@ public class WorldView extends javax.swing.JPanel {
 		Configurations.suns.forEach(s -> s.paint(g,getTransform()));
 		//И минералки
 		Configurations.minerals.forEach(s -> s.paint(g,getTransform()));
+		//И и шлефанём всё это потоками
+		Configurations.streams.forEach(s -> s.paint(g,getTransform()));
 		
 		//Рисуем всё остальное
 		switch (Configurations.world_type) {
@@ -405,7 +407,7 @@ public class WorldView extends javax.swing.JPanel {
 	 * В общем изменяет на сколько пользователь будет видеть экран
 	 * @param add на сколько нужно изменить зум
 	 */
-	public void addZoom(int add) {zoom = getZoom() + add;}
+	public void addZoom(int add) {zoom = Math.max(1, getZoom() + add);}
 	
 	/**Возвращает текущее увеличение размера карты, относительно возможности отображения на экране
 	 * @return если 1, то мир без скрола. Если 2, то мир примерно в 2 раза больше, чем может увидеть пользователь
