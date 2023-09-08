@@ -13,7 +13,7 @@ public class Buoyancy extends CommandDo {
 	private final int HP_COST = 1;
 	/**На сколько меняется плавучесть*/
 	private final int DEL = 1;
-	private final MyMessageFormat valueFormat = new MyMessageFormat("HP -= {0} W {1}= {2}");
+	private final MyMessageFormat valueFormat = new MyMessageFormat("HP -= {0} W ={1}{2}");
 	/**Тип команды*/
 	private final boolean isUp;
 
@@ -21,9 +21,9 @@ public class Buoyancy extends CommandDo {
 
 	@Override
 	protected void doing(AliveCell cell) {
-		var par = param(cell, 0,200) - 100;
+		var par = param(cell, 0, 100);
 		cell.addHealth(-Math.abs(HP_COST * par / 10));//Переводит 1 хп в 0.1 плавучести
-		cell.setBuoyancy(cell.getBuoyancy() + (isUp ?  +DEL : -DEL) * par);
+		cell.setBuoyancy((isUp ?  +DEL : -DEL) * par);
 	}
 
 	@Override
@@ -32,7 +32,7 @@ public class Buoyancy extends CommandDo {
 	};
 	
 	public String value(AliveCell cell) {
-		var par = param(cell, 0, 200) - 100;
+		var par = param(cell, 0, 100);
 		return valueFormat.format(Math.abs(HP_COST * par / 10), (isUp ? '+' : '-'), DEL * par);
 	}
 }
