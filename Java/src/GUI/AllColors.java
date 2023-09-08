@@ -26,6 +26,9 @@ public class AllColors {
 	public static final Color MINERALS = Utils.getHSBColor(300d / 360, 1, 1, 1);
 	/**Цвет минералов при минимуме*/
 	public static final Color MINERALS_DARK = toDark(AllColors.MINERALS,0);
+	/**Цвет потока*/
+	public static final Color STREAM = new Color(0, 0, 205, 64);
+	
 	
 	/**Преобразует цвет в его более прозрачный вариант
 	 * @param from какой цвет
