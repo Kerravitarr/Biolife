@@ -17,6 +17,13 @@ public abstract class Viewers {
 	 * 
 	 * @throws IllegalArgumentException если такой панели нет в отображемых
 	 */
-	public abstract JPanel get(String panelName);
-	
+	public abstract JPanel get(String panelName) throws IllegalArgumentException;
+	/**Возвращает панель по её классу
+	 * @param <T> тип панели, который хотим вернуть
+	 * @param cl класс этой пнаели
+	 * @return саму панель
+	 * 
+	 * @throws IllegalArgumentException если такой панели нет в отображемых
+	 */
+	public abstract <T extends JPanel> T get(Class<T> cl) throws IllegalArgumentException;
 }

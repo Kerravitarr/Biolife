@@ -50,6 +50,15 @@ public class DefaultViewer extends Viewers{
 			default -> throw new IllegalArgumentException("Панели" + panelName + " нет в наборе " + this);
 		};
 	}
+	@Override
+	public <T extends JPanel> T get(Class<T> cl) throws IllegalArgumentException{
+		if (cl.equals(BotInfo.class)) return (T) getBotInfo();
+		else if(cl.equals(Settings.class)) return (T) settings;
+		else if(cl.equals(WorldView.class)) return (T) getWorld();
+		else if(cl.equals(Menu.class)) return (T) getMenu();
+		else if(cl.equals(Legend.class)) return (T) getLegend();
+		else throw new IllegalArgumentException("Панели" + cl + " нет в наборе " + this);
+	}
 	public Menu getMenu(){return menu;}
 	public WorldView getWorld(){return view;}
 	public BotInfo getBotInfo(){return info;}
