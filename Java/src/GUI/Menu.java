@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.util.List;
 import javax.swing.JMenuItem;
 import Calculations.Configurations;
+import Calculations.GenerateClassException;
+import java.awt.Cursor;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.logging.Level;
@@ -137,13 +139,15 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	 */
 	private void remove(REMOVE_O o) {
 		Configurations.world.stop();
+		final var vw = Configurations.getViewer().get(WorldView.class);
 		removeO = o;
 		select = MENU_SELECT.REMOVE;
-		/*Configurations.world.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));*/ throw new AssertionError();
+		vw.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
 	}
 	private void toDefault() {
 		select = MENU_SELECT.NONE;
-		/*Configurations.world.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));*/ throw new AssertionError();
+		final var vw = Configurations.getViewer().get(WorldView.class);
+		vw.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
 	}
 
 	public void setCell(List<CellObject> cellObjects) {
@@ -274,12 +278,9 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		}
 		if (oldStateWorld)
 			Configurations.world.start();
-		else
-			Configurations.world.stop();
 	}
 	/**Открывает окошечко загрузки мира и... Загружает мир, собственно*/
 	public void load() {
-		boolean oldStateWorld = Configurations.world.isActiv();	
 		Configurations.world.awaitStop();
 		
 		JFileChooser fileopen = new JFileChooser(System.getProperty("user.dir"));
@@ -293,6 +294,9 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			} catch (IOException ex) {
 				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 				JOptionPane.showMessageDialog(null,	Configurations.getHProperty(this.getClass(),"load.error") + ex,	title, JOptionPane.ERROR_MESSAGE);
+			} catch (GenerateClassException ex) {
+				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+				JOptionPane.showMessageDialog(null,	ex.getLocalizedMessage(),	title, JOptionPane.ERROR_MESSAGE);
 			}
 		}
 	}
