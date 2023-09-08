@@ -10,6 +10,8 @@ import java.lang.reflect.InvocationTargetException;
  * @author Kerravitarr
  */
 public class GenerateClassException extends Exception{
+	/**Дополнительный текст сообщения*/
+	public StringBuilder addTextToMasg;
 	
 	public GenerateClassException(ClassNotFoundException ex, String className){super("Не удалось обнаружить класс " + className,ex);}
 	public GenerateClassException(NoSuchMethodException ex){super(ex);}
@@ -29,5 +31,20 @@ public class GenerateClassException extends Exception{
 		} else {
 			return getCause().toString();
 		}
+	}
+	/**Добавляет текст к ошибке, возможно, для уточнения
+	 * @param msg часть текста, которая будет вставленна после основного сообщения
+	 */
+	public void addMsg(String msg){
+		if(addTextToMasg == null)
+			addTextToMasg = new StringBuilder(super.getMessage());
+		addTextToMasg.append("\n").append(msg);
+	}
+	@Override
+	public String getMessage(){
+		if(addTextToMasg == null)
+			return super.getMessage();
+		else
+			return addTextToMasg.toString();
 	}
 }
