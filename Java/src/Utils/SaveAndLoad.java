@@ -40,8 +40,9 @@ public class SaveAndLoad {
 		/**Создать объект на оснвое переданного JSON
 		 * @param json объект, из которого создаём текущий
 		 * @param version версия файла, чтобы следить за измененями
+		 * @throws Calculations.GenerateClassException при желании можно кинуть исключение, означающее, что генерация объекта пошла по звезде
 		 */
-		public T fromJSON(JSON json, long version);
+		public T fromJSON(JSON json, long version) throws GenerateClassException;
 	}
 	public static abstract class JSONSerialization<T> implements Serialization, Deserialization  {
 		/**Обзятаельный конструктор для класса серелизации
@@ -50,18 +51,14 @@ public class SaveAndLoad {
 		 */
 		protected JSONSerialization(JSON json, long version){}
 		@Override
-		public T fromJSON(JSON json, long version){
-			GenerateClassException thrw = null;
+		public T fromJSON(JSON json, long version) throws GenerateClassException{
 			try {
 				return (T) this.getClass().getDeclaredConstructor(JSON.class, long.class).newInstance(json, version);
-			} catch (NoSuchMethodException ex) { thrw =  new GenerateClassException(ex);}
-			catch (InstantiationException ex) { thrw =  new GenerateClassException(ex);}
-			catch (IllegalAccessException ex) { thrw =  new GenerateClassException(ex);}
-			catch (IllegalArgumentException ex) { thrw =  new GenerateClassException(ex);}
-			catch (InvocationTargetException ex) { thrw =  new GenerateClassException(ex);}
-			
-			Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, thrw.getLocalizedMessage(), thrw);
-			return null;
+			} catch (NoSuchMethodException ex) { throw new GenerateClassException(ex);}
+			catch (InstantiationException ex) {throw new GenerateClassException(ex);}
+			catch (IllegalAccessException ex) { throw new GenerateClassException(ex);}
+			catch (IllegalArgumentException ex) { throw new GenerateClassException(ex);}
+			catch (InvocationTargetException ex) { throw new GenerateClassException(ex);}
 		}
 	}
 	/**Событие, происходящее при сохранении/загрузке файла*/
@@ -100,7 +97,12 @@ public class SaveAndLoad {
 		private final String path;
 		private Loader(String p) throws IOException{
 			path = p;
-			version = load(version);
+			try {
+				version = load((j,v) -> new VERSION(j,v), version.getName());
+			} catch (GenerateClassException ex) {
+				Logger.getLogger(SaveAndLoad.class.getName()).log(Level.SEVERE, null, ex);
+				throw new UnknownError("Недостижимая часть кода");
+			}
 		}
 		/**Загружает один конкретный объект из файла
 		 * @param <T> тип объекта, который у нас должен получиться
@@ -108,8 +110,9 @@ public class SaveAndLoad {
 		 * @param name имя этого объекта
 		 * @return загружаемый объект. Если такого объекта нет - вернётся null
 		 * @throws java.io.IOException мы работем с файловой системой, ошибки неизбежны
+		 * @throws Calculations.GenerateClassException возникает, когда происходят ошибки создания объекта
 		 */
-		public <T> T load(Deserialization<T> factory, String name) throws IOException{
+		public <T> T load(Deserialization<T> factory, String name) throws IOException, GenerateClassException{
 			try (ZipInputStream zin = new ZipInputStream(new FileInputStream(path))) {
 				ZipEntry entry;
 				name += ".json";
@@ -131,7 +134,7 @@ public class SaveAndLoad {
 		 * @return 
 		 * @throws java.io.IOException 
 		 */
-		public <T> T load(JSONSerialization<T> factory) throws IOException{
+		public <T> T load(JSONSerialization<T> factory) throws IOException, GenerateClassException{
 			return (T) load(factory,factory.getName());
 		}
 	}
