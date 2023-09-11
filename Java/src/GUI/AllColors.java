@@ -28,6 +28,8 @@ public class AllColors {
 	public static final Color MINERALS_DARK = toDark(AllColors.MINERALS,0);
 	/**Цвет потока*/
 	public static final Color STREAM = new Color(0, 0, 205, 64);
+	/**Цвет неба, открытого воздуха*/
+	public static final Color SAND =  new Color(226, 202, 118, 255);
 	
 	
 	/**Преобразует цвет в его более прозрачный вариант

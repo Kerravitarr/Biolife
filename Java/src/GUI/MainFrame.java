@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -136,6 +137,11 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
         contentPane = new javax.swing.JPanel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                formComponentResized(evt);
+            }
+        });
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
@@ -219,6 +225,10 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 			}
 		}
     }//GEN-LAST:event_contentPaneMouseWheelMoved
+
+    private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized
+       
+    }//GEN-LAST:event_formComponentResized
 
 	
 	@Override
@@ -313,7 +323,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 	 * @return панель мира
 	 */
 	private Component makeWorldPanel(WorldView world) {
-		scrollPane = new JScrollPane(){
+		scrollPane = new JScrollPane(world){
 		    @Override
 		    protected void processMouseWheelEvent(MouseWheelEvent e) {
 		    	contentPaneMouseWheelMoved(e);
@@ -325,20 +335,21 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 			@Override
 			public void componentResized(ComponentEvent e) {
 				var scale = (Math.pow(5,(world.getZoom()-1) / 100d));
-				var newW = (int) (scrollPane.getWidth() * scale) - 10;
-				var newH = (int) (scrollPane.getHeight() * scale) - 10;
+				double requiredW = scrollPane.getWidth() * scale - 20;
+				double requiredH = scrollPane.getHeight() * scale - 20;
 				var horizont = scrollPane.getHorizontalScrollBar();
 				var vertical = scrollPane.getVerticalScrollBar(); 
 				
-				if(scale > 1) {
-					if(Configurations.MAP_CELLS.height > Configurations.MAP_CELLS.width)
-						newH = (int) ((newW * (1 + (world.getLRborder().getX() + world.getLRborder().getY())) * Configurations.MAP_CELLS.height) / Configurations.MAP_CELLS.width);
-					else
-						newH = (int) ((newW * (1 + (world.getUDborder().getX() + world.getUDborder().getY())) * Configurations.MAP_CELLS.height) / Configurations.MAP_CELLS.width);
-					
-					horizont.setUnitIncrement(Math.max(1, newW / 100));
-					vertical.setUnitIncrement(Math.max(1, newH / 100));
+ 				switch (Configurations.world_type) {
+					case LINE_H -> {
+						requiredH = (1.0 + world.getUborder() + world.getDborder()) * requiredW * Configurations.MAP_CELLS.height / Configurations.MAP_CELLS.width;
+					} case LINE_V -> {
+						requiredW = (1.0 + world.getLborder() + world.getRborder()) * requiredH * Configurations.MAP_CELLS.width / Configurations.MAP_CELLS.height;
+					}
+					default -> throw new AssertionError();
 				}
+				horizont.setUnitIncrement((int)Math.max(1, requiredW / 100));
+				vertical.setUnitIncrement((int)Math.max(1, requiredH / 100));
 				
 				var lastP = mousePoint;
 				if(lastP == null){
@@ -346,10 +357,10 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 					lastP.x += viewport.getWidth()/2;
 					lastP.y += viewport.getHeight()/2;
 				}
-				var Zw = ((double) newW) / world.getWidth();
-				var Zh = ((double) newH) / world.getHeight();
+				var Zw = (requiredW) / world.getWidth();
+				var Zh = (requiredH) / world.getHeight();
 				
-				world.setPreferredSize(new Dimension(newW,newH));
+				world.setPreferredSize(new Dimension((int)requiredW,(int)requiredH));
 
 				int newX = (int) ((lastP.x *= Zw) - viewport.getWidth()/2);
 				int newY = (int) ((lastP.y *= Zh) - viewport.getHeight()/2);
@@ -371,8 +382,6 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 				world.setVisible(new Calculations.Point(0, 0),new Calculations.Point(Configurations.MAP_CELLS.width - 1, Configurations.MAP_CELLS.height - 1));
 			}
 		}));
-		//Configurations.settings.setListener(scrollPane);
-		scrollPane.setViewportView(world);
 		var adapter = new MouseMoveAdapter();
 		world.addMouseListener(adapter);
 		world.addMouseMotionListener(adapter);

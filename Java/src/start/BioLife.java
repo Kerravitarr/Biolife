@@ -52,11 +52,18 @@ public class BioLife{
 			System.out.println("Опции находятся в допустимых пределах. Параметры запуска: " + optsStr);
 		}
 		//Создаём мир
+		final var defType = Configurations.WORLD_TYPE.LINE_V;
 		if(!_opts.get('V').get(Boolean.class)){
 			//С графической частью
 			Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
-			 //120 - пикселей на верхнюю и нижнюю шапочки
-			Configurations.makeDefaultWord(Configurations.WORLD_TYPE.LINE_H,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() - 120 ) / PIXEL_PER_CELL));
+			switch (defType) {
+				case LINE_H->
+					Configurations.makeDefaultWord(defType,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
+				case LINE_V->
+					Configurations.makeDefaultWord(defType,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
+				default->
+					throw new AssertionError();
+			}
 			
 			//Обработка переменных окружения
 			//Настраиваем буковки
@@ -68,7 +75,7 @@ public class BioLife{
 			Configurations.world.start();
 		} else {
 			//Только с матаном
-			Configurations.makeDefaultWord(Configurations.WORLD_TYPE.LINE_H,_opts.get('W').get(Integer.class), _opts.get('H').get(Integer.class));
+			Configurations.makeDefaultWord(defType,_opts.get('W').get(Integer.class), _opts.get('H').get(Integer.class));
 			Configurations.world.start();
 			start();
 		}

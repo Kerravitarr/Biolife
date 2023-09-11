@@ -87,33 +87,36 @@ public class WorldView extends javax.swing.JPanel {
 		*/
 	   public int toWorldY(int y) {return (int) Math.round((y - border.height)/scalePxPerCell - 0.5);}
 	   
-	   /**Специальная функция, которая обновляет все масштабные коэффициенты*/
-	   private void recalculate(){
-		   final double h = getHeight();
-		   final double w = getWidth();
+		/** Специальная функция, которая обновляет все масштабные коэффициенты */
+		private void recalculate() {
+			//Размеры мира, с учётом обязательного запаса
+			final double h = getHeight();
+			final double w = getWidth();
 			//Пересчёт размера мира
-			double wDel, hDel;
-			if(Configurations.MAP_CELLS.width > Configurations.MAP_CELLS.height){
-				hDel = h * (1d - (UP_DOWN_border.getX() + UP_DOWN_border.getY())) / (Configurations.MAP_CELLS.height);
-				wDel = w / (Configurations.MAP_CELLS.width);
-			} else {
-				hDel = h / (Configurations.MAP_CELLS.height);
-				wDel = w * (1d - (LEFT_RIGHT_border.getX() + LEFT_RIGHT_border.getY()))/ (Configurations.MAP_CELLS.width);
+			scalePxPerCell = Math.min(h * (1d - getUborder() - getDborder()) / (Configurations.MAP_CELLS.height), w * (1d - getLborder() - getRborder()) / (Configurations.MAP_CELLS.width));
+			switch (Configurations.world_type) {
+				case LINE_H -> {
+					border.width = 0;
+					border.height = (int) Math.round((h - Configurations.MAP_CELLS.height * scalePxPerCell) / 2);
+					pixelXDel = (w - Configurations.MAP_CELLS.width * scalePxPerCell) / 2;
+					pixelYDel = border.height + scalePxPerCell / 2;
+				}
+				case LINE_V -> {
+					border.width = (int) Math.round((w - Configurations.MAP_CELLS.width * scalePxPerCell) / 2);
+					border.height = 0;
+					pixelXDel = border.width + scalePxPerCell / 2;
+					pixelYDel = (h - Configurations.MAP_CELLS.height * scalePxPerCell) / 2;
+				}
+				default ->
+					throw new AssertionError();
 			}
-			scalePxPerCell = Math.min(hDel, wDel);
-			border.width = (int) Math.round((w - Configurations.MAP_CELLS.width*scalePxPerCell)/2);
-			border.height = (int) Math.round((h - Configurations.MAP_CELLS.height*scalePxPerCell)/2);
-			{
-				pixelXDel = border.width + scalePxPerCell/2;
-				pixelYDel = border.height + scalePxPerCell/2;
-			}
-	   }
+		}
 	}
 
 	/** Creates new form WorldView */
 	public WorldView() {
 		initComponents();
-		setVisible(new Point(0,0), new Point(Configurations.MAP_CELLS.width, Configurations.MAP_CELLS.height));
+		setVisible(new Point(0,0), new Point(Configurations.MAP_CELLS.width-1, Configurations.MAP_CELLS.height-1));
 		recalculate();
 	}
 
@@ -127,6 +130,7 @@ public class WorldView extends javax.swing.JPanel {
     private void initComponents() {
 
         setBackground(new java.awt.Color(255, 255, 255));
+        setPreferredSize(new java.awt.Dimension(1, 1));
         addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
             public void mouseDragged(java.awt.event.MouseEvent evt) {
                 formMouseDragged(evt);
@@ -218,10 +222,10 @@ public class WorldView extends javax.swing.JPanel {
 		}
     }//GEN-LAST:event_formMouseClicked
 
-	
 	@Override
 	public void paintComponent(Graphics g) {
 		paintComponent((Graphics2D)g,false);
+		
 	}
 	/**Отрисовывает мир на холст
 	 * @param g куда рисовать
@@ -277,7 +281,7 @@ public class WorldView extends javax.swing.JPanel {
 	private void paintField(Graphics2D g) {
 		//Рисуем игровое поле
 		switch (Configurations.world_type) {
-			case LINE_H ->{
+			case LINE_H,LINE_V ->{
 				//Вода
 				colors[1].paint(g);
 			}
@@ -298,30 +302,38 @@ public class WorldView extends javax.swing.JPanel {
 				colors[0].paint(g);
 				//Земля
 				colors[2].paint(g);
-				//ширмы
-				colors[3].paint(g);
-				colors[4].paint(g);
+			}
+			case LINE_V ->{
+				//Песочки
+				colors[0].paint(g);
+				colors[2].paint(g);
 			}
 			default -> 	throw new AssertionError();
 		}
 		//Вспомогательное построение
-		//paintLine(g);
+		//paintCells(g);
 		//paintProc(g);
 	}
-	/**Смешивает все цвета в усреднённый
-	 * @param colors цвета, которые надо смешать
-	 * @return итоговый цвет, полученный путём смешивания остальных
+	/**Вспомогательная, отладочная функция, рисования клеток поля
+	 * @param g 
 	 */
-	public static Color mixColors(Color... colors) {
-		final var ratio = 1f / colors.length;
-		int r = 0, g = 0, b = 0, a = 0;
-		for (Color color : colors) {
-			r += color.getRed() * ratio;
-			g += color.getGreen() * ratio;
-			b += color.getBlue() * ratio;
-			a += color.getAlpha() * ratio;
+	private void paintCells(Graphics2D g) {
+		int r = transforms.toScrin(1);
+		for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
+			for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+				final var pos = new Point(x, y);
+				if(!pos.valid()) continue;
+				if(x % 10 == 0)
+					g.setColor(Color.RED);
+				else if(y % 10 == 0)
+					g.setColor(Color.YELLOW);
+				else
+					g.setColor(Color.BLACK);
+				int cx = transforms.toScrinX(pos);
+				int cy = transforms.toScrinY(pos);
+				g.drawRect(cx-r/2, cy-r/2,r, r);
+			}
 		}
-		return new Color(r, g, b, a);
 	}
 	
 	/**Пересчитывает относительные размеры мира в пикселях.*/
@@ -347,31 +359,43 @@ public class WorldView extends javax.swing.JPanel {
 				int yw[] = new int[4];
 				//Дно
 				int yb[] = new int[4];
-				//Левая ширма
-				int xsl[] = new int[4];
-				int ysl[] = new int[4];
-				//Правая ширма
-				int xsr[] = new int[4];
 
-				xsl[0] = xsl[1] = 0;
-				xsl[2] = xsl[3] = xs[0] = xs[1] = transforms.toScrinX(0);
-				xsr[0] = xsr[1] = xs[2] = xs[3] = transforms.toScrinX(Configurations.MAP_CELLS.width);
-				xsr[2] = xsr[3] = getWidth();
+				xs[0] = xs[1] = 0;
+				xs[2] = xs[3] = getWidth();
 				
-				ysl[0] = ysl[3] = ys[0] = ys[3] = 0;
+				ys[0] = ys[3] = 0;
 				ys[1] = ys[2] = yw[0] = yw[3] = transforms.toScrinY(0);
 				yb[0] = yb[3] = yw[1] = yw[2] = transforms.toScrinY(Configurations.MAP_CELLS.height - 1);
-				ysl[1] = ysl[2] = yb[1] = yb[2] = getHeight();
+				yb[1] = yb[2] = getHeight();
 				//Небо
 				colors[0] = new ColorRec(xs,ys,AllColors.SKY);
 				//Вода
 				colors[1] = new ColorRec(xs,yw, AllColors.WATER);
 				//Земля
 				colors[2] = new ColorRec(xs,yb, AllColors.DRY);
+			}
+			case LINE_V -> {
+				//Левый песочек
+				int xl[] = new int[4];
+				//Поле, вода
+				int xw[] = new int[4];
+				int yw[] = new int[4];
+				//Правый песочек
+				int xr[] = new int[4];
 				
-				//А теперь два прямоугольника, скрывающие всякие артефакты
-				colors[3] = new ColorRec(xsl,ysl, Color.WHITE);
-				colors[4] = new ColorRec(xsr,ysl, Color.WHITE);
+				xl[0] = xl[3] = 0;
+				xl[1] = xl[2] = xw[0] = xw[3] = transforms.toScrinX(0);
+				xw[1] = xw[2] = xr[0] = xr[3] = transforms.toScrinX(Configurations.MAP_CELLS.width-1);
+				xr[1] = xr[2] = getWidth();
+				
+				yw[0] = yw[1] = 0;
+				yw[2] = yw[3] = getHeight();
+				//Песочек левый
+				colors[0] = new ColorRec(xl,yw,AllColors.SAND);
+				//Вода
+				colors[1] = new ColorRec(xw,yw, AllColors.WATER);
+				//Песочек правый
+				colors[2] = new ColorRec(xr,yw, AllColors.SAND);
 			}
 			default -> 	throw new AssertionError();
 		}
@@ -385,19 +409,49 @@ public class WorldView extends javax.swing.JPanel {
 		visible[0] = leftUp;
 		visible[1] = rightDown;
 	}
-	/**Верхний и нижний бордюр, необходимый для отрисовки неба, или чего там ещё
-	 * @return точка, у которой x - верхний блок, в % от размера мира, а
-	 *					y - нижний блок, в % от размера мира
+	/**Возвращает сколкьо процентов экрана сверху нужно игровому полю для отрисовки дополнительных
+	 * элементов как минимум
+	 * @return процент от размера мира на необходимые элементы
 	 */
-	public java.awt.geom.Point2D getUDborder(){
-		return Transforms.UP_DOWN_border;
+	public double getUborder(){
+		return switch (Configurations.world_type) {
+			case LINE_H -> Transforms.UP_DOWN_border.getX();
+			case LINE_V -> 0d;
+			default -> throw new AssertionError();
+		};
 	}
-	/**Левый и правый бордюр, необходимый для отрисовки боковин реки или ещё чего
-	 * @return точка, у которой x - левый блок, в % от размера мира, а
-	 *					y - правый блок, в % от размера мира
+	/**Возвращает сколкьо процентов экрана снизу нужно игровому полю для отрисовки дополнительных
+	 * элементов как минимум
+	 * @return процент от размера мира на необходимые элементы
 	 */
-	public java.awt.geom.Point2D getLRborder(){
-		return Transforms.LEFT_RIGHT_border;
+	public double getDborder(){
+		return switch (Configurations.world_type) {
+			case LINE_H -> Transforms.UP_DOWN_border.getY();
+			case LINE_V -> 0d;
+			default -> throw new AssertionError();
+		};
+	}
+	/**Возвращает сколкьо процентов экрана слева нужно игровому полю для отрисовки дополнительных
+	 * элементов как минимум
+	 * @return процент от размера мира на необходимые элементы
+	 */
+	public double getLborder(){
+		return switch (Configurations.world_type) {
+			case LINE_H -> 0d;
+			case LINE_V -> Transforms.LEFT_RIGHT_border.getX();
+			default -> throw new AssertionError();
+		};
+	}
+	/**Возвращает сколкьо процентов экрана справа нужно игровому полю для отрисовки дополнительных
+	 * элементов как минимум
+	 * @return процент от размера мира на необходимые элементы
+	 */
+	public double getRborder(){
+		return switch (Configurations.world_type) {
+			case LINE_H -> 0d;
+			case LINE_V -> Transforms.LEFT_RIGHT_border.getY();
+			default -> throw new AssertionError();
+		};
 	}
 	/**Возвращает преобразователь координат
 	 * @return класс, который может преобразовать коррдинаты из ячеестых в пиксельные и наоборот
@@ -421,8 +475,8 @@ public class WorldView extends javax.swing.JPanel {
 	 * @return точку в реальном пространстве или null, если эта точка за гранью
 	 */
 	private Point recalculation(int x, int y) {
-		x = Utils.betwin(transforms.border.width, x, getWidth() - transforms.border.width);
-		y = Utils.betwin(transforms.border.height, y, getWidth() - transforms.border.height);
+		x = Utils.betwin(Transforms.border.width, x, getWidth() - Transforms.border.width);
+		y = Utils.betwin(Transforms.border.height, y, getWidth() - Transforms.border.height);
 		return new Point(transforms.toWorldX(x),transforms.toWorldY(y));
 	}
 
@@ -438,7 +492,7 @@ public class WorldView extends javax.swing.JPanel {
 	/**Счётчик шагов. Puls Per Second*/
 	public final FPScounter fps = new FPScounter();
 	/**Все цвета, которые мы должны отобразить на поле*/
-	private final ColorRec [] colors = new ColorRec[3 + 2];
+	private final ColorRec [] colors = new ColorRec[3];
 	/**Преобразователь из одних координат в другие*/
 	private final Transforms transforms = new Transforms();
 	
