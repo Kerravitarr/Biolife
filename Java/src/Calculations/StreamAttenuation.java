@@ -50,7 +50,7 @@ public abstract class StreamAttenuation {
 			super(minimum,maximum);
 		}
 		@Override
-		public double transform(double dist) {return dist;}
+		public double transform(double dist) {return 1 - dist;}
 
 		@Override
 		public String getName() {
@@ -80,7 +80,7 @@ public abstract class StreamAttenuation {
 			power = j.get("power");
 		}
 		@Override
-		public double transform(double dist) {return Math.pow(dist, power);	}
+		public double transform(double dist) {return 1d - Math.pow(dist, power);	}
 		@Override
 		public JSON toJSON(){
 			final var j = super.toJSON();
