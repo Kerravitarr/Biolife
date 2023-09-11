@@ -41,6 +41,8 @@ import java.awt.EventQueue;
 import java.util.Map;
 import Calculations.Configurations;
 import Calculations.Point;
+import java.util.Arrays;
+import java.util.HashMap;
 
 public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 	
@@ -458,12 +460,15 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 			return;
 
 		setDinamicHaracteristiks();
+		//Раз выше были динамические характеристики, то тут, что логично, статические :)
 		if (getCell() instanceof AliveCell aliveCell) {
 			panel_DNA.setVisible(true);
 			generation.setText(Integer.toString(aliveCell.getGeneration()));
 			
 			StringBuilder sb = new StringBuilder();
-		    for(var i : Utils.sortByValue(aliveCell.getSpecialization())) {
+			final var SM = new HashMap<AliveCell.Specialization.TYPE, Integer>();
+			Arrays.stream(AliveCell.Specialization.TYPE.values()).forEach(key -> SM.put(key, aliveCell.getSpecialization().get(key)));
+		    for(var i : Utils.sortByValue(SM)) {
 		    	if(i.getValue() == 0) continue;
 				if (sb.isEmpty())
 					sb.append(i.getKey().toString());

@@ -90,7 +90,7 @@ public abstract class AliveCellProtorype extends CellObject{
 	 * @author Kerravitarr
 	 *
 	 */
-	public class Specialization extends HashMap<Specialization.TYPE,Integer>{
+	public class Specialization{
 		public enum TYPE{
 			PHOTOSYNTHESIS(		118),
 			DIGESTION(			316),
@@ -101,8 +101,8 @@ public abstract class AliveCellProtorype extends CellObject{
 			ACCUMULATION(		271), 
 			;
 			
-			public static final TYPE[] staticValues = TYPE.values();
-			public static int size() {return staticValues.length;}
+			public static final TYPE[] values = TYPE.values();
+			public static int size() {return values.length;}
 			
 			TYPE(float colorByDegree) {
 				lname = Configurations.getProperty(getClass(), MessageFormat.format("{0}.Long", super.name()));
@@ -110,6 +110,7 @@ public abstract class AliveCellProtorype extends CellObject{
 				color = colorByDegree / 360f;
 			}
 			
+			@Override
 			public String toString() {return lname;}
 			/**Возвращает краткое описание типа*/
 			public String toSString() {return sname;}
@@ -120,17 +121,18 @@ public abstract class AliveCellProtorype extends CellObject{
 			/**Цвет специализации [0,1]*/
 			public final float color;
 		}
+		private final int[] map = new int[Specialization.TYPE.size()];
+		
 		/**Максимальная специализация*/
 		public static final int MAX_SPECIALIZATION = 100;
 		/**Ведущая специализация*/
 		private TYPE main = TYPE.PHOTOSYNTHESIS;
 		
 		Specialization() {
-			super(TYPE.size()); 
-			for(var i : TYPE.staticValues)
+			for(var i : TYPE.values)
 				put(i, MAX_SPECIALIZATION / TYPE.size());
 			var summ = 0;
-			for(var i : this.values())
+			for(var i : map)
 				summ += i;
 			put(TYPE.PHOTOSYNTHESIS, get(TYPE.PHOTOSYNTHESIS) + (MAX_SPECIALIZATION - summ));
 			set(TYPE.PHOTOSYNTHESIS,50);
@@ -139,25 +141,39 @@ public abstract class AliveCellProtorype extends CellObject{
 		
 		/**Копируем специализацию нашего предка*/
 		public Specialization(AliveCell cell) {
-			this.putAll(cell.getSpecialization());
+			System.arraycopy(cell.getSpecialization().map, 0, map, 0, map.length);
 			phenotype = cell.phenotype;
 		}
 		
 		/**Копируем специализацию нашего предка*/
-		public Specialization(JSON json) {
-	    	List<Integer> keys = json.getA("keys");
+		public Specialization(JSON json, long v) {
 	    	List<Integer> vals = json.getA("vals");
-	    	
+			
 			var max = 0;
-	    	for(int i = 0 ; i < keys.size() ; i++) {
-				var key = TYPE.staticValues[keys.get(i)];
-				var val = vals.get(i);
-				if (val >= max) {
-					max = val;
-					main = key;
+			if(v < 8){
+				List<Integer> keys = json.getA("keys");
+				for(int i = 0 ; i < keys.size() ; i++) {
+					var key = TYPE.values[keys.get(i)];
+					var val = vals.get(i);
+					if (val >= max) {
+						max = val;
+						main = key;
+					}
+					put(key,vals.get(i));
 				}
-	    		put(key,vals.get(i));
-	    	}
+			} else {
+				List<String> keys = json.getA("keys");
+				for(int i = 0 ; i < keys.size() ; i++) {
+					var key = TYPE.valueOf(keys.get(i));
+					var val = vals.get(i);
+					if (val >= max) {
+						max = val;
+						main = key;
+					}
+					put(key,vals.get(i));
+				}
+			}
+			
 
 			updateColor();
 		}
@@ -165,9 +181,9 @@ public abstract class AliveCellProtorype extends CellObject{
 		private void updateColor() {
 			float x = 0f;
 			float y = 0f;
-			for(var i : this.entrySet()){
-				var ix = i.getValue() * Math.cos(2 * Math.PI * i.getKey().color);
-				var iy = i.getValue() * Math.sin(2 * Math.PI * i.getKey().color);
+			for(var i : TYPE.values){
+				var ix = get(i) * Math.cos(2 * Math.PI * i.color);
+				var iy = get(i) * Math.sin(2 * Math.PI * i.color);
 				x += ix;
 				y += iy;
 			}
@@ -184,19 +200,19 @@ public abstract class AliveCellProtorype extends CellObject{
 				var del = co - get(type);
 				var summ = MAX_SPECIALIZATION - get(type);
 				var max = 0;
-				for(var i : entrySet()) {
-					if(i.getKey() == type) continue;
-					var nVal = (int) Utils.betwin(0.0, Math.round(((double)(i.getValue() * summ - del * i.getValue())) / summ), MAX_SPECIALIZATION );
+				for(var i : TYPE.values) {
+					if(i == type) continue;
+					var nVal = (int) Utils.betwin(0.0, Math.round(((double)(get(i) * (summ - del))) / summ), MAX_SPECIALIZATION );
 					if(nVal >= max) {
 						max = nVal;
-						main = i.getKey();
+						main = i;
 					}
-					put(i.getKey(), nVal );
+					put(i, nVal );
 				}
 				summ = 0;
-				for(var i : entrySet()) {
-					if(i.getKey() != type)
-						summ += i.getValue();
+				for(var i : TYPE.values) {
+					if(i != type)
+						summ += get(i);
 				}
 				var nVal = MAX_SPECIALIZATION - summ;
 				if(nVal >= max)
@@ -208,18 +224,28 @@ public abstract class AliveCellProtorype extends CellObject{
 
 		public JSON toJSON() {
 			JSON make = new JSON();
-			int [] keys = new int[size()];
-			int [] vals = new int[size()];
+			String [] keys = new String[TYPE.size()];
+			int [] vals = new int[TYPE.size()];
 			var i = 0;
-			for(var s : entrySet()) {
-				keys[i] = s.getKey().ordinal();
-				vals[i] = s.getValue();
+			for(var s : TYPE.values) {
+				keys[i] = s.name();
+				vals[i] = get(s);
 				i++;
 			}
 			make.add("keys", keys);
 			make.add("vals", vals);
 			return make;
 		}
+		/**Установить новое значение специализации
+		 * @param type какая специализация
+		 * @param value какое значение у специализации теперь
+		 */
+		private void put(TYPE type, int value) {map[type.ordinal()] = value;	}
+		/**Получить значение специализации по типу
+		 * @param type тип специализации
+		 * @return текущее значение специализации
+		 */
+		public int get(TYPE type) {return map[type.ordinal()]; }
 
 	}
 	
@@ -392,7 +418,7 @@ public abstract class AliveCellProtorype extends CellObject{
 	 * @return [0, 1.0] в зависимости от приспособления
 	 */
 	public double specMaxVal(Specialization.TYPE type) {
-		var spec = specialization.get(type).doubleValue();
+		double spec = specialization.get(type);
 		if(type != getMainSpec())
 			spec = Math.min(10, spec);
 		return spec / Specialization.MAX_SPECIALIZATION;

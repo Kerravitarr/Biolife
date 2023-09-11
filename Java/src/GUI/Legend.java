@@ -218,7 +218,7 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 			case PHEN ->  {
 				values = new Value[AliveCellProtorype.Specialization.TYPE.size()];
 				for(int i = 0 ; i < values.length ; i++) {
-					var act = AliveCellProtorype.Specialization.TYPE.staticValues[i];
+					var act = AliveCellProtorype.Specialization.TYPE.values[i];
 					values[i] = new Value((i + 1.0) / values.length, 1.0 / values.length, act.toString(), Utils.getHSBColor(act.color, 1f, 1f, 1f));
 				}
 			}

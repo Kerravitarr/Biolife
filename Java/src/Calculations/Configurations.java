@@ -25,6 +25,7 @@ import GUI.Viewers;
 import MapObjects.CellObject;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -42,7 +43,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	private static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
 	
 	/**Версия приложения. Нужна на тот случай, если вдруг будет загружаться старое приложение*/
-	public static final long VERSION = 7;
+	public static final long VERSION = 8;
 	/**Количиство ячеек карты*/
 	public static Dimension MAP_CELLS = null;
 	/**Тип созданного мира, в котором живут живики*/
@@ -173,7 +174,12 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			streams.add(new StreamHorizontal(new Point(MAP_CELLS.width*7/10, MAP_CELLS.height/2), MAP_CELLS.width/20, MAP_CELLS.height,new StreamAttenuation.LinealStreamAttenuation(2,4), "Правый, нижний левый"));
 			streams.add(new StreamHorizontal(new Point(MAP_CELLS.width*7/10 + MAP_CELLS.width/20, MAP_CELLS.height/2), MAP_CELLS.width/20, MAP_CELLS.height, new StreamAttenuation.LinealStreamAttenuation(-2,-4),"Правый, нижний правый"));
 		} else {
-			makeDefaultWord(WORLD_TYPE.valueOf(configWorld.get("WORLD_TYPE")), map.get(0),map.get(1));
+			final var mapG = new HashMap<CellObject.LV_STATUS, Gravitation>();
+			final var gj = configWorld.getJ("GRAVITATION");
+			for(var type : gj.getKeys()){
+				mapG.put(CellObject.LV_STATUS.valueOf(type), new Gravitation(gj.get(type), version));
+			}
+			buildMap(WORLD_TYPE.valueOf(configWorld.get("WORLD_TYPE")), map.get(0),map.get(1), mapG);
 			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
 			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
 			DIRTY_WATER = configWorld.get("DIRTY_WATER");
@@ -222,6 +228,11 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		configWorld.add("SUNS", suns.stream().map(s -> s.toJSON()).toList());
 		configWorld.add("MINERALS", minerals.stream().map(s -> s.toJSON()).toList());
 		configWorld.add("STREAMS", streams.stream().map(s -> s.toJSON()).toList());
+		final var gj = new JSON();
+		for (int i = 0; i < Configurations.gravitation.length; i++) {
+			gj.add(CellObject.LV_STATUS.values[i].name(), Configurations.gravitation[i].toJSON());
+		}
+		configWorld.add("GRAVITATION", gj);
 		return configWorld;
 	}
 	/**
@@ -233,7 +244,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public static void makeDefaultWord(WORLD_TYPE type, int width, int height ) {
 		switch (type) {
 			case LINE_H -> {
-				buildMap(type, width, height, new HashMap<CellObject.LV_STATUS, Gravitation>(){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(2, Gravitation.Direction.DOWN));}});
+				buildMap(type, width, height, new HashMap<CellObject.LV_STATUS, Gravitation>(){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(20, Gravitation.Direction.DOWN));}});
 				suns.add(new SunRectangle(20, new Trajectory(new Point(width/2,0)), (int) (width* 0.77), 1, false,"Постоянное"));
 				suns.add(new SunEllipse(
 						20, 
@@ -248,7 +259,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 						,width * 1 / 4, height * 1 / 8, true,"Движущееся"));
 				//А теперь два потока воды - вверх и вниз
 				streams.add(new StreamVertical(new Point(width/8, 0), width/4, height, new StreamAttenuation.LinealStreamAttenuation(-100,-1000),"Левый"));
-				streams.add(new StreamVertical(new Point(width*5/8, 0), width/4, height,new StreamAttenuation.PowerFunctionStreamAttenuation(1,1000,4),"Прваый"));
+				streams.add(new StreamVertical(new Point(width*5/8, 0), width/4, height,new StreamAttenuation.PowerFunctionStreamAttenuation(1,1000,2),"Прваый"));
 				//А теперь ещё 4 шапочки, чтобы в верхней и нжней части сдвутать клетки
 				streams.add(new StreamEllipse(new Point(width/4, 0), width/4, new StreamAttenuation.LinealStreamAttenuation(-40,-100),"Левый верхний"));
 				streams.add(new StreamEllipse(new Point(width/4, height-1), width/4,  new StreamAttenuation.LinealStreamAttenuation(40,100),"Левый нижний"));

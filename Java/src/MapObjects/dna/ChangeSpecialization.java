@@ -17,7 +17,7 @@ public class ChangeSpecialization extends CommandDo {
 		if(cell.getAge() <= 100) {
         	int co = param(cell, 0, 100); //Новое значение специализации
         	int tp = param(cell, 1, Specialization.TYPE.size() - 1); //Какая специализация
-			cell.getSpecialization().set(Specialization.TYPE.staticValues[tp],co);
+			cell.getSpecialization().set(Specialization.TYPE.values[tp],co);
 		}
 	}
 	
@@ -27,7 +27,7 @@ public class ChangeSpecialization extends CommandDo {
 			switch (numParam) {
 				case 0 -> {return Integer.toString(param(dna, 0, 100));	}
 				case 1 -> {
-					var sp = Specialization.TYPE.staticValues[param(dna, 1, Specialization.TYPE.size() - 1)];
+					var sp = Specialization.TYPE.values[param(dna, 1, Specialization.TYPE.size() - 1)];
 					return isFullMod() ? sp.toString() : sp.toSString();
 				}
 				default -> {return null;}

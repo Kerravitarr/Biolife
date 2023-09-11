@@ -61,7 +61,7 @@ public class AliveCell extends AliveCellProtorype {
 			hp_by_div = cell.get("hp_by_div");
 
         Generation = cell.getI("Generation");
-        specialization = new Specialization(cell.getJ("Specialization"));
+        specialization = new Specialization(cell.getJ("Specialization"), version);
 		if(tree != null) 
 			evolutionNode = tree.getNode(this, cell.get("GenerationTree"));
 
@@ -342,7 +342,7 @@ public class AliveCell extends AliveCellProtorype {
             case 0 -> { //Мутирует специализация
                 int co = Utils.random(0, 100); //Новое значение специализации
                 int tp = Utils.random(0, Specialization.TYPE.size() - 1); //Какая специализация
-                getSpecialization().set(Specialization.TYPE.staticValues[tp], co);
+                getSpecialization().set(Specialization.TYPE.values[tp], co);
             }
             case 1 -> { //Мутирует геном
                 int ma = Utils.random(0, getDna().size - 1); //Индекс гена
