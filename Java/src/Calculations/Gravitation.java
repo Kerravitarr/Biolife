@@ -5,9 +5,8 @@
 package Calculations;
 
 import MapObjects.CellObject;
+import Utils.JSON;
 import java.awt.Dimension;
-import javax.swing.text.Position;
-
 /**
  * Гравитация, действующая на любой объект с карты
  * @author Kerravitarr
@@ -28,7 +27,7 @@ public class Gravitation {
 	/**Точка, на которую стремится гравитация. Опционально, может быть null*/
 	private Point target;
 	/**Размер мира, под который заточена эта гравитация. Для движения на центр мира*/
-	private Dimension ws = new Dimension();
+	private final Dimension ws = new Dimension();
 	
 	/**Возможное направление действия гравитации*/
 	public static enum Direction{
@@ -87,6 +86,13 @@ public class Gravitation {
 		this.target=null;
 		this.value = power;
 	}
+	
+	public Gravitation(JSON j, long v){
+		direction = Direction.valueOf(j.get("direction"));
+		value = j.get("value");
+		if(j.containsKey("target"))
+			target = new Point(j.getJ("target"));
+	}
 	/**Сoздаёт гравитацию, которая ни на что не действует*/
 	public Gravitation(){
 		direction = Direction.NONE;
@@ -115,8 +121,11 @@ public class Gravitation {
 			case LEFT -> {	return Point.DIRECTION.LEFT;}
 			case UP_L -> {	return Point.DIRECTION.UP_L;}
 			case CENTER -> {
-				if(ws.width != Configurations.MAP_CELLS.width || ws.height != Configurations.MAP_CELLS.height)
+				if(ws.width != Configurations.MAP_CELLS.width || ws.height != Configurations.MAP_CELLS.height){
+					ws.width = Configurations.MAP_CELLS.width;
+					ws.height = Configurations.MAP_CELLS.height;
 					target = new Point(Configurations.MAP_CELLS.height / 2,Configurations.MAP_CELLS.width / 2);
+				}
 				return pos.distance(target).direction();
 			}
 			case TO_POINT -> {
@@ -124,5 +133,16 @@ public class Gravitation {
 			}
 			default -> throw new AssertionError(direction.name());
 		}
+	}
+	/**Сохраняет гравитацию в виде JSON объекта
+	 * @return JSON из которого можно восстановить гравитацию
+	 */
+	public JSON toJSON() {
+		final var j = new JSON();
+		j.add("value", value);
+		j.add("direction", direction);
+		if(target != null)
+			j.add("target", target.toJSON());
+		return j;
 	}
 }
