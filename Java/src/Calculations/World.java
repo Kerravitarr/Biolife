@@ -99,15 +99,15 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		 * @param point место, где он находился до начала хода
 		 */
 		private void action(CellObject cell, Point point){
+			//cell.addHealth(100 - cell.getHealth());
 			if(cell.canStep(step)) {
 				try {
 					cell.step(step);					
 				} catch (Throwable e) {
 					_status = STATUS.ERROR;
-					Logger.getLogger(World.class.getName()).log(Level.WARNING, e.getLocalizedMessage(), e);
-					System.out.println(cell);
-					System.out.println(point);
-					JOptionPane.showMessageDialog(null,	MessageFormat.format(Configurations.getHProperty(World.class,"error.exception"), cell, point, e.getMessage()),	"BioLife", JOptionPane.ERROR_MESSAGE);
+					final var errMsg = Configurations.getHProperty(World.class,"error.exception", cell, point, e.getMessage());
+					Logger.getLogger(World.class.getName()).log(Level.WARNING, errMsg, e);
+					JOptionPane.showMessageDialog(null,	errMsg,	"BioLife", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		}
@@ -200,7 +200,11 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	/**Создаёт стартовую клетку на поле*/
 	public void makeAdam(){
 		AliveCell adam = new AliveCell();
-		adam.setPos(new Point(Configurations.MAP_CELLS.width/2,0));
+		switch (Configurations.world_type) {
+			case LINE_H -> adam.setPos(new Point(Configurations.MAP_CELLS.width/2,0));
+			case LINE_V -> adam.setPos(new Point(Configurations.MAP_CELLS.width/2,Configurations.MAP_CELLS.height/2));
+			default -> throw new AssertionError();
+		}
 		Configurations.tree.setAdam(adam);
 		add(adam);
 		_all_live_cell[LV_ALIVE.ordinal()] += 1;
@@ -329,7 +333,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 * @param cell объект, который надо добавить
 	 */
 	public void add(CellObject cell) {
-		assert get(cell.getPos()) == null : "Объект " + cell + " решил вступть на " + cell.getPos() + ",но тут занято " + get(cell.getPos()) + "!!!";
+		assert get(cell.getPos()) == null : String.format("Объект %s(%d) решил вступть на %s,но тут занято %s(%d)!!!", cell,cell.hashCode(), cell.getPos(),get(cell.getPos()),get(cell.getPos()).hashCode());
 		assert !cell.aliveStatus(LV_STATUS.GHOST) : "Требуется добавить " + cell + " только вот он уже мёртв!!! ";
 		_WORLD_MAP[cell.getPos().getX()][cell.getPos().getY()] = cell;	
 	}
@@ -358,21 +362,25 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 * @param target с какой позицией она хочет обменяться местами
 	 */
 	public void swap(CellObject cell,Point target) {
-		var t = get(target);
-		if(t == null){
+		var cellSwap = get(target);
+		if(cellSwap == null){
 			move(cell,target);
 		} else {
+			//Если на месте, куда хочет cell, что-то есть
 			var d = Point.direction(target, cell.getPos());
 			clean(cell);
-			if(t.move(d)){	//Если перемещение удачное
-				clean(t);
-				add(cell);	//Тогда цель уже в нужной позиции, осталость клетку поменять
+			if(cellSwap.move(d)){
+				//Если объект смог занять нашу позицию. 
+				clean(cellSwap);
+				add(cell);
 				if(cell.move(d.inversion())){
-					add(t);	//Если клетка сдвинулась тоже - возвращаем цель и выходим
+					//Тогда мы занимаем позицию объекта и выходим
+					add(cellSwap);
 				} else {
-					clean(cell); //Иначе удаляем клетку
-					add(t);
-					t.move(d.inversion()); //Откатываем цель ((клетку удаляем, потому что цель на месте клетки сейчас))
+					//Если мы не смогли занять позцию объекта...
+					clean(cell);
+					add(cellSwap);
+					cellSwap.move(d.inversion()); //Откатываем цель ((клетку удаляем, потому что цель на месте клетки сейчас))
 					add(cell);	//И возваращем клетку на свободное место
 				}
 			} else {
