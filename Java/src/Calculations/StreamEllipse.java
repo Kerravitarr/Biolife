@@ -159,7 +159,7 @@ public class StreamEllipse extends StreamAbstract {
 		final var wx = w0 / (countCurc * 2); //Ширина круга
 		final var hy = h0 / (countCurc * 2); //Высота круга
 		for (int curcle = 0; curcle < countCurc; curcle++) {
-			var F = shadow.power(1000,1,(curcle + 0.5d) / countCurc);
+			var F = shadow.power(1000,10,(curcle + 0.5d) / countCurc);
 			final var step = isUp ? (F - (frame % F)) : (frame % F);	//"номер" кадра для колонки
 			
 			final var dx = curcle * wx + wx * step / Math.abs(F);

@@ -98,7 +98,7 @@ public class StreamHorizontal extends StreamAbstract {
 			final var yl0 = y0 + row * hRow;
 			final var yr0 = y0 + h - (row + 1) * hRow;
 			
-			var F = shadow.power(1000,1,(row + 0.5d) / countRow);
+			var F = shadow.power(1000,10,(row + 0.5d) / countRow);
 			final var step = isLeft ? (F - (frame % F)) : (frame % F);	//"номер" кадра для колонки
 			final var delta = w / countColumn; //Частота полосок в колонке
 			final var delta0 = x0 + delta * step / Math.abs(F);

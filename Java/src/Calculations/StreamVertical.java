@@ -101,7 +101,7 @@ public class StreamVertical extends StreamAbstract {
 			final var xl0 = x0 + column * wRow;
 			final var xr0 = x0 + w - (column + 1) * wRow;
 			
-			var F = shadow.power(1000,1,(column + 0.5d) / countColumn);
+			var F = shadow.power(1000,10,(column + 0.5d) / countColumn);
 			final var step = isUp ? (F - (frame % F)) : (frame % F);	//"номер" кадра для колонки
 			final var delta = h / countRow; //Частота полосок в колонке
 			final var delta0 = y0 + delta * step / Math.abs(F);
