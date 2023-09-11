@@ -29,7 +29,7 @@ public class AliveCell extends AliveCellProtorype {
      */
     public AliveCell() {
         super(-1, LV_STATUS.LV_ALIVE);
-        setPos(new Point(Utils.random(0, Configurations.MAP_CELLS.width - 1), Utils.random(0, Configurations.MAP_CELLS.height - 1)));
+        setPos(new Point(0, 0));
         dna = new DNA(DEF_MINDE_SIZE);
         color_DO = new Color(255, 255, 255);
         evolutionNode = EvolutionTree.root;
@@ -310,18 +310,13 @@ public class AliveCell extends AliveCellProtorype {
 
                 /**
                  * Правило! Мы можем двигаться в любую сторону, если от нас до
-                 * любого из наших друзей будет ровно 1 клетка То есть если delX
-                 * или delY > 1. При этом следует учесть, что delX для клеток с
-                 * х = 0 и х = край экрана - будет ширина экрана - 1 Можно
-                 * поглядеть код точки. В таком случае они всё равно будут рядом
-                 * по х.
+                 * любого из наших друзей будет ровно 1 клетка
                  */
                 for (AliveCell cell : getFriends().values()) {
-                    int delx = Math.abs(point.getX() - cell.getPos().getX());
-                    int dely = Math.abs(point.getY() - cell.getPos().getY());
-                    if (dely > 1 || (delx > 1 && delx != Configurations.MAP_CELLS.width - 1)) {
+					final var del = point.distance(cell.getPos());
+                    if (Math.abs(del.x) > 1 || Math.abs(del.y) > 1)
                         return false;
-                    }
+
                 }
                 //Все условия проверены, можно выдвигаться!
                 return super.move(direction);
