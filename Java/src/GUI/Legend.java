@@ -137,8 +137,8 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 			case HP -> {
 				var max = 0d;
 				double summ = 0;
-				for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-					for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+				for (int x = 0; x < Configurations.getWidth(); x++) {
+					for (int y = 0; y < Configurations.getHeight(); y++) {
 						CellObject cell = Configurations.world.get(new Point(x, y));
 						if (cell != null && cell instanceof AliveCell acell){
 							summ += acell.getHealth();
@@ -165,8 +165,8 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 			case MINERALS -> {
 				var max = 0l;
 				long summ = 0;
-				for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-					for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+				for (int x = 0; x < Configurations.getWidth(); x++) {
+					for (int y = 0; y < Configurations.getHeight(); y++) {
 						CellObject cell = Configurations.world.get(new Point(x, y));
 						if (cell != null && cell instanceof AliveCell acell){
 							summ += acell.getMineral();
@@ -192,8 +192,8 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 			}
 			case YEAR -> {
 				var max = 0l;
-				for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-					for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+				for (int x = 0; x < Configurations.getWidth(); x++) {
+					for (int y = 0; y < Configurations.getHeight(); y++) {
 						CellObject cell = Configurations.world.get(new Point(x, y));
 						if (cell != null && cell instanceof AliveCell acell)
 							max = Math.max(max, acell.getAge());
@@ -225,8 +225,8 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 			case GENER -> {
 				var max = 0l;
 				var min = Long.MAX_VALUE;
-				for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-					for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+				for (int x = 0; x < Configurations.getWidth(); x++) {
+					for (int y = 0; y < Configurations.getHeight(); y++) {
 						CellObject cell = Configurations.world.get(new Point(x, y));
 						if (cell != null && cell instanceof AliveCell acell) {
 							max = Math.max(max, acell.getGeneration());

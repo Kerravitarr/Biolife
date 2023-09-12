@@ -82,6 +82,8 @@ public class MineralEllipse extends MineralAbstract {
 
 	@Override
 	public double getConcentration(Point pos) {
+		if(attenuation == 0d)
+			return power;
 		//Расстояние от центра до точки
 		var d = pos.distance(position);
 		if (a2 == b2) {
@@ -141,6 +143,15 @@ public class MineralEllipse extends MineralAbstract {
 	
 	@Override
 	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {
+		if(attenuation == 0d){
+			if(posX == position.getX() && posY == position.getY()){
+				//Если у нас чистая вода, то солнце осветит собой всё, что можно
+				g.setColor(AllColors.SUN);				
+				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.confoguration.MAP_CELLS.width), transform.toScrin(Configurations.confoguration.MAP_CELLS.height));
+			}
+			return;
+		}
+		
 		final var x0 = transform.toScrinX(posX);
 		final var y0 = transform.toScrinY(posY);
 

@@ -124,7 +124,7 @@ public class AliveCell extends AliveCellProtorype {
         setGeneration(cell.Generation);
 
         //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
-        if (Utils.random(0, 100) < Configurations.AGGRESSIVE_ENVIRONMENT) {
+        if (Utils.random(0, 100) < Configurations.confoguration.AGGRESSIVE_ENVIRONMENT) {
             mutation();
         }
     }
@@ -160,7 +160,7 @@ public class AliveCell extends AliveCellProtorype {
         evolutionNode = evolutionNode.newNode(this, getStepCount());
 
         //Мы на столько хорошо скопировали нашего родителя, что есть небольшой шанс накосячить - мутации
-        if (Utils.random(0, 100) < Configurations.AGGRESSIVE_ENVIRONMENT) {
+        if (Utils.random(0, 100) < Configurations.confoguration.AGGRESSIVE_ENVIRONMENT) {
             mutation();
         }
     }

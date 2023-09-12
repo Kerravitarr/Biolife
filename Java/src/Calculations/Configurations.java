@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import GUI.EvolTreeDialog;
 import GUI.Viewers;
 import MapObjects.CellObject;
+import java.awt.Toolkit;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,36 +43,17 @@ import javax.swing.JOptionPane;
 public class Configurations extends SaveAndLoad.JSONSerialization<Configurations>{
 	/**Переводчик для всех названий. В теории*/
 	private static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
+	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
+	public static final double PIXEL_PER_CELL = 10;
 	
 	/**Версия приложения. Нужна на тот случай, если вдруг будет загружаться старое приложение*/
 	public static final long VERSION = 8;
-	/**Количиство ячеек карты*/
-	public static Dimension MAP_CELLS = null;
-	/**Тип созданного мира, в котором живут живики*/
-	public static WORLD_TYPE world_type;
-	/**Гравитация в созданном мире. */
-	public final static Gravitation[] gravitation = new Gravitation[CellObject.LV_STATUS.length];
-	
-	/**Период сохранения, шаги эволюции*/
-	public static final long SAVE_PERIOD = 100_000;
-	/**Сколько файлов автосохранения держать*/
-	public static final int COUNT_SAVE = 3;
-	
-	/**Степень мутагенности воды [0,100]*/
-	public static int AGGRESSIVE_ENVIRONMENT = 0;
-	/**Как часто органика теряет своё ХП. Если 1 - на каждый ход. Если 2 - каждые 2 хода и т.д.*/
-	public static int TIK_TO_EXIT;
-	/**Степень загрязнённости воды. На сколько падает уровень освещения за каждую клетку от источника света*/
-	public static double DIRTY_WATER;
-	
-	//Те-же переменные, только их значения по умолчанию.
-	//Значения по умолчанию рассчитываются исходя из размеров мира
-	//И не могут меняться пока мир неизменен
-	public static int DAGGRESSIVE_ENVIRONMENT;
-	public static int DTIK_TO_EXIT;
-	public static double DDIRTY_WATER;
 
 	//Разные глобальные объекты, отвечающие за мир
+	/**Текущая конфигруация мира*/
+	public static Configurations confoguration = null;
+	/**Гравитация в созданном мире. */
+	public static Gravitation[] gravitation = new Gravitation[CellObject.LV_STATUS.length];
 	/**Глобальный мир!*/
 	public static World world = null;
 	/**Звёзды нашего мира*/
@@ -82,6 +64,21 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public static List<StreamAbstract> streams = null;
 	/**Эволюционное дерево мира*/
 	public static EvolutionTree tree = null;
+	
+	/**Количиство ячеек карты*/
+	public Dimension MAP_CELLS = null;
+	/**Тип созданного мира, в котором живут живики*/
+	public WORLD_TYPE world_type;
+	/**Период сохранения, шаги эволюции*/
+	public long SAVE_PERIOD = 100_000;
+	/**Сколько файлов автосохранения держать*/
+	public int COUNT_SAVE = 3;
+	/**Степень мутагенности воды [0,100]*/
+	public int AGGRESSIVE_ENVIRONMENT = 0;
+	/**Как часто органика теряет своё ХП. Если 1 - на каждый ход. Если 2 - каждые 2 хода и т.д.*/
+	public int TIK_TO_EXIT;
+	/**Степень загрязнённости воды. На сколько падает уровень освещения за каждую клетку от источника света*/
+	public double DIRTY_WATER;
 	
 	//Графическая часть
 	/**Указатель на глобальный объект отображения. Тут прячутся все наборы панелей, которые в настоящий момент показываются на экране*/
@@ -130,8 +127,30 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		 Это не реально
 		 */
 		//FIELD_C,
+		;
+		/**Все значения мира*/
+		public static final WORLD_TYPE[] values = WORLD_TYPE.values();
+		/**Количество значений*/
+		public static final int length = WORLD_TYPE.values.length;
+		
+		public String toString(){
+			return Configurations.getProperty(WORLD_TYPE.class,name());
+		}
+		
 	}
-	private Configurations(){super(null,0);}
+	
+	private Configurations(WORLD_TYPE type, int width, int height) {
+		super(null, 0);
+		//Создаём поле
+		MAP_CELLS = new Dimension(width,height);
+		world_type = type;
+		//Мутагенность воды
+		AGGRESSIVE_ENVIRONMENT = 20;
+		//Скорость разложения органики. За сколько шагов уходит 1 единица энергии
+		TIK_TO_EXIT = 1000;
+		 //Чтобы освещалось только 33 % мира при силе света в 30 единиц
+		DIRTY_WATER =  30d / (height * 0.33);
+	}
 	public Configurations(JSON configWorld, long version) throws GenerateClassException{
 		super(configWorld,version);
 		List<Integer> map = configWorld.getA("MAP_CELLS");
@@ -148,12 +167,12 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			final int ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
 			//final int SUN_FORM = configWorld.get("SUN_FORM");
 			
-			Configurations.DIRTY_WATER = ((double)BASE_SUN_POWER * 100) / (MAP_CELLS.height * DIRTY_WATER_old);
+			Configurations.confoguration.DIRTY_WATER = ((double)BASE_SUN_POWER * 100) / (MAP_CELLS.height * DIRTY_WATER_old);
 			suns.add(new SunRectangle(BASE_SUN_POWER, new Trajectory(new Point(MAP_CELLS.width/2,0)), MAP_CELLS.width, 1, false,"Постоянное"));
 			suns.add(new SunEllipse(
 						ADD_SUN_POWER, 
 						new TrajectoryLine(SUN_SPEED, new Point(0, 0),new Point(SUN_POSITION, 0),new Point(MAP_CELLS.width-1, 0)), 
-						SUN_LENGHT * MAP_CELLS.width / 100, (int) (2 * BASE_SUN_POWER/Configurations.DIRTY_WATER), 
+						SUN_LENGHT * MAP_CELLS.width / 100, (int) (2 * BASE_SUN_POWER/Configurations.confoguration.DIRTY_WATER), 
 						false,"Движущееся"));
 			
 			
@@ -309,29 +328,36 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 *				Если не указывать тип, гравитация на него действовать не будет
 	 */
 	public static void buildMap(WORLD_TYPE type, int width, int height, Map<CellObject.LV_STATUS, Gravitation> gravitation){
-		//Создаём мир
-		MAP_CELLS = new Dimension(width,height);
-		world_type = type;
-		world = new World(MAP_CELLS);
+		confoguration = new Configurations(type, width,height);
+		//Мир
+		world = new World(confoguration.MAP_CELLS);
 		//Солнца
 		suns = new ArrayList<>();
 		//Минералы
-		minerals = new ArrayList<>(0);
+		minerals = new ArrayList<>();
 		//Потоки
-		streams = new ArrayList<>(0);
-		//Мутагенность воды
-		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 20;
-		//Скорость разложения органики. За сколько шагов уходит 1 единица энергии
-		TIK_TO_EXIT = DTIK_TO_EXIT = 1000;
-		 //Чтобы освещалось только 33 % мира при силе света в 30 единиц
-		DDIRTY_WATER = DIRTY_WATER =  30d / (height * 0.33);
+		streams = new ArrayList<>();
 		//Создаём магическое притяжение
+		Configurations.gravitation = new Gravitation[CellObject.LV_STATUS.length];
 		for(var i : CellObject.LV_STATUS.values){
 			Configurations.gravitation[i.ordinal()] = (gravitation != null && gravitation.containsKey(i)) ? gravitation.get(i) : Gravitation.NONE;
 		}
-		
 		//А теперь дерево эволюции
 		tree = new EvolutionTree();
+	}
+	/** * Возвращает размер мира по умолчанию для текущего разрешения экрана
+	 * Понятное дело, что если экрана нет - то вернёт он лишь null.Впрочем, без экрана вызывать эту функцию в принципе не следует!
+	 * @param type тип мира. Да, размеры зависят от типа мира!
+	 * @return высоту и ширину мира
+	 */
+	public static Configurations getDefaultConfiguration(WORLD_TYPE type){
+		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
+		Configurations ret =  switch (type) {
+			case LINE_H -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
+			case LINE_V -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
+			default ->throw new AssertionError();
+		};
+		return ret;
 	}
 	
 	/**Возвращает количество солнечной энергии в данной точке пространства
@@ -372,6 +398,14 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public static Viewers getViewer() {
 		return _viewers;
 	}
+	/**Возвращает ширину мира
+	 * @return Ширина мира в клетках
+	 */
+	public static int getWidth(){return confoguration.MAP_CELLS.width;}
+	/**Возвращает высоту мира
+	 * @return Высота мира в клетках
+	 */
+	public static int getHeight(){return confoguration.MAP_CELLS.height;}
 
 	/**Функция сохранения - сохранит мир в определённый файл
 	 * @param filePatch - путь, куда сохранить мир
@@ -383,7 +417,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 
 		var js = SaveAndLoad.save(filePatch, Configurations.VERSION);
 		js.addActionListener( e-> Logger.getLogger(Configurations.class.getName()).log(Level.INFO, "Сохранение " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
-		js.save(new Configurations(), Configurations.tree, Configurations.world);
+		js.save(Configurations.confoguration, Configurations.tree, Configurations.world);
 		if (oldStateWorld)
 			Configurations.world.start();
 		else
@@ -400,9 +434,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 
 		var js = SaveAndLoad.load(filePatch);     
 		js.addActionListener( e-> Logger.getLogger(Configurations.class.getName()).log(Level.INFO, "Загрузка " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
-		js.load(new Configurations());
+		Configurations.confoguration = js.load(Configurations.confoguration);
 		Configurations.tree = js.load(Configurations.tree);
-		Configurations.world = js.load((j,v) -> new World(j, v, MAP_CELLS), Configurations.world.getName());
+		Configurations.world = js.load((j,v) -> new World(j, v, Configurations.confoguration.MAP_CELLS), Configurations.world.getName());
 		
 		if (oldStateWorld)
 			Configurations.world.start();

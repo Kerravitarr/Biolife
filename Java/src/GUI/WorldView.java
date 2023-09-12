@@ -93,19 +93,19 @@ public class WorldView extends javax.swing.JPanel {
 			final double h = getHeight();
 			final double w = getWidth();
 			//Пересчёт размера мира
-			scalePxPerCell = Math.min(h * (1d - getUborder() - getDborder()) / (Configurations.MAP_CELLS.height), w * (1d - getLborder() - getRborder()) / (Configurations.MAP_CELLS.width));
-			switch (Configurations.world_type) {
+			scalePxPerCell = Math.min(h * (1d - getUborder() - getDborder()) / (Configurations.getHeight()), w * (1d - getLborder() - getRborder()) / (Configurations.getWidth()));
+			switch (Configurations.confoguration.world_type) {
 				case LINE_H -> {
 					border.width = 0;
-					border.height = (int) Math.round((h - Configurations.MAP_CELLS.height * scalePxPerCell) / 2);
-					pixelXDel = (w - Configurations.MAP_CELLS.width * scalePxPerCell) / 2;
+					border.height = (int) Math.round((h - Configurations.getHeight() * scalePxPerCell) / 2);
+					pixelXDel = (w - Configurations.getWidth() * scalePxPerCell) / 2;
 					pixelYDel = border.height + scalePxPerCell / 2;
 				}
 				case LINE_V -> {
-					border.width = (int) Math.round((w - Configurations.MAP_CELLS.width * scalePxPerCell) / 2);
+					border.width = (int) Math.round((w - Configurations.getWidth() * scalePxPerCell) / 2);
 					border.height = 0;
 					pixelXDel = border.width + scalePxPerCell / 2;
-					pixelYDel = (h - Configurations.MAP_CELLS.height * scalePxPerCell) / 2;
+					pixelYDel = (h - Configurations.getHeight() * scalePxPerCell) / 2;
 				}
 				default ->
 					throw new AssertionError();
@@ -116,7 +116,7 @@ public class WorldView extends javax.swing.JPanel {
 	/** Creates new form WorldView */
 	public WorldView() {
 		initComponents();
-		setVisible(new Point(0,0), new Point(Configurations.MAP_CELLS.width-1, Configurations.MAP_CELLS.height-1));
+		setVisible(new Point(0,0), new Point(Configurations.getWidth()-1, Configurations.getHeight()-1));
 		recalculate();
 	}
 
@@ -190,8 +190,8 @@ public class WorldView extends javax.swing.JPanel {
 				var x1 = Math.max(selectPoint[0].getX(), selectPoint[1].getX());
 				var y1 = Math.max(selectPoint[0].getY(), selectPoint[1].getY());
 				
-				for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-					for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+				for (int x = 0; x < Configurations.getWidth(); x++) {
+					for (int y = 0; y < Configurations.getHeight(); y++) {
 						final var p = new Point(x, y);
 						//if(!p.valid()) continue;
 						if((x0 <= x && x <= x1 && y0 <= y && y <= y1)){
@@ -240,8 +240,8 @@ public class WorldView extends javax.swing.JPanel {
 		
 		paintField(g);
 		int r = transforms.toScrin(1);
-		for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-			for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+		for (int x = 0; x < Configurations.getWidth(); x++) {
+			for (int y = 0; y < Configurations.getHeight(); y++) {
 				if(isAll || (visible[0].getX() <= x && x <= visible[1].getX()
 						&& visible[0].getY() <= y && y <= visible[1].getY())){
 					final var pos = new Point(x, y);
@@ -280,7 +280,7 @@ public class WorldView extends javax.swing.JPanel {
 	 */
 	private void paintField(Graphics2D g) {
 		//Рисуем игровое поле
-		switch (Configurations.world_type) {
+		switch (Configurations.confoguration.world_type) {
 			case LINE_H,LINE_V ->{
 				//Вода
 				colors[1].paint(g);
@@ -296,7 +296,7 @@ public class WorldView extends javax.swing.JPanel {
 		Configurations.streams.forEach(s -> s.paint(g,getTransform()));
 		
 		//Рисуем всё остальное
-		switch (Configurations.world_type) {
+		switch (Configurations.confoguration.world_type) {
 			case LINE_H ->{
 				//Небо
 				colors[0].paint(g);
@@ -319,8 +319,8 @@ public class WorldView extends javax.swing.JPanel {
 	 */
 	private void paintCells(Graphics2D g) {
 		int r = transforms.toScrin(1);
-		for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-			for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+		for (int x = 0; x < Configurations.getWidth(); x++) {
+			for (int y = 0; y < Configurations.getHeight(); y++) {
 				final var pos = new Point(x, y);
 				if(!pos.valid()) continue;
 				if(x % 10 == 0)
@@ -350,7 +350,7 @@ public class WorldView extends javax.swing.JPanel {
 	
 	/**Пересчитывает всю побочную графику на мониторе*/
 	public void updateScrin() {
-		switch (Configurations.world_type) {
+		switch (Configurations.confoguration.world_type) {
 			case LINE_H ->{
 				//Верхнее небо
 				int xs[] = new int[4];
@@ -365,7 +365,7 @@ public class WorldView extends javax.swing.JPanel {
 				
 				ys[0] = ys[3] = 0;
 				ys[1] = ys[2] = yw[0] = yw[3] = transforms.toScrinY(0);
-				yb[0] = yb[3] = yw[1] = yw[2] = transforms.toScrinY(Configurations.MAP_CELLS.height - 1);
+				yb[0] = yb[3] = yw[1] = yw[2] = transforms.toScrinY(Configurations.getHeight() - 1);
 				yb[1] = yb[2] = getHeight();
 				//Небо
 				colors[0] = new ColorRec(xs,ys,AllColors.SKY);
@@ -385,7 +385,7 @@ public class WorldView extends javax.swing.JPanel {
 				
 				xl[0] = xl[3] = 0;
 				xl[1] = xl[2] = xw[0] = xw[3] = transforms.toScrinX(0);
-				xw[1] = xw[2] = xr[0] = xr[3] = transforms.toScrinX(Configurations.MAP_CELLS.width-1);
+				xw[1] = xw[2] = xr[0] = xr[3] = transforms.toScrinX(Configurations.getWidth()-1);
 				xr[1] = xr[2] = getWidth();
 				
 				yw[0] = yw[1] = 0;
@@ -414,7 +414,7 @@ public class WorldView extends javax.swing.JPanel {
 	 * @return процент от размера мира на необходимые элементы
 	 */
 	public double getUborder(){
-		return switch (Configurations.world_type) {
+		return switch (Configurations.confoguration.world_type) {
 			case LINE_H -> Transforms.UP_DOWN_border.getX();
 			case LINE_V -> 0d;
 			default -> throw new AssertionError();
@@ -425,7 +425,7 @@ public class WorldView extends javax.swing.JPanel {
 	 * @return процент от размера мира на необходимые элементы
 	 */
 	public double getDborder(){
-		return switch (Configurations.world_type) {
+		return switch (Configurations.confoguration.world_type) {
 			case LINE_H -> Transforms.UP_DOWN_border.getY();
 			case LINE_V -> 0d;
 			default -> throw new AssertionError();
@@ -436,7 +436,7 @@ public class WorldView extends javax.swing.JPanel {
 	 * @return процент от размера мира на необходимые элементы
 	 */
 	public double getLborder(){
-		return switch (Configurations.world_type) {
+		return switch (Configurations.confoguration.world_type) {
 			case LINE_H -> 0d;
 			case LINE_V -> Transforms.LEFT_RIGHT_border.getX();
 			default -> throw new AssertionError();
@@ -447,7 +447,7 @@ public class WorldView extends javax.swing.JPanel {
 	 * @return процент от размера мира на необходимые элементы
 	 */
 	public double getRborder(){
-		return switch (Configurations.world_type) {
+		return switch (Configurations.confoguration.world_type) {
 			case LINE_H -> 0d;
 			case LINE_V -> Transforms.LEFT_RIGHT_border.getY();
 			default -> throw new AssertionError();

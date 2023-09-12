@@ -14,12 +14,12 @@ public class HowHigh extends CommandExplore {
 
 	@Override
 	protected int explore(AliveCell cell) {
-		int param = param(cell, 0, Configurations.MAP_CELLS.height);
+		int param = param(cell, 0, Configurations.getHeight());
 		return cell.getPos().getY() >= param ? 0 : 1;
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		return String.valueOf(param(cell, 0, Configurations.MAP_CELLS.height));
+		return String.valueOf(param(cell, 0, Configurations.getHeight()));
 	}
 	public String getBranch(AliveCell cell, int numBranch, DNA dna) {
 		return branchMoreeLees(cell, numBranch, dna);

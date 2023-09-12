@@ -34,7 +34,7 @@ public class SunEllipseTest {
 	@Before
 	public void setUp() {
 		Configurations.buildMap(Configurations.WORLD_TYPE.RECTANGLE, 100, 100, null);
-		Configurations.DIRTY_WATER = 2;
+		Configurations.confoguration.DIRTY_WATER = 2;
 	}
 	
 	@After

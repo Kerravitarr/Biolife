@@ -82,6 +82,8 @@ public class SunEllipse extends SunAbstract {
 	
 	@Override
 	public double getEnergy(Point pos) {
+		if(Configurations.confoguration.DIRTY_WATER == 0d)
+			return power;
 		//Расстояние от центра до точки
 		var d = pos.distance(position);
 		if (a2 == b2) {
@@ -89,7 +91,7 @@ public class SunEllipse extends SunAbstract {
 			if (!isLine && d.getHypotenuse() <= a) {
 				return power;
 			} else {
-				return Math.max(0, power - Configurations.DIRTY_WATER * Math.abs(d.getHypotenuse() - a));
+				return Math.max(0, power - Configurations.confoguration.DIRTY_WATER * Math.abs(d.getHypotenuse() - a));
 			}
 		} else {
 			//У нас эллипс. Расстояние от некой точки до эллипса...
@@ -123,7 +125,7 @@ public class SunEllipse extends SunAbstract {
 					ty /= t;
 				}
 				final var dist = Math.hypot(d.x - Math.copySign(a * tx, d.x), d.y - Math.copySign(b * ty, d.y));
-				return Math.max(0, power - Configurations.DIRTY_WATER * dist);
+				return Math.max(0, power - Configurations.confoguration.DIRTY_WATER * dist);
 			}
 		}
 	}
@@ -140,6 +142,15 @@ public class SunEllipse extends SunAbstract {
 	
 	@Override
 	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {
+		if(Configurations.confoguration.DIRTY_WATER == 0d){
+			if(posX == position.getX() && posY == position.getY()){
+				//Если у нас чистая вода, то солнце осветит собой всё, что можно
+				g.setColor(AllColors.SUN);				
+				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.confoguration.MAP_CELLS.width), transform.toScrin(Configurations.confoguration.MAP_CELLS.height));
+			}
+			return;
+		}
+		
 		final var x0 = transform.toScrinX(posX);
 		final var y0 = transform.toScrinY(posY);
 
@@ -149,7 +160,7 @@ public class SunEllipse extends SunAbstract {
 		//Где солнышко заканчивается
 		final var a0 = transform.toScrin(Math.max(a2, b2))/2;
 		//Сколько энергии в солнышке
-		final var p = transform.toScrin((int)Math.round(power / Configurations.DIRTY_WATER));
+		final var p = transform.toScrin((int)Math.round(power / Configurations.confoguration.DIRTY_WATER));
 		//Где заканчивается свет от него
 		final var s = Math.max(1, a0 + p);
 		//А в процентах расстояние от 0 до границы солнца

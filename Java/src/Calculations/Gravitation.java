@@ -99,6 +99,10 @@ public class Gravitation {
 		this.target=null;
 		this.value = 0;
 	}
+	/**Возвращает силу потока
+	 * @return сила потока
+	 */
+	public int getValue(){return value;}
 	/**Возвращает необходимость движения под действием гравитации
 	 * @param o кто спрашивает
 	 * @return true, если нужно куда-то сдвинуться
@@ -121,10 +125,10 @@ public class Gravitation {
 			case LEFT -> {	return Point.DIRECTION.LEFT;}
 			case UP_L -> {	return Point.DIRECTION.UP_L;}
 			case CENTER -> {
-				if(ws.width != Configurations.MAP_CELLS.width || ws.height != Configurations.MAP_CELLS.height){
-					ws.width = Configurations.MAP_CELLS.width;
-					ws.height = Configurations.MAP_CELLS.height;
-					target = new Point(Configurations.MAP_CELLS.height / 2,Configurations.MAP_CELLS.width / 2);
+				if(ws.width != Configurations.confoguration.MAP_CELLS.width || ws.height != Configurations.confoguration.MAP_CELLS.height){
+					ws.width = Configurations.confoguration.MAP_CELLS.width;
+					ws.height = Configurations.confoguration.MAP_CELLS.height;
+					target = new Point(Configurations.confoguration.MAP_CELLS.height / 2,Configurations.confoguration.MAP_CELLS.width / 2);
 				}
 				return pos.distance(target).direction();
 			}

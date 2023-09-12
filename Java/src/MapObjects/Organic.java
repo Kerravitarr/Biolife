@@ -48,7 +48,10 @@ public class Organic extends CellObject {
 
 	@Override
 	public void step() {
-		energy -= 1.0/Configurations.TIK_TO_EXIT;
+		if(Configurations.confoguration.TIK_TO_EXIT != 0)
+			energy -= 1.0/Configurations.confoguration.TIK_TO_EXIT;
+		else
+			energy = 0;
 		if(poison != Poison.TYPE.UNEQUIPPED) {
 			if (getAge() >= nextDouble) { // Вязкость яда
 				DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
@@ -62,7 +65,7 @@ public class Organic extends CellObject {
 	 				poison = Poison.TYPE.UNEQUIPPED;
 			} else {
 				//Так как мы ядовиты, то по чуть чуть растворяемся, то есть становимся ещё более ядовиты
-				poisonCount += 1.0/Configurations.TIK_TO_EXIT;
+				poisonCount += 1.0/Configurations.confoguration.TIK_TO_EXIT;
 			}
 		}
 		if(energy <= 0){

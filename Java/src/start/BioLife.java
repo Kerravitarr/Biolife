@@ -17,8 +17,6 @@ import java.text.MessageFormat;
 import java.util.HashMap;
 
 public class BioLife{
-	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
-	public	static final double PIXEL_PER_CELL = 10;
 	
 	/**Точка входа в приложение
 	 * @param args аргументы командной строки
@@ -55,15 +53,9 @@ public class BioLife{
 		final var defType = Configurations.WORLD_TYPE.LINE_V;
 		if(!_opts.get('V').get(Boolean.class)){
 			//С графической частью
-			Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
-			switch (defType) {
-				case LINE_H->
-					Configurations.makeDefaultWord(defType,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
-				case LINE_V->
-					Configurations.makeDefaultWord(defType,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
-				default->
-					throw new AssertionError();
-			}
+			final var  sSize = Configurations.getDefaultConfiguration(defType);
+			Configurations.makeDefaultWord(defType,sSize.MAP_CELLS.width, sSize.MAP_CELLS.height);
+
 			
 			//Обработка переменных окружения
 			//Настраиваем буковки
@@ -123,13 +115,13 @@ public class BioLife{
 					if(Configurations.world.isActiv()){
 						printTitle();
 						//Автосохранение
-						if(Math.abs(world.step - lastSave) > Configurations.SAVE_PERIOD){
-							var list = new File[Configurations.COUNT_SAVE];
-							for(var i = 0 ; i < Configurations.COUNT_SAVE ; i++){
+						if(Math.abs(world.step - lastSave) > Configurations.confoguration.SAVE_PERIOD){
+							var list = new File[Configurations.confoguration.COUNT_SAVE];
+							for(var i = 0 ; i < Configurations.confoguration.COUNT_SAVE ; i++){
 								list[i] = new File("autosave" + (i+1) + ".zbmap");
 							}
 							var save = list[0];
-							for(var i = 1 ; i < Configurations.COUNT_SAVE && save.exists(); i++){
+							for(var i = 1 ; i < Configurations.confoguration.COUNT_SAVE && save.exists(); i++){
 								if(!list[i].exists() || save.lastModified() > list[i].lastModified())
 									save = list[i];
 							}

@@ -127,7 +127,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 				return worker;
 			}
 		};
-		maxExecutor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors() - 1), factory, null, true); // Один поток нужен системе для отрисовки
+		maxExecutor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors()*2), factory, null, true); // Один поток нужен системе для отрисовки
 		worldGenerate();
 		worldThread = new Thread(this);
 		worldThread.start();
@@ -200,9 +200,9 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	/**Создаёт стартовую клетку на поле*/
 	public void makeAdam(){
 		AliveCell adam = new AliveCell();
-		switch (Configurations.world_type) {
-			case LINE_H -> adam.setPos(new Point(Configurations.MAP_CELLS.width/2,0));
-			case LINE_V -> adam.setPos(new Point(Configurations.MAP_CELLS.width*3/4,Configurations.MAP_CELLS.height/2));
+		switch (Configurations.confoguration.world_type) {
+			case LINE_H -> adam.setPos(new Point(Configurations.getWidth()/2,0));
+			case LINE_V -> adam.setPos(new Point(Configurations.getWidth()*3/4,Configurations.getHeight()/2));
 			default -> throw new AssertionError();
 		}
 		Configurations.tree.setAdam(adam);
@@ -211,7 +211,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	}
 	/**Генерирует карту - добавляет солнце, гейзеры, обновляет константы мира, разбивает мир на потоки процессора */
 	private void worldGenerate() {
-		var vaxX = Configurations.MAP_CELLS.width;
+		var vaxX = Configurations.getWidth();
 		//Сколько рядов уместится в одной половине поля потока
 		//Это гарантированное расстояние, которое по оси Х клетка не может пройти ни при каких условиях.
 		//То есть выйдя с границы своей области, клетка не дойдёт до следующей. Иначе может быть гонка процессов!
@@ -230,7 +230,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 				secondList.clear();
 			}
 			boolean isF = difX % (2 * columnPerPc_2) < columnPerPc_2;
-			for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
+			for (int y = 0; y < Configurations.getHeight(); y++) {
 				Point point = new Point(x,y);
 				if (isF)firstList.add(point);
 				else 	secondList.add(point);
@@ -457,9 +457,8 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	@SuppressWarnings("unused")
 	private boolean loadR(JSON cell,  int x, int y, int r) {
 		Point pos = new Point(cell.getJ("pos"));
-		int delx = Math.abs(pos.getX() - x);
-		int dely = Math.abs(pos.getY() - y);
-		return dely <= r && (delx <= r || delx >= (Configurations.MAP_CELLS.width-r));
+		final var tarPos = new Point(x,y);
+		return pos.distance(tarPos).getHypotenuse() <= r;
 	}
 
 	/**

@@ -106,8 +106,8 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		//8 - это потому что 5/8 это примерно 60% экрана. 
 		//А 4.5 - потому что именно при соотношении в 5 раз начинается детальная отрисовка клеток
 		//а это нехило так роняет ФПС
-		if(BioLife.PIXEL_PER_CELL > 8)
-			setBounds(100, 100, (int) (sSize.getWidth() * 4.5 / BioLife.PIXEL_PER_CELL), (int)((sSize.getHeight()) * 4.5 / BioLife.PIXEL_PER_CELL));
+		if(Configurations.PIXEL_PER_CELL > 8)
+			setBounds(100, 100, (int) (sSize.getWidth() * 4.5 / Configurations.PIXEL_PER_CELL), (int)((sSize.getHeight()) * 4.5 / Configurations.PIXEL_PER_CELL));
 		else
 			setBounds(100, 100, (int) (sSize.getWidth() / 2), (int)((sSize.getHeight()) / 2));
 		
@@ -251,7 +251,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		
 		
 		//Автосохранение
-		if(Math.abs(world.step - lastSave) > Configurations.SAVE_PERIOD){
+		if(Math.abs(world.step - lastSave) > Configurations.confoguration.SAVE_PERIOD){
 			if(world.isActiv()){
 				//Если мир пассивный - то с чего мы вдруг решили его начать сохранять? Может он только загружен?
 				final var loc = scrollPane.getLocationOnScreen();
@@ -260,12 +260,12 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 				popup = popupFactory.getPopup(wv, t,loc.x + scrollPane.getWidth() / 2, loc.y + scrollPane.getHeight() / 2);
 				popup.show();
 
-				var list = new File[Configurations.COUNT_SAVE];
-				for(var i = 0 ; i < Configurations.COUNT_SAVE ; i++){
+				var list = new File[Configurations.confoguration.COUNT_SAVE];
+				for(var i = 0 ; i < Configurations.confoguration.COUNT_SAVE ; i++){
 					list[i] = new File("autosave" + (i+1) + ".zbmap");
 				}
 				var save = list[0];
-				for(var i = 1 ; i < Configurations.COUNT_SAVE && save.exists(); i++){
+				for(var i = 1 ; i < Configurations.confoguration.COUNT_SAVE && save.exists(); i++){
 					if(!list[i].exists() || save.lastModified() > list[i].lastModified())
 						save = list[i];
 				}
@@ -340,11 +340,11 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 				var horizont = scrollPane.getHorizontalScrollBar();
 				var vertical = scrollPane.getVerticalScrollBar(); 
 				
- 				switch (Configurations.world_type) {
+ 				switch (Configurations.confoguration.world_type) {
 					case LINE_H -> {
-						requiredH = (1.0 + world.getUborder() + world.getDborder()) * requiredW * Configurations.MAP_CELLS.height / Configurations.MAP_CELLS.width;
+						requiredH = (1.0 + world.getUborder() + world.getDborder()) * requiredW * Configurations.getHeight() / Configurations.getWidth();
 					} case LINE_V -> {
-						requiredW = (1.0 + world.getLborder() + world.getRborder()) * requiredH * Configurations.MAP_CELLS.width / Configurations.MAP_CELLS.height;
+						requiredW = (1.0 + world.getLborder() + world.getRborder()) * requiredH * Configurations.getWidth() / Configurations.getHeight();
 					}
 					default -> throw new AssertionError();
 				}
@@ -374,12 +374,12 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 				var horizont = scrollPane.getHorizontalScrollBar();
 				var vertical = scrollPane.getVerticalScrollBar();
 				var xMin = Math.max(0, transform.toWorldX(horizont.getValue()));
-				var xMax = Math.min(Configurations.MAP_CELLS.width - 1,transform.toWorldX(horizont.getValue() + viewport.getSize().width));
+				var xMax = Math.min(Configurations.getWidth() - 1,transform.toWorldX(horizont.getValue() + viewport.getSize().width));
 				var yMin = Math.max(0, transform.toWorldY(vertical.getValue()));
-				var yMax = Math.min(Configurations.MAP_CELLS.height - 1,transform.toWorldY(vertical.getValue() + viewport.getSize().height));
+				var yMax = Math.min(Configurations.getHeight() - 1,transform.toWorldY(vertical.getValue() + viewport.getSize().height));
 				world.setVisible(new Calculations.Point(xMin, yMin),new Calculations.Point(xMax, yMax));
 			} else {
-				world.setVisible(new Calculations.Point(0, 0),new Calculations.Point(Configurations.MAP_CELLS.width - 1, Configurations.MAP_CELLS.height - 1));
+				world.setVisible(new Calculations.Point(0, 0),new Calculations.Point(Configurations.getWidth() - 1, Configurations.getHeight() - 1));
 			}
 		}));
 		var adapter = new MouseMoveAdapter();

@@ -92,39 +92,33 @@ public abstract class StreamAbstract{
 	 * @param transform преобразователь размеров мировых в размеры экранные
 	 */
 	public void paint(Graphics2D g, WorldView.Transforms transform){
-		if(Configurations.DIRTY_WATER == 0){
-			//Если у нас чистая вода, то солнце осветит собой всё, что можно
-			g.setColor(AllColors.SUN);
-			g.drawRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.MAP_CELLS.width), transform.toScrin(Configurations.MAP_CELLS.height));
-		} else {
-			//Мы нарусем не один объек, а сразу все 4!
-			//i = 0 Главный
-			//i = 1 Его-же справа (слева)
-			//i = 2 Его-же сверху(снизу)
-			//i = 3 И его правую (левую) тень сверху (снизу)
-			
-			for (int i = 0; i < 4; i++) {
-				if(i > 0){
-					switch (Configurations.world_type) {
-						case LINE_H -> {if(i == 2 || i == 3) continue;}
-						case LINE_V -> {if(i == 1 || i == 3) continue;}
-						case FIELD_R -> {}
-						case CIRCLE,RECTANGLE -> {continue;}
-						default -> throw new AssertionError();
-					}
+		//Мы нарусем не один объек, а сразу все 4!
+		//i = 0 Главный
+		//i = 1 Его-же справа (слева)
+		//i = 2 Его-же сверху(снизу)
+		//i = 3 И его правую (левую) тень сверху (снизу)
+
+		for (int i = 0; i < 4; i++) {
+			if(i > 0){
+				switch (Configurations.confoguration.world_type) {
+					case LINE_H -> {if(i == 2 || i == 3) continue;}
+					case LINE_V -> {if(i == 1 || i == 3) continue;}
+					case FIELD_R -> {}
+					case CIRCLE,RECTANGLE -> {continue;}
+					default -> throw new AssertionError();
 				}
-				final var posX = switch(i){
-					case 0,2 -> position.getX();
-					case 1,3 -> position.getX() + (position.getX() > Configurations.MAP_CELLS.width/2 ?  - Configurations.MAP_CELLS.width: Configurations.MAP_CELLS.width);
-					default -> throw new AssertionError();
-				};
-				final var posY = switch(i){
-					case 0,1 -> position.getY();
-					case 2,3 -> position.getY() + (position.getY() > Configurations.MAP_CELLS.height/2 ?  -Configurations.MAP_CELLS.height : Configurations.MAP_CELLS.height);
-					default -> throw new AssertionError();
-				};
-				paint(g,transform, posX, posY);
 			}
+			final var posX = switch(i){
+				case 0,2 -> position.getX();
+				case 1,3 -> position.getX() + (position.getX() > Configurations.confoguration.MAP_CELLS.width/2 ?  - Configurations.confoguration.MAP_CELLS.width: Configurations.confoguration.MAP_CELLS.width);
+				default -> throw new AssertionError();
+			};
+			final var posY = switch(i){
+				case 0,1 -> position.getY();
+				case 2,3 -> position.getY() + (position.getY() > Configurations.confoguration.MAP_CELLS.height/2 ?  -Configurations.confoguration.MAP_CELLS.height : Configurations.confoguration.MAP_CELLS.height);
+				default -> throw new AssertionError();
+			};
+			paint(g,transform, posX, posY);
 		}
 	}
 	/**

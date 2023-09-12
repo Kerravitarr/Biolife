@@ -275,44 +275,46 @@ public class Point{
 	 * @return Расстояние между двумя точками.
 	 */
 	public static Vector distance(Point first, Point second) {
-		switch (Configurations.world_type) {
+		final var width = Configurations.confoguration.MAP_CELLS.width;
+		final var height = Configurations.confoguration.MAP_CELLS.height;
+		switch (Configurations.confoguration.world_type) {
 			case LINE_H -> {
 				//Расстояние между двумя точками. [-width;width]
 				var del = second.x - first.x;
-				if(!(-Configurations.MAP_CELLS.width / 2 <= del && del <= Configurations.MAP_CELLS.width / 2)){
+				if(!(-width / 2 <= del && del <= width / 2)){
 					//Как только расстояние между двумя точками больше половины ширины экрана.
 					//Нам ближе будет пройти с обратной стороны
 					if(del > 0)
-						del -= Configurations.MAP_CELLS.width;
+						del -= width;
 					else 
-						del += Configurations.MAP_CELLS.width;
+						del += width;
 				}
 				return new Vector(del, second.y - first.y);
 			}
 			case LINE_V -> {
 				var del = second.y - first.y;
-				if(!(-Configurations.MAP_CELLS.height / 2 <= del && del <= Configurations.MAP_CELLS.height / 2)){
+				if(!(-height / 2 <= del && del <= height / 2)){
 					if(del > 0)
-						del -= Configurations.MAP_CELLS.height;
+						del -= height;
 					else 
-						del += Configurations.MAP_CELLS.height;
+						del += height;
 				}
 				return new Vector(second.x - first.x, del);
 			}
 			case FIELD_R -> {
 				var dx = second.x - first.x;
-				if(!(-Configurations.MAP_CELLS.width / 2 <= dx && dx <= Configurations.MAP_CELLS.width / 2)){
+				if(!(-width / 2 <= dx && dx <= width / 2)){
 					if(dx > 0)
-						dx -= Configurations.MAP_CELLS.width;
+						dx -= width;
 					else 
-						dx += Configurations.MAP_CELLS.width;
+						dx += width;
 				}
 				var dy = second.y - first.y;
-				if(!(-Configurations.MAP_CELLS.height / 2 <= dy && dy <= Configurations.MAP_CELLS.height / 2)){
+				if(!(-height / 2 <= dy && dy <= height / 2)){
 					if(dy > 0)
-						dy -= Configurations.MAP_CELLS.height;
+						dy -= height;
 					else 
-						dy += Configurations.MAP_CELLS.height;
+						dy += height;
 				}
 				return new Vector(dx, dy);
 			}
@@ -354,23 +356,25 @@ public class Point{
 	 * @return true, если точка находится на поле
 	 */
 	public boolean valid(){
-		switch (Configurations.world_type) {
+		final var width = Configurations.confoguration.MAP_CELLS.width;
+		final var height = Configurations.confoguration.MAP_CELLS.height;
+		switch (Configurations.confoguration.world_type) {
 			case LINE_H -> {
-				return y >= 0 && y < Configurations.MAP_CELLS.height;
+				return y >= 0 && y < height;
 			}
 			case LINE_V -> {
-				return x >= 0 && x < Configurations.MAP_CELLS.width;
+				return x >= 0 && x < width;
 			}
 			case RECTANGLE -> {
-				return y >= 0 && y < Configurations.MAP_CELLS.height && x >= 0 && x < Configurations.MAP_CELLS.width;
+				return y >= 0 && y < height && x >= 0 && x < width;
 			}
 			case CIRCLE -> {
-				if(Configurations.MAP_CELLS.height == Configurations.MAP_CELLS.width){
-					final var r = Configurations.MAP_CELLS.width / 2d;
+				if(height == width){
+					final var r = width / 2d;
 					return Math.pow((r - 0.5) - x, 2) + Math.pow((r-0.5) - y, 2) <= r*r; //Уравнение окружности - x*x + y*y = r*r
 				} else {
-					final var a = Configurations.MAP_CELLS.width / 2d;
-					final var b = Configurations.MAP_CELLS.height / 2d;
+					final var a = width / 2d;
+					final var b = height / 2d;
 					return Math.pow((a - 0.5) - x, 2) / (a * a) + Math.pow((b-0.5) - y, 2) / (b * b) <= 1; //Уравнение эллипса - (x*x)/(a*a) + (y*y)/(b*b) = 1
 				}
 			}
@@ -387,12 +391,14 @@ public class Point{
 	 * @param y не нормализованная координата y
 	 */
 	private void setXY(int x, int y) {
-		switch (Configurations.world_type) {
+		final var width = Configurations.confoguration.MAP_CELLS.width;
+		final var height = Configurations.confoguration.MAP_CELLS.height;
+		switch (Configurations.confoguration.world_type) {
 			case LINE_H -> {
-				if(x < 0 || x >= Configurations.MAP_CELLS.width){
-					this.x = x % Configurations.MAP_CELLS.width;
+				if(x < 0 || x >= width){
+					this.x = x % width;
 					if(this.x < 0)
-						this.x += Configurations.MAP_CELLS.width;
+						this.x += width;
 				}else{
 					this.x = x;
 				}
@@ -400,10 +406,10 @@ public class Point{
 			}
 			case LINE_V -> {
 				this.x = x;
-				if(y < 0 || y >= Configurations.MAP_CELLS.height){
-					this.y = y % Configurations.MAP_CELLS.height;
+				if(y < 0 || y >= height){
+					this.y = y % height;
 					if(this.y < 0)
-						this.y += Configurations.MAP_CELLS.height;
+						this.y += height;
 				}else{
 					this.y = y;
 				}
@@ -413,17 +419,17 @@ public class Point{
 				this.y = y;
 			}
 			case FIELD_R -> {
-				if(x < 0 || x >= Configurations.MAP_CELLS.width){
-					this.x = x % Configurations.MAP_CELLS.width;
+				if(x < 0 || x >= width){
+					this.x = x % width;
 					if(this.x < 0)
-						this.x += Configurations.MAP_CELLS.width;
+						this.x += width;
 				}else{
 					this.x = x;
 				}
-				if(y < 0 || y >= Configurations.MAP_CELLS.height){
-					this.y = y % Configurations.MAP_CELLS.height;
+				if(y < 0 || y >= height){
+					this.y = y % height;
 					if(this.y < 0)
-						this.y += Configurations.MAP_CELLS.height;
+						this.y += height;
 				}else{
 					this.y = y;
 				}

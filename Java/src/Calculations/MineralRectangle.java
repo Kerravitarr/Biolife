@@ -52,6 +52,8 @@ public class MineralRectangle extends MineralAbstract {
 
 	@Override
 	public double getConcentration(Point pos) {
+		if(attenuation == 0d)
+			return power;
 		//Расстояние от точки до центра нашей полосы
 		final var d = pos.distance(position);
 		final var absX = Math.abs(d.x);
@@ -84,6 +86,15 @@ public class MineralRectangle extends MineralAbstract {
 	}
 	@Override
 	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {
+		if(attenuation == 0d){
+			if(posX == position.getX() && posY == position.getY()){
+				//Если у нас чистая вода, то солнце осветит собой всё, что можно
+				g.setColor(AllColors.SUN);				
+				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.confoguration.MAP_CELLS.width), transform.toScrin(Configurations.confoguration.MAP_CELLS.height));
+			}
+			return;
+		}
+		
 		final var x0 = transform.toScrinX(posX - width/2);
 		final var y0 = transform.toScrinY(posY - height/2);
 		
