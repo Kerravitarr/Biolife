@@ -10,6 +10,8 @@ import Utils.MyMessageFormat;
  * используя минералы
  */
 public class Photosynthesis extends CommandDo {
+	/**Цена энергии на ход. Да, фотосинтез тоже требует энергии!*/
+	private final int HP_COST = 2;
 	
 	private final MyMessageFormat valueFormat = new MyMessageFormat("HP += {0, number, #.#}");
 
@@ -24,6 +26,7 @@ public class Photosynthesis extends CommandDo {
         	cell.addHealth(Math.round(hlt));   // прибавляем полученную энергия к энергии бота
         	cell.color(AliveCell.ACTION.EAT_SUN,hlt);
         }
+		cell.addHealth(-HP_COST);
 	}
 	
 	protected String value(AliveCell cell) {
