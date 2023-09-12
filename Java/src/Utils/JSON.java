@@ -1,5 +1,5 @@
 package Utils;
-//Версия 2.1 от 07 августа 2023 года!
+//Версия 2.2 от 12 сентября 2023 года!
 
 
 
@@ -397,12 +397,11 @@ public class JSON{
 		 * 				Если она null, то форматирования не будет
 		 * @throws IOException - следует учитывать возможность выброса исключения при работе с файлом
 		 */
+		@Override
 		public void write(Writer writer, String tabs) throws IOException {
 			if (value_o != null && value_o instanceof JSON) {
 				if (tabs != null) {
-					writer.write("\n");
 					((JSON) value_o).toBeautifulJSONString(writer, tabs);
-					writer.write("\n" + tabs);
 				} else {
 					((JSON) value_o).toBeautifulJSONString(writer, null);
 				}
@@ -475,6 +474,7 @@ public class JSON{
 		 * 				Если она null, то форматирования не будет
 		 * @throws IOException - следует учитывать возможность выброса исключения при работе с файлом
 		 */
+		@Override
 		public void write(Writer writer, String tabs) throws IOException {
 			if(value_mo != null && !value_mo.isEmpty() && value_mo.get(0) instanceof JSON) {
 				writer.write("[");
