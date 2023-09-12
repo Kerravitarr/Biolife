@@ -1,106 +1,116 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JPanel.java to edit this template
+ */
 package GUI;
 
-import java.awt.BorderLayout;
-import java.util.List;
+import Calculations.Configurations;
+import Calculations.Gravitation;
+import MapObjects.CellObject;
+import java.util.HashMap;
+import javax.swing.JPopupMenu;
 
-import javax.swing.JComponent;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
+/**
+ *
+ * @author Kerravitarr
+ */
+public class Settings extends javax.swing.JPanel {
 
-public class Settings extends JPanel{
-	JComponent listener = null;
-	
-	/**Лист всех настроек*/
-	List<SettingsSlider> listFields;
-	
-	/**
-	 * Create the panel.
-	 */
+	/** Creates new form Settings */
 	public Settings() {
-		setName("Settings");
-		setLayout(new BorderLayout(0, 0));
-		construct();
-	}
-	
-	/**Создаёт панель настроек со всем необходимым*/
-	private void construct() {
-		removeAll();
-		//add(makeParamsPanel());
-	}
-	
-	private JScrollPane makeParamsPanel() {
-		/*final var panelConstant = new JPanel();
-		panelConstant.setBorder(new TitledBorder(new EtchedBorder(EtchedBorder.LOWERED, new Color(255, 255, 255), new Color(160, 160, 160)), Configurations.getHProperty(Settings.class,"mainPanel"), TitledBorder.CENTER, TitledBorder.TOP, null, new Color(0, 0, 0)));
-		
-		listFields = new ArrayList<>();
-
-		listFields.add(new Slider("constSun", 1, Configurations.DBASE_SUN_POWER, 200, 1,Configurations.BASE_SUN_POWER,  null, e -> Configurations.setBASE_SUN_POWER(e)));
-		listFields.add(new Slider("scrollSun", 0, Configurations.DADD_SUN_POWER, 200, 0,Configurations.ADD_SUN_POWER, null, e -> Configurations.setADD_SUN_POWER(e)));
-		listFields.add(new Slider("sunSize", 
-				1, Configurations.DSUN_LENGHT, Configurations.MAP_CELLS.width / 2,
-				1, Configurations.SUN_LENGHT, Configurations.MAP_CELLS.width / 2, e -> Configurations.setSUN_LENGHT(e)));
-		listFields.add(new Slider("sunSpeed", -200, Configurations.DSUN_SPEED, 200, Integer.MIN_VALUE, Configurations.SUN_SPEED, Integer.MAX_VALUE, e -> Configurations.setSUN_SPEED(e)));
-		listFields.add(new Slider("dirtiness",
-				0, Configurations.DDIRTY_WATER, 100,
-				0, Configurations.DIRTY_WATER, null, e -> Configurations.setDIRTY_WATER(e)));
-		
-		listFields.add(new Slider("mineralHeight",
-				0, (int) ((1 - Configurations.DLEVEL_MINERAL) * 100), 100,
-				0, (int) ((1 - Configurations.LEVEL_MINERAL) * 100), null, e -> Configurations.setLEVEL_MINERAL(1 - e/100d)));
-		listFields.add(new Slider("mineralСoncentration", 0, Configurations.DCONCENTRATION_MINERAL, 400, 0,Configurations.CONCENTRATION_MINERAL, null, e -> Configurations.setCONCENTRATION_MINERAL(e)));
-		
-		listFields.add( new Slider("timeLifeOrg", 1, Configurations.DTIK_TO_EXIT, 100, 1, Configurations.TIK_TO_EXIT,null, e -> {
-			Configurations.TIK_TO_EXIT = e;
+		initComponents();
+		final var dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
+		configuations.add(MAP_CELLS_w = new SettingsNumber("configuations.width", 100, dc.MAP_CELLS.width, 1_000_000, Configurations.getWidth(), e -> {
+			Configurations.world.awaitStop();
+			final var mapG = new HashMap<CellObject.LV_STATUS, Gravitation>();
+			for(var type : CellObject.LV_STATUS.values){
+				mapG.put(type, Configurations.gravitation[type.ordinal()]);
+			}
+			//Configurations.buildMap(Configurations.confoguration.world_type, e, Configurations.getWidth(), mapG);
 		}));
-		
-		listFields.add(new Slider("mutagenicity",
+		/*configuations.add(MAP_CELLS_w = new SettingsNumber("configuations.width", 100, dw.width, 1_000_000, Configurations.MAP_CELLS.width, e -> {}));
+		MAP_CELLS_w.setEnabled(false);
+		configuations.add(MAP_CELLS_h = new SettingsNumber("configuations.height", 100, dw.height, 1_000_000, Configurations.MAP_CELLS.height, e -> {}));
+		MAP_CELLS_h.setEnabled(false);
+		configuations.add(WORLD_TYPE = new SettingsSelect<>("configuations.WORLD_TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.world_type, e -> {}));
+		WORLD_TYPE.setEnabled(false);
+		configuations.add(new JPopupMenu.Separator());
+		configuations.add(new SettingsNumber("configuations.savePeriod", 1_000, (int)Configurations.SAVE_PERIOD, 10_000_000, (int)Configurations.SAVE_PERIOD, e -> Configurations.SAVE_PERIOD = e));
+		configuations.add(new SettingsNumber("configuations.countSave", 1, (int)Configurations.COUNT_SAVE, 10, (int)Configurations.COUNT_SAVE, e -> Configurations.COUNT_SAVE = e));
+		configuations.add(new JPopupMenu.Separator());
+		configuations.add(new SettingsSlider("configuations.mutagenicity",
 				0, Configurations.DAGGRESSIVE_ENVIRONMENT, 100,
 				0, Configurations.AGGRESSIVE_ENVIRONMENT, 100, e -> Configurations.AGGRESSIVE_ENVIRONMENT = e));
-		
-		listFields.add( new Slider("sleepFrame", 0, 0, 5, 0, World.msTimeout,null, e -> {
-				World.msTimeout = e;
+		configuations.add( new SettingsSlider("configuations.timeLifeOrg", 1, Configurations.DTIK_TO_EXIT, 100, 1, Configurations.TIK_TO_EXIT,null, e -> {
+			Configurations.TIK_TO_EXIT = e;
 		}));
+		configuations.add(new SettingsSlider("configuations.dirtiness",
+				0, (int)(Configurations.DDIRTY_WATER * 100), 1000,
+				0, (int)(Configurations.DIRTY_WATER * 100), null, e -> Configurations.DIRTY_WATER = e / 100d));
 		
-		listFields.add(scale = new Slider("scale", 1,1, 100, 1, 1,null, e -> {
-			if(listener != null) {
-				listener.dispatchEvent(new ComponentEvent(listener, ComponentEvent.COMPONENT_RESIZED));
-				Configurations.world.dispatchEvent(new ComponentEvent(Configurations.world, ComponentEvent.COMPONENT_RESIZED));
-			}
-		}));
+		for (int i = 0; i < CellObject.LV_STATUS.length; i++) {
+			final var status = CellObject.LV_STATUS.values[i];
+			if(status == CellObject.LV_STATUS.GHOST) continue;
+			final var g = Configurations.gravitation[i];
+			gravitations.add( new SettingsSlider("gravitation." + status.name(), 0, g.getValue(), 1000, 0, g.getValue(),null,
+					e -> {		
+			}));
+			//if(g.getValue() != 0)
+			//	gravitations.add(new SettingsSelect<>("gravitation.TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.world_type, e -> {}));
+		}*/
 		
-		listFields.add( new Slider("sunForm", -50, Configurations.DSUN_FORM, 50, null, Configurations.SUN_FORM,null, e -> Configurations.setSUN_FORM(e)));
-		
-
-		GroupLayout gl_panel_const = new GroupLayout(panelConstant);
-		var hGroupe = gl_panel_const.createParallelGroup(Alignment.TRAILING);
-		for(var i : listFields) {
-			hGroupe.addComponent(i, Alignment.LEADING, GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE);
-		}
-		gl_panel_const.setHorizontalGroup(
-			gl_panel_const.createParallelGroup(Alignment.TRAILING)
-				.addGroup(gl_panel_const.createSequentialGroup()
-					.addContainerGap()
-					.addGroup(hGroupe)
-					.addContainerGap())
-		);
-		var wGroupe = gl_panel_const.createSequentialGroup();
-		for(var i : listFields) {
-			wGroupe.addComponent(i, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
-			.addPreferredGap(ComponentPlacement.RELATED);
-		}
-		
-		gl_panel_const.setVerticalGroup(
-			gl_panel_const.createParallelGroup(Alignment.LEADING)
-				.addGroup(wGroupe)
-		);
-		panelConstant.setLayout(gl_panel_const);
-	
-		final var scroll = new JScrollPane(panelConstant);
-		scroll.setBorder(null);
-		return scroll;*/ throw new AssertionError();
 	}
 
-	public void setListener(JComponent scrollPane) {
-		listener = scrollPane;
-	}
+	/** This method is called from within the constructor to
+	 * initialize the form.
+	 * WARNING: Do NOT modify this code. The content of this method is
+	 * always regenerated by the Form Editor.
+	 */
+	@SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        configuations = new javax.swing.JPanel();
+        gravitations = new javax.swing.JPanel();
+        suns = new javax.swing.JPanel();
+        minerals = new javax.swing.JPanel();
+        streams = new javax.swing.JPanel();
+
+        setLayout(new javax.swing.BoxLayout(this, javax.swing.BoxLayout.Y_AXIS));
+
+        configuations.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"configurations"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        configuations.setLayout(new javax.swing.BoxLayout(configuations, javax.swing.BoxLayout.Y_AXIS));
+        add(configuations);
+
+        gravitations.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"gravitations"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        gravitations.setLayout(new javax.swing.BoxLayout(gravitations, javax.swing.BoxLayout.Y_AXIS));
+        add(gravitations);
+
+        suns.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"suns"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        suns.setLayout(new javax.swing.BoxLayout(suns, javax.swing.BoxLayout.LINE_AXIS));
+        add(suns);
+
+        minerals.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"minerals"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        minerals.setLayout(new javax.swing.BoxLayout(minerals, javax.swing.BoxLayout.LINE_AXIS));
+        add(minerals);
+
+        streams.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"streams"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        streams.setLayout(new javax.swing.BoxLayout(streams, javax.swing.BoxLayout.LINE_AXIS));
+        add(streams);
+    }// </editor-fold>//GEN-END:initComponents
+
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JPanel configuations;
+    private javax.swing.JPanel gravitations;
+    private javax.swing.JPanel minerals;
+    private javax.swing.JPanel streams;
+    private javax.swing.JPanel suns;
+    // End of variables declaration//GEN-END:variables
+	/**Слайдер ширины игрового поля*/
+	private SettingsNumber MAP_CELLS_w;
+	/**Слайдер высоты игрового поля*/
+	private SettingsNumber MAP_CELLS_h;
+	/**Слайдер типа мира*/
+	private SettingsSelect<Configurations.WORLD_TYPE> WORLD_TYPE;
 }

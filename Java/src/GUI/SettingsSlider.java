@@ -72,23 +72,24 @@ public class SettingsSlider extends javax.swing.JPanel {
 		if (minS > maxS)
 			throw new NumberFormatException("Значение минимума не может быть больше максимума");
 
-		label.setText(Configurations.getHProperty(SettingsSlider.class, nameO + "L"));
-		label.setToolTipText(Configurations.getHProperty(SettingsSlider.class, nameO + "T"));
+		label.setText(Configurations.getHProperty(Settings.class, nameO + ".L"));
+		label.setToolTipText(Configurations.getHProperty(Settings.class, nameO + ".T"));
 		scroll.setMinimum(minS);
 		scroll.setMaximum(maxS);
-		scroll.addAdjustmentListener(e -> setValue(e.getValue()));
 		Configurations.setIcon(reset, "reset");
 		reset.setPreferredSize(BUT_SIZE);
 		reset.addActionListener(e -> setValue(defVal));
-		reset.setToolTipText(Configurations.getHProperty(Settings.class, "resetSlider"));
+		reset.setToolTipText(Configurations.getHProperty(SettingsSlider.class, "resetSlider"));
 
 		Configurations.setIcon(insert, "insert");
 		insert.setPreferredSize(BUT_SIZE);
-		insert.setToolTipText(Configurations.getHProperty(Settings.class, "insertSlider"));
+		insert.setToolTipText(Configurations.getHProperty(SettingsSlider.class, "insertSlider"));
 		insert.addActionListener( e -> showConfirmDialog());
 
 		value = nowVal == 0 ? 1 : 0;
 		setValue(nowVal);
+		
+		scroll.addAdjustmentListener(e -> setValue(e.getValue()));
 	}
 	/** Creates new form Slider */
 	private SettingsSlider(Integer mi, Integer ma, AdjustmentListener list) {
@@ -102,15 +103,12 @@ public class SettingsSlider extends javax.swing.JPanel {
 	 * @param val 
 	 */
 	public void setValue(int val) {
-		if (isSetValue) return;
-		isSetValue = true;
 		if (val != value && (min == null || val >= min) && (max == null || val <= max)) {
 			scroll.setToolTipText(valueFormat.format(((double) val - scroll.getMinimum()) / (scroll.getMaximum() - scroll.getMinimum())));
 			value = val;
 			scroll.setValue(val);
 			listener.adjustmentValueChanged(val);
 		}
-		isSetValue = false;
 	}
 	/**Получить текущее значение слайдера
 	 * @return 
@@ -123,7 +121,7 @@ public class SettingsSlider extends javax.swing.JPanel {
 		JPanel insertValue = new JPanel();
 		insertValue.setLayout(new BorderLayout(0, 0));
 
-		String labelInsertText = Configurations.getHProperty(Settings.class, "insertLabel");
+		String labelInsertText = Configurations.getHProperty(SettingsSlider.class, "insertLabel");
 		if (min == null && max == null)
 			labelInsertText += " N∈R";
 		else if (min != null && max == null)
@@ -140,10 +138,10 @@ public class SettingsSlider extends javax.swing.JPanel {
 		var resetToLast = Configurations.makeIconButton("reset");
 		resetToLast.setPreferredSize(BUT_SIZE);
 		resetToLast.addActionListener(e -> tText.setText(Integer.toString(value)));
-		resetToLast.setToolTipText(Configurations.getHProperty(Settings.class, "resetSlider"));
+		resetToLast.setToolTipText(Configurations.getHProperty(SettingsSlider.class, "resetSlider"));
 		insertValue.add(resetToLast, BorderLayout.EAST);
 
-		var ret = JOptionPane.showConfirmDialog(this, insertValue, Configurations.getProperty(Settings.class, "insertSlider"), JOptionPane.OK_CANCEL_OPTION);
+		var ret = JOptionPane.showConfirmDialog(this, insertValue, Configurations.getProperty(SettingsSlider.class, "insertSlider"), JOptionPane.OK_CANCEL_OPTION);
 		if (ret == JOptionPane.OK_OPTION) {
 			setValue(Integer.parseInt(tText.getText()));
 		}
@@ -167,7 +165,7 @@ public class SettingsSlider extends javax.swing.JPanel {
         setLayout(new java.awt.BorderLayout());
 
         label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        label.setText("jLabel1");
+        label.setText("name");
         add(label, java.awt.BorderLayout.NORTH);
 
         scroll.setOrientation(javax.swing.JScrollBar.HORIZONTAL);
@@ -177,10 +175,10 @@ public class SettingsSlider extends javax.swing.JPanel {
 
         resetAndInsert.setLayout(new java.awt.BorderLayout());
 
-        reset.setText("jButton1");
+        reset.setText("reset");
         resetAndInsert.add(reset, java.awt.BorderLayout.WEST);
 
-        insert.setText("jButton1");
+        insert.setText("insert");
         resetAndInsert.add(insert, java.awt.BorderLayout.EAST);
 
         add(resetAndInsert, java.awt.BorderLayout.EAST);
@@ -205,8 +203,6 @@ public class SettingsSlider extends javax.swing.JPanel {
 	private final Integer max;
 	/**Максимальное значение*/
 	private final AdjustmentListener listener;
-	/**Специальный флаг, чтобы можно было сохранять значения сильно за гранью допустимых*/
-	private boolean isSetValue = false;
 	/**Форматирование высплывающего окна над значением*/
 	private final MyMessageFormat valueFormat = new MyMessageFormat(Configurations.getProperty(Settings.class,"scrollTtext"));
 }
