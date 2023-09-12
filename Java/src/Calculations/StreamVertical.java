@@ -81,7 +81,7 @@ public class StreamVertical extends StreamAbstract {
 	}
 	
 	/**Специальный счётчик кадров, нужен для отрисовки "движения" воды*/
-	private int frame = 0;
+	private int frame = Integer.MAX_VALUE / 2;
 	@Override
 	protected void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY){
 		
