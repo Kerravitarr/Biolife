@@ -27,6 +27,8 @@ public class DefaultViewer extends Viewers{
 	private static Legend legend = null;
 	
 	public DefaultViewer(){
+		if(legend == null)
+			legend = new Legend();
 		if(settings == null)
 			settings = new Settings();
 		if(info == null)
@@ -35,8 +37,6 @@ public class DefaultViewer extends Viewers{
 			menu = new Menu();
 		if(view == null)
 			view = new WorldView();
-		if(legend == null)
-			legend = new Legend();
 	}
 
 	@Override
