@@ -139,7 +139,8 @@ public abstract class CellObject {
 			//Воздействие источников минералов на живую клетку
 			switch (alive) {
 				case LV_ALIVE -> {
-					((AliveCellProtorype)this).addMineral((long)Configurations.getConcentrationMinerals(pos));
+					final var acp = ((AliveCellProtorype)this);
+					acp.addMineral((long) acp.mineralAround());
 				}
 				case LV_ORGANIC, LV_POISON, LV_WALL -> {}
 				default -> throw new AssertionError("Мы не ожидали тут встретить объект типа " + alive);

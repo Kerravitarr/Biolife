@@ -476,8 +476,8 @@ public abstract class AliveCellProtorype extends CellObject{
 	 */
 	public double sunAround() {
 		if(getMineral() > 0){
-			//+10% света при наличии миниралов
-			final var t = 100 + 10 * getMineral() / AliveCell.MAX_MP;	
+			//+100% света при наличии миниралов
+			final var t = 100 + 100 * getMineral() / AliveCell.MAX_MP;	
 			//Ну и энергию от солнца не забываем
 			return specMaxVal(Configurations.getSunPower(getPos()) * t / 100, Specialization.TYPE.PHOTOSYNTHESIS);
 		} else {
