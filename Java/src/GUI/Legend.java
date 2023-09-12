@@ -272,13 +272,6 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 		}
 		if (updateSrin) {
 			updateSrin = false;
-			for (int x = 0; x < Configurations.MAP_CELLS.width; x++) {
-				for (int y = 0; y < Configurations.MAP_CELLS.height; y++) {
-					CellObject cell = Configurations.world.get(new Point(x, y));
-					/*if (cell != null)
-						cell.repaint();*/ throw new AssertionError();
-				}
-			}
 		}
 		repaint(1);
 	}
