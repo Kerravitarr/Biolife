@@ -202,7 +202,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		AliveCell adam = new AliveCell();
 		switch (Configurations.world_type) {
 			case LINE_H -> adam.setPos(new Point(Configurations.MAP_CELLS.width/2,0));
-			case LINE_V -> adam.setPos(new Point(Configurations.MAP_CELLS.width/2,Configurations.MAP_CELLS.height/2));
+			case LINE_V -> adam.setPos(new Point(Configurations.MAP_CELLS.width*3/4,Configurations.MAP_CELLS.height/2));
 			default -> throw new AssertionError();
 		}
 		Configurations.tree.setAdam(adam);

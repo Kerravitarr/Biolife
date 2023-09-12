@@ -246,9 +246,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		switch (type) {
 			case LINE_H -> {
 				buildMap(type, width, height, new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(20, Gravitation.Direction.DOWN));}});
-				suns.add(new SunRectangle(20, new Trajectory(new Point(width/2,0)), (int) (width* 0.77), 1, false,"Постоянное"));
+				suns.add(new SunRectangle(30, new Trajectory(new Point(width/2,0)), (int) (width* 0.77), 1, false,"Постоянное"));
 				suns.add(new SunEllipse(
-						20, 
+						30, 
 						new TrajectoryLine(50, new Point(0, 0),new Point(width/2, 0),new Point(width-1, 0)), 
 						width/8,height/2, 
 						false,"Движущееся"));
@@ -270,26 +270,31 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			}
 			case LINE_V->{
 				buildMap(type, width, height, null);
-				//Вода в 2 раза грязнее, потому что теперь солнце светит и вверх и вниз, то есть в 2 раза больше энергии даёт!
-				DDIRTY_WATER = DIRTY_WATER /=  2;
 				//Будет одно солнышко, которое будет двигаться сверху вниз линией
 				suns.add(new SunRectangle(
-						20, 
+						30, 
 						new TrajectoryLine(401, new Point(width/2, 0),new Point(width/2, height/2),new Point(width/2, height-1)), 
 						width,1, 
 						false,"Движущееся"));
 				//Два куска минералов, два кружочка, которые будут двигаться по диагонали. 
-				//И рассеивание тоже в 2 раза больше, чем горизонтальный мир
-				minerals.add(new MineralEllipse(20,20d / (height * 0.33 * 2), new TrajectoryPolyLine(199,
+				minerals.add(new MineralEllipse(20,20d / (height * 0.33), new TrajectoryPolyLine(199,
 						new Point(width/2, height/2),new Point(0, 0),new Point(0, height-1),new Point(width/2, height/2),new Point(width-1, 0),new Point(width-1, height-1)),
 						width/10, height/10, 
-						true,"Путешествующий кубик 1"));
-				minerals.add(new MineralEllipse(20,20d / (height * 0.33 * 2), new TrajectoryPolyLine(227,
+						true,"Путешествующий эллипс 1"));
+				minerals.add(new MineralEllipse(20,20d / (height * 0.33), new TrajectoryPolyLine(227,
 						new Point(width/2, height/2),new Point(width-1, 0),new Point(width-1, height-1),new Point(width/2, height/2),new Point(0, 0),new Point(0, height-1)),
 						width/10, height/10, 
-						true,"Путешествующий кубик 2"));
+						true,"Путешествующий эллипс 2"));
+				minerals.add(new MineralEllipse(20,20d / (height * 0.33), new TrajectoryPolyLine(193,
+						new Point(width/2, height/2),new Point(width-1, height-1),new Point(width-1, 0),new Point(width/2, height/2),new Point(0, height-1),new Point(0, 0)),
+						width/10, height/10, 
+						true,"Путешествующий эллипс 3"));
+				minerals.add(new MineralEllipse(20,20d / (height * 0.33), new TrajectoryPolyLine(233,
+						new Point(width/2, height/2),new Point(0, height-1),new Point(0, 0),new Point(width/2, height/2),new Point(width-1, height-1),new Point(width-1, 0)),
+						width/10, height/10, 
+						true,"Путешествующий эллипс 4"));
 				//Ну и течении в реке
-				streams.add(new StreamVertical(new Point(0, 0), width, height,new StreamAttenuation.LinealStreamAttenuation(-211, -827),"Течение"));
+				streams.add(new StreamVertical(new Point(0, 0), width, height,new StreamAttenuation.LinealStreamAttenuation(-101, -827),"Течение"));
 			}
 			default -> throw new AssertionError();
 		}
@@ -318,8 +323,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		DAGGRESSIVE_ENVIRONMENT = AGGRESSIVE_ENVIRONMENT = 20;
 		//Скорость разложения органики. За сколько шагов уходит 1 единица энергии
 		TIK_TO_EXIT = DTIK_TO_EXIT = 1000;
-		 //Чтобы освещалось только 33 % мира при силе света в 20 единиц
-		DDIRTY_WATER = DIRTY_WATER =  20d / (height * 0.33);
+		 //Чтобы освещалось только 33 % мира при силе света в 30 единиц
+		DDIRTY_WATER = DIRTY_WATER =  30d / (height * 0.33);
 		//Создаём магическое притяжение
 		for(var i : CellObject.LV_STATUS.values){
 			Configurations.gravitation[i.ordinal()] = (gravitation != null && gravitation.containsKey(i)) ? gravitation.get(i) : Gravitation.NONE;
