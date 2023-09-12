@@ -434,7 +434,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 
 		var js = SaveAndLoad.load(filePatch);     
 		js.addActionListener( e-> Logger.getLogger(Configurations.class.getName()).log(Level.INFO, "Загрузка " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
-		Configurations.confoguration = js.load(Configurations.confoguration);
+		//Configurations.confoguration = - этой строки нет, ибо на самом деле уже создаётся глобальный объект, а возвращаемый объект превращается в лажу...
+		js.load(Configurations.confoguration);
 		Configurations.tree = js.load(Configurations.tree);
 		Configurations.world = js.load((j,v) -> new World(j, v, Configurations.confoguration.MAP_CELLS), Configurations.world.getName());
 		
