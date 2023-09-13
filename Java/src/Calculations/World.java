@@ -195,7 +195,9 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	
 	/**Функция, уничтожающая мир и освобождающая все ресурсы*/
 	public void destroy(){
+		awaitStop();
 		maxExecutor.shutdown();
+		_status = STATUS.ERROR;
 	}
 	/**Создаёт стартовую клетку на поле*/
 	public void makeAdam(){
