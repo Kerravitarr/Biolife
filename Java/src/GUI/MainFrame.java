@@ -46,8 +46,6 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 	private java.awt.Point mousePoint = null;
 	/**Панелька с миром*/
 	private JScrollPane scrollPane;
-	/**Дерево эволюции*/
-	private final EvolTreeDialog dialog = new EvolTreeDialog();
 	
 	private JMenuItem startRecord;
 	
@@ -115,7 +113,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		contentPane.add(makePanel(Configurations.getViewer().get("Settings"), BorderLayout.EAST), BorderLayout.EAST);
 		contentPane.add(makePanel(Configurations.getViewer().get("Legend"), BorderLayout.SOUTH), BorderLayout.SOUTH);
 		contentPane.add(makePanel(Configurations.getViewer().get("BotInfo"),BorderLayout.WEST), BorderLayout.WEST);
-		contentPane.add(makeWorldPanel((WorldView) Configurations.getViewer().get("World")), BorderLayout.CENTER);
+		contentPane.add(makeWorldPanel(Configurations.getViewer().get(WorldView.class)), BorderLayout.CENTER);
 		contentPane.add(makePanel(Configurations.getViewer().get("Menu"), BorderLayout.NORTH), BorderLayout.NORTH);
 		
 		t = ((WorldView) Configurations.getViewer().get("World")).createToolTip();
@@ -239,8 +237,6 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 				world.pps.FPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
 				world.getCount(CellObject.LV_STATUS.LV_POISON), world.getCount(CellObject.LV_STATUS.LV_WALL), world.isActiv() ? ">" : "||");
 		setTitle(title);
-		if (dialog.isVisible())
-			dialog.repaint();
 		wv.repaint();
 		
 		if(world.getCount(CellObject.LV_STATUS.LV_ALIVE) == 0 && Configurations.world.isActiv()){
@@ -334,37 +330,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		scrollPane.addComponentListener(new ComponentAdapter() {
 			@Override
 			public void componentResized(ComponentEvent e) {
-				var scale = (Math.pow(5,(world.getZoom()-1) / 100d));
-				double requiredW = scrollPane.getWidth() * scale - 20;
-				double requiredH = scrollPane.getHeight() * scale - 20;
-				var horizont = scrollPane.getHorizontalScrollBar();
-				var vertical = scrollPane.getVerticalScrollBar(); 
-				
- 				switch (Configurations.confoguration.world_type) {
-					case LINE_H -> {
-						requiredH = (1.0 + world.getUborder() + world.getDborder()) * requiredW * Configurations.getHeight() / Configurations.getWidth();
-					} case LINE_V -> {
-						requiredW = (1.0 + world.getLborder() + world.getRborder()) * requiredH * Configurations.getWidth() / Configurations.getHeight();
-					}
-					default -> throw new AssertionError();
-				}
-				horizont.setUnitIncrement((int)Math.max(1, requiredW / 100));
-				vertical.setUnitIncrement((int)Math.max(1, requiredH / 100));
-				
-				var lastP = mousePoint;
-				if(lastP == null){
-					lastP = viewport.getViewPosition();
-					lastP.x += viewport.getWidth()/2;
-					lastP.y += viewport.getHeight()/2;
-				}
-				var Zw = (requiredW) / world.getWidth();
-				var Zh = (requiredH) / world.getHeight();
-				
-				world.setPreferredSize(new Dimension((int)requiredW,(int)requiredH));
-
-				int newX = (int) ((lastP.x *= Zw) - viewport.getWidth()/2);
-				int newY = (int) ((lastP.y *= Zh) - viewport.getHeight()/2);
-				EventQueue.invokeLater(() -> viewport.setViewPosition(new java.awt.Point(Math.max(0, newX), Math.max(0,newY))));
+				worldResized();
 			}
 		});
 		
@@ -386,6 +352,43 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		world.addMouseListener(adapter);
 		world.addMouseMotionListener(adapter);
 		return scrollPane;
+	}
+	/**Функция для пересчёта размеров мира*/
+	private void worldResized() {
+		final var viewport = scrollPane.getViewport();
+		final var world = Configurations.getViewer().get(WorldView.class);
+		
+		var scale = (Math.pow(5,(world.getZoom()-1) / 100d));
+		double requiredW = scrollPane.getWidth() * scale - 20;
+		double requiredH = scrollPane.getHeight() * scale - 20;
+		var horizont = scrollPane.getHorizontalScrollBar();
+		var vertical = scrollPane.getVerticalScrollBar(); 
+
+		switch (Configurations.confoguration.world_type) {
+			case LINE_H -> {
+				requiredH = (1.0 + world.getUborder() + world.getDborder()) * requiredW * Configurations.getHeight() / Configurations.getWidth();
+			} case LINE_V -> {
+				requiredW = (1.0 + world.getLborder() + world.getRborder()) * requiredH * Configurations.getWidth() / Configurations.getHeight();
+			}
+			default -> throw new AssertionError();
+		}
+		horizont.setUnitIncrement((int)Math.max(1, requiredW / 100));
+		vertical.setUnitIncrement((int)Math.max(1, requiredH / 100));
+
+		var lastP = mousePoint;
+		if(lastP == null){
+			lastP = viewport.getViewPosition();
+			lastP.x += viewport.getWidth()/2;
+			lastP.y += viewport.getHeight()/2;
+		}
+		var Zw = (requiredW) / world.getWidth();
+		var Zh = (requiredH) / world.getHeight();
+
+		world.setPreferredSize(new Dimension((int)requiredW,(int)requiredH));
+
+		int newX = (int) ((lastP.x *= Zw) - viewport.getWidth()/2);
+		int newY = (int) ((lastP.y *= Zh) - viewport.getHeight()/2);
+		EventQueue.invokeLater(() -> viewport.setViewPosition(new java.awt.Point(Math.max(0, newX), Math.max(0,newY))));
 	}
 	
 	

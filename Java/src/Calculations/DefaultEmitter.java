@@ -95,7 +95,18 @@ public abstract class DefaultEmitter {
 	 * @param posY текущаяя координата
 	 */
 	protected abstract void paint(Graphics2D g, Transforms transform, int posX, int posY);
-	
+	/**Возвращает максимальную энергию излучателя
+	 * @return сколько можно получить энергии от этого источника
+	 */
+	public double getPower(){return power;}
+	/**Сохраняет новую максимальную энергию излучателя
+	 * @param p сколкьо теперь эенргии будет в излучатеел
+	 */
+	public void setPower(double p){power = p;}
+	/**Сохраняет имя излучателя
+	 * @param n как его теперь будут звать
+	 */
+	public void setName(String n){name = n;}
 	@Override
 	public String toString(){
 		return name;

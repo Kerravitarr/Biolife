@@ -162,6 +162,8 @@ public class SettingsSlider extends javax.swing.JPanel {
         reset = new javax.swing.JButton();
         insert = new javax.swing.JButton();
 
+        setAlignmentX(0.0F);
+        setAlignmentY(0.0F);
         setLayout(new java.awt.BorderLayout());
 
         label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);

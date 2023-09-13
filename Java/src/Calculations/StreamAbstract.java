@@ -24,7 +24,7 @@ public abstract class StreamAbstract{
 	/**способ уменьшения мощности потока от расстояния*/
 	protected StreamAttenuation shadow;
 	/**Имя этого потока*/
-	private final String name;
+	private String name;
 	
 	/**Создание гейзера
 	 * @param pos позиция центра потока при создании
@@ -135,4 +135,8 @@ public abstract class StreamAbstract{
 	public String toString(){
 		return name;
 	}
+	/**Сохраняет имя потока
+	 * @param n как его теперь будут звать
+	 */
+	public void setName(String n){name = n;}
 }

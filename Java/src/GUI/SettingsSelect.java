@@ -29,11 +29,12 @@ public class SettingsSelect<T> extends javax.swing.JPanel {
 	* @param list слушатель, который сработает, когда значение изменится
 	*/
    public SettingsSelect(String nameO, T[] values, T defVal, T nowVal, AdjustmentListener<T> list) {
-		this(list);
+		initComponents();
 		if (Arrays.stream(values).filter( v -> v.equals(defVal)).findFirst().isEmpty())
 			throw new NumberFormatException("Значение defVal обязано принадлежать массиву values!");
 		if (Arrays.stream(values).filter( v -> v.equals(nowVal)).findFirst().isEmpty())
 			throw new NumberFormatException("Значение nowVal обязано принадлежать массиву values!");
+		listener = e -> {};
 
 		label.setText(Configurations.getHProperty(Settings.class, nameO + ".L"));
 		label.setToolTipText(Configurations.getHProperty(Settings.class, nameO + ".T"));
@@ -48,14 +49,8 @@ public class SettingsSelect<T> extends javax.swing.JPanel {
 
 		value = null;
 		setValue(nowVal);
-		
-		select.addActionListener((e) -> setValue((T)select.getSelectedItem()));
-	}
-	/** Creates new form Slider */
-	private SettingsSelect(AdjustmentListener list) {
-		initComponents();
-		
 		listener = list;
+		select.addActionListener((e) -> setValue((T)select.getSelectedItem()));
 	}
 	/**Сохранить значение слайдера
 	 * @param val 
@@ -100,11 +95,13 @@ public class SettingsSelect<T> extends javax.swing.JPanel {
         reset = new javax.swing.JButton();
         select = new javax.swing.JComboBox<>();
 
+        setAlignmentX(0.0F);
+        setAlignmentY(0.0F);
         setLayout(new java.awt.BorderLayout());
 
         label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         label.setText("name");
-        add(label, java.awt.BorderLayout.WEST);
+        add(label, java.awt.BorderLayout.NORTH);
 
         resetAndInsert.setLayout(new java.awt.BorderLayout());
 
@@ -131,5 +128,5 @@ public class SettingsSelect<T> extends javax.swing.JPanel {
 	/**Все доступные значения */
 	private javax.swing.DefaultComboBoxModel<T> values;
 	/**Слушатель события, что значение в ячейке изменилось*/
-	private final AdjustmentListener listener;
+	private AdjustmentListener listener;
 }

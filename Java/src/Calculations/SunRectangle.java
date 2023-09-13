@@ -23,11 +23,11 @@ import java.awt.geom.Rectangle2D;
  */
 public class SunRectangle extends SunAbstract {
 	/**Ширина излучающей поверхности*/
-	private final int width;
+	private int width;
 	/**Высота излучающей поверхности*/
-	private final int height;
+	private int height;
 	/**Если тут true, то у нас не круг, а окружность*/
-	private final boolean isLine;
+	private boolean isLine;
 	
 	/**Создаёт излучающую полоску света
 	 * @param p сила излучения

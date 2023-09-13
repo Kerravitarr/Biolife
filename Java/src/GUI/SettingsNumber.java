@@ -116,11 +116,14 @@ public class SettingsNumber extends javax.swing.JPanel {
         reset = new javax.swing.JButton();
         spinner = new javax.swing.JSpinner();
 
+        setAlignmentX(0.0F);
+        setAlignmentY(0.0F);
         setLayout(new java.awt.BorderLayout());
 
         label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         label.setText("name");
-        add(label, java.awt.BorderLayout.WEST);
+        label.setAlignmentY(0.0F);
+        add(label, java.awt.BorderLayout.NORTH);
 
         resetAndInsert.setLayout(new java.awt.BorderLayout());
 
@@ -130,6 +133,8 @@ public class SettingsNumber extends javax.swing.JPanel {
         add(resetAndInsert, java.awt.BorderLayout.EAST);
 
         spinner.setModel(new javax.swing.SpinnerNumberModel(100, 100, null, 1));
+        spinner.setAlignmentX(0.0F);
+        spinner.setAlignmentY(0.0F);
         add(spinner, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 

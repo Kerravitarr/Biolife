@@ -11,11 +11,38 @@ import java.util.logging.Logger;
 
 /**
  * Болванка солнышка. Любое солнце должно быть похоже на это!
+ * 
+ *	Однако есть несколько нюансов с которыми я так и не смог совладать до сих пор.
+ * К сожалению, я не такой хороший программист :(
+ * 1! Каждый наследник обязан иметь конструктор, принмиюащий (JSON j, long v) и вызывающий super(j,v).
+ *		Тут всё очевидно - для создания объекта из JSONа
+ * 2. Каждый наследник обязан реализовать статический метод "". Нужен для создания настроек солнышка
  * @author Илья
  *
  */
 public abstract class SunAbstract extends DefaultEmitter{
-
+	/**Объект, описывающий как можно создать тот или иной объект и какие параметры у него можно менять*/
+	public static class ConstructAndChanged{
+		/**Имя типа, который будет создан или отредактирован*/
+		public final String name;
+		
+		/**Некоторый параметр или для конструктора или для регулирования*/
+		public static class Param{
+			/**Название параметра*/
+			public final String name;
+			/**Тип параметра*/
+			public final Type type;
+			
+			public enum Type {INT,BOOLEAN}
+			
+			public Param(String n, Type t){name = n;type = t;}
+		}
+		
+		public ConstructAndChanged(String n){
+			name = n;
+		}
+	}
+	
 	/**Создаёт солнце
 	 * @param p максимальная энергия солнца, будто и не было тени
 	 * @param move форма движения солнца. Доступны изначально LineMove и EllipseMove
@@ -27,6 +54,7 @@ public abstract class SunAbstract extends DefaultEmitter{
 	/**Обязательный конструктор для восстановления объекта
 	 * @param j описание предка
 	 * @param v версия файла
+	 * @throws Calculations.GenerateClassException может возникать при создании родителя из ошибочного файла JSON
 	 */
 	protected SunAbstract(JSON j, long v) throws GenerateClassException{
 		super(j,v);
