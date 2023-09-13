@@ -240,19 +240,20 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		resetButton.addActionListener( e-> restart());
 		resetButton.setToolTipText(Configurations.getHProperty(EvolTreeDialog.class,"reset"));
 		
-		Configurations.evolTreeDialog = this;
-		
 		Configurations.addTask(this);
 		restart();
 	}
 	
 	@Override
     public void taskStep() {
-		if (Configurations.getViewer().get(Legend.class).getMode() == Legend.MODE.EVO_TREE){
+		final var v = Configurations.getViewer();
+		if (v != null && v.get(Legend.class).getMode() == Legend.MODE.EVO_TREE){
 			updateColor();
 		}
 		if(EvolTreeDialog.this.isVisible()){
-			rootPair = countPair(rootNode);
+			try{
+				rootPair = countPair(rootNode);
+			} catch(java.lang.NullPointerException e){} //Всё нормально, у нас прямо во время перерисовывания изменилось дерево. Такое бывает частенько. Асинхронность
 		}
     }
 	/**Обновляет цвета узлов*/

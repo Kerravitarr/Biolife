@@ -25,8 +25,12 @@ public class DefaultViewer extends Viewers{
 	private static Menu menu = null;
 	/**Легенда мира, как его раскрашивать?*/
 	private static Legend legend = null;
+	/**Дерево эволюции*/
+	private static EvolTreeDialog dialog;
 	
 	public DefaultViewer(){
+		if(dialog == null)
+			dialog = new EvolTreeDialog();
 		if(legend == null)
 			legend = new Legend();
 		if(settings == null)
@@ -34,7 +38,7 @@ public class DefaultViewer extends Viewers{
 		if(info == null)
 			info = new BotInfo();
 		if(menu == null)
-			menu = new Menu();
+			menu = new Menu( dialog);
 		if(view == null)
 			view = new WorldView();
 	}

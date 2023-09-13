@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.List;
 import javax.swing.JMenuItem;
 import Calculations.Configurations;
+import static Calculations.Configurations.getViewer;
 import Calculations.GenerateClassException;
 import java.awt.Cursor;
 import java.io.File;
@@ -43,6 +44,8 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	private GifSequenceWriter gifs = null;
 	/**Флаг, что мы пишем гифки*/
 	private boolean gifRecord = false;
+	/**Дерево эволюции, которым мы правим*/
+	private EvolTreeDialog evolTreeDialog;
 	
 	
 	/**Для выбора кнопочек меню*/
@@ -60,9 +63,9 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	/**
 	 * Create the panel.
 	 */
-	public Menu() {
+	public Menu(EvolTreeDialog ed) {
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-		
+		evolTreeDialog = ed;
 		//Конфигурация мира
 		//Рестарт
 		add(makeButton("save", e-> save()));
@@ -70,7 +73,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		//add(makeButton("search", e-> System.out.println(e)));
 		add(start = makeButton("play", e -> {if (Configurations.world.isActiv())Configurations.world.stop();else Configurations.world.start();} ));
 		add(record = makeButton("record", e-> record()));
-		add(makeButton("graph", e-> Configurations.evolTreeDialog.setVisible(true)));
+		add(makeButton("graph", e-> evolTreeDialog.setVisible(true)));
 		add(makeButton("cursor", e-> toDefault()));
 		JButton kill;
 		add(kill = makeButton("kill", e-> remove(REMOVE_O.ALL)));
@@ -291,6 +294,10 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		if (ret == JFileChooser.APPROVE_OPTION) {
 			try {
 				Configurations.load(fileopen.getSelectedFile().getPath());
+				try {
+					Configurations.getViewer().get(Settings.class).rebuild();
+				} catch (IllegalArgumentException | NullPointerException ex){} //Всё нормально, просто нет такого класса
+				evolTreeDialog.restart();
 			} catch (IOException ex) {
 				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 				JOptionPane.showMessageDialog(null,	Configurations.getHProperty(this.getClass(),"load.error") + ex,	title, JOptionPane.ERROR_MESSAGE);
