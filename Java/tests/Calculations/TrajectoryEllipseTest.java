@@ -30,7 +30,7 @@ public class TrajectoryEllipseTest {
 	
 	@Before
 	public void setUp() {
-		Configurations.buildMap(Configurations.WORLD_TYPE.RECTANGLE, 100, 100, null);
+		Configurations.buildMap(new Configurations(Configurations.WORLD_TYPE.RECTANGLE, 100, 100), null);
 	}
 	
 	@After
@@ -49,7 +49,7 @@ public class TrajectoryEllipseTest {
 	@Test
 	public void ellipse20x40() {
 		var t = new TrajectoryEllipse(0, new Point(50,50), 0, 20,40);
-		var valid = new Point[]{new Point(55,50)};
+		var valid = new Point[]{new Point(60,50)};
 		for (int i = 0; i < valid.length; i++) {
 			Point point = valid[i];
 			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.step());
@@ -58,7 +58,7 @@ public class TrajectoryEllipseTest {
 	@Test
 	public void ellipse40x20() {
 		var t = new TrajectoryEllipse(0, new Point(50,50), 0, 40,20);
-		var valid = new Point[]{new Point(55,50)};
+		var valid = new Point[]{new Point(70,50)};
 		for (int i = 0; i < valid.length; i++) {
 			Point point = valid[i];
 			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.step());

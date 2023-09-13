@@ -30,7 +30,7 @@ public class CommandListTest {
 	
 	@Before
 	public void setUp() {
-		Configurations.buildMap(Configurations.WORLD_TYPE.RECTANGLE, 10, 10, null);
+		Configurations.buildMap(new Configurations(Configurations.WORLD_TYPE.RECTANGLE, 10, 10), null);
 	}
 	
 	@Test

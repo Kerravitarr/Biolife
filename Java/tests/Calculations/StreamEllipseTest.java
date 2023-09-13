@@ -34,7 +34,7 @@ public class StreamEllipseTest extends AbstractBenchmark{
 	
 	@Before
 	public void setUp() {
-		Configurations.buildMap(Configurations.WORLD_TYPE.RECTANGLE, 100, 100, null);
+		Configurations.buildMap(new Configurations(Configurations.WORLD_TYPE.RECTANGLE, 100, 100), null);
 	}
 	
 	@After

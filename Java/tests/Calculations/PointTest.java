@@ -54,7 +54,7 @@ public class PointTest {
 	 ‾‾‾‾‾‾‾‾‾‾‾‾
 	 */
 	public void makeRECTANGLEWorld(){
-		Configurations.buildMap(Configurations.WORLD_TYPE.RECTANGLE, 10, 10, null);
+		Configurations.buildMap(new Configurations(Configurations.WORLD_TYPE.RECTANGLE, 10, 10), null);
 	}
 	/**Создаёт Пруд мир
 	 __________
@@ -71,7 +71,7 @@ public class PointTest {
 	 ‾‾‾‾‾‾‾‾‾‾
 	 */
 	public void makeLINE_HWorld(){
-		Configurations.buildMap(Configurations.WORLD_TYPE.LINE_H, 10, 10, null);
+		Configurations.buildMap(new Configurations(Configurations.WORLD_TYPE.LINE_H, 10, 10), null);
 	}
 	/**Создаёт реку мир
 	 
@@ -88,7 +88,7 @@ public class PointTest {
 	
 	 */
 	public void makeLINE_VWorld(){
-		Configurations.buildMap(Configurations.WORLD_TYPE.LINE_V, 10, 10, null);
+		Configurations.buildMap(new Configurations(Configurations.WORLD_TYPE.LINE_V, 10, 10), null);
 	}
 	/**Создаёт круглый мир
 	     _____
@@ -105,7 +105,7 @@ public class PointTest {
 	    ‾‾‾‾‾‾
 	 */
 	public void makeCIRCLEWorld(){
-		Configurations.buildMap(Configurations.WORLD_TYPE.CIRCLE, 10, 10, null);
+		Configurations.buildMap(new Configurations(Configurations.WORLD_TYPE.CIRCLE, 10, 10), null);
 	}
 	/**Создаёт круглый мир
 	    ________
@@ -117,7 +117,7 @@ public class PointTest {
 	    ‾‾‾‾‾‾‾‾
 	 */
 	public void makeELLIPSEWorld(){
-		Configurations.buildMap(Configurations.WORLD_TYPE.CIRCLE, 10, 5, null);
+		Configurations.buildMap(new Configurations(Configurations.WORLD_TYPE.CIRCLE, 10, 5), null);
 	}
 	/**Создаёт квадртаный кусок океана
 	
@@ -134,7 +134,7 @@ public class PointTest {
 	 
 	 */
 	public void makeFIELD_RWorld(){
-		Configurations.buildMap(Configurations.WORLD_TYPE.FIELD_R, 10, 10, null);
+		Configurations.buildMap(new Configurations(Configurations.WORLD_TYPE.FIELD_R, 10, 10), null);
 	}
 	@Test
 	public void testConstructor() {
