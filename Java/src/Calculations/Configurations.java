@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import GUI.EvolTreeDialog;
+import GUI.Settings;
 import GUI.Viewers;
 import MapObjects.CellObject;
 import java.awt.Toolkit;
@@ -66,15 +67,15 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public static EvolutionTree tree = null;
 	
 	/**Количиство ячеек карты*/
-	public Dimension MAP_CELLS = null;
+	public final Dimension MAP_CELLS;
 	/**Тип созданного мира, в котором живут живики*/
-	public WORLD_TYPE world_type;
+	public final WORLD_TYPE world_type;
 	/**Период сохранения, шаги эволюции*/
-	public long SAVE_PERIOD = 100_000;
+	public long SAVE_PERIOD;
 	/**Сколько файлов автосохранения держать*/
-	public int COUNT_SAVE = 3;
+	public int COUNT_SAVE;
 	/**Степень мутагенности воды [0,100]*/
-	public int AGGRESSIVE_ENVIRONMENT = 0;
+	public int AGGRESSIVE_ENVIRONMENT;
 	/**Как часто органика теряет своё ХП. Если 1 - на каждый ход. Если 2 - каждые 2 хода и т.д.*/
 	public int TIK_TO_EXIT;
 	/**Степень загрязнённости воды. На сколько падает уровень освещения за каждую клетку от источника света*/
@@ -83,8 +84,6 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	//Графическая часть
 	/**Указатель на глобальный объект отображения. Тут прячутся все наборы панелей, которые в настоящий момент показываются на экране*/
 	private static Viewers _viewers = null;
-	/**Отдельное окно с отображением дерева эволюции*/
-	public static EvolTreeDialog evolTreeDialog = null;	
 	
 	//Общие классы для программы
 	/**ГСЧ для симуляции*/
@@ -139,7 +138,12 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		
 	}
 	
-	private Configurations(WORLD_TYPE type, int width, int height) {
+	/**Создаёт конфигурацию мира на основе заданных параметров
+	 * @param type тип создаваемого мира
+	 * @param width ширина мира, в кубиках.
+	 * @param height высота мира, тоже в кубиках
+	 */
+	public Configurations(WORLD_TYPE type, int width, int height) {
 		super(null, 0);
 		//Создаём поле
 		MAP_CELLS = new Dimension(width,height);
@@ -150,12 +154,15 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		TIK_TO_EXIT = 1000;
 		 //Чтобы освещалось только 33 % мира при силе света в 30 единиц
 		DIRTY_WATER =  30d / (height * 0.33);
+		
+		SAVE_PERIOD = 100_000;
+		COUNT_SAVE = 3;
 	}
 	public Configurations(JSON configWorld, long version) throws GenerateClassException{
-		super(configWorld,version);
+		this(version < 7 ? WORLD_TYPE.LINE_H : WORLD_TYPE.valueOf(configWorld.get("WORLD_TYPE")),(int)configWorld.getA("MAP_CELLS").get(0),(int)configWorld.getA("MAP_CELLS").get(1));
 		List<Integer> map = configWorld.getA("MAP_CELLS");
 		if(version < 7){
-			buildMap(WORLD_TYPE.LINE_H, map.get(0),map.get(1),new HashMap<CellObject.LV_STATUS, Gravitation>(){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(2, Gravitation.Direction.DOWN));}});
+			buildMap(this,new HashMap<CellObject.LV_STATUS, Gravitation>(){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(2, Gravitation.Direction.DOWN));}});
 			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
 			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
 		
@@ -167,12 +174,12 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			final int ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
 			//final int SUN_FORM = configWorld.get("SUN_FORM");
 			
-			Configurations.confoguration.DIRTY_WATER = ((double)BASE_SUN_POWER * 100) / (MAP_CELLS.height * DIRTY_WATER_old);
+			DIRTY_WATER = ((double)BASE_SUN_POWER * 100) / (MAP_CELLS.height * DIRTY_WATER_old);
 			suns.add(new SunRectangle(BASE_SUN_POWER, new Trajectory(new Point(MAP_CELLS.width/2,0)), MAP_CELLS.width, 1, false,"Постоянное"));
 			suns.add(new SunEllipse(
 						ADD_SUN_POWER, 
 						new TrajectoryLine(SUN_SPEED, new Point(0, 0),new Point(SUN_POSITION, 0),new Point(MAP_CELLS.width-1, 0)), 
-						SUN_LENGHT * MAP_CELLS.width / 100, (int) (2 * BASE_SUN_POWER/Configurations.confoguration.DIRTY_WATER), 
+						SUN_LENGHT * MAP_CELLS.width / 100, (int) (2 * BASE_SUN_POWER/DIRTY_WATER), 
 						false,"Движущееся"));
 			
 			
@@ -199,7 +206,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			for(var type : gj.getKeys()){
 				mapG.put(CellObject.LV_STATUS.valueOf(type), new Gravitation(gj.get(type), version));
 			}
-			buildMap(WORLD_TYPE.valueOf(configWorld.get("WORLD_TYPE")), map.get(0),map.get(1), mapG);
+			buildMap(this, mapG);
 			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
 			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
 			DIRTY_WATER = configWorld.get("DIRTY_WATER");
@@ -264,7 +271,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public static void makeDefaultWord(WORLD_TYPE type, int width, int height ) {
 		switch (type) {
 			case LINE_H -> {
-				buildMap(type, width, height, new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(20, Gravitation.Direction.DOWN));}});
+				buildMap(new Configurations(type, width, height), new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(20, Gravitation.Direction.DOWN));}});
 				suns.add(new SunRectangle(30, new Trajectory(new Point(width/2,0)), (int) (width* 0.77), 1, false,"Постоянное"));
 				suns.add(new SunEllipse(
 						30, 
@@ -288,7 +295,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				streams.add(new StreamEllipse(new Point(width*3/4, height-1), width/4, new StreamAttenuation.LinealStreamAttenuation(-4,-100),"Правый нижний"));
 			}
 			case LINE_V->{
-				buildMap(type, width, height, null);
+				buildMap(new Configurations(type, width, height), null);
 				//Будет одно солнышко, которое будет двигаться сверху вниз линией
 				suns.add(new SunRectangle(
 						30, 
@@ -320,17 +327,13 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		//И конечно создаём адама.
 		world.makeAdam();
 	}
-	/**Создаёт поле мира. Только поле. Пустая карта, да дерево эволюции.
-	 * @param type тип создаваемого мира
-	 * @param width ширина мира, в кубиках.
-	 * @param height высота мира, тоже в кубиках
+	/** * Создаёт поле мира.Только поле. Пустая карта, да дерево эволюции.
+	 * @param confoguration конфигурация мира на основе которой мир и создаётся
 	 * @param gravitation гравитация в созданном мире для каждого типа объектов. 
 	 *				Если не указывать тип, гравитация на него действовать не будет
 	 */
-	public static void buildMap(WORLD_TYPE type, int width, int height, Map<CellObject.LV_STATUS, Gravitation> gravitation){
-		confoguration = new Configurations(type, width,height);
-		//Мир
-		world = new World(confoguration.MAP_CELLS);
+	public static void buildMap(Configurations confoguration, Map<CellObject.LV_STATUS, Gravitation> gravitation){
+		rebuildMap(confoguration);
 		//Солнца
 		suns = new ArrayList<>();
 		//Минералы
@@ -344,6 +347,17 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		}
 		//А теперь дерево эволюции
 		tree = new EvolutionTree();
+	}
+	/**Перестраивает карту мира на основе заданной конфигурации
+	 * при этом остальные параметры мира не трогает
+	 * @param confoguration новая конфигурация мира
+	 */
+	public static void rebuildMap(Configurations confoguration){
+		Configurations.confoguration = confoguration;
+		//Мир
+		if(world != null)
+			world.destroy();
+		world = new World(confoguration.MAP_CELLS);
 	}
 	/** * Возвращает размер мира по умолчанию для текущего разрешения экрана
 	 * Понятное дело, что если экрана нет - то вернёт он лишь null.Впрочем, без экрана вызывать эту функцию в принципе не следует!
@@ -416,7 +430,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		Configurations.world.awaitStop();
 
 		var js = SaveAndLoad.save(filePatch, Configurations.VERSION);
-		js.addActionListener( e-> Logger.getLogger(Configurations.class.getName()).log(Level.INFO, "Сохранение " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
+		js.addActionListener( e-> Logger.getLogger(Configurations.class.getName()).log(Level.INFO, String.format("Сохранение %d из %d. Осталось %.2fc",e.now,e.all,e.getTime()/1000)));
 		js.save(Configurations.confoguration, Configurations.tree, Configurations.world);
 		if (oldStateWorld)
 			Configurations.world.start();
@@ -429,20 +443,21 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @throws Calculations.GenerateClassException может вылететь, когда у нас ошибка разбора открытого файла
 	 */
 	public static void load(String filePatch) throws IOException, GenerateClassException {
-		boolean oldStateWorld = Configurations.world.isActiv();			
-		Configurations.world.awaitStop();
+		boolean oldStateWorld = world.isActiv();			
+		world.awaitStop();
 
 		var js = SaveAndLoad.load(filePatch);     
-		js.addActionListener( e-> Logger.getLogger(Configurations.class.getName()).log(Level.INFO, "Загрузка " + e.now + " из " + e.all + ". Осталось " + (e.getTime()/1000) + "c"));
-		//Configurations.confoguration = - этой строки нет, ибо на самом деле уже создаётся глобальный объект, а возвращаемый объект превращается в лажу...
-		js.load(Configurations.confoguration);
-		Configurations.tree = js.load(Configurations.tree);
-		Configurations.world = js.load((j,v) -> new World(j, v, Configurations.confoguration.MAP_CELLS), Configurations.world.getName());
+		js.addActionListener( e-> Logger.getLogger(Configurations.class.getName()).log(Level.INFO, String.format("Загрузка %d из %d. Осталось %.2fc",e.now,e.all,e.getTime()/1000)));
+		Configurations.confoguration = js.load(confoguration);
+		tree = js.load(Configurations.tree);
+		if(world != null)
+			world.destroy();
+		world = js.load((j,v) -> new World(j, v, Configurations.confoguration.MAP_CELLS), world.getName());		
 		
 		if (oldStateWorld)
-			Configurations.world.start();
+			world.start();
 		else
-			Configurations.world.stop();
+			world.stop();
 	}
 	/**
 	 * Возвращает форматированную строку описания для определённого класса
