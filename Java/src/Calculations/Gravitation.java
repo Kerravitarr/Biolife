@@ -52,7 +52,17 @@ public class Gravitation {
 		/**К точке*/
 		TO_POINT,
 		/**Не будет гравитации*/
-		NONE
+		NONE;
+		
+		/**Все значения мира*/
+		public static final Direction[] values = Direction.values();
+		/**Количество значений*/
+		public static final int length = Direction.values.length;
+		
+		@Override
+		public String toString(){
+			return Configurations.getProperty(Direction.class,name());
+		}
 	}
 	/**Сoздаёт гравитацию, направленную на точку
 	 * @param power cила гравитации
@@ -103,6 +113,10 @@ public class Gravitation {
 	 * @return сила потока
 	 */
 	public int getValue(){return value;}
+	/**Возвращает базовое направление потока
+	 * @return куда поток сейчас дует
+	 */
+	public Direction getDirection(){return direction;}
 	/**Возвращает необходимость движения под действием гравитации
 	 * @param o кто спрашивает
 	 * @return true, если нужно куда-то сдвинуться
@@ -128,7 +142,7 @@ public class Gravitation {
 				if(ws.width != Configurations.confoguration.MAP_CELLS.width || ws.height != Configurations.confoguration.MAP_CELLS.height){
 					ws.width = Configurations.confoguration.MAP_CELLS.width;
 					ws.height = Configurations.confoguration.MAP_CELLS.height;
-					target = new Point(Configurations.confoguration.MAP_CELLS.height / 2,Configurations.confoguration.MAP_CELLS.width / 2);
+					target = new Point(Configurations.confoguration.MAP_CELLS.width / 2,Configurations.confoguration.MAP_CELLS.height / 2);
 				}
 				return pos.distance(target).direction();
 			}
