@@ -1,5 +1,5 @@
 package Utils;
-//Версия 2.2 от 12 сентября 2023 года!
+//Версия 2.3 от 13 сентября 2023 года!
 
 
 
@@ -412,7 +412,7 @@ public class JSON{
 			}
 		}
 		private String getVal(T value_o) {
-			if(value_o instanceof String || value_o instanceof Enum) {
+			if(value_o instanceof String) {
 				var ret = value_o.toString().replace("\\", "\\\\")
 						.replace("\t", "\\t")
 						.replace("\b", "\\b")
@@ -421,8 +421,10 @@ public class JSON{
 						.replace("\f", "\\f")
 						.replace("\"", "\\\"");
 				return "\"" + ret + "\"";
-			}else {
-				return value_o.toString();
+			} else if(value_o instanceof Enum e) {
+				return "\"" + e.name() + "\"";
+			} else {
+				return String.valueOf(value_o);
 			}
 		}
 		
