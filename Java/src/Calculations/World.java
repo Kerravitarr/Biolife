@@ -25,10 +25,8 @@ import MapObjects.Poison;
 import Utils.FPScounter;
 import Utils.JSON;
 import Utils.SaveAndLoad;
-import Utils.StreamProgressBar;
 import Utils.Utils;
 import java.awt.Dimension;
-import java.text.MessageFormat;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -289,6 +287,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	private synchronized void postStep(){
 		Configurations.suns.forEach( s -> s.step(step));
 		Configurations.minerals.forEach( s -> s.step(step));
+		Configurations.streams.forEach( s -> s.step(step));
 		Configurations.tree.step();
 
 		pps.interapt();

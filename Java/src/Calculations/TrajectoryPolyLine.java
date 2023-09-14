@@ -14,12 +14,8 @@ import java.util.List;
  * @author Kerravitarr
  */
 public class TrajectoryPolyLine extends Trajectory{
-	/**Шаг объекта. Определяющее на каком расстоянии от from находится точка*/
-	private double step = 0;
 	/**Все точки траектории*/
 	private final List<Interval> points;
-	/**Индекс текущей точки траектории*/
-	private int pointIndex;
 	/**Суммарная длина отрезка по которому двигаемся. В клетках поля*/
 	private final double lenght;
 	
@@ -59,50 +55,65 @@ public class TrajectoryPolyLine extends Trajectory{
 		}
 	}
 	
-	
-	/**Создаёт линейную, зацикленную траекторию от точки к точке.
-	 * объект смещается каждый раз на 1 клетку мира
+	/** * Создаёт линейную, траекторию от точки к точке.объект смещается каждый раз на 1 клетку мира
 	 * @param speed скорость, в тиков на шаг
+	 * @param isJamp
+	 *		Если false, то 1-2-3-4-1-2-3-4...
+	 *		А вот если true, то он будет двигаться от точки 1 к точке 2, затем прыгнет к точке 3 и будет двигаться к точке 4 и так далее.
+	 *		Если точек будет чётное количество, то тут всё легко. 1-2 3-4 1-2 3-4... 
+	 *			Если нужно какой-то прыжок пропустить, можно точку продублировать. Но следует понимать, что в таком случае точек станет нечётное число
+	 *			И возникнет следующий случай
+	 *		Если точек будет нечётное количество, то движение осуществляется кусочками: 1-2 3-4 5-1 2-3 4-5 1-2 3-4
 	 * @param points наборт точек по которым движется объект. При этом, самая первая точка будет считаться и начальной
 	 */
-	public TrajectoryPolyLine(long speed, Point ... points){
-		super(speed, points[0]);
-		this.points = new ArrayList(points.length);
-		for (int i = 0; i < points.length - 1; i++) {
-			this.points.add(new Interval(points[i],points[i+1]));
+	public TrajectoryPolyLine(long speed,boolean isJamp, Point ... points){
+		super(speed);
+		if(!isJamp){
+			this.points = new ArrayList(points.length + 1);
+			for (int i = 0; i < points.length - 1; i++) {
+				this.points.add(new Interval(points[i],points[i+1]));
+			}
+			this.points.add(new Interval(points[points.length - 1],points[0]));
+		} else if(points.length % 2 == 0) {
+			this.points = new ArrayList(points.length / 2);
+			for (int i = 0; i < points.length - 1; i+=2) {
+				this.points.add(new Interval(points[i],points[i+1]));
+			}
+		} else {
+			this.points = new ArrayList(points.length + 1);
+			for (int i = 0; i < points.length - 1; i+=2) {
+				this.points.add(new Interval(points[i],points[i+1]));
+			}
+			this.points.add(new Interval(points[points.length - 1],points[0]));
+			for (int i = 1; i < points.length - 1; i+=2) {
+				this.points.add(new Interval(points[i],points[i+1]));
+			}
 		}
-		this.points.add(new Interval(points[points.length - 1],points[0]));
 		lenght = this.points.stream().reduce(0d, (a,b) -> a+b.lenght,Double::sum);
-		pointIndex = 0;
+		
 	}
 	protected TrajectoryPolyLine(JSON j, long version){
 		super(j,version);
-		step = j.get("step");
-		pointIndex = j.get("pointIndex");
 		points = j.getAJ("points").stream().map(p -> new Interval(p)).toList();
 		lenght = this.points.stream().reduce(0d, (a,b) -> a+b.lenght,Double::sum);
 	}
 
 	@Override
-	protected Point step() {
-		step++;
-		var point = points.get(pointIndex);
-		if(step > point.lenght){
-			step -= point.lenght;
-			if(pointIndex >= points.size() - 1){
-				pointIndex = 0;
+	protected Point position(long wstep) {
+		final var x = (int) (wstep / lenght);
+		var step = wstep - lenght * x;
+		for(var point : points){
+			if(step > point.lenght){
+				step -= point.lenght;
 			} else {
-				pointIndex++;
+				return new Point((int)(point.from.getX() + point.dx * step), (int) (point.from.getY() + point.dy*step));
 			}
-			point = points.get(pointIndex);
 		}
-		return new Point((int)(point.from.getX() + point.dx * step), (int) (point.from.getY() + point.dy*step));
+		throw new UnknownError("Мы сюда вообще не можем дойти...");
 	}
 	@Override
 	public JSON toJSON(){
 		final var j = super.toJSON();
-		j.add("step", step);
-		j.add("pointIndex", pointIndex);
 		j.add("points", points.stream().map(p -> p.toJSON()).toList());
 		return j;
 	}

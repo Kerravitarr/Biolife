@@ -74,6 +74,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public long SAVE_PERIOD;
 	/**Сколько файлов автосохранения держать*/
 	public int COUNT_SAVE;
+	/**Дата последнего сохранения*/
+	public long lastSaveCount;
 	/**Степень мутагенности воды [0,100]*/
 	public int AGGRESSIVE_ENVIRONMENT;
 	/**Как часто органика теряет своё ХП. Если 1 - на каждый ход. Если 2 - каждые 2 хода и т.д.*/
@@ -84,6 +86,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	//Графическая часть
 	/**Указатель на глобальный объект отображения. Тут прячутся все наборы панелей, которые в настоящий момент показываются на экране*/
 	private static Viewers _viewers = null;
+	private static Logger logger = Logger.getLogger(Configurations.class.getName());
 	
 	//Общие классы для программы
 	/**ГСЧ для симуляции*/
@@ -157,10 +160,27 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		
 		SAVE_PERIOD = 100_000;
 		COUNT_SAVE = 3;
+		lastSaveCount = 0;
+	}
+	/**Создаёт конфигурацию мира на основе предыдущей конфигурации
+	 * @param sourse предыдущая конфигруация
+	 * @param type тип создаваемого мира
+	 * @param width ширина мира, в кубиках.
+	 * @param height высота мира, тоже в кубиках
+	 */
+	public Configurations(Configurations sourse, WORLD_TYPE type, int width, int height) {
+		super(null, 0);
+		MAP_CELLS = new Dimension(width,height);
+		world_type = type;
+		AGGRESSIVE_ENVIRONMENT = sourse.AGGRESSIVE_ENVIRONMENT;
+		TIK_TO_EXIT = sourse.TIK_TO_EXIT;
+		DIRTY_WATER = sourse.DIRTY_WATER;
+		SAVE_PERIOD = sourse.SAVE_PERIOD;
+		COUNT_SAVE = sourse.COUNT_SAVE;
+		lastSaveCount = sourse.lastSaveCount;
 	}
 	public Configurations(JSON configWorld, long version) throws GenerateClassException{
 		this(version < 7 ? WORLD_TYPE.LINE_H : WORLD_TYPE.valueOf(configWorld.get("WORLD_TYPE")),(int)configWorld.getA("MAP_CELLS").get(0),(int)configWorld.getA("MAP_CELLS").get(1));
-		List<Integer> map = configWorld.getA("MAP_CELLS");
 		if(version < 7){
 			buildMap(this,new HashMap<CellObject.LV_STATUS, Gravitation>(){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(2, Gravitation.Direction.DOWN));}});
 			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
@@ -173,12 +193,14 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			final int BASE_SUN_POWER = configWorld.get("BASE_SUN_POWER");
 			final int ADD_SUN_POWER = configWorld.get("ADD_SUN_POWER");
 			//final int SUN_FORM = configWorld.get("SUN_FORM");
+			final var width = MAP_CELLS.width;
+			final var height = MAP_CELLS.height;
 			
-			DIRTY_WATER = ((double)BASE_SUN_POWER * 100) / (MAP_CELLS.height * DIRTY_WATER_old);
-			suns.add(new SunRectangle(BASE_SUN_POWER, new Trajectory(new Point(MAP_CELLS.width/2,0)), MAP_CELLS.width, 1, false,"Постоянное"));
+			DIRTY_WATER = ((double)BASE_SUN_POWER * 100) / (height * DIRTY_WATER_old);
+			suns.add(new SunRectangle(BASE_SUN_POWER, new Trajectory(new Point(width/2,0)), width, 1, false,"Постоянное"));
 			suns.add(new SunEllipse(
 						ADD_SUN_POWER, 
-						new TrajectoryLine(SUN_SPEED, new Point(0, 0),new Point(SUN_POSITION, 0),new Point(MAP_CELLS.width-1, 0)), 
+						new TrajectoryPolyLine(Math.abs(SUN_SPEED),false, new Point(SUN_POSITION, 0),new Point(SUN_POSITION + (SUN_SPEED > 0 ? width/3 : -width/3), 0), new Point(SUN_POSITION + (SUN_SPEED > 0 ? width*2/3 : -width*2/3), 0)), 
 						SUN_LENGHT * MAP_CELLS.width / 100, (int) (2 * BASE_SUN_POWER/DIRTY_WATER), 
 						false,"Движущееся"));
 			
@@ -188,18 +210,18 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			
 			minerals.add(new MineralRectangle(CONCENTRATION_MINERAL,CONCENTRATION_MINERAL / ((1d-LEVEL_MINERAL)* MAP_CELLS.height), new Trajectory(new Point(MAP_CELLS.width/2,MAP_CELLS.height-1)),MAP_CELLS.width, 1, false,"Постоянная"));
 			//А теперь два потока воды - вверх и вниз
-			streams.add(new StreamVertical(new Point(MAP_CELLS.width/8, 0), MAP_CELLS.width/5, MAP_CELLS.height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый"));
-			streams.add(new StreamVertical(new Point(MAP_CELLS.width*7/10, 0), MAP_CELLS.width/10, MAP_CELLS.height, new StreamAttenuation.LinealStreamAttenuation(2,4),"Прваый"));
+			streams.add(new StreamVertical(new Trajectory(new Point(width*9/40, height/2)), width/5, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый"));
+			streams.add(new StreamVertical(new Trajectory(new Point(width*3/4, height/2)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(2,4),"Прваый"));
 			//А теперь ещё 4 шапочки, чтобы в верхней и нжней части сдвутать клетки
-			streams.add(new StreamHorizontal(new Point(MAP_CELLS.width/8, -MAP_CELLS.height/2), MAP_CELLS.width/10, MAP_CELLS.height, new StreamAttenuation.LinealStreamAttenuation(100,200),"Левый, верхний левый"));
-			streams.add(new StreamHorizontal(new Point(MAP_CELLS.width/8 + MAP_CELLS.width/10, - MAP_CELLS.height/2), MAP_CELLS.width/10, MAP_CELLS.height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый, верхний правый"));
-			streams.add(new StreamHorizontal(new Point(MAP_CELLS.width/8, MAP_CELLS.height/2), MAP_CELLS.width/10, MAP_CELLS.height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый, нижний левый"));
-			streams.add(new StreamHorizontal(new Point(MAP_CELLS.width/8 + MAP_CELLS.width/10, MAP_CELLS.height/2), MAP_CELLS.width/10, MAP_CELLS.height, new StreamAttenuation.LinealStreamAttenuation(100,200),"Левый, нижний правый"));
+			streams.add(new StreamHorizontal(new Trajectory(new Point(width*7/40, 0)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(100,200),"Левый, верхний левый"));
+			streams.add(new StreamHorizontal(new Trajectory(new Point(width*11/40, 0)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый, верхний правый"));
+			streams.add(new StreamHorizontal(new Trajectory(new Point(width*7/40, height)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый, нижний левый"));
+			streams.add(new StreamHorizontal(new Trajectory(new Point(width*11/40, height)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(100,200),"Левый, нижний правый"));
 			
-			streams.add(new StreamHorizontal(new Point(MAP_CELLS.width*7/10, -MAP_CELLS.height/2), MAP_CELLS.width/20, MAP_CELLS.height, new StreamAttenuation.LinealStreamAttenuation(-2,-4), "Правый, верхний левый"));
-			streams.add(new StreamHorizontal(new Point(MAP_CELLS.width*7/10 + MAP_CELLS.width/20, - MAP_CELLS.height/2), MAP_CELLS.width/20, MAP_CELLS.height,new StreamAttenuation.LinealStreamAttenuation(2,4),"Правый, верхний правый"));
-			streams.add(new StreamHorizontal(new Point(MAP_CELLS.width*7/10, MAP_CELLS.height/2), MAP_CELLS.width/20, MAP_CELLS.height,new StreamAttenuation.LinealStreamAttenuation(2,4), "Правый, нижний левый"));
-			streams.add(new StreamHorizontal(new Point(MAP_CELLS.width*7/10 + MAP_CELLS.width/20, MAP_CELLS.height/2), MAP_CELLS.width/20, MAP_CELLS.height, new StreamAttenuation.LinealStreamAttenuation(-2,-4),"Правый, нижний правый"));
+			streams.add(new StreamHorizontal(new Trajectory(new Point(width*29/40, 0)), width/20, height, new StreamAttenuation.LinealStreamAttenuation(-2,-4), "Правый, верхний левый"));
+			streams.add(new StreamHorizontal(new Trajectory(new Point(width*31/40, 0)), width/20, height,new StreamAttenuation.LinealStreamAttenuation(2,4),"Правый, верхний правый"));
+			streams.add(new StreamHorizontal(new Trajectory(new Point(width*29/40, height)), width/20, height,new StreamAttenuation.LinealStreamAttenuation(2,4), "Правый, нижний левый"));
+			streams.add(new StreamHorizontal(new Trajectory(new Point(width*31/40, height)), width/20, height, new StreamAttenuation.LinealStreamAttenuation(-2,-4),"Правый, нижний правый"));
 		} else {
 			final var mapG = new HashMap<CellObject.LV_STATUS, Gravitation>();
 			final var gj = configWorld.getJ("GRAVITATION");
@@ -214,8 +236,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				try {
 					suns.add(SunAbstract.generate(j, version));
 				} catch (GenerateClassException ex) {
-					Logger.getLogger(Configurations.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-					ex.addMsg(Configurations.getProperty(this.getClass(),"loadSerror",j.toBeautifulJSONString()));
+					logger.log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+					ex.addMsg(getProperty(this.getClass(),"loadSerror",j.toBeautifulJSONString()));
 					throw ex;
 				}					
 			}
@@ -223,8 +245,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				try {
 					minerals.add(MineralAbstract.generate(j, version));
 				} catch (GenerateClassException ex) {
-					Logger.getLogger(Configurations.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-					ex.addMsg(Configurations.getProperty(this.getClass(),"loadMerror",j.toBeautifulJSONString()));
+					logger.log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+					ex.addMsg(getProperty(this.getClass(),"loadMerror",j.toBeautifulJSONString()));
 					throw ex;
 				}
 			}
@@ -232,8 +254,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				try {
 					streams.add(StreamAbstract.generate(j, version));
 				} catch (GenerateClassException ex) {
-					Logger.getLogger(Configurations.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-					ex.addMsg(Configurations.getProperty(this.getClass(),"loadStreamError",j.toBeautifulJSONString()));
+					logger.log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+					ex.addMsg(getProperty(this.getClass(),"loadStreamError",j.toBeautifulJSONString()));
 					throw ex;
 				}
 			}
@@ -256,8 +278,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		configWorld.add("MINERALS", minerals.stream().map(s -> s.toJSON()).toList());
 		configWorld.add("STREAMS", streams.stream().map(s -> s.toJSON()).toList());
 		final var gj = new JSON();
-		for (int i = 0; i < Configurations.gravitation.length; i++) {
-			gj.add(CellObject.LV_STATUS.values[i].name(), Configurations.gravitation[i].toJSON());
+		for (int i = 0; i < gravitation.length; i++) {
+			gj.add(CellObject.LV_STATUS.values[i].name(), gravitation[i].toJSON());
 		}
 		configWorld.add("GRAVITATION", gj);
 		return configWorld;
@@ -275,52 +297,52 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				suns.add(new SunRectangle(30, new Trajectory(new Point(width/2,0)), (int) (width* 0.77), 1, false,"Постоянное"));
 				suns.add(new SunEllipse(
 						30, 
-						new TrajectoryLine(50, new Point(0, 0),new Point(width/2, 0),new Point(width-1, 0)), 
+						new TrajectoryPolyLine(50,false, new Point(width/2, 0),new Point(width-1, 0),new Point(0, 0),new Point(width/2-1, 0)), 
 						width/8,height/2, 
 						false,"Движущееся"));
 				//Эти минералы будут занимать только 33% мира
-				minerals.add(new MineralRectangle(20,20d / (height * 0.33), new Trajectory(new Point(0,height-1)),width/2, 1, false,"Постоянная"));
+				minerals.add(new MineralRectangle(20,confoguration.DIRTY_WATER, new Trajectory(new Point(0,height-1)),width/2, 1, false,"Постоянная"));
 				//А эти будут иногда подниматься достаточно высоко
-				minerals.add(new MineralEllipse(20,20d / (height * 0.33), 
+				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, 
 						new TrajectoryEllipse(2000,new Point(width / 2, height * 7 / 8), -Math.PI, 1, height * 3 / 8)
 						,width * 1 / 4, height * 1 / 8, true,"Движущееся"));
 				//А теперь два потока воды - вверх и вниз
-				streams.add(new StreamVertical(new Point(width/8, 0), width/4, height, new StreamAttenuation.LinealStreamAttenuation(-100,-1000),"Левый"));
-				streams.add(new StreamVertical(new Point(width*5/8, 0), width/4, height,new StreamAttenuation.PowerFunctionStreamAttenuation(1,1000,2),"Прваый"));
+				streams.add(new StreamVertical(new Trajectory(new Point(width/4, height/2)), width/4, height, new StreamAttenuation.LinealStreamAttenuation(-100,-1000),"Левый"));
+				streams.add(new StreamVertical(new Trajectory(new Point(width*3/4, height/2)), width/4, height,new StreamAttenuation.PowerFunctionStreamAttenuation(1,1000,2),"Прваый"));
 				//А теперь ещё 4 шапочки, чтобы в верхней и нжней части сдвутать клетки
-				streams.add(new StreamEllipse(new Point(width/4, 0), width/4, new StreamAttenuation.LinealStreamAttenuation(-40,-100),"Левый верхний"));
-				streams.add(new StreamEllipse(new Point(width/4, height-1), width/4,  new StreamAttenuation.LinealStreamAttenuation(40,100),"Левый нижний"));
+				streams.add(new StreamEllipse(new Trajectory(new Point(width/4, 0)), width/4, new StreamAttenuation.LinealStreamAttenuation(-40,-100),"Левый верхний"));
+				streams.add(new StreamEllipse(new Trajectory(new Point(width/4, height-1)), width/4,  new StreamAttenuation.LinealStreamAttenuation(40,100),"Левый нижний"));
 				
-				streams.add(new StreamEllipse(new Point(width*3/4, 0), width/4, new StreamAttenuation.LinealStreamAttenuation(10,100),"Правый верхний"));
-				streams.add(new StreamEllipse(new Point(width*3/4, height-1), width/4, new StreamAttenuation.LinealStreamAttenuation(-4,-100),"Правый нижний"));
+				streams.add(new StreamEllipse(new Trajectory(new Point(width*3/4, 0)), width/4, new StreamAttenuation.LinealStreamAttenuation(10,100),"Правый верхний"));
+				streams.add(new StreamEllipse(new Trajectory(new Point(width*3/4, height-1)), width/4, new StreamAttenuation.LinealStreamAttenuation(-4,-100),"Правый нижний"));
 			}
 			case LINE_V->{
 				buildMap(new Configurations(type, width, height), null);
 				//Будет одно солнышко, которое будет двигаться сверху вниз линией
 				suns.add(new SunRectangle(
 						30, 
-						new TrajectoryLine(401, new Point(width/2, 0),new Point(width/2, height/2),new Point(width/2, height-1)), 
+						new TrajectoryPolyLine(401, false,new Point(width/2, (int) (height/2 - 15/confoguration.DIRTY_WATER)),new Point(width/2, (int) (height-1 - 15/confoguration.DIRTY_WATER)),new Point(width/2, (int) (1- 15/confoguration.DIRTY_WATER))), 
 						width,1, 
 						false,"Движущееся"));
 				//Два куска минералов, два кружочка, которые будут двигаться по диагонали. 
-				minerals.add(new MineralEllipse(20,20d / (height * 0.33), new TrajectoryPolyLine(199,
+				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(199,false,
 						new Point(width/2, height/2),new Point(0, 0),new Point(0, height-1),new Point(width/2, height/2),new Point(width-1, 0),new Point(width-1, height-1)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 1"));
-				minerals.add(new MineralEllipse(20,20d / (height * 0.33), new TrajectoryPolyLine(227,
+				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(227,false,
 						new Point(width/2, height/2),new Point(width-1, 0),new Point(width-1, height-1),new Point(width/2, height/2),new Point(0, 0),new Point(0, height-1)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 2"));
-				minerals.add(new MineralEllipse(20,20d / (height * 0.33), new TrajectoryPolyLine(193,
+				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(193,false,
 						new Point(width/2, height/2),new Point(width-1, height-1),new Point(width-1, 0),new Point(width/2, height/2),new Point(0, height-1),new Point(0, 0)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 3"));
-				minerals.add(new MineralEllipse(20,20d / (height * 0.33), new TrajectoryPolyLine(233,
+				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(233,false,
 						new Point(width/2, height/2),new Point(0, height-1),new Point(0, 0),new Point(width/2, height/2),new Point(width-1, height-1),new Point(width-1, 0)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 4"));
 				//Ну и течении в реке
-				streams.add(new StreamVertical(new Point(0, 0), width, height,new StreamAttenuation.LinealStreamAttenuation(-101, -827),"Течение"));
+				streams.add(new StreamVertical(new Trajectory(new Point(width/2,height/2)), width, height,new StreamAttenuation.LinealStreamAttenuation(-41, -4001),"Течение"));
 			}
 			default -> throw new AssertionError();
 		}
@@ -329,10 +351,10 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	}
 	/** * Создаёт поле мира.Только поле. Пустая карта, да дерево эволюции.
 	 * @param confoguration конфигурация мира на основе которой мир и создаётся
-	 * @param gravitation гравитация в созданном мире для каждого типа объектов. 
+	 * @param gravitations гравитация в созданном мире для каждого типа объектов. 
 	 *				Если не указывать тип, гравитация на него действовать не будет
 	 */
-	public static void buildMap(Configurations confoguration, Map<CellObject.LV_STATUS, Gravitation> gravitation){
+	public static void buildMap(Configurations confoguration, Map<CellObject.LV_STATUS, Gravitation> gravitations){
 		rebuildMap(confoguration);
 		//Солнца
 		suns = new ArrayList<>();
@@ -341,19 +363,19 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		//Потоки
 		streams = new ArrayList<>();
 		//Создаём магическое притяжение
-		Configurations.gravitation = new Gravitation[CellObject.LV_STATUS.length];
+		gravitation = new Gravitation[CellObject.LV_STATUS.length];
 		for(var i : CellObject.LV_STATUS.values){
-			Configurations.gravitation[i.ordinal()] = (gravitation != null && gravitation.containsKey(i)) ? gravitation.get(i) : Gravitation.NONE;
+			gravitation[i.ordinal()] = (gravitations != null && gravitations.containsKey(i)) ? gravitations.get(i) : Gravitation.NONE;
 		}
 		//А теперь дерево эволюции
 		tree = new EvolutionTree();
 	}
 	/**Перестраивает карту мира на основе заданной конфигурации
 	 * при этом остальные параметры мира не трогает
-	 * @param confoguration новая конфигурация мира
+	 * @param confog новая конфигурация мира
 	 */
-	public static void rebuildMap(Configurations confoguration){
-		Configurations.confoguration = confoguration;
+	public static void rebuildMap(Configurations confog){
+		confoguration = confog;
 		//Мир
 		if(world != null)
 			world.destroy();
@@ -366,7 +388,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 */
 	public static Configurations getDefaultConfiguration(WORLD_TYPE type){
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
-		Configurations ret =  switch (type) {
+		final var ret =  switch (type) {
 			case LINE_H -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
 			case LINE_V -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
 			default ->throw new AssertionError();
@@ -426,16 +448,17 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @throws java.io.IOException так как мы работаем с файловой системой, мы всегда имеем шансы уйти с ошибкой
 	 */
 	public static void save(String filePatch) throws IOException {
-		boolean oldStateWorld = Configurations.world.isActiv();		
-		Configurations.world.awaitStop();
+		boolean oldStateWorld = world.isActiv();		
+		world.awaitStop();
 
-		var js = SaveAndLoad.save(filePatch, Configurations.VERSION);
-		js.addActionListener( e-> Logger.getLogger(Configurations.class.getName()).log(Level.INFO, String.format("Сохранение %d из %d. Осталось %.2fc",e.now,e.all,e.getTime()/1000)));
-		js.save(Configurations.confoguration, Configurations.tree, Configurations.world);
+		var js = SaveAndLoad.save(filePatch, VERSION);
+		js.addActionListener( e-> logger.log(Level.INFO, String.format("Сохранение %d из %d. Осталось %.2fc",e.now,e.all,e.getTime()/1000)));
+		js.save(confoguration, tree, world);
+		confoguration.lastSaveCount = world.step;
 		if (oldStateWorld)
-			Configurations.world.start();
+			world.start();
 		else
-			Configurations.world.stop();
+			world.stop();
 	}
 	/**Функция загрузки
 	 * @param filePatch - путь, куда сохранить мир
@@ -447,12 +470,13 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		world.awaitStop();
 
 		var js = SaveAndLoad.load(filePatch);     
-		js.addActionListener( e-> Logger.getLogger(Configurations.class.getName()).log(Level.INFO, String.format("Загрузка %d из %d. Осталось %.2fc",e.now,e.all,e.getTime()/1000)));
-		Configurations.confoguration = js.load(confoguration);
-		tree = js.load(Configurations.tree);
+		js.addActionListener( e-> logger.log(Level.INFO, String.format("Загрузка %d из %d. Осталось %.2fc",e.now,e.all,e.getTime()/1000)));
+		confoguration = js.load(confoguration);
+		tree = js.load(tree);
 		if(world != null)
 			world.destroy();
-		world = js.load((j,v) -> new World(j, v, Configurations.confoguration.MAP_CELLS), world.getName());		
+		world = js.load((j,v) -> new World(j, v, confoguration.MAP_CELLS), world.getName());	
+		confoguration.lastSaveCount = world.step;	
 		
 		if (oldStateWorld)
 			world.start();
@@ -467,7 +491,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @return Строка в формате HTML
 	 */
 	public static String getHProperty(Class<?> cls, String name, Object ... arguments) {
-		return MessageFormat.format(Configurations.getHProperty(cls,name),arguments);
+		return MessageFormat.format(getHProperty(cls,name),arguments);
 	}
 	/**
 	 * Возвращает форматированную строку описания для определённого класса
@@ -477,7 +501,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @return Строка текста
 	 */
 	public static String getProperty(Class<?> cls, String name, Object ... arguments) {
-		return MessageFormat.format(Configurations.getProperty(cls,name),arguments);
+		return MessageFormat.format(getProperty(cls,name),arguments);
 	}
 	/**
 	 * Возвращает строку описания для определённого класса
@@ -487,6 +511,14 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 */
 	public static String getHProperty(Class<?> cls, String name) {
 		return "<HTML>"+getProperty(cls,name).replace("\n", " <br> ");
+	}
+	/**
+	 * Возвращает строку описания
+	 * @param name - ключ
+	 * @return Строка в формате HTML
+	 */
+	public static String getHProperty(String name) {
+		return "<HTML>"+getProperty(name).replace("\n", " <br> ");
 	}
 	/**
 	 * Возвращает строку описания для определённого класса
@@ -505,10 +537,10 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 */
 	public static String getProperty(String name) {
 		try {
-			return Configurations.bundle.getString(name);
+			return bundle.getString(name);
 		} catch (MissingResourceException e) {
 			var err = "Не найдено свойство " + name;
-			Logger.getLogger(Configurations.class.getName()).log(Level.WARNING, err, e);
+			logger.log(Level.WARNING, err, e);
 			System.err.println(err);
 			return err;
 		}
@@ -521,7 +553,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 */
 	public static JButton makeIconButton(String name) {
 		var button = new JButton();
-		Configurations.setIcon(button, name);
+		setIcon(button, name);
 		button.setBorderPainted(false);
 		button.setFocusPainted(false);
 		button.setContentAreaFilled(false);
@@ -569,9 +601,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 */
 	public static Set<String> testFont(java.awt.Font font){
 		var ret = new HashSet<String>();
-		for (var iterator = Configurations.bundle.getKeys(); iterator.hasMoreElements();) {
+		for (var iterator = bundle.getKeys(); iterator.hasMoreElements();) {
 			String key = iterator.nextElement();
-			for(var ch : Configurations.bundle.getString(key).split("")){
+			for(var ch : bundle.getString(key).split("")){
 				var n = font.canDisplayUpTo(ch);
 				if(n < 0){
 					ret.add(ch);
@@ -591,13 +623,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @param ms время в мс, как часто задача будет выполняться
 	 */
 	public static void addTask(EvrySecondTask task, int ms){
-		Configurations.TIME_OUT_POOL.scheduleWithFixedDelay(() -> 
-			{
-				try {
-					task.taskStep();
-				} catch (Exception ex) {
-					Logger.getLogger(Configurations.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-				}
+		TIME_OUT_POOL.scheduleWithFixedDelay(() -> {
+				try {task.taskStep();
+				} catch (Exception ex) {logger.log(Level.SEVERE, ex.getLocalizedMessage(), ex);}
 			}, ms, ms, TimeUnit.MILLISECONDS);
 	}
 }
