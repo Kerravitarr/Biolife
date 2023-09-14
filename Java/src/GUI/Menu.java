@@ -240,6 +240,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	
 	/**Открывает окошечко сохранения мира и... Сохраняет мир, собственно*/
 	public void save() {
+		if(Configurations.confoguration.lastSaveCount == Configurations.world.step) return;
 		boolean oldStateWorld = Configurations.world.isActiv();	
 		Configurations.world.awaitStop();
 		
