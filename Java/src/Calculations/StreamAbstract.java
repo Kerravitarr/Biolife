@@ -5,20 +5,20 @@ import static Calculations.Configurations.WORLD_TYPE.FIELD_R;
 import static Calculations.Configurations.WORLD_TYPE.LINE_H;
 import static Calculations.Configurations.WORLD_TYPE.LINE_V;
 import static Calculations.Configurations.WORLD_TYPE.RECTANGLE;
-import Calculations.Point.DIRECTION;
-import GUI.AllColors;
 import GUI.WorldView;
 import MapObjects.CellObject;
 import Utils.JSON;
-import Utils.SaveAndLoad;
 import java.awt.Graphics2D;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 /**
  * Поток жидкости
  *
  */
 public abstract class StreamAbstract{
+	/**Траектория движения*/
+	private final Trajectory move;
 	/**Позиция центра потока*/
 	protected Point position;
 	/**способ уменьшения мощности потока от расстояния*/
@@ -27,33 +27,52 @@ public abstract class StreamAbstract{
 	private String name;
 	
 	/**Создание гейзера
-	 * @param pos позиция центра потока при создании
+	 * @param move форма движения
 	 * @param s способ рассеения мощности от расстояния.
 	 * @param name имя этого поткоа, то, что его отличает от дргих
 	 */
-	protected StreamAbstract(Point pos, StreamAttenuation s,  String name) {
-		position = pos;
+	protected StreamAbstract(Trajectory move, StreamAttenuation s,  String name) {
+		this.move = move;
+		position = move.start();
 		shadow = s;
 		this.name = name;
 	}
 	/**Создание универсальной формы без снижения мощности потока
-	 * @param pos позиция центра потока при создании
+	 * @param move форма движения
 	 * @param p максимальная энергия потока
 	 * @param name имя этого поткоа, то, что его отличает от дргих
 	 */
-	protected StreamAbstract(Point pos, int p, String name) {
-		this(pos, new StreamAttenuation.NoneStreamAttenuation(p), name);
+	protected StreamAbstract(Trajectory move, int p, String name) {
+		this(move, new StreamAttenuation.NoneStreamAttenuation(p), name);
 	}
 	protected StreamAbstract(JSON j, long v)throws GenerateClassException{
 		position = new Point(j.getJ("position"));
 		shadow = StreamAttenuation.generate(j.get("shadow"),v);
 		name = j.get("name");
+		move = Trajectory.generate(j.getJ("move"),v);
 	}
 
+	/**Этот метод будет вызываться каждый раз, когда изменится местоположение объекта*/
+	protected abstract void move();
+	/**Шаг мира для пересчёта
+	 * @param step номер шага мира
+	 */
+	public void step(long step) {
+		if(move != null && move.isStep(step)){
+			position = move.nextPosition();
+			move();
+		}
+	}
 	/**Обрабатывает сдувание клетки в определённую сторону потоком
 	 * @param cell клетка, на которую поток воздействует
 	 */
 	public abstract void action(CellObject cell);
+	/**
+	 * Возвращает все изменяемые параметры потока
+	 * @return список из всех доступных параметров
+	 */
+	public abstract List<ParamObject> getParams();
+	
 	/**Превращает текущий объект в объект его описания
 	 * @return объект описания. По нему можно гарантированно восстановить исходник
 	 */
@@ -63,6 +82,7 @@ public abstract class StreamAbstract{
 		j.add("position",position.toJSON());
 		j.add("name",name);
 		j.add("shadow",shadow.toJSON());
+		j.add("move", move.toJSON());
 		return j;
 	}
 	

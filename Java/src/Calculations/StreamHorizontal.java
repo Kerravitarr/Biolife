@@ -11,26 +11,27 @@ import MapObjects.CellObject;
 import Utils.JSON;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.List;
 
 /**Прямоугольный вертикальный поток*/
 public class StreamHorizontal extends StreamAbstract {
-
 	/**Ширина потока*/
-	private final int width;
+	private int width;
 	/**Высота потока*/
-	private final int height;
+	private int height;
 
 	/**Создание квадртаного потока
 	 *Об энергии:Если больше 0, то каждый шаг поток будет толкать клетку на восток (вправо)
 	 *			если меньше 0, то поток будет толкать влево (на запад)
-	 * @param pos позиция верхнего левого угла потока на данный момент
+	 * @param move движение ЦЕНТРА этого потока
 	 * @param width ширина, в клетках мира
 	 * @param height высота, в клетках мира
 	 * @param shadow тип снижения мощности от максимума к минимуму
 	 * @param name имя, как будут звать этот поток
 	 */
-	public StreamHorizontal(Point pos, int width, int height, StreamAttenuation shadow,String name) {
-		super(new Point(pos.getX() + width / 2, pos.getY() + height / 2), shadow, name);
+	public StreamHorizontal(Trajectory move, int width, int height, StreamAttenuation shadow,String name) {
+		super(move, shadow, name);
 		this.width = width;
 		this.height = height;
 	}
@@ -38,14 +39,14 @@ public class StreamHorizontal extends StreamAbstract {
 	/**Создание квадртаного потока без убывания мощности
 	 *Об энергии:Если больше 0, то каждый шаг поток будет толкать клетку на восток (вправо)
 	 *			если меньше 0, то поток будет толкать влево (на запад)
-	 * @param pos позиция верхнего левого угла потока на данный момент
+	 * @param move движение ЦЕНТРА этого потока
 	 * @param width ширина, в клетках мира
 	 * @param height высота, в клетках мира
 	 * @param power максимальная энергия потока.
 	 * @param name имя, как будут звать этот поток
 	 */
-	public StreamHorizontal(Point pos, int width, int height, int power, String name) {
-		super(new Point(pos.getX() + width / 2, pos.getY() + height / 2), power,name);
+	public StreamHorizontal(Trajectory move, int width, int height, int power, String name) {
+		super(move, power,name);
 		this.width = width;
 		this.height = height;
 	}
@@ -67,6 +68,33 @@ public class StreamHorizontal extends StreamAbstract {
 			cell.moveD(DIRECTION.RIGHT); // Поехали по направлению!
 		else if(F < 0 && cell.getAge() % -F == 0)
 			cell.moveD(DIRECTION.LEFT); // Поехали по направлению!
+	}
+	@Override
+	protected void move() {}
+	@Override
+	public List<ParamObject> getParams() {
+		final java.util.ArrayList<Calculations.ParamObject> ret = new ArrayList<ParamObject>(2);
+		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				width = ((Number) value).intValue();
+			}
+			@Override
+			protected Object get() {
+				return width;
+			}
+		});
+		ret.add(new ParamObject("height", 1,Configurations.getHeight(),1,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				height = ((Number) value).intValue();
+			}
+			@Override
+			protected Object get() {
+				return height;
+			}
+		});
+		return ret;	
 	}
 	
 	@Override

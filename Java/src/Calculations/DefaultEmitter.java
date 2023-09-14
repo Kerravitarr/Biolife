@@ -6,6 +6,7 @@ import Utils.JSON;
 import Utils.SaveAndLoad;
 import java.awt.Graphics2D;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 /**
  * Болванка любого излучателя - солнца или минералов
@@ -21,10 +22,13 @@ public abstract class DefaultEmitter {
 	protected double power;
 	/**Название*/
 	private String name;
+	/**Если тут true, то у нас излучает только поверхность, а если false - то излучает вся площадь*/
+	protected boolean isLine;
 	
 	protected DefaultEmitter(JSON j, long v) throws GenerateClassException{
 		power = j.get("power");
 		name = j.get("name");
+		isLine = j.get("isLine");
 		move = Trajectory.generate(j.getJ("move"),v);
 		position = new Point(j.getJ("position"));
 	}
@@ -33,22 +37,29 @@ public abstract class DefaultEmitter {
 	 * @param p максимальная энергия, будто и не было препятствий на пути
 	 * @param move форма движения
 	 * @param n название
+	 * @param isLine если true, то у нас излучает только поверхность, а если false - то излучает вся площадь
 	 */
-	public DefaultEmitter(double p, Trajectory move, String n){
+	public DefaultEmitter(double p, Trajectory move, String n, boolean isLine){
 		this.move = move;
 		position = move.start();
 		power = p;
 		this.name = n;
+		this.isLine = isLine;
 	}
+	/**
+	 * Возвращает все изменяемые параметры излучателя
+	 * @return список из всех доступных параметров
+	 */
+	public abstract List<ParamObject> getParams();
+
 	/**Этот метод будет вызываться каждый раз, когда изменится местоположение объекта*/
 	protected abstract void move();
-
 	/**Шаг мира для пересчёта
 	 * @param step номер шага мира
 	 */
 	public void step(long step) {
 		if(move != null && move.isStep(step)){
-			position = move.step();
+			position = move.nextPosition();
 			move();
 		}
 	}
@@ -103,6 +114,14 @@ public abstract class DefaultEmitter {
 	 * @param p сколкьо теперь эенргии будет в излучатеел
 	 */
 	public void setPower(double p){power = p;}
+	/**Возвращает тип излучателя - линейный или объёмный
+	 * @return Если тут true, то у нас излучает только поверхность, а если false - то излучает вся площадь
+	 */
+	public boolean getIsLine(){return isLine;}
+	/**Сохраняет новую максимальную энергию излучателя
+	 * @param isL если true, то у нас излучает только поверхность, а если false - то излучает вся площадь
+	 */
+	public void setIsLine(boolean isL){isLine = isL;}
 	/**Сохраняет имя излучателя
 	 * @param n как его теперь будут звать
 	 */
@@ -118,6 +137,7 @@ public abstract class DefaultEmitter {
 		final var j = new JSON();
 		j.add("power", power);
 		j.add("name", name);
+		j.add("isLine", isLine);
 		j.add("move", move.toJSON());
 		j.add("position", position.toJSON());
 		return j;

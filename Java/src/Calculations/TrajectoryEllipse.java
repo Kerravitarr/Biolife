@@ -13,7 +13,7 @@ import Utils.JSON;
 public class TrajectoryEllipse extends Trajectory{
 	/**Центр, вокруг которого вращаемся*/
 	private final Point center;
-	/**Эксцентрическая аномалия эллипса. Угол, на который сместилось солнце от начала*/
+	/**Эксцентрическая аномалия эллипса. Угол, на который сместилось солнце от начала, Дополнительный параметр для смещения начального угла*/
 	private double angle;
 	/**Большая ось*/
 	private final double a;
@@ -30,7 +30,7 @@ public class TrajectoryEllipse extends Trajectory{
 	 * @param b2 малая ось эллипса - лежит на оси Y
 	 */
 	public TrajectoryEllipse(long speed, Point center,double startAngle, int a2, int b2){
-		super(speed, getStartPos(center,startAngle,a2,b2));
+		super(speed);
 		this.center = center;
 		this.angle = startAngle;
 		this.a = a2 / 2d;
@@ -53,24 +53,11 @@ public class TrajectoryEllipse extends Trajectory{
 		this.a = json.get("a");
 		this.b = json.get("b");
 	}
-	/**Затычка, для создания стартовой точки
-	 * @param center
-	 * @param startAngle
-	 * @param a2
-	 * @param b2
-	 * @return 
-	 */
-	private static Point getStartPos(Point center,double startAngle, int a2, int b2){
-		final var angle = startAngle;
-		final var a = a2 / 2d;
-		final var b = b2 / 2d;
-		return new Point((int)Math.round(center.getX() + a * Math.cos(angle)) ,(int)Math.round(center.getY() +  b * Math.sin(angle)));
-	}
 
 	@Override
-	protected Point step() {
-		angle += Math.PI / 180;
-		return new Point((int)Math.round(center.getX() + a * Math.cos(angle)) ,(int)Math.round(center.getY() +  b * Math.sin(angle)));
+	protected Point position(long step) {
+		final var rangle = angle + step * Math.PI / 180d;
+		return new Point((int)Math.round(center.getX() + a * Math.cos(rangle)) ,(int)Math.round(center.getY() +  b * Math.sin(rangle)));
 	}
 	@Override
 	public JSON toJSON(){

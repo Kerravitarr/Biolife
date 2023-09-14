@@ -14,6 +14,8 @@ import java.awt.MultipleGradientPaint.CycleMethod;
 import java.awt.RadialGradientPaint;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *Самое обычное прямоугольное залежо минералов.
@@ -22,11 +24,9 @@ import java.awt.geom.Rectangle2D;
  */
 public class MineralRectangle extends MineralAbstract {
 	/**Ширина излучающей поверхности*/
-	private final int width;
+	private int width;
 	/**Высота излучающей поверхности*/
-	private final int height;
-	/**Если тут true, то у нас не круг, а окружность*/
-	private final boolean isLine;
+	private int height;
 	
 	/**Создаёт излучающу. прямоугольниую поверхность
 	 * @param p сила излучения
@@ -38,16 +38,14 @@ public class MineralRectangle extends MineralAbstract {
 	 * @param name название залежи
 	 */
 	public MineralRectangle(double p, double attenuation, Trajectory move, int width, int height, boolean isLine, String name) {
-		super(p, attenuation,move,name);
+		super(p, attenuation,move,name,isLine);
 		this.width = width;
 		this.height = height;
-		this.isLine = isLine;
 	}
 	protected MineralRectangle(JSON j, long v) throws GenerateClassException{
 		super(j,v);
 		this.width = j.get("width");
 		this.height = j.get("height");
-		this.isLine = j.get("isLine");
 	}
 
 	@Override
@@ -73,6 +71,31 @@ public class MineralRectangle extends MineralAbstract {
 				return Math.max(0, power - attenuation * Math.max(absX - width / 2, absY - height / 2));
 		}
 	}
+	@Override
+	public List<ParamObject> getParams(){
+		final java.util.ArrayList<Calculations.ParamObject> ret = new ArrayList<ParamObject>(2);
+		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				width = ((Number) value).intValue();
+			}
+			@Override
+			protected Object get() {
+				return width;
+			}
+		});
+		ret.add(new ParamObject("height", 1,Configurations.getHeight(),1,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				height = ((Number) value).intValue();
+			}
+			@Override
+			protected Object get() {
+				return height;
+			}
+		});
+		return ret;
+	}
 
 	@Override
 	protected void move() {}
@@ -81,7 +104,6 @@ public class MineralRectangle extends MineralAbstract {
 		final var j = super.toJSON();
 		j.add("width", width);
 		j.add("height", height);
-		j.add("isLine", isLine);
 		return j;
 	}
 	@Override

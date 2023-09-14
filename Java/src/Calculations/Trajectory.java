@@ -6,8 +6,6 @@ package Calculations;
 
 import Utils.JSON;
 import java.lang.reflect.InvocationTargetException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * болванка для таректории по которой могут двигаться объекты карты
@@ -18,19 +16,26 @@ public class Trajectory {
 	private final long speed;
 	/**Для неподвижных объектов, точка нахождения*/
 	private final Point pos;
+	/**Текущий шаг траектории*/
+	private long step;
+	
+	private Trajectory(long speed, Point pos){
+		if(speed < 0) throw new IllegalArgumentException("Скорость не может быть меньше 0!");
+		this.speed = speed;
+		this.pos = pos;
+		step = 0;
+	}
 	/**Конструктор
 	 * @param speed скорость движения. Как часто солнце будет шагать. При 1 - каждый раз, при 2 - каждые 2 хода и т.д. 
 	 *			При 0 объект не движется
 	 *			Отрицательной скорость не может
-	 * @param pos позиция объекта на начало движения
 	 */
-	protected Trajectory(long speed, Point pos){
-		if(speed < 0) throw new IllegalArgumentException("Скорость не может быть меньше 0!");
-		this.speed = speed;
-		this.pos = pos;
+	protected Trajectory(long speed){
+		this(speed, new Point(0, 0));
 	}
 	protected Trajectory(JSON json, long version){
 		speed = json.getL("speed");
+		step = json.getL("step");
 		pos = new Point(json.getJ("pos"));
 	}
 	/**Конструктор неподвижного объекта
@@ -47,15 +52,31 @@ public class Trajectory {
 	public final boolean isStep(long step) {
 		return speed != 0 && step % speed == 0;
 	}
-	/**Возвращает новую позицию для движения
+	/**Возвращает следующую позицию для движения
 	 * @return новая позиция объекта
 	 */
-	protected Point step(){return null;}
+	public final Point nextPosition() {
+		return position(++step);
+	}
+	/**Возвращает предыдущую позицию для движения
+	 * @return новая позиция объекта
+	 */
+	public final Point prefurPosition() {
+		return position(--step);
+	}
+	
+	/**Возвращает новую позицию для движения
+	 * @param step шаг, для которого вычисляется позиция
+	 * @return новая позиция объекта
+	 */
+	protected Point position(long step){
+		return pos;
+	}
 	
 	/**Получить стартовую позицию объекта
 	 * @return позиция объекат во время начала движения
 	 */
-	public Point start(){return pos;}
+	public final Point start(){step--;return nextPosition();}
 	
 	/**Превращает излучатель в серелизуемый объект
 	 * @return объект, который можно пересылать, засылать
@@ -63,6 +84,7 @@ public class Trajectory {
 	public JSON toJSON(){
 		final var j = new JSON();
 		j.add("speed", speed);
+		j.add("step", step);
 		j.add("pos", pos.toJSON());
 		j.add("_className", this.getClass().getName());
 		return j;

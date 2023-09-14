@@ -16,91 +16,94 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.List;
 
 /**Круглый поток*/
 public class StreamEllipse extends StreamAbstract {
 	/**Большая ось эллипса - лежит на оси Х*/
-	private final int a2;
+	private int a2;
 	/**Большая полуось эллипса, лежит на оси X*/
-	private final double a;
+	private double a;
 	/**Квадрат большой полуоси эллипса*/
-	private final double aa;
+	private double aa;
 	/**Малая ось эллипса - лежит на оси Y*/
-	private final int b2;
+	private int b2;
 	/**Малая полуось эллипса, лежит на оси Y*/
-	private final double b;
+	private double b;
 	/**Квадрат малой полуоси элипса*/
-	private final double bb;
+	private double bb;
 
 	/**Создание элипсовидного потока
 	 * Об энергии:Если больше 0, то клетку будет тянуть в центр потока
 	 *			если меньше 0, выталкивать
-	 * @param pos позиция центра на данный момент
+	 * @param move движение ЦЕНТРА этого эллипса
 	 * @param a2 большая ось эллипса - лежит на оси Х
 	 * @param b2 малая ось эллипса - лежит на оси Y
 	 * @param shadow тип снижения мощности от максимума к минимуму
 	 * @param name имя, как будут звать этот поток
 	 */
-	public StreamEllipse(Point pos, int a2, int b2, StreamAttenuation shadow, String name) {
-		super(pos, shadow, name);
-		this.a2 = a2;
-		this.b2 = b2;
-		
-		a = a2 / 2d;
-		aa = a * a;
-		b = b2 / 2d;
-		bb = b * b;
+	public StreamEllipse(Trajectory move, int a2, int b2, StreamAttenuation shadow, String name) {
+		super(move, shadow, name);
+		setA2(a2);
+		setB2(b2);
 	}
 
 	/**Создание элипсовидного потока без изменения мощности на всём потоке
 	 * Об энергии:Если больше 0, то клетку будет тянуть в центр потока
 	 *			если меньше 0, выталкивать
-	 * @param pos позиция центра на данный момент
+	 * @param move движение ЦЕНТРА этого эллипса
 	 * @param a2 большая ось эллипса - лежит на оси Х
 	 * @param b2 малая ось эллипса - лежит на оси Y
 	 * @param power максимальная энергия потока. Не может быть 0.
 	 * @param name имя, как будут звать этот поток
 	 */
-	public StreamEllipse(Point pos, int a2, int b2, int power, String name) {
-		this(pos, b2, power, new StreamAttenuation.NoneStreamAttenuation(power),name);
+	public StreamEllipse(Trajectory move, int a2, int b2, int power, String name) {
+		this(move, b2, power, new StreamAttenuation.NoneStreamAttenuation(power),name);
 	}
 
 	/**Создание круглого потока
 	 * Об энергии:Если больше 0, то клетку будет тянуть в центр потока
 	 *			если меньше 0, выталкивать
-	 * @param pos позиция центра на данный момент
+	 * @param move движение ЦЕНТРА этого эллипса
 	 * @param d диаметр круга
 	 * @param shadow тип снижения мощности от максимума к минимуму
 	 * @param name имя, как будут звать этот поток
 	 */
-	public StreamEllipse(Point pos, int d, StreamAttenuation shadow,String name) {
-		this(pos, d, d, shadow, name);
+	public StreamEllipse(Trajectory move, int d, StreamAttenuation shadow,String name) {
+		this(move, d, d, shadow, name);
 	}
 
 	/**Создание круглого потока без изменения мощности на всём потоке
 	 * Об энергии:Если больше 0, то клетку будет тянуть в центр потока
 	 *			если меньше 0, выталкивать
-	 * @param pos позиция центра на данный момент
+	 * @param move движение ЦЕНТРА этого эллипса
 	 * @param d диаметр круга
 	 * @param power максимальная энергия потока. Не может быть 0.
 	 *			Если больше 0, то клетку будет тянуть в центр потока
 	 *			если меньше 0, выталкивать
 	 * @param name имя, как будут звать этот поток
 	 */
-	public StreamEllipse(Point pos, int d, int power, String name) {
-		this(pos, d,d,  power,name);
+	public StreamEllipse(Trajectory move, int d, int power, String name) {
+		this(move, d,d,  power,name);
 	}
 	protected StreamEllipse(JSON j, long v) throws GenerateClassException{
 		super(j,v);
-		this.a2 = j.get("a2");
-		this.b2 = j.get("b2");
-		
+		setA2(j.get("a2"));
+		setB2(j.get("b2"));
+	}
+
+	private void setA2(int a2){
+		this.a2 = a2;
 		a = a2 / 2d;
 		aa = a * a;
+	}
+	private void setB2(int b2){
+		this.b2 = b2;
 		b = b2 / 2d;
 		bb = b * b;
 	}
-
+	
 	@Override
 	public void action(CellObject cell) {
 		final var pos = cell.getPos();
@@ -128,7 +131,33 @@ public class StreamEllipse extends StreamAbstract {
 			}
 		}
 	}
-	
+	@Override
+	public List<ParamObject> getParams(){
+		final java.util.ArrayList<Calculations.ParamObject> ret = new ArrayList<ParamObject>(2);
+		ret.add(new ParamObject("a2", 2,Configurations.getWidth(),2,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				setA2(((Number) value).intValue());
+			}
+			@Override
+			protected Object get() {
+				return a2;
+			}
+		});
+		ret.add(new ParamObject("b2", 2,Configurations.getHeight(),2,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				setB2(((Number) value).intValue());
+			}
+			@Override
+			protected Object get() {
+				return b2;
+			}
+		});
+		return ret;
+	}
+	@Override
+	protected void move() {}
 	
 	@Override
 	public JSON toJSON(){

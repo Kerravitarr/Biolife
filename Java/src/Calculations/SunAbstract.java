@@ -6,6 +6,7 @@ import Utils.JSON;
 import Utils.SaveAndLoad;
 import java.awt.Graphics2D;
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,35 +22,15 @@ import java.util.logging.Logger;
  *
  */
 public abstract class SunAbstract extends DefaultEmitter{
-	/**Объект, описывающий как можно создать тот или иной объект и какие параметры у него можно менять*/
-	public static class ConstructAndChanged{
-		/**Имя типа, который будет создан или отредактирован*/
-		public final String name;
-		
-		/**Некоторый параметр или для конструктора или для регулирования*/
-		public static class Param{
-			/**Название параметра*/
-			public final String name;
-			/**Тип параметра*/
-			public final Type type;
-			
-			public enum Type {INT,BOOLEAN}
-			
-			public Param(String n, Type t){name = n;type = t;}
-		}
-		
-		public ConstructAndChanged(String n){
-			name = n;
-		}
-	}
 	
 	/**Создаёт солнце
 	 * @param p максимальная энергия солнца, будто и не было тени
 	 * @param move форма движения солнца. Доступны изначально LineMove и EllipseMove
 	 * @param n название солнца
+	 * @param isLine если true, то у нас излучает только поверхность, а если false - то излучает вся площадь
 	 */
-	public SunAbstract(double p, Trajectory move, String n){
-		super(p,move,n);
+	public SunAbstract(double p, Trajectory move, String n, boolean isLine){
+		super(p,move,n, isLine);
 	}
 	/**Обязательный конструктор для восстановления объекта
 	 * @param j описание предка

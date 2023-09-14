@@ -23,9 +23,10 @@ public abstract class MineralAbstract extends DefaultEmitter{
 	 * @param a затухание. На сколько единиц/клетку уменьшается количество минералов вдали от объекта
 	 * @param move форма движения солнца. Доступны изначально LineMove и EllipseMove
 	 * @param name название залежи
+	 * @param isLine если true, то у нас излучает только поверхность, а если false - то излучает вся площадь
 	 */
-	public MineralAbstract(double p,double a, Trajectory move, String name){
-		super(p,move,name);
+	public MineralAbstract(double p,double a, Trajectory move, String name, boolean isLine){
+		super(p,move,name, isLine);
 		attenuation = a;
 	}	
 	/**Обязательный конструктор для восстановления объекта

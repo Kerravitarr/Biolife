@@ -13,25 +13,27 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.List;
 
 /**Прямоугольный вертикальный поток*/
 public class StreamVertical extends StreamAbstract {
 	/**Ширина потока*/
-	private final int width;
+	private int width;
 	/**Высота потока*/
-	private final int height;
+	private int height;
 
 	/**Создание квадртаного потока
 	 *Об энергии: Если меньше 0, то каждый шаг поток будет тянуть клетку на дно
 	 *			если больше 0, то поток восходящий, то есть двигает клету к поверхности
-	 * @param pos позиция верхнего левого угла потока на данный момент
+	 * @param move движение ЦЕНТРА этого потока
 	 * @param width ширина, в клетках мира
 	 * @param height высота, в клетках мира
 	 * @param shadow тип снижения мощности от максимума к минимуму
 	 * @param name имя, как будут звать этот поток
 	 */
-	public StreamVertical(Point pos, int width, int height, StreamAttenuation shadow,String name) {
-		super(new Point(pos.getX() + width / 2, pos.getY() + height / 2), shadow, name);
+	public StreamVertical(Trajectory move, int width, int height, StreamAttenuation shadow,String name) {
+		super(move, shadow, name);
 		this.width = width;
 		this.height = height;
 	}
@@ -39,7 +41,7 @@ public class StreamVertical extends StreamAbstract {
 	/**Создание квадртаного потока без убывания мощности
 	 *Об энергии: Если меньше 0, то каждый шаг поток будет тянуть клетку на дно
 	 *			если больше 0, то поток восходящий, то есть двигает клету к поверхности
-	 * @param pos позиция верхнего левого угла потока на данный момент
+	 * @param move движение ЦЕНТРА этого потока
 	 * @param width ширина, в клетках мира
 	 * @param height высота, в клетках мира
 	 * @param power максимальная энергия потока. Не может быть 0.
@@ -47,8 +49,8 @@ public class StreamVertical extends StreamAbstract {
 	 *			если больше 0, то поток восходящий, то есть двигает клету к поверхности
 	 * @param name имя, как будут звать этот поток
 	 */
-	public StreamVertical(Point pos, int width, int height, int power, String name) {
-		super(new Point(pos.getX() + width / 2, pos.getY() + height / 2), power,name);
+	public StreamVertical(Trajectory move, int width, int height, int power, String name) {
+		super(move, power,name);
 		this.width = width;
 		this.height = height;
 	}
@@ -72,6 +74,35 @@ public class StreamVertical extends StreamAbstract {
 		else if(F < 0 && cell.getAge() % -F == 0)
 			cell.moveD(DIRECTION.DOWN); // Поехали по направлению!
 	}
+
+	@Override
+	protected void move() {}
+	@Override
+	public List<ParamObject> getParams() {
+		final java.util.ArrayList<Calculations.ParamObject> ret = new ArrayList<ParamObject>(2);
+		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				width = ((Number) value).intValue();
+			}
+			@Override
+			protected Object get() {
+				return width;
+			}
+		});
+		ret.add(new ParamObject("height", 1,Configurations.getHeight(),1,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				height = ((Number) value).intValue();
+			}
+			@Override
+			protected Object get() {
+				return height;
+			}
+		});
+		return ret;	
+	}
+	
 	@Override
 	public JSON toJSON(){
 		final var j = super.toJSON();

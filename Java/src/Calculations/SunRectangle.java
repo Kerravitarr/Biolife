@@ -14,6 +14,8 @@ import java.awt.MultipleGradientPaint.CycleMethod;
 import java.awt.RadialGradientPaint;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *Самое обычное прямоугольное солнце.
@@ -26,8 +28,6 @@ public class SunRectangle extends SunAbstract {
 	private int width;
 	/**Высота излучающей поверхности*/
 	private int height;
-	/**Если тут true, то у нас не круг, а окружность*/
-	private boolean isLine;
 	
 	/**Создаёт излучающую полоску света
 	 * @param p сила излучения
@@ -38,19 +38,15 @@ public class SunRectangle extends SunAbstract {
 	 * @param name название солнца
 	 */
 	public SunRectangle(double p, Trajectory move, int width, int height, boolean isLine, String name) {
-		super(p, move,name);
+		super(p, move,name,isLine);
 		this.width = width;
 		this.height = height;
-		this.isLine = isLine;
 	}	
 	protected SunRectangle(JSON j, long v) throws GenerateClassException{
 		super(j,v);
 		this.width = j.get("width");
 		this.height = j.get("height");
-		this.isLine = j.get("isLine");
 	}
-
-
 	@Override
 	public double getEnergy(Point pos) {
 		final var DIRTY_WATER = Configurations.confoguration.DIRTY_WATER;
@@ -77,13 +73,38 @@ public class SunRectangle extends SunAbstract {
 	}
 
 	@Override
+	public List<ParamObject> getParams(){
+		final java.util.ArrayList<Calculations.ParamObject> ret = new ArrayList<ParamObject>(2);
+		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				width = ((Number) value).intValue();
+			}
+			@Override
+			protected Object get() {
+				return width;
+			}
+		});
+		ret.add(new ParamObject("height", 1,Configurations.getHeight(),1,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				height = ((Number) value).intValue();
+			}
+			@Override
+			protected Object get() {
+				return height;
+			}
+		});
+		return ret;
+	}
+	
+	@Override
 	protected void move() {}
 	@Override
 	public JSON toJSON(){
 		final var j = super.toJSON();
 		j.add("width", width);
 		j.add("height", height);
-		j.add("isLine", isLine);
 		return j;
 	}
 	

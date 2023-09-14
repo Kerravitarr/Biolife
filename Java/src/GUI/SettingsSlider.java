@@ -58,6 +58,36 @@ public class SettingsSlider extends javax.swing.JPanel {
 	
 	/**
 	* Создаёт панельку настройки
+	* @param nameO полное имя параметра (по нему берутся навазния)
+	* @param minS минимальное значение слайдера
+	* @param maxS максимальное значение слайдера
+	* @param mi манимально возможное значение
+	* @param nowVal текущее значение
+	* @param ma максимально возможное значение
+	* @param list слушатель, который сработает, когда значение изменится
+	*/
+   public SettingsSlider(String nameO, int minS, int maxS, Integer mi, int nowVal, Integer ma, AdjustmentListener list) {
+		this(mi, ma);
+		if (minS > maxS)
+			throw new NumberFormatException("Значение минимума не может быть больше максимума");
+		label.setText(Configurations.getHProperty(nameO + ".L"));
+		label.setToolTipText(Configurations.getHProperty(nameO + ".T"));
+		scroll.setMinimum(minS);
+		scroll.setMaximum(maxS);
+		reset.setVisible(false);
+
+		Configurations.setIcon(insert, "insert");
+		insert.setPreferredSize(BUT_SIZE);
+		insert.setToolTipText(Configurations.getHProperty(SettingsSlider.class, "insertSlider"));
+		insert.addActionListener( e -> showConfirmDialog());
+
+		value = nowVal == 0 ? 1 : 0;
+		setValue(nowVal);
+		listener = list;
+		scroll.addAdjustmentListener(e -> setValue(e.getValue()));
+   }
+	/**
+	* Создаёт панельку настройки
 	* @param nameO имя параметра (по нему берутся навазния)
 	* @param minS минимальное значение слайдера
 	* @param defVal значение по умолчанию
@@ -68,7 +98,7 @@ public class SettingsSlider extends javax.swing.JPanel {
 	* @param list слушатель, который сработает, когда значение изменится
 	*/
    public SettingsSlider(String nameO, int minS, int defVal, int maxS, Integer mi, int nowVal, Integer ma, AdjustmentListener list) {
-		this(mi, ma, list);
+		this(mi, ma);
 		if (minS > maxS)
 			throw new NumberFormatException("Значение минимума не может быть больше максимума");
 
@@ -88,14 +118,14 @@ public class SettingsSlider extends javax.swing.JPanel {
 
 		value = nowVal == 0 ? 1 : 0;
 		setValue(nowVal);
-		
+		listener = list;
 		scroll.addAdjustmentListener(e -> setValue(e.getValue()));
 	}
 	/** Creates new form Slider */
-	private SettingsSlider(Integer mi, Integer ma, AdjustmentListener list) {
+	private SettingsSlider(Integer mi, Integer ma) {
 		initComponents();
 		
-		listener = list;
+		listener = e -> {};
 		min = mi;
 		max = ma;
 	}
@@ -204,7 +234,7 @@ public class SettingsSlider extends javax.swing.JPanel {
 	/**Максимальное значение*/
 	private final Integer max;
 	/**Максимальное значение*/
-	private final AdjustmentListener listener;
+	private AdjustmentListener listener;
 	/**Форматирование высплывающего окна над значением*/
 	private final MyMessageFormat valueFormat = new MyMessageFormat(Configurations.getProperty(Settings.class,"scrollTtext"));
 }

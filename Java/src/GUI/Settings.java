@@ -47,22 +47,19 @@ public class Settings extends javax.swing.JPanel {
 		final var dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
 		configuationsRebuild.add(new SettingsNumber("configuations.width", 100, dc.MAP_CELLS.width, 1_000_000, Configurations.getWidth(), e -> {
 			Configurations.world.awaitStop();
-			memory.push(new ArrayList<>(){{add(Configurations.confoguration.getJSON());}});
-			Configurations.rebuildMap(new Configurations(Configurations.confoguration.world_type, e, Configurations.getHeight()));
+			Configurations.rebuildMap(new Configurations(Configurations.confoguration,Configurations.confoguration.world_type, e, Configurations.getHeight()));
 			final var w = Configurations.getViewer().get(WorldView.class);
 			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
 		}));
 		configuationsRebuild.add(new SettingsNumber("configuations.height", 100, dc.MAP_CELLS.height, 1_000_000, Configurations.getHeight(), e -> {
 			Configurations.world.awaitStop();
-			Configurations.rebuildMap(new Configurations(Configurations.confoguration.world_type,Configurations.getWidth() , e));
-			memory.push(new ArrayList<>(){{add(Configurations.confoguration.getJSON());}});
+			Configurations.rebuildMap(new Configurations(Configurations.confoguration,Configurations.confoguration.world_type,Configurations.getWidth() , e));
 			final var w = Configurations.getViewer().get(WorldView.class);
 			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
 		}));
 		configuationsRebuild.add(new SettingsSelect<>("configuations.WORLD_TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.confoguration.world_type, e -> {
 			Configurations.world.awaitStop();
-			Configurations.rebuildMap(new Configurations(e,Configurations.getWidth() , Configurations.getHeight()));
-			memory.push(new ArrayList<>(){{add(Configurations.confoguration.getJSON());}});
+			Configurations.rebuildMap(new Configurations(Configurations.confoguration,e,Configurations.getWidth() , Configurations.getHeight()));
 			rebuild();
 			updateUI();
 			final var w = Configurations.getViewer().get(WorldView.class);
@@ -103,7 +100,6 @@ public class Settings extends javax.swing.JPanel {
 			//Ну значит будет у нас... Вот такая вот шляпа :)
 			final var sliders = new javax.swing.JPanel[3];
 			sliders[0] = new SettingsSlider("gravitation." + status.name(), 0, defPower, 1000, 0, buildGrav.getValue(),null,e -> {
-				memory.push(new ArrayList<>(){{add(Configurations.confoguration.getJSON());}});
 				final var g = Configurations.gravitation[status.ordinal()];
 				if (sliders[1] instanceof SettingsSelect<?> direction) {
 					if (e == 0){
@@ -121,7 +117,6 @@ public class Settings extends javax.swing.JPanel {
 				}
 			});
 			sliders[1] = new SettingsSelect<>("gravitation.dir", Gravitation.Direction.values, defDir, buildGrav.getDirection(),e -> {
-				memory.push(new ArrayList<>(){{add(Configurations.confoguration.getJSON());}});
 				final var g = Configurations.gravitation[status.ordinal()];
 				if (sliders[0] instanceof SettingsSlider power) {
 					switch (e) {
@@ -159,14 +154,23 @@ public class Settings extends javax.swing.JPanel {
 				suns.add(new JPopupMenu.Separator());
 			
 			final var sun = Configurations.suns.get(i);
-			suns.add(new SettingsString("sun.name", "Звезда", sun.toString(), e -> {
-				memory.push(new ArrayList<>(){{add(Configurations.confoguration.getJSON());}});
-				sun.setName(e);
-			}));
-			suns.add(new SettingsSlider("sun.power", 1, 20, 200, 1,(int)sun.getPower(),  null, e -> {
-				memory.push(new ArrayList<>(){{add(Configurations.confoguration.getJSON());}});
+			suns.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",sun.toString())));
+			suns.add(new SettingsSlider("sun.power", 1, 30, 200, 1,(int)sun.getPower(),  null, e -> {
 				sun.setPower(e);
 			}));
+			suns.add(new SettingsBoolean("emitter.isLine", !sun.getIsLine(), e -> {
+				sun.setIsLine(!e);
+			}));
+			for(final Calculations.ParamObject p : sun.getParams()){
+				switch (p.type) {
+					case INT -> {
+						suns.add(new SettingsSlider(String.format("%s.%s", sun.getClass().getName(),p.name), p.minD,  p.maxD, p.minA,p.getI(),  p.maxA, e -> {
+							p.setValue(e);
+						}));
+					}
+					default -> throw new AssertionError();
+				}
+			}
 		}
 	}
 	/**Пересоздаёт минералы*/
@@ -175,16 +179,24 @@ public class Settings extends javax.swing.JPanel {
 		for (int i = 0; i < Configurations.minerals.size(); i++) {
 			if(i > 0)
 				minerals.add(new JPopupMenu.Separator());
-			
 			final var mineral = Configurations.minerals.get(i);
-			minerals.add(new SettingsString("minerals.name", "Залеж", mineral.toString(), e -> {
-				memory.push(new ArrayList<>(){{add(Configurations.confoguration.getJSON());}});
-				mineral.setName(e);
-			}));
+			minerals.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",mineral.toString())));
 			minerals.add(new SettingsSlider("minerals.power", 1, 20, 200, 1,(int)mineral.getPower(),  null, e -> {
-				memory.push(new ArrayList<>(){{add(Configurations.confoguration.getJSON());}});
 				mineral.setPower(e);
 			}));
+			minerals.add(new SettingsBoolean("emitter.isLine", !mineral.getIsLine(), e -> {
+				mineral.setIsLine(!e);
+			}));
+			for(final Calculations.ParamObject p : mineral.getParams()){
+				switch (p.type) {
+					case INT -> {
+						minerals.add(new SettingsSlider(String.format("%s.%s", mineral.getClass().getName(),p.name), p.minD,  p.maxD, p.minA,p.getI(),  p.maxA, e -> {
+							p.setValue(e);
+						}));
+					}
+					default -> throw new AssertionError();
+				}
+			}
 		}
 	}
 	/**Пересоздаёт потоки*/
@@ -193,12 +205,19 @@ public class Settings extends javax.swing.JPanel {
 		for (int i = 0; i < Configurations.streams.size(); i++) {
 			if(i > 0)
 				streams.add(new JPopupMenu.Separator());
-			
 			final var stream = Configurations.streams.get(i);
-			streams.add(new SettingsString("streams.name", "Поток", stream.toString(), e -> {
-				memory.push(new ArrayList<>(){{add(Configurations.confoguration.getJSON());}});
-				stream.setName(e);
-			}));
+			streams.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",stream.toString())));
+			
+			for(final Calculations.ParamObject p : stream.getParams()){
+				switch (p.type) {
+					case INT -> {
+						streams.add(new SettingsSlider(String.format("%s.%s", stream.getClass().getName(),p.name), p.minD,  p.maxD, p.minA,p.getI(),  p.maxA, e -> {
+							p.setValue(e);
+						}));
+					}
+					default -> throw new AssertionError();
+				}
+			}
 		}
 	}
 	
@@ -245,6 +264,7 @@ public class Settings extends javax.swing.JPanel {
         suns.setLayout(new javax.swing.BoxLayout(suns, javax.swing.BoxLayout.Y_AXIS));
         jPanel1.add(suns);
 
+        streams.setBackground(new java.awt.Color(204, 204, 204));
         streams.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"streams"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
         streams.setLayout(new javax.swing.BoxLayout(streams, javax.swing.BoxLayout.Y_AXIS));
         jPanel1.add(streams);
@@ -286,6 +306,5 @@ public class Settings extends javax.swing.JPanel {
     private javax.swing.JPanel suns;
     private javax.swing.JTabbedPane tableLists;
     // End of variables declaration//GEN-END:variables
-	/**Буфер для "отката" на предыдущее состояние*/
-	private RingBuffer<List<Utils.JSON>> memory = new RingBuffer<>(100);
+
 }

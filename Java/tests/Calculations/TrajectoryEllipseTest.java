@@ -43,7 +43,7 @@ public class TrajectoryEllipseTest {
 		var valid = new Point[]{new Point(55,50),new Point(55,50)};
 		for (int i = 0; i < valid.length; i++) {
 			Point point = valid[i];
-			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.step());
+			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.nextPosition());
 		}
 	}
 	@Test
@@ -52,7 +52,7 @@ public class TrajectoryEllipseTest {
 		var valid = new Point[]{new Point(60,50)};
 		for (int i = 0; i < valid.length; i++) {
 			Point point = valid[i];
-			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.step());
+			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.nextPosition());
 		}
 	}
 	@Test
@@ -61,7 +61,7 @@ public class TrajectoryEllipseTest {
 		var valid = new Point[]{new Point(70,50)};
 		for (int i = 0; i < valid.length; i++) {
 			Point point = valid[i];
-			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.step());
+			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.nextPosition());
 		}
 	}
 	

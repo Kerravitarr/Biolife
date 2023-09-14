@@ -15,6 +15,8 @@ import java.awt.RadialGradientPaint;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Эллипсоидная залежа минералов
@@ -22,19 +24,17 @@ import java.awt.geom.Point2D;
  */
 public class MineralEllipse extends MineralAbstract {
 	/**Большая ось эллипса - лежит на оси Х*/
-	private final int a2;
+	private int a2;
 	/**Большая полуось эллипса, лежит на оси X*/
-	private final double a;
+	private double a;
 	/**Квадрат большой полуоси эллипса*/
-	private final double aa;
+	private double aa;
 	/**Малая ось эллипса - лежит на оси Y*/
-	private final int b2;
+	private int b2;
 	/**Малая полуось эллипса, лежит на оси Y*/
-	private final double b;
+	private double b;
 	/**Квадрат малой полуоси элипса*/
-	private final double bb;
-	/**Если тут true, то у нас не круг, а окружность*/
-	private final boolean isLine;
+	private double bb;
 	
 	/**Создаёт излучающий эллипс
 	 * @param p сила излучения
@@ -46,26 +46,14 @@ public class MineralEllipse extends MineralAbstract {
 	 * @param name название залежи
 	 */
 	public MineralEllipse(double p,double attenuation, Trajectory move, int a2, int b2, boolean isLine, String name) {
-		super(p,attenuation, move,name);
-		this.a2 = a2;
-		this.b2 = b2;
-		this.isLine = isLine;
-		
-		a = a2 / 2d;
-		aa = a * a;
-		b = b2 / 2d;
-		bb = b * b;
+		super(p,attenuation, move,name,isLine);
+		setA2(a2);
+		setB2(b2);
 	}
 	protected MineralEllipse(JSON j, long v) throws GenerateClassException{
 		super(j,v);
-		this.a2 = j.get("a2");
-		this.b2 = j.get("b2");
-		this.isLine = j.get("isLine");
-		
-		a = a2 / 2d;
-		aa = a * a;
-		b = b2 / 2d;
-		bb = b * b;
+		setA2(j.get("a2"));
+		setB2(j.get("b2"));
 	}
 	/**Создаёт излучающий круг
 	 * @param p сила излучения
@@ -80,6 +68,16 @@ public class MineralEllipse extends MineralAbstract {
 		this(p,attenuation, move,d,d,isLine,name);
 	}
 
+	private void setA2(int a2){
+		this.a2 = a2;
+		a = a2 / 2d;
+		aa = a * a;
+	}
+	private void setB2(int b2){
+		this.b2 = b2;
+		b = b2 / 2d;
+		bb = b * b;
+	}
 	@Override
 	public double getConcentration(Point pos) {
 		if(attenuation == 0d)
@@ -130,13 +128,37 @@ public class MineralEllipse extends MineralAbstract {
 		}
 	}
 	@Override
+	public List<ParamObject> getParams(){
+		final java.util.ArrayList<Calculations.ParamObject> ret = new ArrayList<ParamObject>(2);
+		ret.add(new ParamObject("a2", 2,Configurations.getWidth(),2,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				setA2(((Number) value).intValue());
+			}
+			@Override
+			protected Object get() {
+				return a2;
+			}
+		});
+		ret.add(new ParamObject("b2", 2,Configurations.getHeight(),2,null){
+			@Override
+			public void setValue(Object value) throws ClassCastException {
+				setB2(((Number) value).intValue());
+			}
+			@Override
+			protected Object get() {
+				return b2;
+			}
+		});
+		return ret;
+	}
+	@Override
 	protected void move() {}
 	@Override
 	public JSON toJSON(){
 		final var j = super.toJSON();
 		j.add("a2", a2);
 		j.add("b2", b2);
-		j.add("isLine", isLine);
 		return j;
 	}
 
@@ -165,19 +187,19 @@ public class MineralEllipse extends MineralAbstract {
 		//Где заканчивается свет от него
 		final var s = Math.max(1, a0 + p);
 		//А в процентах расстояние от 0 до границы солнца
-		final var sunP = ((float)a0) / s;
-		if(sunP == 0) return;
+		final var mineralP = ((float)a0) / s;
+		if(mineralP == 0) return;
 			
 		float[] fractions;
 		Color[] colors;
 		if(isLine){
 			//Соотношение цветов
-			fractions = new float[] {(p >= a0 ? 0f : sunP * p / a0), sunP, 1.0f };
+			fractions = new float[] {(p >= a0 ? 0f : mineralP - mineralP * p / a0), mineralP, 1.0f };
 			//Сами цвета
 			colors = new Color[] { AllColors.toDark(AllColors.MINERALS, (int) (a0 > p ? 0 : (maxAlf - maxAlf * a0 / p))) ,colorMaxLight , AllColors.MINERALS_DARK};
 		} else {
 			//Соотношение цветов
-			fractions = new float[] { 0.0f, sunP, 1.0f };
+			fractions = new float[] { 0.0f, mineralP, 1.0f };
 			//Сами цвета
 			 colors = new Color[]{colorMaxLight, colorMaxLight, AllColors.MINERALS_DARK};
 		}
