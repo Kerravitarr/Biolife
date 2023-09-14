@@ -87,13 +87,10 @@ public abstract class CommandDNA {
 	 */
 	public boolean execute(AliveCell cell) {
 		/**Указывает какую ветвь выполнять функции*/
-		int branch = perform(cell);
-		if(getCountBranch() == 0) {
-			cell.getDna().next(1 + getCountParams() + branch);
-		}else {
-			var dna = cell.getDna();
-			dna.next(dna.get(1 + getCountParams() + branch,false)); // Сдвижка определеяется параметром из ДНК
-		}
+		int next = perform(cell) + 1 + getCountParams();
+		if(getCountBranch() != 0)
+			next += cell.getDna().get(next,false);
+		cell.getDna().next(next);
 		return isDoing();
 	}
 	/**
