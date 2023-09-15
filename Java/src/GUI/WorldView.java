@@ -236,34 +236,39 @@ public class WorldView extends javax.swing.JPanel {
 		
 		var v = Configurations.getViewer();
 		if(!(v instanceof DefaultViewer)) return;
-		var legend = ((DefaultViewer) v ).getLegend();
+		final var legend = v.get(Legend.class);
+		final var settings = v.get(Settings.class);
 		
-		paintField(g);
-		int r = transforms.toScrin(1);
-		for (int x = 0; x < Configurations.getWidth(); x++) {
-			for (int y = 0; y < Configurations.getHeight(); y++) {
-				if(isAll || (visible[0].getX() <= x && x <= visible[1].getX()
-						&& visible[0].getY() <= y && y <= visible[1].getY())){
-					final var pos = new Point(x, y);
-					//if(!pos.valid()) continue;					
-					final var cell = Configurations.world.get(pos);
-					if(cell != null){
-						int cx = transforms.toScrinX(cell.getPos());
-						int cy = transforms.toScrinY(cell.getPos());
-						cell.paint(g, legend, cx, cy, r);
+		paintField(g, settings.isEdit());
+		
+		if(!settings.isEdit()){
+			int r = transforms.toScrin(1);
+			for (int x = 0; x < Configurations.getWidth(); x++) {
+				for (int y = 0; y < Configurations.getHeight(); y++) {
+					if(isAll || (visible[0].getX() <= x && x <= visible[1].getX()
+							&& visible[0].getY() <= y && y <= visible[1].getY())){
+						final var pos = new Point(x, y);
+						//if(!pos.valid()) continue;					
+						final var cell = Configurations.world.get(pos);
+						if(cell != null){
+							int cx = transforms.toScrinX(cell.getPos());
+							int cy = transforms.toScrinY(cell.getPos());
+							cell.paint(g, legend, cx, cy, r);
+						}
 					}
 				}
 			}
 		}
-		final var view = Configurations.getViewer();
-		final var infoCell = view instanceof DefaultViewer ? ((DefaultViewer) view).getBotInfo().getCell() : null;
+		//Отрисовываем перекрестие на выбранную клетку
+		final var infoCell = v.get(BotInfo.class).getCell();
 		if(infoCell != null) {
 			g.setColor(Color.GRAY);
 			g.drawLine(transforms.toScrinX(infoCell.getPos()), 0, transforms.toScrinX(infoCell.getPos()), getHeight());
 			g.drawLine(0, transforms.toScrinY(infoCell.getPos()), getWidth(), transforms.toScrinY(infoCell.getPos()));
 		}
+		//Отрисовываем рамку выбора клеток на поле
 		if(selectPoint[0] != null && selectPoint[1] != null){
-			g.setColor(new Color(255,255,255,25));
+			g.setColor(new Color(255,255,255,50));
 			var x0 = transforms.toScrinX(selectPoint[0]);
 			var y0 = transforms.toScrinY(selectPoint[0]);
 			var x1 = transforms.toScrinX(selectPoint[1]);
@@ -277,8 +282,9 @@ public class WorldView extends javax.swing.JPanel {
 	}
 	/**Закрашивает картину, согласно текущему раскладу
 	 * @param g полотно, которое красим
+	 * @param edit нужно ли делать доплонительное построение для редактирования?
 	 */
-	private void paintField(Graphics2D g) {
+	private void paintField(Graphics2D g, boolean edit) {
 		//Рисуем игровое поле
 		switch (Configurations.confoguration.world_type) {
 			case LINE_H,LINE_V ->{
@@ -294,6 +300,12 @@ public class WorldView extends javax.swing.JPanel {
 		Configurations.minerals.forEach(s -> s.paint(g,getTransform()));
 		//И и шлефанём всё это потоками
 		Configurations.streams.forEach(s -> s.paint(g,getTransform()));
+		if(edit){
+			//А теперь, ещё выше, рисуем все траектории
+			Configurations.suns.forEach(s -> s.getTrajectory().paint(g,getTransform()));
+			Configurations.minerals.forEach(s -> s.getTrajectory().paint(g,getTransform()));
+			Configurations.streams.forEach(s -> s.getTrajectory().paint(g,getTransform()));
+		}
 		
 		//Рисуем всё остальное
 		switch (Configurations.confoguration.world_type) {
@@ -317,7 +329,7 @@ public class WorldView extends javax.swing.JPanel {
 	/**Вспомогательная, отладочная функция, рисования клеток поля
 	 * @param g 
 	 */
-	private void paintCells(Graphics2D g) {
+	/*private void paintCells(Graphics2D g) {
 		int r = transforms.toScrin(1);
 		for (int x = 0; x < Configurations.getWidth(); x++) {
 			for (int y = 0; y < Configurations.getHeight(); y++) {
@@ -334,7 +346,7 @@ public class WorldView extends javax.swing.JPanel {
 				g.drawRect(cx-r/2, cy-r/2,r, r);
 			}
 		}
-	}
+	}*/
 	
 	/**Пересчитывает относительные размеры мира в пикселях.*/
 	public synchronized void recalculate() {
