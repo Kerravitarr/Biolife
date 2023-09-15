@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -35,7 +34,6 @@ import javax.swing.JToolTip;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
 import javax.swing.SwingConstants;
-import start.BioLife;
 
 /**
  *
@@ -46,11 +44,6 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 	private java.awt.Point mousePoint = null;
 	/**Панелька с миром*/
 	private JScrollPane scrollPane;
-	
-	private JMenuItem startRecord;
-	
-	/**Предыдущий шаг сохранения*/
-	private long lastSave = 0;
 
 	/**Фабрика создания всплывающей подсказки*/
 	private PopupFactory popupFactory;
@@ -232,22 +225,28 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 	@Override
 	public void taskStep() {
 		final var world = Configurations.world;
-		final var wv = ((WorldView) Configurations.getViewer().get("World"));
+		final var v = Configurations.getViewer();
+		if(!(v instanceof DefaultViewer)) return;
+		final var wv = v.get(WorldView.class);
+		final var settings = v.get(Settings.class);
+		final var legend = v.get(Legend.class);
+		final var menu = v.get(Menu.class);
+		final var bi = v.get(BotInfo.class);
+		
 		String title = MessageFormat.format(Configurations.getProperty(MainFrame.class,"title"), wv.fps.FPS(), world.step,
 				world.pps.FPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
 				world.getCount(CellObject.LV_STATUS.LV_POISON), world.getCount(CellObject.LV_STATUS.LV_WALL), world.isActiv() ? ">" : "||");
 		setTitle(title);
 		wv.repaint();
-		
+		//Вывод сообщения, если мир опустеет
 		if(world.getCount(CellObject.LV_STATUS.LV_ALIVE) == 0 && Configurations.world.isActiv()){
 			java.awt.Toolkit.getDefaultToolkit().beep();
 			Configurations.world.stop();
 			JOptionPane.showMessageDialog(null, Configurations.getProperty(MainFrame.class,"noAlive"), "BioLife", JOptionPane.WARNING_MESSAGE);
 		}
 		
-		
 		//Автосохранение
-		if(Math.abs(world.step - lastSave) > Configurations.confoguration.SAVE_PERIOD){
+		if(Math.abs(world.step - Configurations.confoguration.lastSaveCount) > Configurations.confoguration.SAVE_PERIOD){
 			if(world.isActiv()){
 				//Если мир пассивный - то с чего мы вдруг решили его начать сохранять? Может он только загружен?
 				final var loc = scrollPane.getLocationOnScreen();
@@ -276,8 +275,12 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 					popup = null;
 				}
 			}
-			lastSave = world.step;
 		}
+		
+		//А теперь изменяем форму нашего окна, в зависимости от настроек
+		legend.getParent().setVisible(!settings.isEdit());
+		bi.getParent().setVisible(!settings.isEdit());
+		menu.getParent().setVisible(!settings.isEdit());
 	}
 	
 	/**Распределяет панели по экрану
