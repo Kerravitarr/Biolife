@@ -57,10 +57,12 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	private int[] _all_live_cell = new int[CellObject.LV_STATUS.length];
 	/**Указывает, что программа находится в цикле шага*/
 	private boolean isStepCucle = false;
+	/**Как часто производить расчёты*/
+	private long timeout = 0;
 	
 	
 	/**Возвожное состояние мира*/
-	private enum STATUS {STOP,ACTIV_ALL,ACTIV_SLOW,ERROR};
+	private enum STATUS {STOP,ACTIV_ALL,ERROR};
 	/**Один блок, состоящий из двух вертекалей, карты*/
 	class WorldTask implements Callable<int[]>{
 		/**Один вертикальный столбик карты, который обсчитвыает этот поток*/
@@ -185,7 +187,6 @@ public class World implements Runnable,SaveAndLoad.Serialization{
  		while (_status != STATUS.ERROR) {
 			switch (_status) {
 				case ACTIV_ALL -> step();
-				case ACTIV_SLOW -> stepSlow();
 				default -> Utils.pause(1);
 			}
 		}
@@ -196,6 +197,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		awaitStop();
 		maxExecutor.shutdown();
 		_status = STATUS.ERROR;
+		pps.close();
 	}
 	/**Создаёт стартовую клетку на поле*/
 	public void makeAdam(){
@@ -239,11 +241,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		cellsTask.add(new WorldTask(firstList.toArray(Point[]::new),secondList.toArray(Point[]::new)));
 	}
 	/**Оперции, которые должны быть выполнены до совершения шага мира*/
-	private synchronized void preStep(){
-		if(isStepCucle)
-			throw new SecurityException("Попытка запустить уже запущенный поток провалена!");
-		else
-			isStepCucle = true;
+	private void preStep(){
 		isFirst = Configurations.rnd.nextBoolean();
 	}
 	/**
@@ -253,14 +251,25 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 * достаточно просто его вызывать и быть уверенным, что походят все и всяк
 	 */
 	public synchronized void step() {
+		if(isStepCucle) throw new SecurityException("Попытка запустить уже запущенный поток провалена!");
+		else			isStepCucle = true;
 		preStep();
 		try {
 			var f = new int[CellObject.LV_STATUS.length];
 			for (int st = 0; st < 2; st++) {
-				f = maxExecutor.invokeAll(cellsTask)
-						.stream()
-						.map(a -> {try{return a.get();}catch(InterruptedException | ExecutionException e){ return new int[CellObject.LV_STATUS.length];}})
-						.reduce(f, (a,b) -> {for (int i = 0; i < b.length; i++) {a[i] += b[i];}return a;});
+				if(timeout == 0){
+					f = maxExecutor.invokeAll(cellsTask)
+							.stream()
+							.map(a -> {try{return a.get();}catch(InterruptedException | ExecutionException e){ return new int[CellObject.LV_STATUS.length];}})
+							.reduce(f, (a,b) -> {for (int i = 0; i < b.length; i++) {a[i] += b[i];}return a;});
+				} else {
+					for (var t : cellsTask) {
+						final var b = t.call();
+						for (int i = 0; i < b.length; i++) {f[i] += b[i];}
+					}
+					if(timeout > 1)
+						Utils.pause_ms(timeout);
+				}
 				isFirst = !isFirst;
 			}
 			_all_live_cell = f;
@@ -268,23 +277,12 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 			Logger.getLogger(World.class.getName()).log(Level.WARNING, e.getLocalizedMessage(), e);
 		}
 		postStep();
-	}
-	/**Шажок без использования потоков мира, а за счёт ресурсов вызвавшего его потока */
-	public synchronized void stepSlow() {
-		preStep();
-		var f = new int[CellObject.LV_STATUS.length];
-		for (int st = 0; st < 2; st++) {
-			for (var t : cellsTask) {
-				final var b = t.call();
-				for (int i = 0; i < b.length; i++) {f[i] += b[i];}
-			}
-			isFirst = !isFirst;
-		}
-		_all_live_cell = f;
-		postStep();
+		
+		if(!isStepCucle)	throw new SecurityException("Попытка остановить не запущенный поток!");
+		else				isStepCucle = false;
 	}
 	/**Операции, которые должны быть выполнены после шага*/
-	private synchronized void postStep(){
+	private void postStep(){
 		Configurations.suns.forEach( s -> s.step(step));
 		Configurations.minerals.forEach( s -> s.step(step));
 		Configurations.streams.forEach( s -> s.step(step));
@@ -292,11 +290,6 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 
 		pps.interapt();
 		step++;
-		
-		if(!isStepCucle)
-			throw new SecurityException("Попытка остановить не запущенный поток!");
-		else
-			isStepCucle = false;
 	}
 	
 	/**
@@ -394,7 +387,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 * @return true, если включён автоматических ход мира
 	 */
 	public boolean isActiv(){
-		return _status == STATUS.ACTIV_ALL ||  _status == STATUS.ACTIV_SLOW;
+		return _status == STATUS.ACTIV_ALL;
 	}
 	/**Останавливает работу мира*/
 	public void stop(){
@@ -415,6 +408,22 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		if(_status != STATUS.ERROR)
 			_status = STATUS.ACTIV_ALL;
 	}
+	/**Сохраняет скорость моделирвоания.
+	 * Если 0, то мир моделируется максимально быстро.
+	 * Если 1, то моделирвоание происходит на одном процессоре
+	 * Числа больше 1 показывают задержку в мс после каждого шага
+	 * @param speed новая скорость
+	 */
+	public void setSpeed(long speed){
+		timeout = speed;
+	}
+	/**Возвращает скорость моделирвоания.
+	 * Если 0, то мир моделируется максимально быстро.
+	 * Если 1, то моделирвоание происходит на одном процессоре
+	 * Числа больше 1 показывают задержку в мс после каждого шага
+	 * @return скорость моделирования
+	 */
+	public long getSpeed(){return timeout;}
 	/**Возвращает количество существующих объектов того или иного типа
 	 * 
 	 * @param type тип интересующего объекта
