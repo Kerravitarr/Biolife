@@ -7,13 +7,13 @@ package GUI;
 import Calculations.Configurations;
 import Calculations.Gravitation;
 import Calculations.Point;
-import Calculations.SunAbstract;
+import Calculations.Trajectory;
 import MapObjects.CellObject;
-import Utils.RingBuffer;
+import java.awt.Color;
 import java.awt.event.ComponentEvent;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 
 /**
@@ -25,7 +25,15 @@ public class Settings extends javax.swing.JPanel {
 	/** Creates new form Settings */
 	public Settings() {
 		initComponents();
-		rebuild();		
+		rebuild();	
+		borderClick(configuationsNorm, null);
+		borderClick(configuationsRebuild, null);
+		borderClick(gravitations, null);
+		borderClick(suns, null);
+		borderClick(suns2, null);
+		borderClick(streams, null);
+		borderClick(minerals, null);
+		
 	}
 	/**Пересоздаёт все ползунки*/
 	public void rebuild(){
@@ -35,37 +43,51 @@ public class Settings extends javax.swing.JPanel {
 		rebuildMinerals();
 		rebuildStreams();
 	}
+	/**Режим работы настреок
+	 * @return true - тогда мы в режиме редактора карты. Не надо отображать клетки, инфу по боту и остальное
+	 */
+	public boolean isEdit(){
+		return tableLists.getSelectedIndex() == 1;
+	}
+	
 	/**Пересоздаёт конфигурацию мира*/
 	private void rebuildConfig(){
 		configuationsNorm.removeAll();
 		configuationsRebuild.removeAll();
-		
-		configuationsNorm.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "worldSize",Configurations.getWidth(),Configurations.getHeight())));
-		configuationsNorm.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "worldType",Configurations.confoguration.world_type)));
-
-				
+			
 		final var dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
-		configuationsRebuild.add(new SettingsNumber("configuations.width", 100, dc.MAP_CELLS.width, 1_000_000, Configurations.getWidth(), e -> {
+		final var width = new SettingsNumber("configuations.width", 100, dc.MAP_CELLS.width, 1_000_000, Configurations.getWidth(), e -> {
 			Configurations.world.awaitStop();
 			Configurations.rebuildMap(new Configurations(Configurations.confoguration,Configurations.confoguration.world_type, e, Configurations.getHeight()));
 			final var w = Configurations.getViewer().get(WorldView.class);
 			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
-		}));
-		configuationsRebuild.add(new SettingsNumber("configuations.height", 100, dc.MAP_CELLS.height, 1_000_000, Configurations.getHeight(), e -> {
+		});
+		final var height = new SettingsNumber("configuations.height", 100, dc.MAP_CELLS.height, 1_000_000, Configurations.getHeight(), e -> {
 			Configurations.world.awaitStop();
 			Configurations.rebuildMap(new Configurations(Configurations.confoguration,Configurations.confoguration.world_type,Configurations.getWidth() , e));
 			final var w = Configurations.getViewer().get(WorldView.class);
 			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
-		}));
-		configuationsRebuild.add(new SettingsSelect<>("configuations.WORLD_TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.confoguration.world_type, e -> {
+		});
+		final var wt = new SettingsSelect<>("configuations.WORLD_TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.confoguration.world_type, e -> {
 			Configurations.world.awaitStop();
 			Configurations.rebuildMap(new Configurations(Configurations.confoguration,e,Configurations.getWidth() , Configurations.getHeight()));
 			rebuild();
 			updateUI();
 			final var w = Configurations.getViewer().get(WorldView.class);
 			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
-		}));
-		//WORLD_TYPE.setEnabled(false);
+		});
+		
+		width.setBackground(Color.red);
+		configuationsRebuild.add(width);
+		height.setBackground(Color.red);
+		configuationsRebuild.add(height);
+		wt.setBackground(Color.red);
+		configuationsRebuild.add(wt);
+		//========================================================
+		
+		configuationsNorm.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "worldSize",Configurations.getWidth(),Configurations.getHeight())));
+		configuationsNorm.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "worldType",Configurations.confoguration.world_type)));
+		configuationsNorm.add(new SettingsSlider("configuations.speed", 0, 0, 1000, 0,(int)Configurations.world.getSpeed(),null, e -> Configurations.world.setSpeed(e)));
 		configuationsNorm.add(new JPopupMenu.Separator());
 		configuationsNorm.add(new SettingsNumber("configuations.savePeriod", 1_000, (int)dc.SAVE_PERIOD, 10_000_000, (int)Configurations.confoguration.SAVE_PERIOD, e -> Configurations.confoguration.SAVE_PERIOD = e));
 		configuationsNorm.add(new SettingsNumber("configuations.countSave", 1, dc.COUNT_SAVE, 10, Configurations.confoguration.COUNT_SAVE, e -> Configurations.confoguration.COUNT_SAVE = e));
@@ -77,6 +99,12 @@ public class Settings extends javax.swing.JPanel {
 		configuationsNorm.add(new SettingsSlider("configuations.dirtiness",
 				0, (int)(dc.DIRTY_WATER * 100), 1000,
 				0, (int)(Configurations.confoguration.DIRTY_WATER * 100), null, e -> Configurations.confoguration.DIRTY_WATER = e / 100d));
+		
+		//А теперь мы обновляем состояние ячеек
+		borderClick(configuationsNorm, null);
+		borderClick(configuationsNorm, null);
+		borderClick(configuationsRebuild, null);
+		borderClick(configuationsRebuild, null);
 	}
 	/**Пересоздаёт гравитацию*/
 	private void rebuildGravitation(){
@@ -171,6 +199,22 @@ public class Settings extends javax.swing.JPanel {
 					default -> throw new AssertionError();
 				}
 			}
+			final var tr = sun.getTrajectory();
+			if(!tr.getClass().equals(Trajectory.class)){
+				suns.add(new SettingsSlider("trajectory.speed", 0,(int)tr.getSpeed(),1000,0,(int)tr.getSpeed(),null, e -> {
+					tr.setSpeed(e);
+				}));
+			}
+		}
+		
+		suns2.removeAll();
+		
+		for (int i = 0; i < Configurations.suns.size(); i++) {
+			if(i > 0)
+				suns.add(new JPopupMenu.Separator());
+			final var sun = Configurations.suns.get(i);
+			suns.add(new SettingsString("object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
+			
 		}
 	}
 	/**Пересоздаёт минералы*/
@@ -197,6 +241,12 @@ public class Settings extends javax.swing.JPanel {
 					default -> throw new AssertionError();
 				}
 			}
+			final var tr = mineral.getTrajectory();
+			if(!tr.getClass().equals(Trajectory.class)){
+				minerals.add(new SettingsSlider("trajectory.speed", 0,(int)tr.getSpeed(),1000,0,(int)tr.getSpeed(),null, e -> {
+					tr.setSpeed(e);
+				}));
+			}
 		}
 	}
 	/**Пересоздаёт потоки*/
@@ -217,6 +267,12 @@ public class Settings extends javax.swing.JPanel {
 					}
 					default -> throw new AssertionError();
 				}
+			}
+			final var tr = stream.getTrajectory();
+			if(!tr.getClass().equals(Trajectory.class)){
+				streams.add(new SettingsSlider("trajectory.speed", 0,(int)tr.getSpeed(),1000,0,(int)tr.getSpeed(),null, e -> {
+					tr.setSpeed(e);
+				}));
 			}
 		}
 	}
@@ -241,50 +297,139 @@ public class Settings extends javax.swing.JPanel {
         minerals = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         configuationsRebuild = new javax.swing.JPanel();
+        suns2 = new javax.swing.JPanel();
 
         setToolTipText(Configurations.getProperty(Settings.class,"toolTop"));
         setLayout(new javax.swing.BoxLayout(this, javax.swing.BoxLayout.Y_AXIS));
 
-        jPanel.setLayout(new javax.swing.BoxLayout(jPanel, javax.swing.BoxLayout.Y_AXIS));
+        scroll.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 
-        jPanel1.setLayout(new javax.swing.BoxLayout(jPanel1, javax.swing.BoxLayout.Y_AXIS));
+        tableLists.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tableListsMouseClicked(evt);
+            }
+        });
 
-        configuationsNorm.setBackground(new java.awt.Color(204, 204, 204));
+        configuationsNorm.setBackground(new java.awt.Color(102, 255, 102));
         configuationsNorm.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"configurations"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        configuationsNorm.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                configuationsNormMouseClicked(evt);
+            }
+        });
         configuationsNorm.setLayout(new javax.swing.BoxLayout(configuationsNorm, javax.swing.BoxLayout.Y_AXIS));
-        jPanel1.add(configuationsNorm);
 
         gravitations.setBackground(new java.awt.Color(204, 204, 204));
         gravitations.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"gravitations"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        gravitations.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                gravitationsMouseClicked(evt);
+            }
+        });
         gravitations.setLayout(new javax.swing.BoxLayout(gravitations, javax.swing.BoxLayout.Y_AXIS));
-        jPanel1.add(gravitations);
 
-        suns.setBackground(new java.awt.Color(204, 204, 204));
+        suns.setBackground(new java.awt.Color(255, 204, 51));
         suns.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"suns"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        suns.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                sunsMouseClicked(evt);
+            }
+        });
         suns.setLayout(new javax.swing.BoxLayout(suns, javax.swing.BoxLayout.Y_AXIS));
-        jPanel1.add(suns);
 
         streams.setBackground(new java.awt.Color(204, 204, 204));
         streams.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"streams"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        streams.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                streamsMouseClicked(evt);
+            }
+        });
         streams.setLayout(new javax.swing.BoxLayout(streams, javax.swing.BoxLayout.Y_AXIS));
-        jPanel1.add(streams);
 
+        minerals.setBackground(new java.awt.Color(237, 255, 33));
         minerals.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"minerals"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        minerals.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                mineralsMouseClicked(evt);
+            }
+        });
         minerals.setLayout(new javax.swing.BoxLayout(minerals, javax.swing.BoxLayout.Y_AXIS));
-        jPanel1.add(minerals);
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(configuationsNorm, javax.swing.GroupLayout.DEFAULT_SIZE, 236, Short.MAX_VALUE)
+            .addComponent(gravitations, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(suns, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(streams, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(minerals, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addComponent(configuationsNorm, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(gravitations, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(suns, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(streams, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(minerals, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
 
         tableLists.addTab(Configurations.getProperty(Settings.class,"edit.name"), null, jPanel1, Configurations.getProperty(Settings.class,"edit.toolTip"));
 
-        jPanel2.setLayout(new javax.swing.BoxLayout(jPanel2, javax.swing.BoxLayout.Y_AXIS));
-
         configuationsRebuild.setBackground(new java.awt.Color(204, 204, 204));
         configuationsRebuild.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"configurations"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        configuationsRebuild.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                configuationsRebuildMouseClicked(evt);
+            }
+        });
         configuationsRebuild.setLayout(new javax.swing.BoxLayout(configuationsRebuild, javax.swing.BoxLayout.Y_AXIS));
-        jPanel2.add(configuationsRebuild);
+
+        suns2.setBackground(new java.awt.Color(255, 204, 51));
+        suns2.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"suns2"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        suns2.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                suns2MouseClicked(evt);
+            }
+        });
+        suns2.setLayout(new javax.swing.BoxLayout(suns2, javax.swing.BoxLayout.Y_AXIS));
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(configuationsRebuild, javax.swing.GroupLayout.DEFAULT_SIZE, 236, Short.MAX_VALUE)
+            .addComponent(suns2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addComponent(configuationsRebuild, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(suns2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
 
         tableLists.addTab(Configurations.getProperty(Settings.class,"rebuild.name"), null, jPanel2, Configurations.getProperty(Settings.class,"rebuild.tooltip"));
 
-        jPanel.add(tableLists);
+        javax.swing.GroupLayout jPanelLayout = new javax.swing.GroupLayout(jPanel);
+        jPanel.setLayout(jPanelLayout);
+        jPanelLayout.setHorizontalGroup(
+            jPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(tableLists)
+        );
+        jPanelLayout.setVerticalGroup(
+            jPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanelLayout.createSequentialGroup()
+                .addComponent(tableLists, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
+        );
+
         tableLists.getAccessibleContext().setAccessibleDescription("");
 
         scroll.setViewportView(jPanel);
@@ -292,6 +437,73 @@ public class Settings extends javax.swing.JPanel {
         add(scroll);
     }// </editor-fold>//GEN-END:initComponents
 
+    private void tableListsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableListsMouseClicked
+        if(tableLists.getSelectedIndex() == 1){
+			Configurations.world.awaitStop();
+			if(isNeedWarning){
+				final var checkbox = new javax.swing.JCheckBox(Configurations.getProperty(Settings.class, "hideWarning"));
+				String message = Configurations.getProperty(Settings.class, "warningText");
+				Object[] params = {message, checkbox};
+				int n = JOptionPane.showConfirmDialog(this, params, "BioLife", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE);
+				isNeedWarning = !checkbox.isSelected();
+			}
+		}
+    }//GEN-LAST:event_tableListsMouseClicked
+
+    private void configuationsRebuildMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_configuationsRebuildMouseClicked
+        borderClick(configuationsRebuild, evt);
+    }//GEN-LAST:event_configuationsRebuildMouseClicked
+
+    private void mineralsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_mineralsMouseClicked
+        borderClick(minerals, evt);
+    }//GEN-LAST:event_mineralsMouseClicked
+
+    private void streamsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_streamsMouseClicked
+        borderClick(streams, evt);
+    }//GEN-LAST:event_streamsMouseClicked
+
+    private void sunsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_sunsMouseClicked
+        borderClick(suns, evt);
+    }//GEN-LAST:event_sunsMouseClicked
+
+    private void gravitationsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_gravitationsMouseClicked
+        borderClick(gravitations, evt);
+    }//GEN-LAST:event_gravitationsMouseClicked
+
+    private void configuationsNormMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_configuationsNormMouseClicked
+        borderClick(configuationsNorm, evt);
+    }//GEN-LAST:event_configuationsNormMouseClicked
+
+    private void suns2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_suns2MouseClicked
+        borderClick(suns2, evt);
+    }//GEN-LAST:event_suns2MouseClicked
+	/**Обрабатывает событие нажатия на рамку параметра
+	 * @param panel панель, рамку которой нажали
+	 * @param evt событие нажатия. Если тут будет null, то это тоже будет означать нажатие
+	 */
+	private void borderClick(javax.swing.JPanel panel, java.awt.event.MouseEvent evt){
+		final var border = panel.getBorder();
+		if (border instanceof javax.swing.border.TitledBorder tb) {
+			final var fm = panel.getFontMetrics(panel.getFont());
+			final var title = tb.getTitle();
+			final var bounds = new java.awt.Rectangle(0, 0, panel.getWidth(), fm.getHeight());
+			if(evt == null || bounds.contains(evt.getPoint())){
+				if(title.contains("\\/")) {
+					tb.setTitle(title.replace("\\/", "/\\"));
+					for (final var c : panel.getComponents()) {
+						c.setVisible(true);
+					}
+				} else {
+					if(title.contains("/\\")) tb.setTitle(title.replace("/\\", "\\/"));
+					else						tb.setTitle(title + "  \\/");
+					for (final var c : panel.getComponents()) {
+						c.setVisible(false);
+					}
+				}
+				panel.updateUI();
+			}
+		}
+	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel configuationsNorm;
@@ -304,7 +516,8 @@ public class Settings extends javax.swing.JPanel {
     private javax.swing.JScrollPane scroll;
     private javax.swing.JPanel streams;
     private javax.swing.JPanel suns;
+    private javax.swing.JPanel suns2;
     private javax.swing.JTabbedPane tableLists;
     // End of variables declaration//GEN-END:variables
-
+	private boolean isNeedWarning = true;
 }

@@ -98,6 +98,7 @@ public class SettingsString extends javax.swing.JPanel {
 
         setAlignmentX(0.0F);
         setAlignmentY(0.0F);
+        setMaximumSize(new java.awt.Dimension(2147483647, 40));
         setLayout(new java.awt.BorderLayout());
 
         label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);

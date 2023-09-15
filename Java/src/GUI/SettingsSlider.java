@@ -194,6 +194,7 @@ public class SettingsSlider extends javax.swing.JPanel {
 
         setAlignmentX(0.0F);
         setAlignmentY(0.0F);
+        setMaximumSize(new java.awt.Dimension(2147483647, 40));
         setLayout(new java.awt.BorderLayout());
 
         label.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -205,13 +206,15 @@ public class SettingsSlider extends javax.swing.JPanel {
         scroll.setVisibleAmount(0);
         add(scroll, java.awt.BorderLayout.CENTER);
 
-        resetAndInsert.setLayout(new java.awt.BorderLayout());
+        resetAndInsert.setAlignmentY(0.5F);
+        resetAndInsert.setLayout(new javax.swing.BoxLayout(resetAndInsert, javax.swing.BoxLayout.LINE_AXIS));
 
         reset.setText("reset");
-        resetAndInsert.add(reset, java.awt.BorderLayout.WEST);
+        resetAndInsert.add(reset);
 
         insert.setText("insert");
-        resetAndInsert.add(insert, java.awt.BorderLayout.EAST);
+        insert.setAlignmentX(0.5F);
+        resetAndInsert.add(insert);
 
         add(resetAndInsert, java.awt.BorderLayout.EAST);
     }// </editor-fold>//GEN-END:initComponents
