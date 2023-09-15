@@ -12,8 +12,8 @@ import Calculations.Point;
  *
  */
 public class Birth extends CommandDo {
-	/**Столько энергии тратит бот на размножение*/
-	private static final long HP_FOR_DOUBLE = 150;
+	/**Сколько ХП стоит скопировать каждый кадон ДНК*/
+	private static final double HP_FOR_KADON = 2;
 
 	public Birth() {this(1);};
 	protected Birth(int countParams) {super(countParams);};
@@ -46,7 +46,8 @@ public class Birth extends CommandDo {
 	 */
 	protected static boolean birth(AliveCell cell, Point pos, int nextCmd) {   
 		var dna = cell.getDna();
-		cell.addHealth(-HP_FOR_DOUBLE);      // бот затрачивает 150 единиц энергии на создание копии
+		//Энергия на копирование
+		cell.addHealth(-dna.size*HP_FOR_KADON);
         boolean isBirth;
 		dna.next(nextCmd); // Чтобы у потомка выполнилась следующая команда	
         if(Configurations.world.test(pos).isPosion) {

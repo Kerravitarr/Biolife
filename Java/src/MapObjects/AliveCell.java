@@ -541,8 +541,8 @@ public class AliveCell extends AliveCellProtorype {
     /**
      * Раскрашивает бота в зависимости от действия
      *
-     * @param act
-     * @param num
+     * @param act что бот делает
+     * @param num на сколько сильно он это делает
      */
     public void color(ACTION act, double num) {
         if (act.p != 1) {

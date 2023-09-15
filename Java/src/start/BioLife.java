@@ -92,7 +92,6 @@ public class BioLife{
 		
 		try(final var reader = new BufferedReader(new InputStreamReader(System.in));){
 			var lut = System.currentTimeMillis() / 1000;
-			var lastSave = 0l;
 			while(true){
 				var nut = System.currentTimeMillis() / 1000;
 				if(reader.ready()){
@@ -115,7 +114,7 @@ public class BioLife{
 					if(Configurations.world.isActiv()){
 						printTitle();
 						//Автосохранение
-						if(Math.abs(world.step - lastSave) > Configurations.confoguration.SAVE_PERIOD){
+						if(Math.abs(world.step - Configurations.confoguration.lastSaveCount) > Configurations.confoguration.SAVE_PERIOD){
 							var list = new File[Configurations.confoguration.COUNT_SAVE];
 							for(var i = 0 ; i < Configurations.confoguration.COUNT_SAVE ; i++){
 								list[i] = new File("autosave" + (i+1) + ".zbmap");
@@ -127,7 +126,6 @@ public class BioLife{
 							}
 							Configurations.save(save.getName());
 						}
-						lastSave = world.step;
 					}
 					lut = nut;
 				}

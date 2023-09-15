@@ -178,6 +178,14 @@ public class Organic extends CellObject {
 	}
 	
 	
+	/** * Не смог я в этот раз уйти от рисования...Очень жаль :(
+		Эта функция должна отобразить объект на холсте согласно установленному режиму
+	 * @param g где рисуем
+	 * @param legend легенда, по которой рисуем
+	 * @param cx координата ЦЕНТРА на холсте, где клетка находится
+	 * @param cy координата ЦЕНТРА на холсте, где клетка находится
+	 * @param r размер в пк квадрата, которым клетка окружена
+	 */
 	@Override
 	public void paint(Graphics g, Legend legend, int cx, int cy, int r){
 		Color color_DO;
