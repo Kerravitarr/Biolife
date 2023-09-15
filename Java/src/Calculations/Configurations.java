@@ -580,11 +580,13 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		}
 		var icon_select = selectResource == null ? null : new ImageIcon(selectResource);
 
-		if(icon_const == null)
+		if (icon_const == null) {
 			button.setText(name);
-		else
+		} else {
+			button.setText("");
 			button.setIcon(new ImageIcon(icon_const.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
-		if(icon_select != null)
+		}
+		if (icon_select != null)
 			button.setRolloverIcon(new ImageIcon(icon_select.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
 		else if(icon_const != null)
 			button.setRolloverIcon(new ImageIcon(icon_const.getImage().getScaledInstance(10, 10, Image.SCALE_SMOOTH)));
