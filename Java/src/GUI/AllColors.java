@@ -31,6 +31,11 @@ public class AllColors {
 	/**Цвет неба, открытого воздуха*/
 	public static final Color SAND =  new Color(226, 202, 118, 255);
 	
+	/**Цвет точки траектории.*/
+	public static final Color TRAJECTORY_POINT =  new Color(225, 0, 0, 255);
+	/**Цвет линии траектории.*/
+	public static final Color TRAJECTORY_LINE =  new Color(0, 255, 0, 255);
+	
 	
 	/**Преобразует цвет в его более прозрачный вариант
 	 * @param from какой цвет
