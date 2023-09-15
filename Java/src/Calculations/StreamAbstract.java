@@ -159,4 +159,8 @@ public abstract class StreamAbstract{
 	 * @param n как его теперь будут звать
 	 */
 	public void setName(String n){name = n;}
+	/**Возвращает траекторию движения потока
+	 * @return закон, по которому движется излучаетль
+	 */
+	public Trajectory getTrajectory(){return move;}
 }

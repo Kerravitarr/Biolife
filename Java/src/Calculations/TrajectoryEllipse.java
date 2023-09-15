@@ -4,7 +4,10 @@
  */
 package Calculations;
 
+import GUI.AllColors;
+import GUI.WorldView;
 import Utils.JSON;
+import java.awt.Graphics2D;
 
 /**
  * Движение по эллипсу вокруг некоторого центра.
@@ -67,5 +70,21 @@ public class TrajectoryEllipse extends Trajectory{
 		j.add("a", a);
 		j.add("b", b);
 		return j;
+	}
+	
+	@Override
+	public void paint(Graphics2D g, WorldView.Transforms transform) {
+		int r = transform.toScrin(1);
+		int a2 = transform.toScrin((int)(a*2));
+		int b2 = transform.toScrin((int)(b*2));
+		int cx = transform.toScrinX(center);
+		int cy = transform.toScrinY(center);
+		int sx = transform.toScrinX((int)(center.getX() + a * Math.cos(angle)));
+		int sy = transform.toScrinY((int)(center.getY() + b * Math.sin(angle)));
+		g.setColor(AllColors.TRAJECTORY_POINT);
+		Utils.Utils.fillCircle(g, cx, cy, r);
+		g.drawLine(cx-a2/2, cy-b2/2, sx, sy);
+		g.setColor(AllColors.TRAJECTORY_LINE);
+		g.drawOval(cx-a2/2, cy-b2/2, a2, b2);
 	}
 }

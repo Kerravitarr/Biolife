@@ -4,7 +4,10 @@
  */
 package Calculations;
 
+import GUI.AllColors;
+import GUI.WorldView;
 import Utils.JSON;
+import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -116,5 +119,32 @@ public class TrajectoryPolyLine extends Trajectory{
 		final var j = super.toJSON();
 		j.add("points", points.stream().map(p -> p.toJSON()).toList());
 		return j;
+	}
+	
+	@Override
+	public void paint(Graphics2D g, WorldView.Transforms transform) {
+		final var r = transform.toScrin(1);
+		for(final var i : points){
+			final var x1 = transform.toScrinX(i.from);
+			final var y1 = transform.toScrinY(i.from);
+			final var x2 = transform.toScrinX((int)(i.from.getX() + i.dx*i.lenght));
+			final var y2 = transform.toScrinY((int)(i.from.getY() + i.dx*i.lenght));
+			g.setColor(AllColors.TRAJECTORY_POINT);
+			Utils.Utils.fillCircle(g, x1, y1, r);
+			Utils.Utils.fillCircle(g, x2, y2, r);
+		}
+		var fromP = position(0);
+		for (int i = 1; i < lenght; i++) {
+			final var p = position(i);
+			final var d = fromP.distance(p);
+			if(Math.abs(d.x) > 1 || Math.abs(d.y) > 1) continue;
+			final var x1 = transform.toScrinX(fromP);
+			final var y1 = transform.toScrinY(fromP);
+			final var x2 = transform.toScrinX(p);
+			final var y2 = transform.toScrinY(p);
+			g.setColor(AllColors.TRAJECTORY_LINE);
+			g.drawLine(x1, y1, x2, y2);
+			fromP = p;
+		}
 	}
 }

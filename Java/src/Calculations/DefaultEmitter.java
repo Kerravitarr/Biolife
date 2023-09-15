@@ -122,6 +122,10 @@ public abstract class DefaultEmitter {
 	 * @param isL если true, то у нас излучает только поверхность, а если false - то излучает вся площадь
 	 */
 	public void setIsLine(boolean isL){isLine = isL;}
+	/**Возвращает траекторию движения излучателя
+	 * @return закон, по которому движется излучаетль
+	 */
+	public Trajectory getTrajectory(){return move;}
 	/**Сохраняет имя излучателя
 	 * @param n как его теперь будут звать
 	 */

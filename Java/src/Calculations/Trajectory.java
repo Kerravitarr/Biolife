@@ -4,7 +4,10 @@
  */
 package Calculations;
 
+import GUI.AllColors;
+import GUI.WorldView;
 import Utils.JSON;
+import java.awt.Graphics2D;
 import java.lang.reflect.InvocationTargetException;
 
 /**
@@ -13,7 +16,7 @@ import java.lang.reflect.InvocationTargetException;
  */
 public class Trajectory {
 	/**Скорость объекта. Единица измерения: секунд на 1 шаг*/
-	private final long speed;
+	private long speed;
 	/**Для неподвижных объектов, точка нахождения*/
 	private final Point pos;
 	/**Текущий шаг траектории*/
@@ -77,7 +80,14 @@ public class Trajectory {
 	 * @return позиция объекат во время начала движения
 	 */
 	public final Point start(){step--;return nextPosition();}
-	
+	/**Возвращает скорость движения по траектории
+	 * @return каждые сколько шагов происходит шаг (если 0, то не двигается)
+	 */
+	public long getSpeed(){return speed;}
+	/**Сохраняет скорость движения по траектории
+	 * @param s каждые сколько шагов происходит шаг (если 0, то не двигается)
+	 */
+	public void setSpeed(long s){speed = s;}
 	/**Превращает излучатель в серелизуемый объект
 	 * @return объект, который можно пересылать, засылать
 	 */
@@ -108,5 +118,17 @@ public class Trajectory {
 		catch (IllegalAccessException ex)		{throw new GenerateClassException(ex);} 
 		catch (IllegalArgumentException ex)		{throw new GenerateClassException(ex);}
 		catch (InvocationTargetException ex)	{throw new GenerateClassException(ex);}
+	}
+
+	/**Рисует объект на экране
+	 * @param g холст, на котором надо начертить солнышко
+	 * @param transform преобразователь размеров мировых в размеры экранные
+	 */
+	public void paint(Graphics2D g, WorldView.Transforms transform) {
+			int r = transform.toScrin(1);
+			int cx = transform.toScrinX(pos);
+			int cy = transform.toScrinY(pos);
+			g.setColor(AllColors.TRAJECTORY_POINT);
+			Utils.Utils.fillCircle(g, cx, cy, r);
 	}
 }

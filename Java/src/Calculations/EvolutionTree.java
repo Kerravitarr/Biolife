@@ -127,10 +127,10 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 				newNodePerrent.generation = getGeneration();
 				//Удаляем у родителя нас
 				getPerrent().remove(this);
-				if(getPerrent().child == null)
-					return;
 				//Тестовый код. Теперь он уже не нужен, вроде как
-				/*HashMap<Long, Integer> map = new HashMap<>();
+				/*if(getPerrent().child == null)
+					return;
+				HashMap<Long, Integer> map = new HashMap<>();
 				for (Node node : getPerrent().child) {
 					if(!map.containsKey(node.generation)) {
 						map.put(node.generation, 0);
@@ -316,11 +316,11 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 				if(child == null)
 					continue;
 				else if (child.isEmpty()){// У нас нет детей, всё, удаляем у родителя
-				if(node.getPerrent() == null) { //Ой. У нас и родителя нет... Упс
-					//Симуляция закончена. Больше нет живых клеток
-				} else {
-					node.getPerrent().remove(node);
-				}
+					if(node.getPerrent() == null) { //Ой. У нас и родителя нет... Упс
+						//Симуляция закончена. Больше нет живых клеток
+					} else {
+						node.getPerrent().remove(node);
+					}
 				}else if(child.size() == 1) 
 					node.merge();
 			}
