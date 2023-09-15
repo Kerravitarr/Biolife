@@ -37,6 +37,8 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	private class Pair{	private int countAllChild,countChildCell; Pair(int cac, int ccc){countAllChild = cac; countChildCell = ccc;}}
 	/**Пара значений - количество живых потомков и количество ветвей после узла*/
 	private Pair rootPair = new Pair(0,0);
+	/**Должны ли узлы отображаться по оси Y в зависимости от даты происхождения. Если тут 0 - нет. Если тут не 0, то это масштаб*/
+	private double timeline = 0;
 	/**Дата рождения*/
 	private static final MyMessageFormat dateBirth = new MyMessageFormat(Configurations.getProperty(EvolTreeDialog.class,"dateBirth"));
 	/**Возраст основателя*/
@@ -95,7 +97,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		@Override
 		public void paintComponent(Graphics g) {
 			super.paintComponent(g);
-			g.setColor(node.getColor());
+			g.setColor(node.getFounder().phenotype);
 			Utils.centeredText(g, getWidth()/2, getHeight()/2, DEF_DEL_Y / 2, String.valueOf(NodeJpanel.this.node.getGeneration()));
 		}
 		@Override
@@ -119,13 +121,16 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			);
 			setLayout(groupLayout);
 		}
-	
-		
 		@Override
 		public void paintComponent(Graphics g) {
+			//Традиционное рисование - в виде дерева на всю высоту экрана
+			//Круглое рисование - когда Адам в центре, а все остальные идут по кругу
+			//Режим хронологии, для расположения узлов в зависимости от старости
 			int xStart = 0;
 			int xEnd = getWidth();
 			var yStart = getHeight() - DEF_DEL_Y * 3;
+			if(timeline != 0)
+				timeline = ((double) getHeight()) / Configurations.world.step;
 			if(isNeedUpdate || Configurations.world.isActiv()) {
 				removeAll();
 				try{
@@ -157,7 +162,10 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			NodeJpanel rootJ = new NodeJpanel(root);
 			var centerX = xStart + delX / 2;
 			//Сохраняем положение
-			rootJ.setBounds(centerX - DEF_DEL_Y / 2, yPos + DEF_DEL_Y / 2, DEF_DEL_Y, DEF_DEL_Y);
+			if(timeline == 0)
+				rootJ.setBounds(centerX - DEF_DEL_Y / 2, yPos + DEF_DEL_Y / 2, DEF_DEL_Y, DEF_DEL_Y);
+			else
+				rootJ.setBounds(centerX - DEF_DEL_Y / 2,(int) ( getHeight() - root.getTimeFounder() * timeline), DEF_DEL_Y, DEF_DEL_Y);
 			add(rootJ);
 
 			List<EvolutionTree.Node> childs = root.getChild();
@@ -207,16 +215,18 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			var centerX = xStart + delX / 2;
 			
 			for(int i = 0 ; i < childs.size() ; i++) {
+				final var child = childs.get(i);
 				var center = (xStart + step * i) + ((xStart + step * (i + 1)) - (xStart + step * i)) / 2;
 				if(delColor > 0.5)
 					g.setColor(Color.WHITE);
 				else
 					g.setColor(Utils.getHSBColor(colorStart + delColor / 2, 1.0, 1.0, 1.0));
-				g.drawLine(centerX, yPos, (int) center, yPos - DEF_DEL_Y);
-				paint(g,childs.get(i), 
+				final var toY = (int) (timeline == 0 ? yPos - DEF_DEL_Y : getHeight() - timeline * child.getTimeFounder());
+				g.drawLine(centerX, yPos, (int) center, toY);
+				paint(g,child, 
 						(int) Math.round(xStart + step * i), 
 						(int) Math.round(xStart + step * (i + 1)), 
-						yPos - DEF_DEL_Y, 
+						toY, 
 						colorStart + stepColor * i, 
 						colorStart + stepColor * (i + 1));
 			}
@@ -230,8 +240,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		}
 		
 	}
-	
-	
+		
 	/** Creates new form E */
 	public EvolTreeDialog() {
 		super((Frame) null, false);
@@ -239,6 +248,8 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		Configurations.setIcon(resetButton,"reset");
 		resetButton.addActionListener( e-> restart());
 		resetButton.setToolTipText(Configurations.getHProperty(EvolTreeDialog.class,"reset"));
+		Configurations.setIcon(timelineB,"reset");
+		timelineB.setToolTipText(Configurations.getHProperty(EvolTreeDialog.class,"timelineB"));
 		
 		Configurations.addTask(this);
 		restart();
@@ -367,6 +378,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
         jPanelTree = new DrawPanelEvoTree();
         jPanel1 = new javax.swing.JPanel();
         resetButton = new javax.swing.JButton();
+        timelineB = new javax.swing.JButton();
 
         jScrollPane1.setViewportView(jEditorPane1);
 
@@ -421,18 +433,29 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
         resetButton.setMargin(new java.awt.Insets(0, 0, 0, 0));
         resetButton.setPreferredSize(new java.awt.Dimension(40, 20));
 
+        timelineB.setBorderPainted(false);
+        timelineB.setContentAreaFilled(false);
+        timelineB.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                timelineBActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(643, Short.MAX_VALUE)
+                .addContainerGap(565, Short.MAX_VALUE)
+                .addComponent(timelineB)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(resetButton, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(resetButton, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(resetButton, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(timelineB, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         mainP.add(jPanel1, java.awt.BorderLayout.SOUTH);
@@ -471,6 +494,10 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			NodeJpanel.popup.hide();
     }//GEN-LAST:event_jPanelTreeMouseEntered
 
+    private void timelineBActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_timelineBActionPerformed
+        timeline = timeline == 0 ? 1d : 0d;
+    }//GEN-LAST:event_timelineBActionPerformed
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JEditorPane jEditorPane1;
     private javax.swing.JPanel jPanel1;
@@ -478,5 +505,6 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JPanel mainP;
     private javax.swing.JButton resetButton;
+    private javax.swing.JButton timelineB;
     // End of variables declaration//GEN-END:variables
 }
