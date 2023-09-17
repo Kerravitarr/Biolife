@@ -25,6 +25,59 @@ public class Utils {
 		max -= min;
 		return min + Configurations.rnd.nextInt(max+1);
 	}
+	/**Превращает число в степенную форму.
+	 * (-10_000,10_000) = x
+	 * (-10_000_000,10_000_000) = xk
+	 * (-10_000_000_000,10_000_000_000) = xM
+	 * (-10_000_000_000_000,10_000_000_000_000) = xG
+	 * @param number вводимое число
+	 * @return форматированное число
+	 */
+	public static String degree(long number){
+		StringBuilder sb = new StringBuilder();
+		degree(sb,number);
+		return sb.toString();
+	}
+	/** * Превращает число в степенную форму.(-10_000,10_000) = x
+		(-10_000_000,10_000_000) = xk
+		(-10_000_000_000,10_000_000_000) = xM
+		(-10_000_000_000_000,10_000_000_000_000) = xG
+	 * @param sb объект, куда занесут число
+	 * @param number вводимое число
+	 */
+	public static void degree(StringBuilder sb, long number){
+		final var abs = Math.abs(number);
+		if(abs < 1_000l){
+			sb.append(Long.toString(number));
+			
+		} else if(abs < 10_000l) {
+			sb.append(Long.toString(number / 1_000l));
+			sb.append(".");
+			sb.append(Long.toString((abs % 1_000) / 100));
+			sb.append("k");
+		}  else if(abs < 1_000_000l) {
+			sb.append(Long.toString(number / 1_000));
+			sb.append("k");
+			
+		} else if(abs < 10_000_000l) {
+			sb.append(Long.toString(number/ 1_000_000l));
+			sb.append(".");
+			sb.append(Long.toString((abs % 1_000_000l) / 100_000));
+			sb.append("M");
+		}  else if(abs < 1_000_000_000l) {
+			sb.append(Long.toString(number / 1_000_000l));
+			sb.append("M");
+			
+		} else if(abs < 10_000_000_000l) {
+			sb.append(Long.toString(number/ 1_000_000_000l));
+			sb.append(".");
+			sb.append(Long.toString((abs % 1_000_000_000l) / 100_000_000l));
+			sb.append("G");
+		} else {
+			sb.append(Long.toString(number / 1_000_000_000l));
+			sb.append("G");
+		} 
+	}
 
 	/**
 	 * Рисует круг

@@ -2,17 +2,14 @@ package Calculations;
 
 import java.awt.Color;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
-import MapObjects.Poison;
 import Utils.JSON;
 import Utils.SaveAndLoad;
-import javax.swing.JOptionPane;
 
 //@Deprecated
 public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
@@ -329,6 +326,7 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 	}
 
 	public void setAdam(AliveCell adam) {
+		root = new Node(0, null, 0);
 		root.countAliveCell.set(1);
 		root.founder = adam;
 	}
