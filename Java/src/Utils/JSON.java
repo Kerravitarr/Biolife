@@ -1,5 +1,5 @@
 package Utils;
-//Версия 2.3 от 13 сентября 2023 года!
+//Версия 2.4 от 16 сентября 2023 года!
 
 
 
@@ -18,10 +18,10 @@ import java.util.Set;
 
 /**
  * Класс, который отвечает за стиль JSON
- * @author Илья
+ * @author Kerravitarr
  *
  */
-public class JSON{
+public final class JSON{
 	/**Перечисление разных состояний парсинга файла*/
 	private static enum JSON_TOKEN{
 		BEGIN_OBJECT("{"), END_OBJECT("}"), BEGIN_ARRAY("["), END_ARRAY("]"), NULL("null"), NUMBER("number"),
@@ -117,7 +117,7 @@ public class JSON{
 					sb.append(ch);
 					ch = read();
 				} while (isDigit(ch));
-				Long long_ = Long.parseLong(sb.toString());
+				Long long_ = Long.valueOf(sb.toString());
 				if(ch == '.') { // Если это не число, то может точка?
 					Double val = long_.doubleValue() + readFracAndExp(ch);
 					return new Token(JSON_TOKEN.NUMBER, isNegativ ? -val: val);
@@ -158,7 +158,7 @@ public class JSON{
 			} else {
 		        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
 			}
-			return Double.parseDouble(sb.toString());
+			return Double.valueOf(sb.toString());
 		}
 		
 		/**
@@ -191,7 +191,7 @@ public class JSON{
 			} else {
 		        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
 			}
-			return Long.parseLong(sb.toString());
+			return Long.valueOf(sb.toString());
 		}
 		/**
 		 * Вычитывает строку из потока
@@ -249,14 +249,14 @@ public class JSON{
 				if (!(buf[0] == 'r' && buf[1] == 'u' && buf[2] == 'e'))
 			        throw new ParseException(pos,ERROR.UNEXPECTED_VALUE,"t" + buf[0] + buf[1] + buf[2]);
 				else
-					return new Token(JSON_TOKEN.BOOLEAN, Boolean.valueOf(true));
+					return new Token(JSON_TOKEN.BOOLEAN, true);
 			} else {
 				char[] buf = new char[4];
 				pos += stream.read(buf);
 				if (!(buf[0] == 'a' && buf[1] == 'l' && buf[2] == 's' && buf[3] == 'e'))
 			        throw new ParseException(pos,ERROR.UNEXPECTED_VALUE,"f" + buf[0] + buf[1] + buf[2] + buf[3]);
 				else
-					return new Token(JSON_TOKEN.BOOLEAN, Boolean.valueOf(false));
+					return new Token(JSON_TOKEN.BOOLEAN, false);
 			}
 		}
 		/**
@@ -428,6 +428,7 @@ public class JSON{
 			}
 		}
 		
+		@Override
 		public String toString() {
 			return  value_o != null ? value_o.toString() : "null";
 		}
@@ -517,10 +518,11 @@ public class JSON{
 			if(value_o instanceof String) {
 				return "\"" + value_o.toString().replaceAll("\"", "\\\\\"") + "\"";
 			}else {
-				return value_o.toString();
+				return String.valueOf(value_o);
 			}
 		}
 		
+		@Override
 		public String toString() {
 			return  value_mo != null ? value_mo.toString() : "null";
 		}
@@ -534,26 +536,36 @@ public class JSON{
 		parametrs = new LinkedHashMap<>();
 	}
 	/**Парсинг JSON строки и заполнение соответствующих объектов
-	 * @throws JSON.ParseException 
-	 * @throws IOException */
+	 * @param parseStr строка, которую разбираем
+	 * @throws JSON.ParseException ошибка разбора, синтаксическая
+	 * @throws IOException ошибка разбора, ошибка устройства чтения
+	 */
 	public JSON(String parseStr) throws JSON.ParseException, IOException {
 		this(new StringReader(parseStr));
 	}
 	/**Парсинг JSON потока и заполнение соответствующих объектов
-	 * @throws JSON.ParseException 
-	 * @throws IOException */
-	public JSON(Reader parseStr) throws JSON.ParseException, IOException {
-		parse(parseStr);
+	 * @param in поток чтения
+	 * @throws JSON.ParseException ошибка разбора, синтаксическая
+	 * @throws IOException ошибка разбора, ошибка устройства чтения
+	 */
+	public JSON(Reader in) throws JSON.ParseException, IOException {
+		parse(in);
 	}
 	/**Парсинг JSON строки и заполнение соответствующих объектов
-	 * @throws JSON.ParseException 
-	 * @throws IOException */
+	 * @param parseStr строка, которую разбираем
+	 * @return массив разобранных объектов. 
+	 * @throws JSON.ParseException ошибка разбора, синтаксическая
+	 * @throws IOException ошибка разбора, ошибка устройства чтения
+	 */
 	public static List<Object> JSONA(String parseStr) throws JSON.ParseException, IOException {
 		return JSONA(new StringReader(parseStr));
 	}
 	/**Парсинг JSON строки и заполнение соответствующих объектов
-	 * @throws JSON.ParseException 
-	 * @throws IOException */
+	 * @param in поток чтения
+	 * @return массив разобранных объектов. 
+	 * @throws JSON.ParseException ошибка разбора, синтаксическая
+	 * @throws IOException ошибка разбора, ошибка устройства чтения
+	 */
 	public static List<Object> JSONA(Reader in) throws JSON.ParseException, IOException {
 		TokenReader reader = new TokenReader(in);
 		if(!reader.hasNext()) { // Пустой файл
@@ -566,12 +578,11 @@ public class JSON{
 				throw new ParseException(reader.pos, ERROR.UNEXPECTED_TOKEN, token.value);
 		}
 	}
-	
 	/**
 	 * Разбирает поток в формат JSON
-	 * @param in
-	 * @throws JSON.ParseException 
-	 * @throws IOException 
+	 * @param in поток чтения
+	 * @throws JSON.ParseException ошибка разбора, синтаксическая
+	 * @throws IOException ошибка разбора, ошибка устройства чтения
 	 */
 	public void parse(Reader in) throws IOException, JSON.ParseException{
 		TokenReader reader = new TokenReader(in);
@@ -590,8 +601,8 @@ public class JSON{
 	 * Парсит объект JSON, первый символ { уже получили
 	 * @param reader
 	 * @return
-	 * @throws JSON.ParseException
-	 * @throws IOException
+	 * @throws JSON.ParseException ошибка разбора, синтаксическая
+	 * @throws IOException ошибка разбора, ошибка устройства чтения
 	 */
 	private static JSON parseO(JSON.TokenReader reader) throws JSON.ParseException, IOException {
 		JSON json = new JSON();
@@ -704,9 +715,9 @@ public class JSON{
 		throw new ParseException(reader.pos, ERROR.UNEXPECTED_EXCEPTION, "Неожиданный конец документа");
 	}
 	/**
-	 * Добавить новую пару ключ-значение в объект.
-	 * Поддерживает не только добавление простых значений,
+	 * Добавить новую пару ключ-значение в объект.Поддерживает не только добавление простых значений,
 	 * но и векторов простых типов!
+	 * @param <T>
 	 * @param key - ключ
 	 * @param value - значение
 	 */
@@ -718,6 +729,7 @@ public class JSON{
 	}
 	/**
 	 * Добавить новую пару ключ-значение в объект
+	 * @param <T>
 	 * @param key - ключ
 	 * @param value - значение
 	 */
@@ -726,6 +738,7 @@ public class JSON{
 	}
 	/**
 	 * Добавить новую пару ключ-значение в объект
+	 * @param <T>
 	 * @param key - ключ
 	 * @param value - значение
 	 */
@@ -734,6 +747,7 @@ public class JSON{
 	}
 	/**
 	 * Получает любые векторные значения по ключу
+	 * @param <T>
 	 * @param key - ключ
 	 * @return - значение, или null, если значение не найдено
 	 */
@@ -816,6 +830,7 @@ public class JSON{
 	}
 	/**
 	 * Получает значение по ключу
+	 * @param <T>
 	 * @param key - ключ
 	 * @return - значение, или null, если значение не найдено
 	 */
@@ -841,8 +856,8 @@ public class JSON{
 		return sw.toString();
 	}
 	/**
-	 * Приводит JSON объект к строке - простой и длинной строке без форматирвоания.
-	 * И дописывает её в конец
+	 * Приводит JSON объект к строке - простой и длинной строке без форматирвоания.И дописывает её в конец
+	 * @param writer
 	 * @throws IOException 
 	 */
 	public void toJSONString(Writer writer) throws IOException {
@@ -860,8 +875,8 @@ public class JSON{
 		return sw.toString();
 	}
 	/**
-	 * Приводит JSON объект к строке, форматированной согласно правилам составления JSON объектов, с табами и подобным.
-	 * Дописывает в конец документа
+	 * Приводит JSON объект к строке, форматированной согласно правилам составления JSON объектов, с табами и подобным.Дописывает в конец документа
+	 * @param writer
 	 * @throws IOException 
 	 */
 	public void toBeautifulJSONString(Writer writer) throws IOException {
@@ -895,6 +910,7 @@ public class JSON{
 		writer.write("}");
 	}
 	
+	@Override
 	public String toString() {
 		return toJSONString();
 	}
