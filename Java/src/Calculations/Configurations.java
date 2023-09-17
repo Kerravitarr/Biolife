@@ -562,7 +562,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @param button кнопка, которой нужны иконки
 	 * @param name название кнопок
 	 */
-	public static void setIcon(JButton button, String name) {
+	public static void setIcon(AbstractButton button, String name) {
 		var name_const = MessageFormat.format("resources/{0}.png", name);
 		var constResource = Configurations.class.getClassLoader().getResource(name_const);
 		if(constResource == null) {
@@ -582,11 +582,10 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			button.setText("");
 			button.setIcon(new ImageIcon(icon_const.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
 		}
-		if (icon_select != null)
-			button.setRolloverIcon(new ImageIcon(icon_select.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
-		else if(icon_const != null)
-			button.setRolloverIcon(new ImageIcon(icon_const.getImage().getScaledInstance(10, 10, Image.SCALE_SMOOTH)));
-		
+		final var select_image = icon_select != null ? new ImageIcon(icon_select.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)) : new ImageIcon(icon_const.getImage().getScaledInstance(10, 10, Image.SCALE_SMOOTH));
+		button.setRolloverIcon(select_image);
+		button.setSelectedIcon(select_image);
+
 		button.setBorderPainted(false);
 		button.setFocusPainted(false);
 		button.setContentAreaFilled(false);
