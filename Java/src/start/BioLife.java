@@ -1,12 +1,11 @@
 package start;
-import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
-import java.awt.Toolkit;
 
 import javax.swing.UIManager;
 import Calculations.Configurations;
 import static Calculations.Configurations.world;
+import Calculations.GenerateClassException;
 import GUI.MainFrame;
 import MapObjects.CellObject;
 import java.io.BufferedReader;
@@ -14,19 +13,21 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.text.MessageFormat;
-import java.util.HashMap;
 
 public class BioLife{
 	
 	/**Точка входа в приложение
 	 * @param args аргументы командной строки
+	 * @throws java.io.IOException
+	 * @throws Calculations.GenerateClassException
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException, GenerateClassException {
 		final var _opts = new Utils.CMDOptions(args);
 		_opts.add(new Utils.CMDOptions.Option('V',"Не запускать GUI, приложение останется в консольном варианте"));
 		_opts.add(new Utils.CMDOptions.Option('W',100,700,10000,1d,"Ширина мира для запуска без GUI"));
 		_opts.add(new Utils.CMDOptions.Option('H',100,700,10000,1d,"Высота мира для запуска без GUI"));
 		_opts.add(new Utils.CMDOptions.Option('h',"Печать справки по драйверу"));
+		_opts.add(new Utils.CMDOptions.Option('L',"","Путь к файлу загрузки"));
 		//Обработка опций
 		var print_help = _opts.get('h').get(Boolean.class) ? (false ? 1 : 2) : 0;
 		boolean isNeedHelp = print_help != 0;
@@ -51,10 +52,13 @@ public class BioLife{
 		}
 		//Создаём мир
 		final var defType = Configurations.WORLD_TYPE.LINE_V;
+		final var load = _opts.get('L').get(String.class);
 		if(!_opts.get('V').get(Boolean.class)){
 			//С графической частью
 			final var  sSize = Configurations.getDefaultConfiguration(defType);
 			Configurations.makeDefaultWord(defType,sSize.MAP_CELLS.width, sSize.MAP_CELLS.height);
+			if(!load.isEmpty())
+				Configurations.load(load);
 
 			
 			//Обработка переменных окружения
@@ -68,6 +72,8 @@ public class BioLife{
 		} else {
 			//Только с матаном
 			Configurations.makeDefaultWord(defType,_opts.get('W').get(Integer.class), _opts.get('H').get(Integer.class));
+			if(!load.isEmpty())
+				Configurations.load(load);
 			Configurations.world.start();
 			start();
 		}
