@@ -30,7 +30,7 @@ public abstract class DefaultEmitter {
 		name = j.get("name");
 		isLine = j.get("isLine");
 		move = Trajectory.generate(j.getJ("move"),v);
-		position = new Point(j.getJ("position"));
+		position = Point.create(j.getJ("position"));
 	}
 
 	/**Создаёт изулучатель

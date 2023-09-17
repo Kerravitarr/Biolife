@@ -148,7 +148,7 @@ public class PointTest {
 			}
 			for (int x = -20; x < 20; x++) {
 				for (int y = -20; y < 20; y++) {
-					var p = new Point(x,y);
+					var p = Point.create(x, y);
 					assertEquals("{\"x\":" + x + ",\"y\":" + y + "}", p.toJSON().toString());
 				}
 			}
@@ -157,7 +157,7 @@ public class PointTest {
 		//В линейном мире y1 всегда y1
 		for (int x = -20; x < 20; x++) {
 			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
+				var p = Point.create(x, y);
 				int eX;
 				if(-20 <= x && x < -10)
 					eX = 10 * 2 + x;
@@ -177,7 +177,7 @@ public class PointTest {
 		//В вертекальном мире мире x1 всегда x1
 		for (int x = -20; x < 20; x++) {
 			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
+				var p = Point.create(x, y);
 				int eY;
 				if(-20 <= y && y < -10)
 					eY = 10 * 2 + y;
@@ -197,7 +197,7 @@ public class PointTest {
 		//На поле все координаты меняются
 		for (int x = -20; x < 20; x++) {
 			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
+				var p = Point.create(x, y);
 				int eY;
 				if(-20 <= y && y < -10)
 					eY = 10 * 2 + y;
@@ -241,7 +241,7 @@ public class PointTest {
 			
 			for (int x = 0; x < 10; x++) {
 				for (int y = 0; y < 10; y++) {
-					var p = new Point(x, y);
+					var p = Point.create(x, y);
 					if(!p.valid()) continue;
 					for (final var dir : Point.DIRECTION.values) {
 						var p1 = p.next(dir);
@@ -272,8 +272,8 @@ public class PointTest {
 	@Test
 	public void testUpdate() {
 		makeRECTANGLEWorld();
-		var f = new Point(5,5);
-		var s = new Point(10, 10);
+		var f = Point.create(5, 5);
+		var s = Point.create(10, 10);
 		assertNotEquals(s, f);
 		f.update(s);
 		assertFalse(f == s);
@@ -282,8 +282,8 @@ public class PointTest {
 	@Test
 	public void testEquals() {
 		makeRECTANGLEWorld();
-		Point obj = new Point(42, 42);
-		Point instance = new Point(42, 42);
+		Point obj = Point.create(42, 42);
+		Point instance = Point.create(42, 42);
 		boolean expResult = true;
 		
 		makeRECTANGLEWorld();
@@ -312,10 +312,10 @@ public class PointTest {
 			}
 			for (int x1 = 0; x1 < 10; x1++) {
 				for (int y1 = 0; y1 < 10; y1++) {
-					var p1 = new Point(x1, y1);
+					var p1 = Point.create(x1, y1);
 					for (int x2 = 0; x2 < 10; x2++) {
 						for (int y2 = 0; y2 < 10; y2++) {
-							var p2 = new Point(x2, y2);
+							var p2 = Point.create(x2, y2);
 							var d = p1.distance(p2);
 							assertEquals(String.format("От %s к %s в мире %d", p1,p2,i),d.x, x2-x1);
 							assertEquals(String.format("От %s к %s в мире %d", p1,p2,i),d.y, y2-y1);
@@ -327,10 +327,10 @@ public class PointTest {
 		makeLINE_HWorld();
 		for (int x1 = 0; x1 < 10; x1++) {
 			for (int y1 = 0; y1 < 10; y1++) {
-				var p1 = new Point(x1, y1);
+				var p1 = Point.create(x1, y1);
 				for (int x2 = 0; x2 < 10; x2++) {
 					for (int y2 = 0; y2 < 10; y2++) {
-						var p2 = new Point(x2, y2);
+						var p2 = Point.create(x2, y2);
 						var d = p1.distance(p2);
 						 //Пока расстояние между клетками меньше 5, то это значит, что между ними меньше половины
 						 //экрана.
@@ -350,10 +350,10 @@ public class PointTest {
 		makeLINE_VWorld();
 		for (int x1 = 0; x1 < 10; x1++) {
 			for (int y1 = 0; y1 < 10; y1++) {
-				var p1 = new Point(x1, y1);
+				var p1 = Point.create(x1, y1);
 				for (int x2 = 0; x2 < 10; x2++) {
 					for (int y2 = 0; y2 < 10; y2++) {
-						var p2 = new Point(x2, y2);
+						var p2 = Point.create(x2, y2);
 						var d = p1.distance(p2);
 						assertEquals(String.format("От %s к %s", p1,p2),d.x, x2-x1);
 						if(Math.abs(y2-y1) <= 5)
@@ -369,10 +369,10 @@ public class PointTest {
 		makeFIELD_RWorld();
 		for (int x1 = 0; x1 < 10; x1++) {
 			for (int y1 = 0; y1 < 10; y1++) {
-				var p1 = new Point(x1, y1);
+				var p1 = Point.create(x1, y1);
 				for (int x2 = 0; x2 < 10; x2++) {
 					for (int y2 = 0; y2 < 10; y2++) {
-						var p2 = new Point(x2, y2);
+						var p2 = Point.create(x2, y2);
 						var d = p1.distance(p2);
 						if(Math.abs(x2-x1) <= 5)
 							assertEquals(String.format("От %s к %s", p1, p2), d.x, x2 - x1);
@@ -407,11 +407,11 @@ public class PointTest {
 			
 			for (int x1 = 0; x1 < 10; x1++) {
 				for (int y1 = 0; y1 < 10; y1++) {
-					var p1 = new Point(x1, y1);
+					var p1 = Point.create(x1, y1);
 					if(!p1.valid()) continue;
 					for (int x2 = 0; x2 < 10; x2++) {
 						for (int y2 = 0; y2 < 10; y2++) {
-							var p2 = new Point(x2, y2);
+							var p2 = Point.create(x2, y2);
 							if(!p2.valid()) continue;
 							var d = p1.distance(p2);
 							Throwable thr = null;
@@ -456,7 +456,7 @@ public class PointTest {
 
 		for (int x = -20; x < 20; x++) {
 			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
+				var p = Point.create(x, y);
 				if(x >= 0 && x < 10 && y >= 0 && y < 10)
 					assertTrue(p.toString(),p.valid());
 				else
@@ -480,7 +480,7 @@ public class PointTest {
 		};
 		for (int x = -20; x < 20; x++) {
 			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
+				var p = Point.create(x, y);
 				if(x >= 0 && x < 10 && y >= 0 && y < 10){
 					if(valid[y][x])
 						assertTrue(p.toString(),p.valid());
@@ -508,7 +508,7 @@ public class PointTest {
 		};
 		for (int x = -20; x < 20; x++) {
 			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
+				var p = Point.create(x, y);
 				if(x >= 0 && x < 10 && y >= 0 && y < 10){
 					if(valid[y][x])
 						assertTrue(p.toString(),p.valid());
@@ -523,7 +523,7 @@ public class PointTest {
 		makeLINE_HWorld();
 		for (int x = -20; x < 20; x++) {
 			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
+				var p = Point.create(x, y);
 				if(y >= 0 && y < 10)
 					assertTrue(p.toString(),p.valid());
 				else
@@ -533,7 +533,7 @@ public class PointTest {
 		makeLINE_VWorld();
 		for (int x = -20; x < 20; x++) {
 			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
+				var p = Point.create(x, y);
 				if(x >= 0 && x < 10)
 					assertTrue(p.toString(),p.valid());
 				else
@@ -543,7 +543,7 @@ public class PointTest {
 		makeFIELD_RWorld();
 		for (int x = -20; x < 20; x++) {
 			for (int y = -20; y < 20; y++) {
-				var p = new Point(x,y);
+				var p = Point.create(x, y);
 				assertTrue(p.toString(),p.valid());
 			}
 		}
@@ -551,13 +551,13 @@ public class PointTest {
 	@Test
 	public void testToJSON() {
 		makeRECTANGLEWorld();
-		final var p = new Point(64,65);
+		final var p = Point.create(64, 65);
 		assertEquals("{\"x\":64,\"y\":65}", p.toJSON().toString());
 	}
 	@Test
 	public void testToString() {
 		makeRECTANGLEWorld();
-		final var p = new Point(64,65);
+		final var p = Point.create(64, 65);
 		assertEquals("(P (64; 65))", p.toString());
 	}
 	

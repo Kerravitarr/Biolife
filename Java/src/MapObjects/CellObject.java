@@ -95,7 +95,7 @@ public abstract class CellObject {
 	}
 	
     /**Позиция объекта*/
-	private Point pos = new Point(0,0);
+	private Point pos = Point.create(0, 0);
     //Счётчик, показывает ходил объект в этот ход или нет
 	protected long stepCount = -1;
     /**Возраст объекта*/
@@ -110,7 +110,7 @@ public abstract class CellObject {
      * @param cell - JSON объект, который содержит всю информацюи о клетке
      */
     public CellObject(JSON cell) {
-    	setPos(new Point(cell.getJ("pos")));
+    	setPos(Point.create(cell.getJ("pos")));
     	this.alive = LV_STATUS.values()[(int)cell.get("alive")];
     	stepCount = cell.getL("stepCount");
     	years = cell.getL("years");
@@ -343,7 +343,7 @@ public abstract class CellObject {
 	 * @param pos the pos to set
 	 */
 	public final void setPos(Point pos) {
-		this.pos.update(pos);
+		this.pos = pos;
 	}
 	
 	@Override

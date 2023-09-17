@@ -1,5 +1,10 @@
 package Calculations;
 
+import static Calculations.Configurations.WORLD_TYPE.CIRCLE;
+import static Calculations.Configurations.WORLD_TYPE.FIELD_R;
+import static Calculations.Configurations.WORLD_TYPE.LINE_H;
+import static Calculations.Configurations.WORLD_TYPE.LINE_V;
+import static Calculations.Configurations.WORLD_TYPE.RECTANGLE;
 import Utils.JSON;
 
 /**
@@ -11,7 +16,12 @@ import Utils.JSON;
 Для удобства в классе есть два "Вектора". Один единичный вектор - DIRECTION. И один полноценный вектор - Vector
 @author Kerravitarr
 */
-public class Point{
+public final class Point{
+	/**Все доступные точки мира*/
+	private static Point[][] points;
+	/**Тип мира, для которого были созданы точки выше. Отвечает за параметр валидности*/
+	private static Configurations.WORLD_TYPE type;
+	
 	/**
 	Единичный вектор. Хотя его длина не всегда равна 1, он точно указвыает все возможные направления на ближайшие, от текущей, точки.
 	Заодно является всеми направления сразу
@@ -201,41 +211,102 @@ public class Point{
 	}
 	
 	/**Координата по Х*/
-	private int x;
+	private final int x;
 	/**Координата по Y*/
-	private int y;
-	public Point(int x, int y){
-		setXY(x,y);
+	private final int y;
+	/**Валидность точки*/
+	private final boolean isValid;
+	
+	private Point(int x, int y, boolean isValid){
+		this.x = x;
+		this.y = y;
+		this.isValid = isValid;
 	}
-	public Point(Point point) {
-		setXY(point.x,point.y);
+	/**Функция создания точки
+	 * @param x координата, которая будет преобразована в координаты мира
+	 * @param y координата, которая будет преобразована в координаты мира
+	 * @return указатель на неизменяемый объект точки
+	 */
+	public static Point create(int x, int y) {
+		//Нормализуем x и y
+		final var width = Configurations.getWidth();
+		final var height = Configurations.getHeight();
+		switch (Configurations.confoguration.world_type) {
+			case LINE_H -> {
+				if(x < 0 || x >= width){
+					x = x % width;
+					if(x < 0)
+						x += width;
+				}
+			}
+			case LINE_V -> {
+				if(y < 0 || y >= height){
+					y = y % height;
+					if(y < 0)
+						y += height;
+				}
+			}
+			case CIRCLE, RECTANGLE -> {}
+			case FIELD_R -> {
+				if(x < 0 || x >= width){
+					x = x % width;
+					if(x < 0)
+						x += width;
+				}
+				if(y < 0 || y >= height){
+					y = y % height;
+					if(y < 0)
+						y += height;
+				}
+			}
+			default -> throw new AssertionError();
+		}
+		//Проверяем наш выделенный объём точек
+		if(points == null || points.length != width || points[0].length != height || type != Configurations.confoguration.world_type){
+			//Если надо, выделяем объём под все точки карты
+			type = Configurations.confoguration.world_type;
+			points = new Point[width][height];
+			for (int tx = 0; tx < width; tx++) {
+				for (int ty = 0; ty < height; ty++) {
+					points[tx][ty] = new Point(tx, ty,valid(tx,ty));
+				}
+			}
+		}
+		if((0 <= x && x < width) && (0 <= y && y < height))
+			return points[x][y];
+		else
+			return new Point(x, y,valid(x,y));
 	}
-	public Point(JSON j) {
-		setXY(j.get("x"),j.get("y"));
+
+	public static Point create(Point point) {
+		return point;
 	}
+
+	public static Point create(JSON j) {
+		return create(j.get("x"),j.get("y"));
+	}
+	
+	
 	/**Получить точку в указанном направлении от текущей
 	 * @param dir в каком направлении нужна точка
 	 * @return точка в нужном направлении
 	 */
 	public Point next(DIRECTION dir) {
-		return new Point(x + dir.addX,y + dir.addY);
+		return Point.create(x + dir.addX, y + dir.addY);
 	}
 	/**Суммировать две точки
 	 * @param point к какой точке прибавляем
 	 * @return точка , являющаяся суммой этой и добавочной
 	 */
 	public Point add(Point point) {
-		return new Point(x + point.x,y + point.y);
+		return Point.create(x + point.x, y + point.y);
 	}
 	/**Вычесть из этой точки, другую
 	 * @param point к какой точке прибавляем
 	 * @return точка , являющаяся суммой этой и добавочной
 	 */
 	public Point sub(Point point) {
-		return new Point(x - point.x,y - point.y);
-	}
-	public void update(Point point) {
-		setXY(point.x,point.y);
+		return Point.create(x - point.x, y - point.y);
 	}
 	
 	@Override
@@ -352,10 +423,7 @@ public class Point{
 		throw new IllegalArgumentException("Расстояние между точками должно быть ровно 1 клетка!");
 	}
 	
-	/**Проверяте точку на принадлежность текущему миру
-	 * @return true, если точка находится на поле
-	 */
-	public boolean valid(){
+	private static boolean valid(int x, int y){
 		final var width = Configurations.confoguration.MAP_CELLS.width;
 		final var height = Configurations.confoguration.MAP_CELLS.height;
 		switch (Configurations.confoguration.world_type) {
@@ -385,58 +453,10 @@ public class Point{
 		}
 	}
 	
-	
-	/**Сохраняет координаты, нормализуя их при необходимости
-	 * @param x не нормализованная координата x
-	 * @param y не нормализованная координата y
+	/**Проверяте точку на принадлежность текущему миру
+	 * @return true, если точка находится на поле
 	 */
-	private void setXY(int x, int y) {
-		final var width = Configurations.confoguration.MAP_CELLS.width;
-		final var height = Configurations.confoguration.MAP_CELLS.height;
-		switch (Configurations.confoguration.world_type) {
-			case LINE_H -> {
-				if(x < 0 || x >= width){
-					this.x = x % width;
-					if(this.x < 0)
-						this.x += width;
-				}else{
-					this.x = x;
-				}
-				this.y = y;
-			}
-			case LINE_V -> {
-				this.x = x;
-				if(y < 0 || y >= height){
-					this.y = y % height;
-					if(this.y < 0)
-						this.y += height;
-				}else{
-					this.y = y;
-				}
-			}
-			case CIRCLE, RECTANGLE -> {
-				this.x = x;
-				this.y = y;
-			}
-			case FIELD_R -> {
-				if(x < 0 || x >= width){
-					this.x = x % width;
-					if(this.x < 0)
-						this.x += width;
-				}else{
-					this.x = x;
-				}
-				if(y < 0 || y >= height){
-					this.y = y % height;
-					if(this.y < 0)
-						this.y += height;
-				}else{
-					this.y = y;
-				}
-			}
-			default -> throw new AssertionError();
-		}
-	}
+	public boolean valid(){return isValid;}
 	
 	/**Упаковывает точку в JSON
 	 * @return 

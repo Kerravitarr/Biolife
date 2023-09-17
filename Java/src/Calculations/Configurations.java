@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.AbstractButton;
 import javax.swing.JOptionPane;
 
 /**
@@ -197,10 +198,10 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			final var height = MAP_CELLS.height;
 			
 			DIRTY_WATER = ((double)BASE_SUN_POWER * 100) / (height * DIRTY_WATER_old);
-			suns.add(new SunRectangle(BASE_SUN_POWER, new Trajectory(new Point(width/2,0)), width, 1, false,"Постоянное"));
+			suns.add(new SunRectangle(BASE_SUN_POWER, new Trajectory(Point.create(width/2, 0)), width, 1, false,"Постоянное"));
 			suns.add(new SunEllipse(
 						ADD_SUN_POWER, 
-						new TrajectoryPolyLine(Math.abs(SUN_SPEED),false, new Point(SUN_POSITION, 0),new Point(SUN_POSITION + (SUN_SPEED > 0 ? width/3 : -width/3), 0), new Point(SUN_POSITION + (SUN_SPEED > 0 ? width*2/3 : -width*2/3), 0)), 
+						new TrajectoryPolyLine(Math.abs(SUN_SPEED),false, Point.create(SUN_POSITION, 0), Point.create(SUN_POSITION + (SUN_SPEED > 0 ? width/3 : -width/3), 0), Point.create(SUN_POSITION + (SUN_SPEED > 0 ? width*2/3 : -width*2/3), 0)), 
 						SUN_LENGHT * MAP_CELLS.width / 100, (int) (2 * BASE_SUN_POWER/DIRTY_WATER), 
 						false,"Движущееся"));
 			
@@ -208,20 +209,20 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			final double LEVEL_MINERAL = configWorld.get("LEVEL_MINERAL");
 			final int CONCENTRATION_MINERAL = configWorld.get("CONCENTRATION_MINERAL");
 			
-			minerals.add(new MineralRectangle(CONCENTRATION_MINERAL,CONCENTRATION_MINERAL / ((1d-LEVEL_MINERAL)* MAP_CELLS.height), new Trajectory(new Point(MAP_CELLS.width/2,MAP_CELLS.height-1)),MAP_CELLS.width, 1, false,"Постоянная"));
+			minerals.add(new MineralRectangle(CONCENTRATION_MINERAL,CONCENTRATION_MINERAL / ((1d-LEVEL_MINERAL)* MAP_CELLS.height), new Trajectory(Point.create(MAP_CELLS.width/2, MAP_CELLS.height-1)),MAP_CELLS.width, 1, false,"Постоянная"));
 			//А теперь два потока воды - вверх и вниз
-			streams.add(new StreamVertical(new Trajectory(new Point(width*9/40, height/2)), width/5, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый"));
-			streams.add(new StreamVertical(new Trajectory(new Point(width*3/4, height/2)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(2,4),"Прваый"));
+			streams.add(new StreamVertical(new Trajectory(Point.create(width*9/40, height/2)), width/5, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый"));
+			streams.add(new StreamVertical(new Trajectory(Point.create(width*3/4, height/2)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(2,4),"Прваый"));
 			//А теперь ещё 4 шапочки, чтобы в верхней и нжней части сдвутать клетки
-			streams.add(new StreamHorizontal(new Trajectory(new Point(width*7/40, 0)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(100,200),"Левый, верхний левый"));
-			streams.add(new StreamHorizontal(new Trajectory(new Point(width*11/40, 0)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый, верхний правый"));
-			streams.add(new StreamHorizontal(new Trajectory(new Point(width*7/40, height)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый, нижний левый"));
-			streams.add(new StreamHorizontal(new Trajectory(new Point(width*11/40, height)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(100,200),"Левый, нижний правый"));
+			streams.add(new StreamHorizontal(new Trajectory(Point.create(width*7/40, 0)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(100,200),"Левый, верхний левый"));
+			streams.add(new StreamHorizontal(new Trajectory(Point.create(width*11/40, 0)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый, верхний правый"));
+			streams.add(new StreamHorizontal(new Trajectory(Point.create(width*7/40, height)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый, нижний левый"));
+			streams.add(new StreamHorizontal(new Trajectory(Point.create(width*11/40, height)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(100,200),"Левый, нижний правый"));
 			
-			streams.add(new StreamHorizontal(new Trajectory(new Point(width*29/40, 0)), width/20, height, new StreamAttenuation.LinealStreamAttenuation(-2,-4), "Правый, верхний левый"));
-			streams.add(new StreamHorizontal(new Trajectory(new Point(width*31/40, 0)), width/20, height,new StreamAttenuation.LinealStreamAttenuation(2,4),"Правый, верхний правый"));
-			streams.add(new StreamHorizontal(new Trajectory(new Point(width*29/40, height)), width/20, height,new StreamAttenuation.LinealStreamAttenuation(2,4), "Правый, нижний левый"));
-			streams.add(new StreamHorizontal(new Trajectory(new Point(width*31/40, height)), width/20, height, new StreamAttenuation.LinealStreamAttenuation(-2,-4),"Правый, нижний правый"));
+			streams.add(new StreamHorizontal(new Trajectory(Point.create(width*29/40, 0)), width/20, height, new StreamAttenuation.LinealStreamAttenuation(-2,-4), "Правый, верхний левый"));
+			streams.add(new StreamHorizontal(new Trajectory(Point.create(width*31/40, 0)), width/20, height,new StreamAttenuation.LinealStreamAttenuation(2,4),"Правый, верхний правый"));
+			streams.add(new StreamHorizontal(new Trajectory(Point.create(width*29/40, height)), width/20, height,new StreamAttenuation.LinealStreamAttenuation(2,4), "Правый, нижний левый"));
+			streams.add(new StreamHorizontal(new Trajectory(Point.create(width*31/40, height)), width/20, height, new StreamAttenuation.LinealStreamAttenuation(-2,-4),"Правый, нижний правый"));
 		} else {
 			final var mapG = new HashMap<CellObject.LV_STATUS, Gravitation>();
 			final var gj = configWorld.getJ("GRAVITATION");
@@ -294,55 +295,51 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		switch (type) {
 			case LINE_H -> {
 				buildMap(new Configurations(type, width, height), new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(20, Gravitation.Direction.DOWN));}});
-				suns.add(new SunRectangle(30, new Trajectory(new Point(width/2,0)), (int) (width* 0.77), 1, false,"Постоянное"));
+				suns.add(new SunRectangle(30, new Trajectory(Point.create(width/2, 0)), (int) (width* 0.77), 1, false,"Постоянное"));
 				suns.add(new SunEllipse(
 						30, 
-						new TrajectoryPolyLine(50,false, new Point(width/2, 0),new Point(width-1, 0),new Point(0, 0),new Point(width/2-1, 0)), 
+						new TrajectoryPolyLine(50,false, Point.create(width/2, 0), Point.create(width-1, 0), Point.create(0, 0), Point.create(width/2-1, 0)), 
 						width/8,height/2, 
 						false,"Движущееся"));
 				//Эти минералы будут занимать только 33% мира
-				minerals.add(new MineralRectangle(20,confoguration.DIRTY_WATER, new Trajectory(new Point(0,height-1)),width/2, 1, false,"Постоянная"));
+				minerals.add(new MineralRectangle(20,confoguration.DIRTY_WATER, new Trajectory(Point.create(0, height-1)),width/2, 1, false,"Постоянная"));
 				//А эти будут иногда подниматься достаточно высоко
 				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, 
-						new TrajectoryEllipse(2000,new Point(width / 2, height * 7 / 8), -Math.PI, 1, height * 3 / 8)
+						new TrajectoryEllipse(2000, Point.create(width / 2, height * 7 / 8), -Math.PI, 1, height * 3 / 8)
 						,width * 1 / 4, height * 1 / 8, true,"Движущееся"));
 				//А теперь два потока воды - вверх и вниз
-				streams.add(new StreamVertical(new Trajectory(new Point(width/4, height/2)), width/4, height, new StreamAttenuation.LinealStreamAttenuation(-100,-1000),"Левый"));
-				streams.add(new StreamVertical(new Trajectory(new Point(width*3/4, height/2)), width/4, height,new StreamAttenuation.PowerFunctionStreamAttenuation(1,1000,2),"Прваый"));
+				streams.add(new StreamVertical(new Trajectory(Point.create(width/4, height/2)), width/4, height, new StreamAttenuation.LinealStreamAttenuation(-100,-1000),"Левый"));
+				streams.add(new StreamVertical(new Trajectory(Point.create(width*3/4, height/2)), width/4, height,new StreamAttenuation.PowerFunctionStreamAttenuation(1,1000,2),"Прваый"));
 				//А теперь ещё 4 шапочки, чтобы в верхней и нжней части сдвутать клетки
-				streams.add(new StreamEllipse(new Trajectory(new Point(width/4, 0)), width/4, new StreamAttenuation.LinealStreamAttenuation(-40,-100),"Левый верхний"));
-				streams.add(new StreamEllipse(new Trajectory(new Point(width/4, height-1)), width/4,  new StreamAttenuation.LinealStreamAttenuation(40,100),"Левый нижний"));
+				streams.add(new StreamEllipse(new Trajectory(Point.create(width/4, 0)), width/4, new StreamAttenuation.LinealStreamAttenuation(-40,-100),"Левый верхний"));
+				streams.add(new StreamEllipse(new Trajectory(Point.create(width/4, height-1)), width/4,  new StreamAttenuation.LinealStreamAttenuation(40,100),"Левый нижний"));
 				
-				streams.add(new StreamEllipse(new Trajectory(new Point(width*3/4, 0)), width/4, new StreamAttenuation.LinealStreamAttenuation(10,100),"Правый верхний"));
-				streams.add(new StreamEllipse(new Trajectory(new Point(width*3/4, height-1)), width/4, new StreamAttenuation.LinealStreamAttenuation(-4,-100),"Правый нижний"));
+				streams.add(new StreamEllipse(new Trajectory(Point.create(width*3/4, 0)), width/4, new StreamAttenuation.LinealStreamAttenuation(10,100),"Правый верхний"));
+				streams.add(new StreamEllipse(new Trajectory(Point.create(width*3/4, height-1)), width/4, new StreamAttenuation.LinealStreamAttenuation(-4,-100),"Правый нижний"));
 			}
 			case LINE_V->{
 				buildMap(new Configurations(type, width, height), null);
 				//Будет одно солнышко, которое будет двигаться сверху вниз линией
 				suns.add(new SunRectangle(
 						30, 
-						new TrajectoryPolyLine(401, false,new Point(width/2, (int) (height/2 - 15/confoguration.DIRTY_WATER)),new Point(width/2, (int) (height-1 - 15/confoguration.DIRTY_WATER)),new Point(width/2, (int) (1- 15/confoguration.DIRTY_WATER))), 
+						new TrajectoryPolyLine(401, false, Point.create(width/2, (int) (height/2 - 15/confoguration.DIRTY_WATER)), Point.create(width/2, (int) (height-1 - 15/confoguration.DIRTY_WATER)), Point.create(width/2, (int) (1- 15/confoguration.DIRTY_WATER))), 
 						width,1, 
 						false,"Движущееся"));
 				//Два куска минералов, два кружочка, которые будут двигаться по диагонали. 
-				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(199,false,
-						new Point(width/2, height/2),new Point(0, 0),new Point(0, height-1),new Point(width/2, height/2),new Point(width-1, 0),new Point(width-1, height-1)),
+				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(199,false, Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1), Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 1"));
-				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(227,false,
-						new Point(width/2, height/2),new Point(width-1, 0),new Point(width-1, height-1),new Point(width/2, height/2),new Point(0, 0),new Point(0, height-1)),
+				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(227,false, Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1), Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 2"));
-				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(193,false,
-						new Point(width/2, height/2),new Point(width-1, height-1),new Point(width-1, 0),new Point(width/2, height/2),new Point(0, height-1),new Point(0, 0)),
+				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(193,false, Point.create(width/2, height/2), Point.create(width-1, height-1), Point.create(width-1, 0), Point.create(width/2, height/2), Point.create(0, height-1), Point.create(0, 0)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 3"));
-				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(233,false,
-						new Point(width/2, height/2),new Point(0, height-1),new Point(0, 0),new Point(width/2, height/2),new Point(width-1, height-1),new Point(width-1, 0)),
+				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(233,false, Point.create(width/2, height/2), Point.create(0, height-1), Point.create(0, 0), Point.create(width/2, height/2), Point.create(width-1, height-1), Point.create(width-1, 0)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 4"));
 				//Ну и течении в реке
-				streams.add(new StreamVertical(new Trajectory(new Point(width/2,height/2)), width, height,new StreamAttenuation.LinealStreamAttenuation(-41, -4001),"Течение"));
+				streams.add(new StreamVertical(new Trajectory(Point.create(width/2, height/2)), width, height,new StreamAttenuation.LinealStreamAttenuation(-41, -4001),"Течение"));
 			}
 			default -> throw new AssertionError();
 		}
@@ -473,8 +470,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		js.addActionListener( e-> logger.log(Level.INFO, String.format("Загрузка %d из %d. Осталось %.2fc",e.now,e.all,e.getTime()/1000)));
 		confoguration = js.load(confoguration);
 		tree = js.load(tree);
-		if(world != null)
-			world.destroy();
+		world.destroy();
 		world = js.load((j,v) -> new World(j, v, confoguration.MAP_CELLS), world.getName());	
 		confoguration.lastSaveCount = world.step;	
 		

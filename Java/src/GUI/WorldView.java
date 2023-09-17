@@ -116,7 +116,7 @@ public class WorldView extends javax.swing.JPanel {
 	/** Creates new form WorldView */
 	public WorldView() {
 		initComponents();
-		setVisible(new Point(0,0), new Point(Configurations.getWidth()-1, Configurations.getHeight()-1));
+		setVisible(Point.create(0, 0), Point.create(Configurations.getWidth()-1, Configurations.getHeight()-1));
 		recalculate();
 	}
 
@@ -192,7 +192,7 @@ public class WorldView extends javax.swing.JPanel {
 				
 				for (int x = 0; x < Configurations.getWidth(); x++) {
 					for (int y = 0; y < Configurations.getHeight(); y++) {
-						final var p = new Point(x, y);
+						final var p = Point.create(x, y);
 						//if(!p.valid()) continue;
 						if((x0 <= x && x <= x1 && y0 <= y && y <= y1)){
 							final var cell = Configurations.world.get(p);
@@ -247,7 +247,7 @@ public class WorldView extends javax.swing.JPanel {
 				for (int y = 0; y < Configurations.getHeight(); y++) {
 					if(isAll || (visible[0].getX() <= x && x <= visible[1].getX()
 							&& visible[0].getY() <= y && y <= visible[1].getY())){
-						final var pos = new Point(x, y);
+						final var pos = Point.create(x, y);
 						//if(!pos.valid()) continue;					
 						final var cell = Configurations.world.get(pos);
 						if(cell != null){
@@ -489,7 +489,7 @@ public class WorldView extends javax.swing.JPanel {
 	private Point recalculation(int x, int y) {
 		x = Utils.betwin(Transforms.border.width, x, getWidth() - Transforms.border.width);
 		y = Utils.betwin(Transforms.border.height, y, getWidth() - Transforms.border.height);
-		return new Point(transforms.toWorldX(x),transforms.toWorldY(y));
+		return Point.create(transforms.toWorldX(x), transforms.toWorldY(y));
 	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

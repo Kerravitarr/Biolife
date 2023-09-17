@@ -45,7 +45,7 @@ public class TrajectoryPolyLine extends Trajectory{
 			lenght = j.get("lenght");
 			dx = j.get("dx");
 			dy = j.get("dy");
-			from = new Point(j.getJ("from"));
+			from = Point.create(j.getJ("from"));
 		}
 
 		private JSON toJSON() {
@@ -109,7 +109,7 @@ public class TrajectoryPolyLine extends Trajectory{
 			if(step > point.lenght){
 				step -= point.lenght;
 			} else {
-				return new Point((int)(point.from.getX() + point.dx * step), (int) (point.from.getY() + point.dy*step));
+				return Point.create((int)(point.from.getX() + point.dx * step), (int) (point.from.getY() + point.dy*step));
 			}
 		}
 		throw new UnknownError("Мы сюда вообще не можем дойти...");

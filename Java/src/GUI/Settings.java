@@ -25,7 +25,7 @@ public class Settings extends javax.swing.JPanel {
 	/** Creates new form Settings */
 	public Settings() {
 		initComponents();
-		rebuild();	
+		//Инициализируем отображение бордюров
 		borderClick(configuationsNorm, null);
 		borderClick(configuationsRebuild, null);
 		borderClick(gravitations, null);
@@ -34,6 +34,7 @@ public class Settings extends javax.swing.JPanel {
 		borderClick(streams, null);
 		borderClick(minerals, null);
 		
+		rebuild();	
 	}
 	/**Пересоздаёт все ползунки*/
 	public void rebuild(){
@@ -157,7 +158,7 @@ public class Settings extends javax.swing.JPanel {
 						case TO_POINT -> {
 							power.setVisible(true);
 							final var p = g.getDirection() != Gravitation.Direction.NONE ? g.getValue() : defPower;
-							Configurations.gravitation[status.ordinal()] = new Gravitation(p, new Point(Configurations.getWidth()/2, Configurations.getHeight() / 2));
+							Configurations.gravitation[status.ordinal()] = new Gravitation(p, Point.create(Configurations.getWidth()/2, Configurations.getHeight() / 2));
 							power.setValue(defPower);
 						}
 						default -> {
@@ -173,6 +174,8 @@ public class Settings extends javax.swing.JPanel {
 			gravitations.add(sliders[0]);
 			gravitations.add(sliders[1]);
 		}
+		borderClick(gravitations, null);
+		borderClick(gravitations, null);
 	}
 	/**Пересоздаёт звёзды*/
 	private void rebuildSuns(){
@@ -206,16 +209,20 @@ public class Settings extends javax.swing.JPanel {
 				}));
 			}
 		}
+		borderClick(suns, null);
+		borderClick(suns, null);
 		
 		suns2.removeAll();
 		
 		for (int i = 0; i < Configurations.suns.size(); i++) {
 			if(i > 0)
-				suns.add(new JPopupMenu.Separator());
+				suns2.add(new JPopupMenu.Separator());
 			final var sun = Configurations.suns.get(i);
-			suns.add(new SettingsString("object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
+			suns2.add(new SettingsString("object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
 			
 		}
+		borderClick(suns2, null);
+		borderClick(suns2, null);
 	}
 	/**Пересоздаёт минералы*/
 	private void rebuildMinerals(){
@@ -248,6 +255,8 @@ public class Settings extends javax.swing.JPanel {
 				}));
 			}
 		}
+		borderClick(minerals, null);
+		borderClick(minerals, null);
 	}
 	/**Пересоздаёт потоки*/
 	private void rebuildStreams(){
@@ -275,6 +284,8 @@ public class Settings extends javax.swing.JPanel {
 				}));
 			}
 		}
+		borderClick(streams, null);
+		borderClick(streams, null);
 	}
 	
 	/** This method is called from within the constructor to

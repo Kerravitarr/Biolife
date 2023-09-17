@@ -241,8 +241,8 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		//Вывод сообщения, если мир опустеет
 		if(world.getCount(CellObject.LV_STATUS.LV_ALIVE) == 0 && Configurations.world.isActiv()){
 			java.awt.Toolkit.getDefaultToolkit().beep();
-			Configurations.world.stop();
-			JOptionPane.showMessageDialog(null, Configurations.getProperty(MainFrame.class,"noAlive"), "BioLife", JOptionPane.WARNING_MESSAGE);
+			//Configurations.world.stop();
+			//JOptionPane.showMessageDialog(null, Configurations.getProperty(MainFrame.class,"noAlive"), "BioLife", JOptionPane.WARNING_MESSAGE);
 		}
 		
 		//Автосохранение
@@ -346,9 +346,9 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 				var xMax = Math.min(Configurations.getWidth() - 1,transform.toWorldX(horizont.getValue() + viewport.getSize().width));
 				var yMin = Math.max(0, transform.toWorldY(vertical.getValue()));
 				var yMax = Math.min(Configurations.getHeight() - 1,transform.toWorldY(vertical.getValue() + viewport.getSize().height));
-				world.setVisible(new Calculations.Point(xMin, yMin),new Calculations.Point(xMax, yMax));
+				world.setVisible(Calculations.Point.create(xMin, yMin), Calculations.Point.create(xMax, yMax));
 			} else {
-				world.setVisible(new Calculations.Point(0, 0),new Calculations.Point(Configurations.getWidth() - 1, Configurations.getHeight() - 1));
+				world.setVisible(Calculations.Point.create(0, 0), Calculations.Point.create(Configurations.getWidth() - 1, Configurations.getHeight() - 1));
 			}
 		}));
 		var adapter = new MouseMoveAdapter();

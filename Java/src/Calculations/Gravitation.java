@@ -101,7 +101,7 @@ public class Gravitation {
 		direction = Direction.valueOf(j.get("direction"));
 		value = j.get("value");
 		if(j.containsKey("target"))
-			target = new Point(j.getJ("target"));
+			target = Point.create(j.getJ("target"));
 	}
 	/**Сoздаёт гравитацию, которая ни на что не действует*/
 	public Gravitation(){
@@ -142,7 +142,7 @@ public class Gravitation {
 				if(ws.width != Configurations.confoguration.MAP_CELLS.width || ws.height != Configurations.confoguration.MAP_CELLS.height){
 					ws.width = Configurations.confoguration.MAP_CELLS.width;
 					ws.height = Configurations.confoguration.MAP_CELLS.height;
-					target = new Point(Configurations.confoguration.MAP_CELLS.width / 2,Configurations.confoguration.MAP_CELLS.height / 2);
+					target = Point.create(Configurations.confoguration.MAP_CELLS.width / 2, Configurations.confoguration.MAP_CELLS.height / 2);
 				}
 				return pos.distance(target).direction();
 			}

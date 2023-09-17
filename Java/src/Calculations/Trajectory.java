@@ -34,12 +34,12 @@ public class Trajectory {
 	 *			Отрицательной скорость не может
 	 */
 	protected Trajectory(long speed){
-		this(speed, new Point(0, 0));
+		this(speed, Point.create(0, 0));
 	}
 	protected Trajectory(JSON json, long version){
 		speed = json.getL("speed");
 		step = json.getL("step");
-		pos = new Point(json.getJ("pos"));
+		pos = Point.create(json.getJ("pos"));
 	}
 	/**Конструктор неподвижного объекта
 	 * @param pos его позиция

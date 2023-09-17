@@ -39,8 +39,8 @@ public class TrajectoryEllipseTest {
 
 	@Test
 	public void cyrcle() {
-		var t = new TrajectoryEllipse(0, new Point(50,50), 0, 10);
-		var valid = new Point[]{new Point(55,50),new Point(55,50)};
+		var t = new TrajectoryEllipse(0, Point.create(50, 50), 0, 10);
+		var valid = new Point[]{Point.create(55, 50), Point.create(55, 50)};
 		for (int i = 0; i < valid.length; i++) {
 			Point point = valid[i];
 			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.nextPosition());
@@ -48,8 +48,8 @@ public class TrajectoryEllipseTest {
 	}
 	@Test
 	public void ellipse20x40() {
-		var t = new TrajectoryEllipse(0, new Point(50,50), 0, 20,40);
-		var valid = new Point[]{new Point(60,50)};
+		var t = new TrajectoryEllipse(0, Point.create(50, 50), 0, 20,40);
+		var valid = new Point[]{Point.create(60, 50)};
 		for (int i = 0; i < valid.length; i++) {
 			Point point = valid[i];
 			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.nextPosition());
@@ -57,8 +57,8 @@ public class TrajectoryEllipseTest {
 	}
 	@Test
 	public void ellipse40x20() {
-		var t = new TrajectoryEllipse(0, new Point(50,50), 0, 40,20);
-		var valid = new Point[]{new Point(70,50)};
+		var t = new TrajectoryEllipse(0, Point.create(50, 50), 0, 40,20);
+		var valid = new Point[]{Point.create(70, 50)};
 		for (int i = 0; i < valid.length; i++) {
 			Point point = valid[i];
 			assertEquals(String.format("Для шага №%d (%f рад)",i,Math.PI*i/360),point, t.nextPosition());

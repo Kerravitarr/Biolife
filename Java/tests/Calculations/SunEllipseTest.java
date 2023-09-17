@@ -44,7 +44,7 @@ public class SunEllipseTest {
 	private void forEvwyPoint(EvryPoint p){
 		for (int x = 0; x < 100; x++) {
 			for (int y = 0; y < 100; y++) {
-				var point = new Point(x,y);
+				var point = Point.create(x, y);
 				p.test(point);
 			}
 		}
@@ -53,7 +53,7 @@ public class SunEllipseTest {
 
 	@Test
 	public void testCyrcle() {
-		final var sun = new SunEllipse(10, new Trajectory(new Point(50,50)), 20, false,"");
+		final var sun = new SunEllipse(10, new Trajectory(Point.create(50, 50)), 20, false,"");
 		forEvwyPoint(p -> {
 			final var d = p.distance(sun.position);
 			final var msg = String.format("В точке %s удалённой от центра солнца на %s", p,d);
@@ -67,7 +67,7 @@ public class SunEllipseTest {
 	}
 	@Test
 	public void testCyrcleLine() {
-		final var sunL = new SunEllipse(10, new Trajectory(new Point(50,50)), 20, true, "");
+		final var sunL = new SunEllipse(10, new Trajectory(Point.create(50, 50)), 20, true, "");
 		forEvwyPoint(p -> {
 			final var d = p.distance(sunL.position);
 			final var msg = String.format("В точке %s удалённой от центра солнца на %s", p,d);
@@ -86,7 +86,7 @@ public class SunEllipseTest {
 	
 	@Test
 	public void testEcllipseSun20x40() {
-		final var sun = new SunEllipse(10, new Trajectory(new Point(50,50)), 20,40, false,"");
+		final var sun = new SunEllipse(10, new Trajectory(Point.create(50, 50)), 20,40, false,"");
 		var valid = new double[][]{
 					//X: 35,36....
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0.3,1.0,1.6,1.9,2.0,1.9,1.6,1.0,0.3,0,0,0,0,0,0,0,0,0,0}, // y = 26
@@ -147,7 +147,7 @@ public class SunEllipseTest {
 	}
 	@Test
 	public void testEcllipseSun40x20() {
-		final var sun = new SunEllipse(10, new Trajectory(new Point(50,50)), 40,20, false,"");
+		final var sun = new SunEllipse(10, new Trajectory(Point.create(50, 50)), 40,20, false,"");
 		var valid = new double[][]{
 					//X: 26,...
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, // y = 35
@@ -181,7 +181,7 @@ public class SunEllipseTest {
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0,0.5,1.1,1.6,2.1,2.5,2.8,3.2,3.4,3.6,3.8,3.9,4.0,4.0,4.0,3.9,3.8,3.6,3.4,3.2,2.8,2.5,2.1,1.6,1.1,0.5,0,0,0,0,0,0,0,0,0,0,0,0}, // y = 63
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.1,0.5,0.9,1.2,1.4,1.6,1.8,1.9,2.0,2.0,2.0,1.9,1.8,1.6,1.4,1.2,0.9,0.5,0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, // y = 64
 		};
-		var pp = sun.getEnergy(new Point(26,46));
+		var pp = sun.getEnergy(Point.create(26, 46));
 		pp = 0;
 		forEvwyPoint(p -> {
 			final var value = (26 <= p.getX() && p.getX() <= 74) && (35 <= p.getY() && p.getY() <= 64) ? valid[p.getY() - 35][p.getX() - 26] : 0;
@@ -191,7 +191,7 @@ public class SunEllipseTest {
 	}
 	@Test
 	public void testEcllipseSun20x40Line() {
-		final var sun = new SunEllipse(10, new Trajectory(new Point(50,50)), 20,40, true,"");
+		final var sun = new SunEllipse(10, new Trajectory(Point.create(50, 50)), 20,40, true,"");
 		var valid = new double[][]{
 					//X: 35,36....
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0.3,1.0,1.6,1.9,2.0,1.9,1.6,1.0,0.3,0,0,0,0,0,0,0,0,0,0}, // y = 26
@@ -252,7 +252,7 @@ public class SunEllipseTest {
 	}
 	@Test
 	public void testEcllipseSun40x20Line() {
-		final var sun = new SunEllipse(10, new Trajectory(new Point(50,50)), 40,20, true,"");
+		final var sun = new SunEllipse(10, new Trajectory(Point.create(50, 50)), 40,20, true,"");
 		var valid = new double[][]{
 					//X: 26,...
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, // y = 35
@@ -286,7 +286,7 @@ public class SunEllipseTest {
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0,0.5,1.1,1.6,2.1,2.5,2.8,3.2,3.4,3.6,3.8,3.9,4.0,4.0,4.0,3.9,3.8,3.6,3.4,3.2,2.8,2.5,2.1,1.6,1.1,0.5,0,0,0,0,0,0,0,0,0,0,0,0}, // y = 63
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.1,0.5,0.9,1.2,1.4,1.6,1.8,1.9,2.0,2.0,2.0,1.9,1.8,1.6,1.4,1.2,0.9,0.5,0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, // y = 64
 		};
-		var pp = sun.getEnergy(new Point(26,46));
+		var pp = sun.getEnergy(Point.create(26, 46));
 		pp = 0;
 		forEvwyPoint(p -> {
 			final var value = (26 <= p.getX() && p.getX() <= 74) && (35 <= p.getY() && p.getY() <= 64) ? valid[p.getY() - 35][p.getX() - 26] : 0;

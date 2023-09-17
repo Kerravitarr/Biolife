@@ -139,7 +139,7 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 				double summ = 0;
 				for (int x = 0; x < Configurations.getWidth(); x++) {
 					for (int y = 0; y < Configurations.getHeight(); y++) {
-						CellObject cell = Configurations.world.get(new Point(x, y));
+						CellObject cell = Configurations.world.get(Point.create(x, y));
 						if (cell != null && cell instanceof AliveCell acell){
 							summ += acell.getHealth();
 							max = Math.max(max, acell.getHealth());
@@ -153,21 +153,14 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 				for (int i = 0; i < values.length - 1; i++) {
 					values[i] = new Value(1.0 * (i + 1) / values.length, w, (i * maxHP / length) + "", Utils.getHSBColor(0, 1, 1, (0.25 + 3d*i / (4d*length))));
 				}
-				if(summ < 10000)
-					values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%d",(long)summ),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
-				else if(summ < 10000000)
-					values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%dk",(long)summ/1000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
-				else if(summ < 10000000000L)
-					values[values.length - 1]  = new Value(1.0, w,String.format("Σ=%dM",(long)summ/1000000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
-				else 
-					values[values.length - 1]  = new Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
+				values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%s",Utils.degree((long)summ)),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
 			}
 			case MINERALS -> {
 				var max = 0l;
 				long summ = 0;
 				for (int x = 0; x < Configurations.getWidth(); x++) {
 					for (int y = 0; y < Configurations.getHeight(); y++) {
-						CellObject cell = Configurations.world.get(new Point(x, y));
+						CellObject cell = Configurations.world.get(Point.create(x, y));
 						if (cell != null && cell instanceof AliveCell acell){
 							summ += acell.getMineral();
 							max = Math.max(max, acell.getMineral());
@@ -181,20 +174,13 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 				for (int i = 0; i < values.length - 1; i++) {
 					values[i] = new Value(1.0 * (i + 1) / values.length, w, Integer.toString((int) (i * maxMP / length)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d*i / (4d*length))));
 				}
-				if(summ < 10000)
-					values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%d",(long)summ),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-				else if(summ < 10000000)
-					values[values.length - 1]  = new Value(1.0, w,String.format("Σ=%dk",(long)summ/1000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-				else if(summ < 10000000000L)
-					values[values.length - 1]  = new Value(1.0, w,String.format("Σ=%dM",(long)summ/1000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-				else 
-					values[values.length - 1]  = new Value(1.0, w,String.format("Σ=%dG",(long)summ/1000000000),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
+				values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%s",Utils.degree((long)summ)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
 			}
 			case YEAR -> {
 				var max = 0l;
 				for (int x = 0; x < Configurations.getWidth(); x++) {
 					for (int y = 0; y < Configurations.getHeight(); y++) {
-						CellObject cell = Configurations.world.get(new Point(x, y));
+						CellObject cell = Configurations.world.get(Point.create(x, y));
 						if (cell != null && cell instanceof AliveCell acell)
 							max = Math.max(max, acell.getAge());
 					}
@@ -207,9 +193,9 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 				StringBuilder text = new StringBuilder(100);
 				for (int i = 0; i < values.length; i++) {
 					long nAge = (i+1) * rmaxAge / values.length;
-					numToStr(mAge,text);
+					Utils.degree(text,mAge);
 					text.append(" - ");
-					numToStr(nAge,text);
+					Utils.degree(text,nAge);
 					values[i] = new Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), Color.getHSBColor(i / (values.length * 1.4f), 0.9f, 0.9f));
 					text.setLength(0);
 					mAge = nAge;
@@ -227,7 +213,7 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 				var min = Long.MAX_VALUE;
 				for (int x = 0; x < Configurations.getWidth(); x++) {
 					for (int y = 0; y < Configurations.getHeight(); y++) {
-						CellObject cell = Configurations.world.get(new Point(x, y));
+						CellObject cell = Configurations.world.get(Point.create(x, y));
 						if (cell != null && cell instanceof AliveCell acell) {
 							max = Math.max(max, acell.getGeneration());
 							min = Math.min(min, acell.getGeneration());
@@ -245,12 +231,12 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 				for (int i = 0; i < values.length; i++) {
 					long nGen = minGenDef + (i+1) * rdel / values.length;
 					if(i == 0){
-						numToStr(minGenDef,text);
+						Utils.degree(text,minGenDef);
 						text.append("+ [");
 					}
-					numToStr(mGen - minGenDef,text);
+					Utils.degree(text,mGen - minGenDef);
 					text.append(" - ");
-					numToStr(nGen - minGenDef,text);
+					Utils.degree(text,nGen - minGenDef);
 					if(i+1 == values.length){
 						text.append("]");
 					}
@@ -274,32 +260,6 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 			updateSrin = false;
 		}
 		repaint(1);
-	}
-	
-	/**Переводит число в краткую форму
-	 * @param num число
-	 * @param sb строка, куда запишется число и буква Кило или Мега
-	 */
-	private void numToStr(long num, StringBuilder sb) {
-		if(num < 1000){
-			sb.append(Long.toString(num));
-		} else if(num < 10000) {
-			sb.append(Long.toString(num / 1000));
-			sb.append(".");
-			sb.append(Long.toString((num % 1000) / 100));
-			sb.append("k");
-		}  else if(num < 1000000) {
-			sb.append(Long.toString(num / 1000));
-			sb.append("k");
-		} else if(num < 10000000) {
-			sb.append(Long.toString(num / 1000000));
-			sb.append(".");
-			sb.append(Long.toString((num % 1000000) / 100000));
-			sb.append("M");
-		} else {
-			sb.append(Long.toString(num / 1000000));
-			sb.append("M");
-		} 
 	}
 	
 	/**Активировать ту или иную кнопку

@@ -46,7 +46,7 @@ public abstract class StreamAbstract{
 		this(move, new StreamAttenuation.NoneStreamAttenuation(p), name);
 	}
 	protected StreamAbstract(JSON j, long v)throws GenerateClassException{
-		position = new Point(j.getJ("position"));
+		position = Point.create(j.getJ("position"));
 		shadow = StreamAttenuation.generate(j.get("shadow"),v);
 		name = j.get("name");
 		move = Trajectory.generate(j.getJ("move"),v);

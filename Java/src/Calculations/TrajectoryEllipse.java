@@ -51,7 +51,7 @@ public class TrajectoryEllipse extends Trajectory{
 	}
 	protected TrajectoryEllipse(JSON json, long version){
 		super(json,version);
-		this.center = new Point(json.getJ("center"));
+		this.center = Point.create(json.getJ("center"));
 		this.angle = json.get("angle");
 		this.a = json.get("a");
 		this.b = json.get("b");
@@ -60,7 +60,7 @@ public class TrajectoryEllipse extends Trajectory{
 	@Override
 	protected Point position(long step) {
 		final var rangle = angle + step * Math.PI / 180d;
-		return new Point((int)Math.round(center.getX() + a * Math.cos(rangle)) ,(int)Math.round(center.getY() +  b * Math.sin(rangle)));
+		return Point.create((int)Math.round(center.getX() + a * Math.cos(rangle)), (int)Math.round(center.getY() +  b * Math.sin(rangle)));
 	}
 	@Override
 	public JSON toJSON(){
