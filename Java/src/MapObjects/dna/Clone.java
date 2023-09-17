@@ -41,12 +41,12 @@ public class Clone extends CommandDoInterupted {
 			case CLEAN -> {
 				Point point = nextPoint(cell,direction);
 				Birth.birth(cell,point,childCMD);
-				cell.setFriend((AliveCell) Configurations.world.get(point));
+				cell.setComrades((AliveCell) Configurations.world.get(point));
 			}
 			case NOT_POISON, POISON -> {
 				Point point = nextPoint(cell,direction);
 				if(Birth.birth(cell,point,childCMD))
-					cell.setFriend((AliveCell) Configurations.world.get(point));
+					cell.setComrades((AliveCell) Configurations.world.get(point));
 			}
 			case ENEMY, FRIEND, ORGANIC, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
 			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);

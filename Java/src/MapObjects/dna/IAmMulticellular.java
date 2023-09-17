@@ -12,9 +12,10 @@ public class IAmMulticellular extends CommandExplore {
 
 	@Override
 	protected int explore(AliveCell cell) {
-		return cell.getFriends().isEmpty() ? 0 : 1;
+		return cell.getCountComrades() == 0 ? 0 : 1;
 	}
 	
+	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
 		return numBranch == 0 ? "I" : "░";
 	};

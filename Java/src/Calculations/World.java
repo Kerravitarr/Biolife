@@ -36,7 +36,7 @@ import java.util.logging.Logger;
  */
 public class World implements Runnable,SaveAndLoad.Serialization{
 	/**Сам мир, каждая его клеточка*/
-	private /*final*/ CellObject [][] _WORLD_MAP;
+	private final CellObject [][] _WORLD_MAP;
 	/**Симуляция запущена?*/
 	private STATUS _status = STATUS.STOP;
 	/**Фабрика создания потоков обсчёта мира*/
@@ -66,22 +66,17 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	/**Один блок, состоящий из двух вертекалей, карты*/
 	class WorldTask implements Callable<int[]>{
 		/**Один вертикальный столбик карты, который обсчитвыает этот поток*/
-		class WorkThread{
-			/**Точки потока*/
-			final Point [] points;
-			public WorkThread(Point[] cells) {points = cells;}
-		}
 		/**Первая вертикаль блока*/
-		private final WorkThread first;
+		private final Point [] first;
 		/**Вторая вертикаль блока*/
-		private final WorkThread second;
-		WorldTask(Point [] cellsFirst, Point[] cellsSecond){first = new WorkThread(cellsFirst);second = new WorkThread(cellsSecond);}
+		private final Point [] second;
+		WorldTask(Point [] cellsFirst, Point[] cellsSecond){first = cellsFirst;second = cellsSecond;}
 		@Override
 		public int[] call(){
-			final Point[] points = (isFirst ? first : second).points;
-			var count_step = new int[CellObject.LV_STATUS.length];
+			final var points = (isFirst ? first : second);
+			final var count_step = new int[CellObject.LV_STATUS.length];
 			for (int i = points.length - 1; i >= 0 && _status != STATUS.ERROR; i--) {
-				Point t = points[i];
+				final var t = points[i];
 				if(!t.valid() || get(t) == null) continue; //Чего мы будем пустые клетки мешать?
 				final var j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
 				//Меняем местами клетки, чтобы каждый раз вызывать их в разной последовательности
@@ -166,16 +161,19 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		for (JSON cell : cells) {
 			if (!cell.containsKey("friends")) continue; // Мы не клетка
 			if (cell.getAJ("friends").isEmpty()) continue; // У нас нет друзей
-			Point pos = new Point(cell.getJ("pos"));
+			Point pos = Point.create(cell.getJ("pos"));
 			CellObject realCell = get(pos);
 			if (realCell == null || !(realCell instanceof AliveCell))
 				continue;
 			List<JSON> mindL = cell.getAJ("friends");
 			AliveCell new_name = (AliveCell) realCell;
 			for (JSON pointFriend : mindL) {
-				pos = new Point(pointFriend);
-				if (get(pos) instanceof AliveCell aliveCell)
-					new_name.setFriend(aliveCell);
+				final var posFriend = Point.create(pointFriend);
+				if (get(posFriend) instanceof AliveCell aliveCell) {
+					new_name.setComrades(aliveCell);
+				} else {
+					Logger.getLogger(World.class.getName()).log(Level.WARNING, cell.toString());
+				}
 			}
 		}
 		Configurations.tree.updatre();
@@ -203,11 +201,10 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	public void makeAdam(){
 		AliveCell adam = new AliveCell();
 		switch (Configurations.confoguration.world_type) {
-			case LINE_H -> adam.setPos(new Point(Configurations.getWidth()/2,0));
-			case LINE_V -> adam.setPos(new Point(Configurations.getWidth()*3/4,Configurations.getHeight()/2));
+			case LINE_H -> adam.setPos(Point.create(Configurations.getWidth()/2, 0));
+			case LINE_V -> adam.setPos(Point.create(Configurations.getWidth()*3/4, Configurations.getHeight()/2));
 			default -> throw new AssertionError();
 		}
-		Configurations.tree.setAdam(adam);
 		add(adam);
 		_all_live_cell[LV_ALIVE.ordinal()] += 1;
 	}
@@ -233,7 +230,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 			}
 			boolean isF = difX % (2 * columnPerPc_2) < columnPerPc_2;
 			for (int y = 0; y < Configurations.getHeight(); y++) {
-				Point point = new Point(x,y);
+				Point point = Point.create(x, y);
 				if (isF)firstList.add(point);
 				else 	secondList.add(point);
 			}
@@ -442,7 +439,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 */
 	@SuppressWarnings("unused")
 	private boolean loadOneCell(JSON cell, int x, int y) {
-		Point pos = new Point(cell.getJ("pos"));
+		Point pos = Point.create(cell.getJ("pos"));
 		return pos.getX() == x && pos.getY() == y;
 	}
 	/**
@@ -453,7 +450,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 */
 	@SuppressWarnings("unused")
 	private boolean loadColumn(JSON cell, int x) {
-		Point pos = new Point(cell.getJ("pos"));
+		Point pos = Point.create(cell.getJ("pos"));
 		return pos.getX() == x;
 	}
 	/**
@@ -466,8 +463,8 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 */
 	@SuppressWarnings("unused")
 	private boolean loadR(JSON cell,  int x, int y, int r) {
-		Point pos = new Point(cell.getJ("pos"));
-		final var tarPos = new Point(x,y);
+		Point pos = Point.create(cell.getJ("pos"));
+		final var tarPos = Point.create(x, y);
 		return pos.distance(tarPos).getHypotenuse() <= r;
 	}
 

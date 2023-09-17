@@ -25,13 +25,14 @@ import java.awt.Stroke;
 public class AliveCell extends AliveCellProtorype {
 
     /**
-     * Создание клетки без рода и племени
+     * Создание клетки без рода и племени - Адмама
      */
     public AliveCell() {
         super(-1, LV_STATUS.LV_ALIVE);
-        setPos(new Point(0, 0));
+        setPos(Point.create(0, 0));
         dna = new DNA(DEF_MINDE_SIZE);
         color_DO = new Color(255, 255, 255);
+		Configurations.tree.setAdam(this);
         evolutionNode = EvolutionTree.root;
         specialization = new Specialization();
     }
@@ -202,7 +203,7 @@ public class AliveCell extends AliveCellProtorype {
             Birth.birth(this);
         }
         //Если есть друзья - делимся с ними едой
-        if (!getFriends().isEmpty()) {
+        if (getCountComrades() != 0) {
             clingFriends();
         }
         //Меняем цвет, если бездельничаем
@@ -231,11 +232,11 @@ public class AliveCell extends AliveCellProtorype {
         double allHp = getHealth();
         long allMin = getMineral();
         int allDNA_wall = DNA_wall;
-        int friendCount = getFriends().size() + 1;
+        int friendCount = getCountComrades() + 1;
         int maxToxic = poisonPower;
-        Point delP = null;
-        for (var cell_e : getFriends().entrySet()) {
-            var cell = cell_e.getValue();
+        AliveCell delCell = null;
+        for (final var cell : getComrades()) {
+			if(cell == null) continue;
             allHp += cell.getHealth();
             allMin += cell.getMineral();
             allDNA_wall += cell.DNA_wall;
@@ -243,11 +244,11 @@ public class AliveCell extends AliveCellProtorype {
                 maxToxic = Math.max(maxToxic, cell.poisonPower);
             }
             if (!cell.aliveStatus(LV_STATUS.LV_ALIVE)) {
-                delP = cell_e.getKey();
+                delCell = cell;
             }
         }
-        if (delP != null) {
-            getFriends().remove(delP);
+        if (delCell != null) {
+			removeComrades(delCell);
         }
         allHp /= friendCount;
         allMin /= friendCount;
@@ -260,24 +261,23 @@ public class AliveCell extends AliveCellProtorype {
         setHealth(allHp);
         setMineral(allMin);
         DNA_wall = allDNA_wall;
-        for (var friendCell : getFriends().values()) {
-            if (getAge() % 100 == 0) {
-                if (allHp > friendCell.getHealth()) {
-                    friendCell.color(ACTION.RECEIVE, allHp - friendCell.getHealth());
-                } else {
-                    friendCell.color(ACTION.GIVE, friendCell.getHealth() - allHp);
-                }
-                if (allMin > friendCell.getMineral()) {
-                    friendCell.color(ACTION.RECEIVE, allMin - friendCell.getMineral());
-                } else {
-                    friendCell.color(ACTION.GIVE, friendCell.getMineral() - allMin);
-                }
-            }
-            friendCell.setHealth(allHp);
-            friendCell.setMineral(allMin);
-            friendCell.DNA_wall = allDNA_wall;
-            if (friendCell.poisonType == poisonType) {
-                friendCell.poisonPower += friendCell.poisonPower < maxToxic ? 1 : 0;
+        for (var cell : getComrades()) {
+			if(cell == null) continue;
+			if (allHp > cell.getHealth()) {
+				cell.color(ACTION.RECEIVE, allHp - cell.getHealth());
+			} else {
+				cell.color(ACTION.GIVE, cell.getHealth() - allHp);
+			}
+			if (allMin > cell.getMineral()) {
+				cell.color(ACTION.RECEIVE, allMin - cell.getMineral());
+			} else {
+				cell.color(ACTION.GIVE, cell.getMineral() - allMin);
+			}
+            cell.setHealth(allHp);
+            cell.setMineral(allMin);
+            cell.DNA_wall = allDNA_wall;
+            if (cell.poisonType == poisonType) {
+                cell.poisonPower += cell.poisonPower < maxToxic ? 1 : 0;
             }
         }
     }
@@ -288,6 +288,16 @@ public class AliveCell extends AliveCellProtorype {
     @Override
     public void destroy() {
         evolutionNode.remove();
+		if(getCountComrades() != 0){
+			final var comrads = getComrades();
+			for (int i = 0; i < comrads.length; i++) {
+				final var cell = comrads[i];
+				if(cell != null){
+					cell.removeComrades(this);
+					comrads[i] = null;
+				}
+			}
+		}
         super.destroy();
     }
 
@@ -299,7 +309,7 @@ public class AliveCell extends AliveCellProtorype {
      */
     @Override
     public boolean move(DIRECTION direction) {
-        if (getFriends().isEmpty()) {
+        if (getCountComrades() == 0) {
             return super.move(direction);
         } else {
             //Многоклеточный. Тут логика куда интереснее!
@@ -312,14 +322,14 @@ public class AliveCell extends AliveCellProtorype {
                  * Правило! Мы можем двигаться в любую сторону, если от нас до
                  * любого из наших друзей будет ровно 1 клетка
                  */
-                for (AliveCell cell : getFriends().values()) {
+                for (final var cell : getComrades()) {
+					if(cell == null) continue;
 					final var del = point.distance(cell.getPos());
                     if (Math.abs(del.x) > 1 || Math.abs(del.y) > 1)
                         return false;
-
                 }
                 //Все условия проверены, можно выдвигаться!
-                return super.move(direction);
+                 return super.move(direction);
             }
             return false;
         }
@@ -562,14 +572,6 @@ public class AliveCell extends AliveCellProtorype {
         }
     }
 
-    public void setFriend(AliveCell friend) {
-        if (friend == null || getFriends().get(friend.getPos()) != null) {
-            return;
-        }
-        getFriends().put(friend.getPos(), friend);
-        friend.getFriends().put(getPos(), this);
-    }
-
     @Override
     public JSON toJSON(JSON make) {
         make.add("DNA", getDna().toJSON());
@@ -597,10 +599,12 @@ public class AliveCell extends AliveCellProtorype {
         make.add("phenotype", Integer.toHexString(phenotype.getRGB()));
 
         //===============МНОГОКЛЕТОЧНОСТЬ===================
-        JSON[] fr = new JSON[getFriends().size()];
-        Object[] points = getFriends().keySet().toArray();
-        for (int i = 0; i < fr.length; i++) {
-            fr[i] = ((Point) points[i]).toJSON();
+        JSON[] fr = new JSON[getCountComrades()];
+        final var comrads = getComrades();
+        for (int ic = 0, ifr = 0; ic < comrads.length; ic++) {
+			final var cell = comrads[ic];
+			if(cell == null) continue;
+            fr[ifr++] = (cell.getPos()).toJSON();
         }
         make.add("friends", fr);
 
@@ -632,19 +636,22 @@ public class AliveCell extends AliveCellProtorype {
 			default -> throw new AssertionError();
 		}
 		//Клетка
-		if (getFriends().isEmpty()) {
+		if (getCountComrades() == 0) {
 			Utils.fillCircle(g, cx, cy, r);
 		} else if (r < 5) {
 			Utils.fillSquare(g, cx, cy, r);
 		} else {
 			Utils.fillCircle(g, cx, cy, r);
 			int[][] points = new int[Point.DIRECTION.size()][2];
-			var values = getFriends().values();
+			var values = getComrades();
 			try {
 				//Друзья
-				int index = 0;
-				for (final var iterator = values.iterator(); iterator.hasNext(); index++) {
-					final var i = iterator.next();
+				for (int index = 0; index < values.length; index++) {
+					final var i = values[index];
+					if(i == null) {
+						points[index][0] = Integer.MAX_VALUE;
+						continue;
+					}
 					final var v = getPos().distance(i.getPos());
 					int rxf = cx + v.x * r;
 					int ryf = cy + v.y * r;
@@ -665,16 +672,18 @@ public class AliveCell extends AliveCellProtorype {
 				Graphics2D g2 = (Graphics2D) g;
 				Stroke oldStr = g2.getStroke();
 				g2.setStroke(new BasicStroke(r / 2));
-				for (int i = 0; i < index; i++) {
-					int delx = points[i][0] - cx;
-					int dely = points[i][1] - cy;
+				for (final int[] point : points) {
+					if(point[0] == Integer.MAX_VALUE) continue;
+					int delx = point[0] - cx;
+					int dely = point[1] - cy;
 					g.drawLine(cx, cy, cx + delx / 3, cy + dely / 3);
 				}
 				g2.setStroke(oldStr);
 				g.setColor(Color.BLACK);
 				//Этап второй, всё тоже самое, но теперь лишь тонкие линии
-				for (int i = 0; i < index; i++) {
-					g.drawLine(cx, cy, points[i][0], points[i][1]);
+				for (final int[] point : points) {
+					if(point[0] == Integer.MAX_VALUE) continue;
+					g.drawLine(cx, cy, point[0], point[1]);
 				}
 			} catch (java.util.ConcurrentModificationException e) {/* Выскакивает, если кто-то из наших друзей погиб*/                }
 		}

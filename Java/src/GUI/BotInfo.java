@@ -259,10 +259,10 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 	/**Клетка-затычка для симулирования дальнейших шагов*/
 	private class TextAL extends AliveCell{
 		DNA interDNA = null;
-		private final Map<Point,AliveCell> friends;
+		private final AliveCell[] friends;
 		private TextAL(AliveCell cell) {
 			super(cell);
-			friends = cell.getFriends();
+			friends = cell.getComrades();
 		}
 		/**Выполняет следующую инструкцию */
 		private void next() {
@@ -287,7 +287,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 			else return interDNA;
 		}
 		@Override
-		public Map<Point,AliveCell> getFriends(){return friends;}
+		public AliveCell[] getComrades(){return friends;}
 	}
 	
 	/**

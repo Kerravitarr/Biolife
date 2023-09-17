@@ -14,6 +14,7 @@ import Calculations.Configurations;
 import Calculations.EvolutionTree.Node;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
+import java.util.Arrays;
 
 /**
  * Прототип живой клетки. Тут все константы, переменные и вложенные классы.
@@ -294,11 +295,11 @@ public abstract class AliveCellProtorype extends CellObject{
     protected int tolerance = 2;
     
     //===============Параметры братства, многоклеточность=======
-    protected final Map<Point,AliveCell> friends = new HashMap<>(DIRECTION.size());
-
-    
-    
-    
+    /**Список всех наших друзей*/
+	private final AliveCell[] _friends = new AliveCell[DIRECTION.size()];
+	/**Число этих самых "друзей"*/
+	private int countFriends = 0;
+  
     
 	public AliveCellProtorype(JSON cell) {
 		super(cell);
@@ -397,10 +398,54 @@ public abstract class AliveCellProtorype extends CellObject{
 	public void setBuoyancy(int buoyancy) {
 		this.buoyancy = Utils.betwin(-100, buoyancy, 100);
 	}
-
-	public Map<Point,AliveCell> getFriends() {
-		return friends;
+	/**Функция получения семьи. Тех клеток, с кем текущая в тестных отношениях
+	 * @return список из клеток, коих ровно DIRECTION.size(). Может быть пропущенно сколько-то ячеек...
+	 */
+	public AliveCell[] getComrades() {
+		return _friends;
 	}
+	/**Сохраняет нам нового члена многоклеточной семьи
+	 * @param friend 
+	 */
+    public void setComrades(AliveCell friend) {
+		assert friend != null : "Забыли друга!!!";
+		assert friend.getPos().distance(this.getPos()).getHypotenuse() < 2 : "Куда-то далековато друг забрался, не находите?" + Arrays.toString(_friends) + ". Этот явно лишний: " + friend;
+        int emptyIndex = -1;
+		for (int i = 0; i < _friends.length; i++) {
+			final var _friend = _friends[i];
+			if(_friend == friend){
+				return;
+			} else if(_friend == null){
+				emptyIndex = i;
+			} else if(_friend.getPos().equals(friend.getPos())){
+				assert false;
+			}
+		}
+		assert countFriends < Point.DIRECTION.size() : "Многовато у нас друзей, не находите? " + Arrays.toString(_friends) + ". Этот явно лишний: " + friend;
+		_friends[emptyIndex] = friend;
+		countFriends++;
+		friend.setComrades((AliveCell) this);
+    }
+	/**Удаляет этого из наших товарищей
+	 * @param remove кого надо удалить
+	 */
+	public void removeComrades(AliveCell remove){
+		assert countFriends > 0 : "Ожидается, что у нас всё ещё есть друзья";
+		countFriends--;
+		for (int i = 0; i < _friends.length; i++) {
+			final var _friend = _friends[i];
+			if(_friend == remove){
+				_friends[i] = null;
+				return;
+			}
+		}
+		assert false : "Недостижимая часть кода. Не нашли " + remove + " среди " + Arrays.toString(_friends);
+	}
+	/**Возвращает сколько у нас друзей
+	 * @return число друзей
+	 */
+	public int getCountComrades(){return countFriends;}
+	
 	public int getDNA_wall() {
 		return DNA_wall;
 	}
