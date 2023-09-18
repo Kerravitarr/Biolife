@@ -322,24 +322,24 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				//Будет одно солнышко, которое будет двигаться сверху вниз линией
 				suns.add(new SunRectangle(
 						30, 
-						new TrajectoryPolyLine(401, false, Point.create(width/2, (int) (height/2 - 15/confoguration.DIRTY_WATER)), Point.create(width/2, (int) (height-1 - 15/confoguration.DIRTY_WATER)), Point.create(width/2, (int) (1- 15/confoguration.DIRTY_WATER))), 
+						new TrajectoryPolyLine(401, false, Point.create(width/2, (int) (height/2)), Point.create(width/2, (int) (height-1)), Point.create(width/2, (int) (1))), 
 						width,1, 
 						false,"Движущееся"));
 				//Два куска минералов, два кружочка, которые будут двигаться по диагонали. 
-				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(199,false, Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1), Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1)),
+				minerals.add(new MineralEllipse(30,confoguration.DIRTY_WATER * 2, new TrajectoryPolyLine(199,false, Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1), Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 1"));
-				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(227,false, Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1), Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1)),
+				minerals.add(new MineralEllipse(30,confoguration.DIRTY_WATER * 2, new TrajectoryPolyLine(227,false, Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1), Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 2"));
-				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(193,false, Point.create(width/2, height/2), Point.create(width-1, height-1), Point.create(width-1, 0), Point.create(width/2, height/2), Point.create(0, height-1), Point.create(0, 0)),
+				minerals.add(new MineralEllipse(30,confoguration.DIRTY_WATER * 2, new TrajectoryPolyLine(193,false, Point.create(width/2, height/2), Point.create(width-1, height-1), Point.create(width-1, 0), Point.create(width/2, height/2), Point.create(0, height-1), Point.create(0, 0)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 3"));
-				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, new TrajectoryPolyLine(233,false, Point.create(width/2, height/2), Point.create(0, height-1), Point.create(0, 0), Point.create(width/2, height/2), Point.create(width-1, height-1), Point.create(width-1, 0)),
+				minerals.add(new MineralEllipse(30,confoguration.DIRTY_WATER * 2, new TrajectoryPolyLine(233,false, Point.create(width/2, height/2), Point.create(0, height-1), Point.create(0, 0), Point.create(width/2, height/2), Point.create(width-1, height-1), Point.create(width-1, 0)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 4"));
 				//Ну и течении в реке
-				streams.add(new StreamVertical(new Trajectory(Point.create(width/2, height/2)), width, height,new StreamAttenuation.LinealStreamAttenuation(-41, -4001),"Течение"));
+				streams.add(new StreamVertical(new Trajectory(Point.create(width/2, height/2)), width, height,new StreamAttenuation.PowerFunctionStreamAttenuation(-3, -4001,4),"Течение"));
 			}
 			default -> throw new AssertionError();
 		}
