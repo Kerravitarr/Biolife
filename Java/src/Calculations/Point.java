@@ -161,29 +161,30 @@ public final class Point{
 		 *			таже самая точка, то возвращается null
 		 */
 		public DIRECTION direction(){
-            if(d == null && x != 0 && y != 0){
+            if(d == null && (x != 0 || y != 0)){
                 d = switch (x) {
-				    case -1 -> {
+				    case -1 -> 
 					    switch (y) {
 						    case -1 -> Point.DIRECTION.UP_L;
 						    case 0 -> Point.DIRECTION.LEFT;
 						    case 1 -> Point.DIRECTION.DOWN_L;
-					    }
-				    }
-				    case 0 -> {
+							default -> null;
+					    };
+				    case 0 -> 
 					    switch (y) {
 						    case -1 -> Point.DIRECTION.UP;
 						    case 0 -> null;
 						    case 1 -> Point.DIRECTION.DOWN;
-					    }
-				    }
-				    case 1 -> {
+							default -> null;
+					    };
+				    case 1 -> 
 					    switch (y) {
 						    case -1 ->Point.DIRECTION.UP_R;
 						    case 0 -> Point.DIRECTION.RIGHT;
 						    case 1 -> Point.DIRECTION.DOWN_R;
-					    }
-				    }
+							default -> null;
+					    };
+					default -> null;
 			    };
                 if(d == null){
 			        //А жаль, могло-бы быть всё куда проще

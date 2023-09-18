@@ -64,10 +64,12 @@ public class StreamSwirl extends StreamAbstract {
 		
 		//У нас круг!
 		final var F = shadow.power(d.getHypotenuse() / r);
-		if(Math.abs(F) % cell.getAge() == 0){
+		if(cell.getAge() % Math.abs(F) == 0){
 			//Вычисляем нормаль
-			final var perpendicular = F > 0 ? Point.Vector.create(-d.y, d.x) : Point.Vector.create(d.y, -d.x);
-			cell.moveD(perpendicular.direction());
+			final var perpendicular = F < 0 ? Point.Vector.create(-d.y, d.x) : Point.Vector.create(d.y, -d.x);
+			final var dir = perpendicular.direction();
+			if(dir != null)
+				cell.moveD(perpendicular.direction());
 		}
 	}
 	@Override
@@ -100,8 +102,8 @@ public class StreamSwirl extends StreamAbstract {
 	private int frame = Integer.MAX_VALUE / 2;
 	@Override
 	public void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY) {
-		final var x0 = transform.toScrinX((int)(posX - r));
-		final var y0 = transform.toScrinY((int)(posY - r));
+		final var x0 = transform.toScrinX(posX);
+		final var y0 = transform.toScrinY(posY);
 		
 		final var r0 = transform.toScrin((int)(r));
 		if(r0 == 0) return;
@@ -111,13 +113,13 @@ public class StreamSwirl extends StreamAbstract {
 		
 		//А теперь приступим к порнографии - создании подкругов для движения!
 		final var whc = 50; //Каждые сколько пк будет круг
-		final var countDel = (Math.PI * 2) / 10d; //На сколько частей разделим круг - на 10
 		final var countCurc = r0 / whc; //Сколкьо будет кругов
 		for (int curcle = 0; curcle < countCurc; curcle++) {
-			var F = shadow.power(1000,10,(curcle + 0.5d) / countCurc);
+			var F = shadow.power(10000,100,(curcle + 0.5d) / countCurc);
 			final var step = isUp ? (F - (frame % F)) : (frame % F);	//"номер" кадра для колонки
 			final var angle_step = Math.PI * 2 * step / Math.abs(F);
 			final var cr = (curcle + 1) * whc;
+			final var countDel = whc / (Math.PI * cr);//На сколько частей разделим круг, чтобы длина каждой части была whc
 			for (double angle = 0; angle < Math.PI * 2; angle+=countDel * 2) {
 				final var a1 = angle_step + angle;
 				final var a2 = a1 + countDel;

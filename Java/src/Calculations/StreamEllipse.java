@@ -113,7 +113,7 @@ public class StreamEllipse extends StreamAbstract {
 		if (a2 == b2) {
 			//У нас круг!
 			final var F = shadow.power(d.getHypotenuse() / a);
-			if(Math.abs(F) % cell.getAge() == 0){
+			if(cell.getAge() % Math.abs(F) == 0){
 				final var dir = d.direction();
 				if(dir == null) return;
 				if(F > 0)	cell.moveD(dir);
@@ -123,7 +123,7 @@ public class StreamEllipse extends StreamAbstract {
 			final var teta = Math.atan2(d.y,d.x);
 			final var F = shadow.power(d.getHypotenuse() / Math.hypot(a * Math.cos(teta), b * Math.sin(teta)));
 			
-			if(Math.abs(F) % cell.getAge() == 0){
+			if(cell.getAge() % Math.abs(F) == 0){
 				final var dir = d.direction();
 				if(dir == null) return;
 				if(F > 0)	cell.moveD(dir);
