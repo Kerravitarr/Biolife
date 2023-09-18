@@ -120,7 +120,7 @@ public class BioLife{
 					if(Configurations.world.isActiv()){
 						printTitle();
 						//Автосохранение
-						if(Math.abs(world.step - Configurations.confoguration.lastSaveCount) > Configurations.confoguration.SAVE_PERIOD){
+						if(Configurations.world.getCount(CellObject.LV_STATUS.LV_ALIVE) > 0 && Math.abs(world.step - Configurations.confoguration.lastSaveCount) > Configurations.confoguration.SAVE_PERIOD){
 							var list = new File[Configurations.confoguration.COUNT_SAVE];
 							for(var i = 0 ; i < Configurations.confoguration.COUNT_SAVE ; i++){
 								list[i] = new File("autosave" + (i+1) + ".zbmap");

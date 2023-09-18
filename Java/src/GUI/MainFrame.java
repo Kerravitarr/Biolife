@@ -23,6 +23,7 @@ import java.awt.event.MouseWheelEvent;
 import java.io.File;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JLabel;
@@ -44,13 +45,23 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 	private java.awt.Point mousePoint = null;
 	/**Панелька с миром*/
 	private JScrollPane scrollPane;
-
 	/**Фабрика создания всплывающей подсказки*/
 	private PopupFactory popupFactory;
 	/**Окно подсказки*/
 	private static Popup popup;
 	/**Сама подсказка*/
 	private JToolTip t;
+	/**Состояние мира, для конечного автомата. Чем больше индекс, тем хуже стало миру*/
+	private enum WORLD_STATUS {
+		HAS_LIFE, HAS_OBJECT, EMPTY;
+		public static WORLD_STATUS getStatus(){
+			if(Configurations.world.getCount(CellObject.LV_STATUS.LV_ALIVE) > 0) return HAS_LIFE;
+			final var countAll = Arrays.stream(CellObject.LV_STATUS.values).reduce(0d, (a,b) -> a + Configurations.world.getCount(b), Double::sum);
+			return countAll > 0 ? HAS_OBJECT : EMPTY;
+		}
+	}
+	/**Текущий статус мира*/
+	private WORLD_STATUS nowStatus = WORLD_STATUS.EMPTY;
 	
 	
 	/**Поток, который автоматически стартует при создании*/
@@ -238,16 +249,19 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 				world.getCount(CellObject.LV_STATUS.LV_POISON), world.getCount(CellObject.LV_STATUS.LV_WALL), world.isActiv() ? ">" : "||");
 		setTitle(title);
 		wv.repaint();
-		//Вывод сообщения, если мир опустеет
-		if(world.getCount(CellObject.LV_STATUS.LV_ALIVE) == 0 && Configurations.world.isActiv()){
-			java.awt.Toolkit.getDefaultToolkit().beep();
-			//Configurations.world.stop();
-			//JOptionPane.showMessageDialog(null, Configurations.getProperty(MainFrame.class,"noAlive"), "BioLife", JOptionPane.WARNING_MESSAGE);
-		}
+		//Действия, только при моделировании
+		if(world.isActiv()){
+			//Вывод сообщения, если мир опустеет
+			final var status = WORLD_STATUS.getStatus();
+			if(nowStatus.ordinal() < status.ordinal()){
+				java.awt.Toolkit.getDefaultToolkit().beep();
+				Configurations.world.awaitStop();
+				JOptionPane.showMessageDialog(null, Configurations.getProperty(MainFrame.class,status.name()), "BioLife", JOptionPane.WARNING_MESSAGE);
+			}
+			nowStatus = status;
 		
-		//Автосохранение
-		if(Math.abs(world.step - Configurations.confoguration.lastSaveCount) > Configurations.confoguration.SAVE_PERIOD){
-			if(world.isActiv()){
+			//Автосохранение
+			if(nowStatus == WORLD_STATUS.HAS_LIFE && Math.abs(world.step - Configurations.confoguration.lastSaveCount) > Configurations.confoguration.SAVE_PERIOD){
 				//Если мир пассивный - то с чего мы вдруг решили его начать сохранять? Может он только загружен?
 				final var loc = scrollPane.getLocationOnScreen();
 				if(popup != null)
