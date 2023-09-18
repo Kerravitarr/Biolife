@@ -133,14 +133,31 @@ public abstract class CellObject {
 		years++;
 
 		try {
+			//Пущай походит
+			step();
+			//А теперь воздействия окружающей среды.
+			//Почему так?
+			//Потому что иначе клетка за ход сможет переместиться слишком далеко
+			//Если уж так надо - пускай перемещается после хода
+			//Так у неё будет больше "защитный" барьер, который не даёт парралельным потокам
+			//Испоганить клетку
+			
 			//Воздействие всех потоков на объект
 			for(final var gz : Configurations.streams)
 				gz.action(this);
-			//Воздействие источников минералов на живую клетку
 			switch (alive) {
 				case LV_ALIVE -> {
 					final var acp = ((AliveCellProtorype)this);
+					//Воздействие источников минералов на живую клетку
 					acp.addMineral((long) acp.mineralAround());
+					//Всплытие/погружение
+					if (acp.getBuoyancy() != 0) {
+						if (acp.getBuoyancy() < 0 && getAge() % (acp.getBuoyancy() + 101) == 0) {
+							moveD(DIRECTION.DOWN);
+						} else if (acp.getBuoyancy() > 0 && getAge() % (101 - acp.getBuoyancy()) == 0) {
+							moveD(DIRECTION.UP);
+						}
+					}
 				}
 				case LV_ORGANIC, LV_POISON, LV_WALL -> {}
 				default -> throw new AssertionError("Мы не ожидали тут встретить объект типа " + alive);
@@ -152,8 +169,6 @@ public abstract class CellObject {
 				if(d != null)
 					this.moveD(d);
 			}
-			//Ну и пусть теперь походит
-			step();
 		}catch (CellObjectRemoveException e) {
 			//Мы умерли и уже удалили себя с поля. Помечаем себя призраком и уходим
 			if(!aliveStatus(LV_STATUS.GHOST))

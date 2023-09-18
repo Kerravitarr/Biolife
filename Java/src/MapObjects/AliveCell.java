@@ -175,14 +175,6 @@ public class AliveCell extends AliveCellProtorype {
                 break;
             }
         }
-        //Всплытие/погружение
-        if (getBuoyancy() != 0) {
-            if (getBuoyancy() < 0 && getAge() % (getBuoyancy() + 101) == 0) {
-                moveD(DIRECTION.DOWN);
-            } else if (getBuoyancy() > 0 && getAge() % (101 - getBuoyancy()) == 0) {
-                moveD(DIRECTION.UP);
-            }
-        }
         //Трата энергии на ход
         if (isSleep) {
             setSleep(false);
@@ -313,6 +305,16 @@ public class AliveCell extends AliveCellProtorype {
             return super.move(direction);
         } else {
             //Многоклеточный. Тут логика куда интереснее!
+			
+			//TODO
+			//Концепция!
+			//Пускай, если расстояние от бота больше, чем 1 клетка,
+			//То он создаст объект-прослойку. Которая будет имитировать эту самую связь
+			//Для друзей бота эта прослойка будет проходимой
+			//А для всех остальных - она будет ботом
+			//При этом!
+			//Эта прослойка может стягивать к себе все окружающие клетки, обеспечивая
+			//Тем самым элластичность!
             OBJECT see = super.see(direction);
             if (see.isEmptyPlase) {
                 //Туда двинуться можно, уже хорошо.
