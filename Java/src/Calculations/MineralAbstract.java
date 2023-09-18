@@ -16,7 +16,7 @@ import java.util.logging.Logger;
  */
 public abstract class MineralAbstract extends DefaultEmitter{
 	/**Коээфициент "затухания" для минералов. Каждая минеральная нычка может иметь своё затухание*/
-	protected double attenuation;
+	private double attenuation;
 
 	/**Создаёт источник минералов
 	 * @param p максимальная энергия солнца, будто и не было тени
@@ -44,11 +44,25 @@ public abstract class MineralAbstract extends DefaultEmitter{
 	 */
 	public abstract double getConcentration(Point pos);
 	
+
+	/**Растворимость минералов, как быстро теряется сила
+	 * @return сколько минералов теряется на 1 клетку поля
+	 */
+	public double getAttenuation() {
+		return attenuation;
+	}
+
+	/** Сохраняет растворимость минералов
+	 * @param attenuation сколько минералов теряется на 1 клетку поля
+	 */
+	public void setAttenuation(double attenuation) {
+		this.attenuation = attenuation;
+	}
 	
 	@Override
 	public JSON toJSON(){
 		final var j = super.toJSON();
-		j.add("attenuation", attenuation);
+		j.add("attenuation", getAttenuation());
 		j.add("_className", this.getClass().getName());
 		return j;
 	}

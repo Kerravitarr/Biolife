@@ -227,6 +227,7 @@ public class Settings extends javax.swing.JPanel {
 	/**Пересоздаёт минералы*/
 	private void rebuildMinerals(){
 		minerals.removeAll();
+		final var dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
 		for (int i = 0; i < Configurations.minerals.size(); i++) {
 			if(i > 0)
 				minerals.add(new JPopupMenu.Separator());
@@ -235,6 +236,9 @@ public class Settings extends javax.swing.JPanel {
 			minerals.add(new SettingsSlider("minerals.power", 1, 20, 200, 1,(int)mineral.getPower(),  null, e -> {
 				mineral.setPower(e);
 			}));
+			minerals.add(new SettingsSlider("minerals.attenuation",
+				0, (int)(dc.DIRTY_WATER * 100), 1000,
+				0, (int)(mineral.getAttenuation() * 100), null, e -> mineral.setAttenuation(e / 100d)));
 			minerals.add(new SettingsBoolean("emitter.isLine", !mineral.getIsLine(), e -> {
 				mineral.setIsLine(!e);
 			}));
