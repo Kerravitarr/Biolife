@@ -80,7 +80,7 @@ public class MineralEllipse extends MineralAbstract {
 	}
 	@Override
 	public double getConcentration(Point pos) {
-		if(attenuation == 0d)
+		if(getAttenuation() == 0d)
 			return power;
 		//Расстояние от центра до точки
 		var d = pos.distance(position);
@@ -89,7 +89,7 @@ public class MineralEllipse extends MineralAbstract {
 			if (!isLine && d.getHypotenuse() <= a) {
 				return power;
 			} else {
-				return Math.max(0, power - attenuation * Math.abs(d.getHypotenuse() - a));
+				return Math.max(0, power - getAttenuation() * Math.abs(d.getHypotenuse() - a));
 			}
 		} else {
 			//У нас эллипс. Расстояние от некой точки до эллипса...
@@ -123,7 +123,7 @@ public class MineralEllipse extends MineralAbstract {
 					ty /= t;
 				}
 				final var dist = Math.hypot(d.x - Math.copySign(a * tx, d.x), d.y - Math.copySign(b * ty, d.y));
-				return Math.max(0, power - attenuation * dist);
+				return Math.max(0, power - getAttenuation() * dist);
 			}
 		}
 	}
@@ -165,11 +165,10 @@ public class MineralEllipse extends MineralAbstract {
 	
 	@Override
 	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {
-		if(attenuation == 0d){
+		if(getAttenuation() == 0d){
 			if(posX == position.getX() && posY == position.getY()){
-				//Если у нас чистая вода, то солнце осветит собой всё, что можно
-				g.setColor(AllColors.SUN);				
-				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.confoguration.MAP_CELLS.width), transform.toScrin(Configurations.confoguration.MAP_CELLS.height));
+				g.setColor(AllColors.MINERALS);				
+				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.getWidth()), transform.toScrin(Configurations.getHeight()));
 			}
 			return;
 		}
@@ -183,7 +182,7 @@ public class MineralEllipse extends MineralAbstract {
 		//Где солнышко заканчивается
 		final var a0 = transform.toScrin(Math.max(a2, b2))/2;
 		//Сколько энергии в солнышке
-		final var p = transform.toScrin((int)Math.round(power / attenuation));
+		final var p = transform.toScrin((int)Math.round(power / getAttenuation()));
 		//Где заканчивается свет от него
 		final var s = Math.max(1, a0 + p);
 		//А в процентах расстояние от 0 до границы солнца

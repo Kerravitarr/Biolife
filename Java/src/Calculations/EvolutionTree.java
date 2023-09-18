@@ -25,7 +25,7 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 		/**Время, когда узел появился*/
 		private final long time;
 		//Поколение в этой ветке
-		long generation;
+		private long generation;
 		//Потомки нашего узла
 		List<Node> child = new java.util.concurrent.CopyOnWriteArrayList<>();
 		/**Счётчик ветвей*/

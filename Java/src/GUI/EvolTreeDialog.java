@@ -35,9 +35,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	/**Ключевой узел, от которого рисуем*/
 	private EvolutionTree.Node rootNode = EvolutionTree.root;
 	/**Пара чисел, для вычисления количества детей и узлов*/
-	private class Pair{	private int countAllChild,countChildCell; Pair(int cac, int ccc){countAllChild = cac; countChildCell = ccc;}}
-	/**Пара значений - количество живых потомков и количество ветвей после узла*/
-	private Pair rootPair = new Pair(0,0);
+	private static class Pair{	private int countAllChild,countChildCell; Pair(int cac, int ccc){countAllChild = cac; countChildCell = ccc;}}
 	/**Круглая диаграмма времени или плоская?*/
 	private boolean isCurcleDiagram = false;
 	/**Пропорционально времени отображать или нет?*/
@@ -286,8 +284,9 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			
 			final var step = ((double) delX) / childs.size();
 			var maxD = deep;
+			EvolutionTree.Node child = null;
 			for(int i = 0 ; i < childs.size() ; i++) {
-				final var child = childs.get(i);
+				child = next(childs,child);
 				final var d = addLinearNode(child, 
 						(int) Math.round(xStart + step * i), 
 						(int) Math.round(xStart + step * (i + 1)), 
@@ -314,8 +313,9 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			final var stepColor = delColor / childs.size();
 			final var centerX = xStart + delX / 2;
 			
+			EvolutionTree.Node child = null;
 			for(int i = 0 ; i < childs.size() ; i++) {
-				final var child = childs.get(i);
+				child = next(childs,child);
 				var cx = (xStart + stepXPerChild * i) + ((xStart + stepXPerChild * (i + 1)) - (xStart + stepXPerChild * i)) / 2;
 				if(delColor > 0.5)
 					g.setColor(Color.WHITE);
@@ -353,8 +353,9 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			
 			final double stepAnglePerChild = delAngle / childs.size();
 			
+			EvolutionTree.Node child = null;
 			for(int i = 0 ; i < childs.size() ; i++) {
-				final var child = childs.get(i);
+				child = next(childs,child);
 				final var cr = (int) (isTimeLine? timeline * (child.getTimeFounder() - startTimeOffset) : r + timeline);
 				final var csa = startAngle + stepAnglePerChild * i;
 				final var cea = startAngle + stepAnglePerChild * (i + 1);
@@ -388,8 +389,9 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 				g.draw(new java.awt.geom.Arc2D.Double(cx - r, cy - r, r*2, r*2, startAngle + stepAnglePerChild/2, endAngle - startAngle - stepAnglePerChild, java.awt.geom.Arc2D.OPEN));
 			}
 			
+			EvolutionTree.Node child = null;
 			for(int i = 0 ; i < childs.size() ; i++) {
-				final var child = childs.get(i);
+				child = next(childs,child);
 				if(delColor > 0.5) g.setColor(Color.WHITE);
 				else			   g.setColor(Utils.getHSBColor(colorStart + delColor / 2, 1.0, 1.0, 1.0));
 				final var cr = (int) (isTimeLine? timeline * (child.getTimeFounder()-startTimeOffset) : r + timeline);
@@ -440,11 +442,12 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
     public void taskStep() {
 		final var v = Configurations.getViewer();
 		if (v != null && v.get(Legend.class).getMode() == Legend.MODE.EVO_TREE || EvolTreeDialog.this.isVisible()){
-			updateColor();
+			try{updateColor();} catch(java.lang.NullPointerException e){} //Всё нормально, у нас прямо во время перерисовывания изменилось дерево. Такое бывает частенько. Асинхронность
 		}
 		if(EvolTreeDialog.this.isVisible()){
 			try{
-				/*rootPair = */countPair(rootNode);
+				if(countPair(rootNode).countChildCell == 0)
+					restart();
 				//А теперь проверка. Если у нас корень - адам, а в дерев эволюции другой адам... У нас перезагрузилась карта!
 				if(rootNode.getPerrent() == null && rootNode != EvolutionTree.root)
 					restart();
@@ -463,7 +466,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	 * Раскрашивает дерево потомков в цвета, согласно их дереву эволюции
 	 * @param root сам изображаемый узел
 	 */
-	private void colorNode(EvolutionTree.Node root, double colorStart, double colorEnd) {
+	private static void colorNode(EvolutionTree.Node root, double colorStart, double colorEnd) {
 		var delColor = (colorEnd - colorStart);
 		if(delColor > 0.5)
 			root.setColor(Color.WHITE);
@@ -473,21 +476,23 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		List<EvolutionTree.Node> childs = root.getChild();		
 		var stepColor = delColor / childs.size();
 
+		EvolutionTree.Node child = null;
 		for(int i = 0 ; i < childs.size() ; i++) {
-			colorNode(childs.get(i),colorStart + stepColor * i,colorStart + stepColor * (i + 1));
+			child = next(childs,child);
+			colorNode(child,colorStart + stepColor * i,colorStart + stepColor * (i + 1));
 		}
 	}
 	/**
 	 * Раскрашивает дерево предков в белый цвет. Все предки - белые
 	 * @param root сам изображаемый узел
 	 */
-	private void colorNode(EvolutionTree.Node root) {
+	private static void colorNode(EvolutionTree.Node root) {
 		root.setColor(Color.WHITE);
 		if(root.getPerrent() != null)
 			colorNode(root.getPerrent());
 	}
 	/**Возвращает число узлов наследования и число живых клеток*/
-	private Pair countPair(EvolutionTree.Node root) {
+	private static Pair countPair(EvolutionTree.Node root) {
 		var next = new Pair(root.getChild().size(), root.countAliveCell());
 		for(var i : root.getChild()){
 			var add = countPair(i);
@@ -514,18 +519,18 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	}
 	
 	/**Возвращает одну из строк текстового описания узла*/
-	private String formatNode(EvolutionTree.Node node, int row){
+	private static String formatNode(EvolutionTree.Node node, int row){
 		var index = row % 7;
 		try{
 			Pair p = index == 2 ? countPair(node) : null;
 			return switch (index) {
-				default -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodeDescriptionNode"), node.getBranch());
-				case 1 -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodeDaughter"),node.getChild().size());
-				case 2 -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodeStatistic"),p.countAllChild, p.countChildCell);
+				default -> Configurations.getProperty(EvolTreeDialog.class,"nodeDescriptionNode", node.getBranch());
+				case 1 -> Configurations.getProperty(EvolTreeDialog.class,"nodeDaughter",node.getChild().size());
+				case 2 -> Configurations.getProperty(EvolTreeDialog.class,"nodeStatistic",p.countAllChild, p.countChildCell);
 				case 3 -> dateBirth.format(node.getTimeFounder());
 				case 4 -> founderYear.format(node.getFounder().getAge());
-				case 5 -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodePoison"),node.getFounder().getPosionType().toString());
-				case 6 -> MessageFormat.format(Configurations.getProperty(EvolTreeDialog.class,"nodeDna"),node.getFounder().getDna().size);
+				case 5 -> Configurations.getProperty(EvolTreeDialog.class,"nodePoison",node.getFounder().getPosionType().toString());
+				case 6 -> Configurations.getProperty(EvolTreeDialog.class,"nodeDna",node.getFounder().getDna().size);
 				/*case 7 -> {
 					StringBuilder sb = new StringBuilder();
 					for(var i : Utils.sortByValue(rootNode.getFounder().getSpecialization())) {
@@ -545,6 +550,26 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 				} */
 			};
 		} catch (Exception e){ return index + ")";} //Если узлы обновляются, то всегда есть шанс нарваться на асинхронность и вылететь нафиг
+	}
+	/**Возвращает следующий элемент списка по возрастанию
+	 * @param list список
+	 * @param prefur предыдущий элемент. Или Null, если нужен первый
+	 * @return элемент, у которого getGeneration больше, чем у prefur
+	 */
+	private static EvolutionTree.Node next(List<EvolutionTree.Node> list, EvolutionTree.Node prefur) {
+		if (prefur == null) {
+			return list.stream().min((a, b) -> (int) (a.getGeneration() - b.getGeneration())).orElse(null);
+		} else {
+			var minG = Long.MAX_VALUE;
+			EvolutionTree.Node ret = null;
+			for (final var node : list) {
+				if(node.getGeneration() > prefur.getGeneration() && node.getGeneration() < minG){
+					minG = node.getGeneration();
+					ret = node;
+				}
+			}
+			return ret;
+		}
 	}
 
 

@@ -50,7 +50,7 @@ public class MineralRectangle extends MineralAbstract {
 
 	@Override
 	public double getConcentration(Point pos) {
-		if(attenuation == 0d)
+		if(getAttenuation() == 0d)
 			return power;
 		//Расстояние от точки до центра нашей полосы
 		final var d = pos.distance(position);
@@ -59,16 +59,16 @@ public class MineralRectangle extends MineralAbstract {
 		if (isLine) {
 			if (absX <= width / 2 && absY <= height / 2) {
 				//Внутри прямоугольника
-				return Math.max(0, power - attenuation * Math.min(width / 2 - absX, height / 2 - absY));
+				return Math.max(0, power - getAttenuation() * Math.min(width / 2 - absX, height / 2 - absY));
 			} else {
 				//Снаружи прямоугольника
-				return Math.max(0, power - attenuation * Math.max(absX - width / 2, absY - height / 2));
+				return Math.max(0, power - getAttenuation() * Math.max(absX - width / 2, absY - height / 2));
 			}
 		} else {
 			if(absX <= width / 2 && absY <= height / 2 )
 				return power;
 			else
-				return Math.max(0, power - attenuation * Math.max(absX - width / 2, absY - height / 2));
+				return Math.max(0, power - getAttenuation() * Math.max(absX - width / 2, absY - height / 2));
 		}
 	}
 	@Override
@@ -108,11 +108,10 @@ public class MineralRectangle extends MineralAbstract {
 	}
 	@Override
 	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {
-		if(attenuation == 0d){
+		if(getAttenuation() == 0d){
 			if(posX == position.getX() && posY == position.getY()){
-				//Если у нас чистая вода, то солнце осветит собой всё, что можно
-				g.setColor(AllColors.SUN);				
-				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.confoguration.MAP_CELLS.width), transform.toScrin(Configurations.confoguration.MAP_CELLS.height));
+				g.setColor(AllColors.MINERALS);				
+				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.getWidth()), transform.toScrin(Configurations.getHeight()));
 			}
 			return;
 		}
@@ -126,7 +125,7 @@ public class MineralRectangle extends MineralAbstract {
 		final var x1 = x0 + w;
 		final var y1 = y0 + h;
 		//Сила излучения, как далеко оно распространяется
-		final var s = Math.max(1, transform.toScrin((int)Math.round(power / attenuation)));
+		final var s = Math.max(1, transform.toScrin((int)Math.round(power / getAttenuation())));
 		//Соотношение цветов
 		final var fractions = new float[] { 0.0f, 1.0f };
 		//Сами цвета
