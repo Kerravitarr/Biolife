@@ -21,6 +21,21 @@ public final class Point{
 	private static Point[][] points;
 	/**Тип мира, для которого были созданы точки выше. Отвечает за параметр валидности*/
 	private static Configurations.WORLD_TYPE type;
+	private final static int VECTOR_MIN_X = -5;
+	private final static int VECTOR_MAX_X = 5;
+	private final static int VECTOR_MIN_Y = -5;
+	private final static int VECTOR_MAX_Y = 5;
+	/**Базовые вектора мира, которые будут использоваться чаще всего*/
+	private final static Vector[][] vectors = new Vector[VECTOR_MAX_X - VECTOR_MIN_X][VECTOR_MAX_Y-VECTOR_MIN_Y];
+	static{
+		final var maxX = VECTOR_MAX_X - VECTOR_MIN_X;
+		final var maxY = VECTOR_MAX_Y - VECTOR_MIN_Y;
+		for (int x = 0; x < maxX; x++) {
+			for (int y = 0; y < maxY; y++) {
+				vectors[x][y] = new Vector(VECTOR_MIN_X + x,VECTOR_MIN_Y + y);
+			}
+		}
+	}
 	
 	/**
 	Единичный вектор. Хотя его длина не всегда равна 1, он точно указвыает все возможные направления на ближайшие, от текущей, точки.
@@ -111,13 +126,26 @@ public final class Point{
 	А это вектор. В отличии от Point вектор может иметь как положительные, так и отрицательные числа. 
 	А ещё он НЕ учитывает границы мира. Так как это направление, то от текущей точки он может указывать на точку за границей мира
 	*/
-	public static class Vector{
+	public final static class Vector{
+		/**Создаёт вектор нужного размера
+		 * @param x длина по Х
+		 * @param y длина по Y
+		 * @return вектор, размеры которого мы задали
+		 */
+		public static Vector create(int x, int y) {
+			if ((VECTOR_MIN_X <= x && x < VECTOR_MAX_X) && (VECTOR_MIN_Y <= y && y < VECTOR_MAX_Y))
+				return vectors[x - VECTOR_MIN_X][y - VECTOR_MIN_Y];
+			else
+				return new Vector(x, y);
+		}
 		/**Направление по оси x*/
 		public final int x;
 		/**Направление по оси y*/
 		public final int y;
-		/**Гипотинуза, дляна вектора*/
+		/**Гипотинуза, длина вектора*/
 		private Double h = null;
+		/**Направление вектора*/
+		private DIRECTION d = null;
 		
 		private Vector(int x, int y){this.x = x;this.y = y;};
 		/**Возвращает гипотинузу вектор
@@ -133,75 +161,80 @@ public final class Point{
 		 *			таже самая точка, то возвращается null
 		 */
 		public DIRECTION direction(){
-			switch (x) {
-				case -1 -> {
-					switch (y) {
-						case -1 -> {return Point.DIRECTION.UP_L;}
-						case 0 -> {return Point.DIRECTION.LEFT;}
-						case 1 -> {return Point.DIRECTION.DOWN_L;}
-					}
-				}
-				case 0 -> {
-					switch (y) {
-						case -1 -> {return Point.DIRECTION.UP;}
-						case 0 -> {return null;}
-						case 1 -> {return Point.DIRECTION.DOWN;}
-					}
-				}
-				case 1 -> {
-					switch (y) {
-						case -1 ->{return Point.DIRECTION.UP_R;}
-						case 0 -> {return Point.DIRECTION.RIGHT;}
-						case 1 -> {return Point.DIRECTION.DOWN_R;}
-					}
-				}
-			}
-			//А жаль, могло-бы быть всё куда проще
-			if(x < 0){
-				if (y == 0) {
-					return Point.DIRECTION.LEFT;
-				} else if (y < 0) {
-					final var tan = y/x;
-					if(tan < 0.41421356)
-						return Point.DIRECTION.LEFT;
-					else if(tan > 2.41421356)
-						return Point.DIRECTION.UP;
-					else 
-						return Point.DIRECTION.UP_L;
-				} else {
-					final var tan = y/-x;
-					if(tan < 0.41421356)
-						return Point.DIRECTION.LEFT;
-					else if(tan > 2.41421356)
-						return Point.DIRECTION.DOWN;
-					else 
-						return Point.DIRECTION.DOWN_L;
-				}
-			} else if (x == 0) {
-				if(y < 0) return Point.DIRECTION.UP;
-				else if(y == 0) return null;
-				else return Point.DIRECTION.DOWN;
-			} else { //x > 0
-				if (y == 0) {
-					return Point.DIRECTION.RIGHT;
-				} else if(y < 0) {
-					final var tan = -y/x;
-					if(tan < 0.41421356) //Тангенс 22,5 градуса - примерно 0.41421356. Это-же даёт -0/+1
-						return Point.DIRECTION.RIGHT;
-					else if(tan > 2.41421356) //Тангенс 65,5 градусов - 2.41421356 Это-же даёт -1/+0
-						return Point.DIRECTION.UP;
-					else  //Это-же даёт -1/+1
-						return Point.DIRECTION.UP_R;
-				} else { //y > 0
-					final var tan = y/x;
-					if(tan < 0.41421356)
-						return Point.DIRECTION.RIGHT;
-					else if(tan > 2.41421356)
-						return Point.DIRECTION.DOWN;
-					else 
-						return Point.DIRECTION.DOWN_R;
-				}
-			}
+            if(d == null && x != 0 && y != 0){
+                d = switch (x) {
+				    case -1 -> {
+					    switch (y) {
+						    case -1 -> Point.DIRECTION.UP_L;
+						    case 0 -> Point.DIRECTION.LEFT;
+						    case 1 -> Point.DIRECTION.DOWN_L;
+					    }
+				    }
+				    case 0 -> {
+					    switch (y) {
+						    case -1 -> Point.DIRECTION.UP;
+						    case 0 -> null;
+						    case 1 -> Point.DIRECTION.DOWN;
+					    }
+				    }
+				    case 1 -> {
+					    switch (y) {
+						    case -1 ->Point.DIRECTION.UP_R;
+						    case 0 -> Point.DIRECTION.RIGHT;
+						    case 1 -> Point.DIRECTION.DOWN_R;
+					    }
+				    }
+			    };
+                if(d == null){
+			        //А жаль, могло-бы быть всё куда проще
+			        if(x < 0){
+				        if (y == 0) {
+					        d = Point.DIRECTION.LEFT;
+				        } else if (y < 0) {
+					        final var tan = y/x;
+					        if(tan < 0.41421356)
+						        d = Point.DIRECTION.LEFT;
+					        else if(tan > 2.41421356)
+						        d = Point.DIRECTION.UP;
+					        else 
+						        d = Point.DIRECTION.UP_L;
+				        } else {
+					        final var tan = y/-x;
+					        if(tan < 0.41421356)
+						        d = Point.DIRECTION.LEFT;
+					        else if(tan > 2.41421356)
+						        d = Point.DIRECTION.DOWN;
+					        else 
+						        d = Point.DIRECTION.DOWN_L;
+				        }
+			        } else if (x == 0) {
+				        if(y < 0) d = Point.DIRECTION.UP;
+				        else if(y == 0) d = null;
+				        else d = Point.DIRECTION.DOWN;
+			        } else { //x > 0
+				        if (y == 0) {
+					        d = Point.DIRECTION.RIGHT;
+				        } else if(y < 0) {
+					        final var tan = -y/x;
+					        if(tan < 0.41421356) //Тангенс 22,5 градуса - примерно 0.41421356. Это-же даёт -0/+1
+						        d = Point.DIRECTION.RIGHT;
+					        else if(tan > 2.41421356) //Тангенс 65,5 градусов - 2.41421356 Это-же даёт -1/+0
+						        d = Point.DIRECTION.UP;
+					        else  //Это-же даёт -1/+1
+						        d = Point.DIRECTION.UP_R;
+				        } else { //y > 0
+					        final var tan = y/x;
+					        if(tan < 0.41421356)
+						        d = Point.DIRECTION.RIGHT;
+					        else if(tan > 2.41421356)
+						        d = Point.DIRECTION.DOWN;
+					        else 
+						        d = Point.DIRECTION.DOWN_R;
+				        }
+			        }
+                }
+            }
+			return d;
 		}
 		
 		@Override
@@ -360,7 +393,7 @@ public final class Point{
 					else 
 						del += width;
 				}
-				return new Vector(del, second.y - first.y);
+				return Vector.create(del, second.y - first.y);
 			}
 			case LINE_V -> {
 				var del = second.y - first.y;
@@ -370,7 +403,7 @@ public final class Point{
 					else 
 						del += height;
 				}
-				return new Vector(second.x - first.x, del);
+				return Vector.create(second.x - first.x, del);
 			}
 			case FIELD_R -> {
 				var dx = second.x - first.x;
@@ -387,10 +420,10 @@ public final class Point{
 					else 
 						dy += height;
 				}
-				return new Vector(dx, dy);
+				return Vector.create(dx, dy);
 			}
 			case RECTANGLE, CIRCLE -> {
-				return new Vector(second.x - first.x, second.y - first.y);
+				return Vector.create(second.x - first.x, second.y - first.y);
 			}
 			default -> throw new AssertionError();
 		}
