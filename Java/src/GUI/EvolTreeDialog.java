@@ -153,7 +153,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 				if(isTimeLine)
 					timeline = ((double) Math.min(cx, cy)) / (Configurations.world.step - startTimeOffset);
 				else
-					timeline = Math.min(cx, cy) / (5);
+					timeline = Math.min(cx, cy) / 7;
 				if(isNeedUpdate || Configurations.world.isActiv()) {
 					removeAll();
 					try{
@@ -320,7 +320,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 				if(delColor > 0.5)
 					g.setColor(Color.WHITE);
 				else
-					g.setColor(Utils.getHSBColor(colorStart + delColor / 2, 1.0, 1.0, 1.0));
+					g.setColor(Utils.getHSBColor(colorStart + stepColor * (i + 0.5), 1.0, 1.0, 1.0));
 				final var cy = (int) (isTimeLine ? getMaxY() - (child.getTimeFounder()-startTimeOffset) * timeline : yPos - timeline);
 				g.drawLine(centerX, yPos, (int) cx, cy + TEXT_SIZE);
 				paintLineNode(g,child, 
@@ -393,7 +393,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			for(int i = 0 ; i < childs.size() ; i++) {
 				child = next(childs,child);
 				if(delColor > 0.5) g.setColor(Color.WHITE);
-				else			   g.setColor(Utils.getHSBColor(colorStart + delColor / 2, 1.0, 1.0, 1.0));
+				else			   g.setColor(Utils.getHSBColor(colorStart + stepColor * (i + 0.5), 1.0, 1.0, 1.0));
 				final var cr = (int) (isTimeLine? timeline * (child.getTimeFounder()-startTimeOffset) : r + timeline);
 				final var csa = startAngle + stepAnglePerChild * i;
 				final var cea = startAngle + stepAnglePerChild * (i + 1);
@@ -506,7 +506,10 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	 * Сбрасывает корневой узел дерева
 	 */
 	public void restart(){
-		setRootNode(EvolutionTree.root);
+		if(EvolutionTree.root.countAliveCell() == 0 && EvolutionTree.root.getChild().size() == 1)
+			setRootNode(EvolutionTree.root.getChild().get(0));
+		else
+			setRootNode(EvolutionTree.root);
 	}
 	
 	private void setRootNode(EvolutionTree.Node newNode){

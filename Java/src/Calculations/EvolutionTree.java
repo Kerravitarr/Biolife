@@ -20,6 +20,7 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 	
 	/**Узел дерева эволюции */
 	public static class Node{
+		/**Базовый цвет узла и потомков узла*/
 		private static final Color DEFAULT_COLOR = new Color(255,255,255,50);
 		
 		/**Время, когда узел появился*/
@@ -33,9 +34,8 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 		/**Число живых потомков*/
 		private final AtomicInteger countAliveCell;
 		/**Наш родитель, общий предок, если хотите*/
-		private Node perrent;
-		
-		/**Клетка, создавшая узел:*/
+		private Node perrent;		
+		/**Клетка, создавшая узел. В ней произошла мутация, отличившая её от родителя:*/
 		private AliveCell founder;
 		
 		//====================СПЕЦ ПЕРЕМЕННЫЕ. Нужны для дерева эволюции
