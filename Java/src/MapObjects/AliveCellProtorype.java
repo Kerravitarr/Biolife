@@ -193,32 +193,31 @@ public abstract class AliveCellProtorype extends CellObject{
 			if(y < 0) angle = 1f - angle;
 			phenotype = Utils.getHSBColor(angle, 1f, 0.5 + lenght / 200, 1f);
 		}
-		/**Сохраняет новое значение специализации*/
+		/**Сохраняет новое значение специализации
+		 * @param type какая специализация
+		 * @param co какое у неё будет новое значение
+		 */
 		public void set(TYPE type, int co) {
 			if(get(type) == co) {
 				return;
 			} else {
-				var del = co - get(type);
-				var summ = MAX_SPECIALIZATION - get(type);
+				final var del = co - get(type);
+				var summBefore = MAX_SPECIALIZATION - get(type);
 				var max = 0;
+				var sumAfter = MAX_SPECIALIZATION;
 				for(var i : TYPE.values) {
 					if(i == type) continue;
-					var nVal = (int) Utils.betwin(0.0, Math.round(((double)(get(i) * (summ - del))) / summ), MAX_SPECIALIZATION );
+					var nVal = (int) Utils.betwin(0.0, Math.round(((double)(get(i) * (summBefore - del))) / summBefore), MAX_SPECIALIZATION );
 					if(nVal >= max) {
 						max = nVal;
 						main = i;
 					}
+					sumAfter -= nVal;
 					put(i, nVal );
 				}
-				summ = 0;
-				for(var i : TYPE.values) {
-					if(i != type)
-						summ += get(i);
-				}
-				var nVal = MAX_SPECIALIZATION - summ;
-				if(nVal >= max)
+				if(sumAfter >= max)
 					main = type;
-				put(type, nVal);
+				put(type, sumAfter);
 			}
 			updateColor();
 		}
