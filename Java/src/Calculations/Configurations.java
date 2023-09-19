@@ -450,7 +450,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		final var ret =  switch (type) {
 			case LINE_H -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
 			case LINE_V -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
-			case RECTANGLE -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
+			case RECTANGLE -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
 			default ->throw new AssertionError();
 		};
 		return ret;
