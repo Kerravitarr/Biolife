@@ -20,6 +20,8 @@ import MapObjects.Poison;
 import Utils.Utils;
 import Calculations.Configurations;
 import Calculations.Point;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	private class Graph extends JPanel {
@@ -61,6 +63,14 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	private boolean updateSrin = false;
 	/**Блоки, из которых состоит легеда - цвета и значения интервалов*/
 	private Value[] values = new Value[0];
+	/**Цветовой градиент для здоровья*/
+	private final static ColorGradient HPColors = new ColorGradient(new Color(215,42,89,127),new Color(68,231,26,255), false);
+	/**Цветовой градиент для минералов*/
+	private final static ColorGradient MPColors = new ColorGradient(new Color(102,155,154,64),new Color(103,2,255,255), true);
+	/**Цветовой градиент для возраста*/
+	private final static ColorGradient AgeColors = new ColorGradient(Color.RED,Color.ORANGE, false);
+	/**Цветовой градиент для покалений*/
+	private final static ColorGradient GenerationColors = new ColorGradient(Color.RED,Color.ORANGE, false);
 	/**Высота области легеды*/
 	private final int _HEIGHT = 40;
 	/**Размер краёв области легеды*/
@@ -69,7 +79,7 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	/**Режимы работы легенды*/
 	public enum MODE {DOING,HP,YEAR,PHEN, GENER, MINERALS, POISON, EVO_TREE}
 	/**Интервал значений и цвет значений для подписей внизу экрана*/
-	class Value{
+	private class Value{
 		/**0-1, где находится значение*/
 		double x ;
 		/**0-1 его ширина*/
@@ -80,7 +90,51 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 		Color color;
 		public Value(double right, double width, String title, Color color) {this.x=right - width/2;this.width=width/2;this.title=title;this.color=color;}
 	}
-		
+	/**Класс, определяющий результирующий цвет на основе цветового круга и прогресса на этом кругу*/
+	private static class ColorGradient{
+		/**Список всех уже посчитанных цветов*/
+		private Map<Integer, Color> colors = new HashMap<>();
+		/**Создаёт круговой градиент
+		 * @param from от какого цвета
+		 * @param to к какому цвету
+		 * @param isROYGBVR переход Красный-Оранжевый-Жёлтый-Зелёный-Голубой-Синий-Фиолетовый-Красный или обратный?
+		 */
+		public ColorGradient(Color from, Color to, boolean isROYGBVR){
+			final float[] hsbfrom = new float[4];
+			final float[] params = new float[4];
+			Color.RGBtoHSB(from.getRed(), from.getGreen(), from.getBlue(), hsbfrom);
+			hsbfrom[3] = from.getAlpha() / 255f;
+			final var hsbto = new float[4];
+			Color.RGBtoHSB(to.getRed(), to.getGreen(), to.getBlue(), hsbto);
+			hsbto[3] = to.getAlpha() / 255f;
+			if(hsbfrom[0] <= hsbto[0])
+				params[0] = ((hsbto[0] - hsbfrom[0]) + (isROYGBVR ? 0 : -1)) / 100f;
+			else
+				params[0] = ((hsbto[0] - hsbfrom[0]) + (isROYGBVR ? 0 : +1)) / 100f;
+			for (int i = 1; i < params.length; i++)
+				params[i] = (hsbto[i] - hsbfrom[i]) / 100f;
+			for (int i = 0; i < 151; i++) {
+				colors.put(i, getHSBColor(hsbfrom[0] + params[0] * i, hsbfrom[1] + params[1] * i, hsbfrom[2] + params[2] * i, hsbfrom[3] + params[3] * i));
+			}
+		}
+		/**Возвращает один из цветов прогресса
+		 * @param progress
+		 * @return 
+		 */
+		public Color cyrcleGradient(double progress){
+			final var p = Utils.betwin(0,(int) Math.round(progress*100),151);
+			return colors.get(p);
+		}
+		private Color getHSBColor(float h, float s, float b, float a){
+			while(h > 1)h -= 1f;
+			while(h < 0)h += 1f;
+			s = Utils.betwin(0f, s, 1f);
+			b = Utils.betwin(0f, b, 1f);
+			a = Utils.betwin(0f, a, 1f);
+			return Utils.getHSBColor(h,s,b,a);
+		}
+	}
+	
 		
 	/**
 	 * Create the panel.
@@ -126,79 +180,43 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	@Override
 	public void taskStep(){
 		if (!isVisible()) return;
+		//Число ячеек с иписанием легенды
+		final var countColumns = 10;
+		
+		double summHP_ = 0d;
+		double maxHP_ = 0;
+		long summMP_ = 0l;
+		long maxMP_ = 0l;
+		long maxAge_ = 0l;
+		long maxGen_ = 0l;
+		long minGen_ = Long.MAX_VALUE;
+
+		for (int x = 0; x < Configurations.getWidth(); x++) {
+			for (int y = 0; y < Configurations.getHeight(); y++) {
+				CellObject cell = Configurations.world.get(Point.create(x, y));
+				if (cell != null && cell instanceof AliveCell acell){
+					summHP_ += acell.getHealth();
+					maxHP_ = Math.max(maxHP_, acell.getHealth());
+					summMP_ += acell.getMineral();
+					maxMP_ = Math.max(maxMP_, acell.getMineral());
+					maxAge_ = Math.max(maxAge_, acell.getAge());
+					maxGen_ = Math.max(maxGen_, acell.getGeneration());
+					minGen_ = Math.min(minGen_, acell.getGeneration());
+				}
+			}
+		}
+		maxHP = (long) maxHP_;
+		maxMP = maxMP_;
+		maxAge = (long) (maxAge_ * 1.4); //Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах и отдать их для стен и прочего
+		maxGenDef = maxGen_;
+		minGenDef = minGen_;
+		
 		switch (getMode()) {
 			case DOING -> {
 				values = new Value[AliveCell.ACTION.size()];
 				for(int i = 0 ; i < values.length ; i++) {
 					var act = AliveCell.ACTION.staticValues[i];
 					values[i] = new Value((i + 1.0) / values.length, 1.0 / values.length, act.description, new Color(act.r,act.g,act.b));
-				}
-			}
-			case HP -> {
-				var max = 0d;
-				double summ = 0;
-				for (int x = 0; x < Configurations.getWidth(); x++) {
-					for (int y = 0; y < Configurations.getHeight(); y++) {
-						CellObject cell = Configurations.world.get(Point.create(x, y));
-						if (cell != null && cell instanceof AliveCell acell){
-							summ += acell.getHealth();
-							max = Math.max(max, acell.getHealth());
-						}
-					}
-				}
-				maxHP = (long) max;
-				var length = 10;
-				values = new Value[length + 1];
-				var w = 1.0 / values.length;
-				for (int i = 0; i < values.length - 1; i++) {
-					values[i] = new Value(1.0 * (i + 1) / values.length, w, (i * maxHP / length) + "", Utils.getHSBColor(0, 1, 1, (0.25 + 3d*i / (4d*length))));
-				}
-				values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%s",Utils.degree((long)summ)),Utils.getHSBColor(0, 1, 1, (0.25 + 3d / (4d))));
-			}
-			case MINERALS -> {
-				var max = 0l;
-				long summ = 0;
-				for (int x = 0; x < Configurations.getWidth(); x++) {
-					for (int y = 0; y < Configurations.getHeight(); y++) {
-						CellObject cell = Configurations.world.get(Point.create(x, y));
-						if (cell != null && cell instanceof AliveCell acell){
-							summ += acell.getMineral();
-							max = Math.max(max, acell.getMineral());
-						}
-					}
-				}
-				maxMP = max;
-				var length = 10;
-				values = new Value[length + 1];
-				var w = 1.0 / values.length;
-				for (int i = 0; i < values.length - 1; i++) {
-					values[i] = new Value(1.0 * (i + 1) / values.length, w, Integer.toString((int) (i * maxMP / length)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d*i / (4d*length))));
-				}
-				values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%s",Utils.degree((long)summ)),Utils.getHSBColor(0.661111, 1, 1, (0.25 + 3d / 4d)));
-			}
-			case YEAR -> {
-				var max = 0l;
-				for (int x = 0; x < Configurations.getWidth(); x++) {
-					for (int y = 0; y < Configurations.getHeight(); y++) {
-						CellObject cell = Configurations.world.get(Point.create(x, y));
-						if (cell != null && cell instanceof AliveCell acell)
-							max = Math.max(max, acell.getAge());
-					}
-				}
-				maxAge = max;
-				var rmaxAge = maxAge;
-				maxAge *= 1.4;//Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах
-				values = new Value[10];
-				long mAge = 0;
-				StringBuilder text = new StringBuilder(100);
-				for (int i = 0; i < values.length; i++) {
-					long nAge = (i+1) * rmaxAge / values.length;
-					Utils.degree(text,mAge);
-					text.append(" - ");
-					Utils.degree(text,nAge);
-					values[i] = new Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), Color.getHSBColor(i / (values.length * 1.4f), 0.9f, 0.9f));
-					text.setLength(0);
-					mAge = nAge;
 				}
 			}
 			case PHEN ->  {
@@ -208,26 +226,43 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 					values[i] = new Value((i + 1.0) / values.length, 1.0 / values.length, act.toString(), Utils.getHSBColor(act.color, 1f, 1f, 1f));
 				}
 			}
-			case GENER -> {
-				var max = 0l;
-				var min = Long.MAX_VALUE;
-				for (int x = 0; x < Configurations.getWidth(); x++) {
-					for (int y = 0; y < Configurations.getHeight(); y++) {
-						CellObject cell = Configurations.world.get(Point.create(x, y));
-						if (cell != null && cell instanceof AliveCell acell) {
-							max = Math.max(max, acell.getGeneration());
-							min = Math.min(min, acell.getGeneration());
-						}
-					}
+			case HP -> {
+				values = new Value[countColumns + 1];
+				var w = 1.0 / values.length;
+				for (int i = 0; i < values.length - 1; i++) {
+					values[i] = new Value(1.0 * (i + 1) / values.length, w, (i * maxHP / countColumns) + "", HPColors.cyrcleGradient(((double) i) / countColumns));
 				}
-				maxGenDef = max;
-				minGenDef = min;
+				values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%s",Utils.degree((long)summHP_)),HPColors.cyrcleGradient(1d));
+			}
+			case MINERALS -> {
+				values = new Value[countColumns + 1];
+				var w = 1.0 / values.length;
+				for (int i = 0; i < values.length - 1; i++) {
+					values[i] = new Value(1.0 * (i + 1) / values.length, w, Integer.toString((int) (i * maxMP / countColumns)),MPColors.cyrcleGradient(((double) i) / countColumns));
+				}
+				values[values.length - 1]  = new Value(1.0, w, String.format("Σ=%s",Utils.degree((long)summMP_)),MPColors.cyrcleGradient(1));
+			}
+			case YEAR -> {
+				values = new Value[countColumns];
+				long mAge = 0;
+				StringBuilder text = new StringBuilder(100);
+				for (int i = 0; i < values.length; i++) {
+					long nAge = (i+1) * maxAge_ / values.length;
+					Utils.degree(text,mAge);
+					text.append(" - ");
+					Utils.degree(text,nAge);
+					values[i] = new Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), AgeColors.cyrcleGradient(i / (values.length * 1.4f)));
+					text.setLength(0);
+					mAge = nAge;
+				}
+			}
+			case GENER -> {
 				var rdel = maxGenDef - minGenDef;
 				long del = (long) (rdel * 1.4);//Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах
 				maxGenDef = minGenDef + del;
 				long mGen = minGenDef;
 				StringBuilder text = new StringBuilder(100);
-				values = new Value[10];
+				values = new Value[countColumns];
 				for (int i = 0; i < values.length; i++) {
 					long nGen = minGenDef + (i+1) * rdel / values.length;
 					if(i == 0){
@@ -240,13 +275,13 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 					if(i+1 == values.length){
 						text.append("]");
 					}
-					values[i] = new Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), Color.getHSBColor(i / (values.length * 1.4f), 0.9f, 0.9f));
+					values[i] = new Value(1.0 * (i + 1) / values.length, 1.0 / values.length, text.toString(), GenerationColors.cyrcleGradient(i / (values.length * 1.4f)));
 					text.setLength(0);
 					mGen = nGen;
 				}
 			}
 			case POISON -> {
-				values = new Value[10];
+				values = new Value[countColumns];
 				for (int i = 0; i < values.length; i++) {
 					var rg = (int) (255.0 * i / values.length);
 					values[i] = new Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * Poison.MAX_TOXIC / values.length) + "", new Color(rg, rg, rg));
@@ -303,7 +338,7 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	 * @return Цвет
 	 */
 	public Color generationToColor(long gen) {
-		return Utils.getHSBColor(Utils.betwin(0.0, ((double)(gen - minGenDef))/(maxGenDef-minGenDef), 1.0), 1, 1,1);
+		return GenerationColors.cyrcleGradient(((double) (gen - minGenDef)) / (maxGenDef - minGenDef));
 	}
 	/**
 	 * Превращает возраст клетки в конкретный цвет
@@ -319,7 +354,7 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	 * @return Цвет
 	 */
 	public Color AgeToColor(double age) {
-		return Utils.getHSBColor(Utils.betwin(0.0, age, 1.0), 1, 1,1);
+		return AgeColors.cyrcleGradient(age);
 	}
 	/**Переводит очки здровья в цвет
 	 * @param hp сколько очков здоровья
@@ -327,9 +362,9 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	 */
 	public Color HPtToColor(double hp){
 		if(maxHP != 0)
-			return Utils.getHSBColor(0, 1, 1, Utils.betwin(0, (0.25 + 3d * hp / (4d * maxHP)), 1.0));
+			return HPColors.cyrcleGradient(hp/maxHP);
 		else
-			return Utils.getHSBColor(0, 1, 1, 0.25);
+			return HPColors.cyrcleGradient(1);
 	}
 	/**Переводит очки минералов в цвет
 	 * @param mp сколько минералов
@@ -337,9 +372,9 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	 */
 	public Color MPtToColor(double mp){
 		if(maxMP != 0)
-			return Utils.getHSBColor(0.661111, 1, 1, Utils.betwin(0, (0.25 + 3d * mp / (4d * maxMP)), 1.0));
+			return MPColors.cyrcleGradient(mp/maxMP);
 		else
-			return Utils.getHSBColor(0.661111, 1, 1, 0.25);
+			return MPColors.cyrcleGradient(1);
 	}
 	
 }

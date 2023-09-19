@@ -227,6 +227,21 @@ public class Utils {
 		else
 			return val;
 	}
+	/**
+	 * Приравнивает число к интервалу [min,max]
+	 * @param min минимальное значение, меньше которого выходное число точно не будет
+	 * @param val число, которое нужно ограничить
+	 * @param max максимальное значение, больше которого выходное число точно не будет
+	 * @return 
+	 */
+	public static float betwin(float min, float val, float max) {
+		if (val > max)
+			return max;
+		else if (val < min)
+			return min;
+		else
+			return val;
+	}
 	
 	/**
 	 * Сортирует любую карту по значениям
