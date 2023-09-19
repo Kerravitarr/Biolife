@@ -107,6 +107,12 @@ public class WorldView extends javax.swing.JPanel {
 					pixelXDel = border.width + scalePxPerCell / 2;
 					pixelYDel = (h - Configurations.getHeight() * scalePxPerCell) / 2;
 				}
+				case RECTANGLE -> {
+					border.width = (int) Math.round((w - Configurations.getWidth() * scalePxPerCell) / 2);
+					border.height = (int) Math.round((h - Configurations.getHeight() * scalePxPerCell) / 2);
+					pixelXDel = (w - Configurations.getWidth() * scalePxPerCell) / 2;
+					pixelYDel = (h - Configurations.getHeight() * scalePxPerCell) / 2;
+				}
 				default ->
 					throw new AssertionError();
 			}
@@ -287,7 +293,7 @@ public class WorldView extends javax.swing.JPanel {
 	private void paintField(Graphics2D g, boolean edit) {
 		//Рисуем игровое поле
 		switch (Configurations.confoguration.world_type) {
-			case LINE_H,LINE_V ->{
+			case LINE_H,LINE_V, RECTANGLE ->{
 				//Вода
 				colors[1].paint(g);
 			}
@@ -317,6 +323,11 @@ public class WorldView extends javax.swing.JPanel {
 			}
 			case LINE_V ->{
 				//Песочки
+				colors[0].paint(g);
+				colors[2].paint(g);
+			}
+			case RECTANGLE ->{
+				//Нижняя и верхняя части
 				colors[0].paint(g);
 				colors[2].paint(g);
 			}
@@ -382,7 +393,7 @@ public class WorldView extends javax.swing.JPanel {
 				//Небо
 				colors[0] = new ColorRec(xs,ys,AllColors.SKY);
 				//Вода
-				colors[1] = new ColorRec(xs,yw, AllColors.WATER);
+				colors[1] = new ColorRec(xs,yw, AllColors.WATER_POND);
 				//Земля
 				colors[2] = new ColorRec(xs,yb, AllColors.DRY);
 			}
@@ -405,9 +416,36 @@ public class WorldView extends javax.swing.JPanel {
 				//Песочек левый
 				colors[0] = new ColorRec(xl,yw,AllColors.SAND);
 				//Вода
-				colors[1] = new ColorRec(xw,yw, AllColors.WATER);
+				colors[1] = new ColorRec(xw,yw, AllColors.WATER_RIVER);
 				//Песочек правый
 				colors[2] = new ColorRec(xr,yw, AllColors.SAND);
+			}
+			case RECTANGLE -> {
+				//Нижняя часть поля
+				final int xd[] = new int[8];
+				final int yd[] = new int[8];
+				//Поле, вода
+				final int xw[] = new int[4];
+				final int yw[] = new int[4];
+				//Верхняя часть поля
+				final int yu[] = new int[8];
+				
+				xd[0] = xd[1] = 0;
+				xd[6] = xd[7] = xw[0] = xw[3] = transforms.toScrinX(0);
+				xd[4] = xd[5] = xw[1] = xw[2] = transforms.toScrinX(Configurations.getWidth()-1);
+				xd[2] = xd[3] = getWidth();
+				
+				yd[1] = yd[2] = 0;
+				yw[0] = yw[1] = yd[5] = yd[6] = transforms.toScrinY(0);
+				yd[0] = yd[3] = yd[4] = yd[7] = yu[0] = yu[3] = yu[4] = yu[7] = transforms.toScrinY(Configurations.getHeight()-2); //Место сшивания полей
+				yw[2] = yw[3] = yu[5] = yu[6] = transforms.toScrinY(Configurations.getHeight()-1);
+				yu[1] = yu[2] = getHeight();
+				
+				
+				colors[0] = new ColorRec(xd,yd,AllColors.SKY);
+				colors[2] = new ColorRec(xd,yu, AllColors.OAK);
+				//Вода
+				colors[1] = new ColorRec(xw,yw, AllColors.WATER_AQUARIUM);
 			}
 			default -> 	throw new AssertionError();
 		}
@@ -427,7 +465,7 @@ public class WorldView extends javax.swing.JPanel {
 	 */
 	public double getUborder(){
 		return switch (Configurations.confoguration.world_type) {
-			case LINE_H -> Transforms.UP_DOWN_border.getX();
+			case LINE_H,RECTANGLE -> Transforms.UP_DOWN_border.getX();
 			case LINE_V -> 0d;
 			default -> throw new AssertionError();
 		};
@@ -438,7 +476,7 @@ public class WorldView extends javax.swing.JPanel {
 	 */
 	public double getDborder(){
 		return switch (Configurations.confoguration.world_type) {
-			case LINE_H -> Transforms.UP_DOWN_border.getY();
+			case LINE_H,RECTANGLE -> Transforms.UP_DOWN_border.getY();
 			case LINE_V -> 0d;
 			default -> throw new AssertionError();
 		};
@@ -450,7 +488,7 @@ public class WorldView extends javax.swing.JPanel {
 	public double getLborder(){
 		return switch (Configurations.confoguration.world_type) {
 			case LINE_H -> 0d;
-			case LINE_V -> Transforms.LEFT_RIGHT_border.getX();
+			case LINE_V,RECTANGLE -> Transforms.LEFT_RIGHT_border.getX();
 			default -> throw new AssertionError();
 		};
 	}
@@ -461,7 +499,7 @@ public class WorldView extends javax.swing.JPanel {
 	public double getRborder(){
 		return switch (Configurations.confoguration.world_type) {
 			case LINE_H -> 0d;
-			case LINE_V -> Transforms.LEFT_RIGHT_border.getY();
+			case LINE_V,RECTANGLE -> Transforms.LEFT_RIGHT_border.getY();
 			default -> throw new AssertionError();
 		};
 	}

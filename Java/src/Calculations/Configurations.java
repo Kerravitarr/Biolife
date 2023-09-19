@@ -157,7 +157,12 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		//Скорость разложения органики. За сколько шагов уходит 1 единица энергии
 		TIK_TO_EXIT = 1000;
 		 //Чтобы освещалось только 33 % мира при силе света в 30 единиц
-		DIRTY_WATER =  30d / (height * 0.33);
+		 switch (type) {
+			case LINE_H,LINE_V -> DIRTY_WATER =  30d / (height * 0.33);
+			case RECTANGLE -> DIRTY_WATER =  30d / (Math.min(height, width) * 0.5); //Чтобы освещалась половина мира
+			default -> throw new AssertionError();
+		}
+		
 		
 		SAVE_PERIOD = 100_000;
 		COUNT_SAVE = 3;
@@ -325,7 +330,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 						new TrajectoryPolyLine(401, false, Point.create(width/2, (int) (height/2)), Point.create(width/2, (int) (height-1)), Point.create(width/2, (int) (1))), 
 						width,1, 
 						false,"Движущееся"));
-				//Два куска минералов, два кружочка, которые будут двигаться по диагонали. 
+				//Четыре куска минералов движущихся наискось
 				minerals.add(new MineralEllipse(30,confoguration.DIRTY_WATER * 2, new TrajectoryPolyLine(199,false, Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1), Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 1"));
@@ -340,6 +345,63 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 						true,"Путешествующий эллипс 4"));
 				//Ну и течении в реке
 				streams.add(new StreamVertical(new Trajectory(Point.create(width/2, height/2)), width, height,new StreamAttenuation.PowerFunctionStreamAttenuation(-3, -4001,4),"Течение"));
+			}
+			case RECTANGLE->{
+				buildMap(new Configurations(type, width, height), null);
+				//Будет четыре солнца, которые будут то "закатываться" то "выкатываться"
+				final var offset = Math.min(width, height) / 3;
+				suns.add(new SunRectangle(
+						30, 
+						new TrajectoryPolyLine(1000, false, Point.create(width/2, 0), Point.create(width/2, -offset)), 
+						width,1, 
+						true,"Верхнее"));
+				suns.add(new SunRectangle(
+						30, 
+						new TrajectoryPolyLine(1000, false, Point.create(width/2, height), Point.create(width/2, height+offset)), 
+						width,1, 
+						true,"Нижнее"));
+				suns.add(new SunRectangle(
+						30, 
+						new TrajectoryPolyLine(1000, false, Point.create(0, height/2), Point.create(-offset, height/2)), 
+						1,height, 
+						true,"Левое"));
+				suns.add(new SunRectangle(
+						30, 
+						new TrajectoryPolyLine(1000, false, Point.create(width, height/2), Point.create(width+offset, height/2)), 
+						1,height, 
+						true,"Правое"));
+				
+				
+				//Четыре нычки минералов двигающихся в противофазе с солнцем
+				minerals.add(new MineralRectangle(
+						30,confoguration.DIRTY_WATER,
+						new TrajectoryPolyLine(1000, false, Point.create(width/2, -offset), Point.create(width/2, 0)), 
+						width,1, 
+						true,"Верхняя"));
+				minerals.add(new MineralRectangle(
+						30,confoguration.DIRTY_WATER,
+						new TrajectoryPolyLine(1000, false, Point.create(width/2, height+offset), Point.create(width/2, height)), 
+						width,1, 
+						true,"Нижняя"));
+				minerals.add(new MineralRectangle(
+						30,confoguration.DIRTY_WATER,
+						new TrajectoryPolyLine(1000, false, Point.create(-offset, height/2), Point.create(0, height/2)), 
+						1,height, 
+						true,"Левая"));
+				minerals.add(new MineralRectangle(
+						30,confoguration.DIRTY_WATER,
+						new TrajectoryPolyLine(1000, false, Point.create(width+offset, height/2), Point.create(width, height/2)), 
+						1,height, 
+						true,"Правая"));
+				
+				/*minerals.add(new MineralRectangle(30,confoguration.DIRTY_WATER * 4, 
+						new TrajectoryPolyLine(1000,false,
+								Point.create(0, 0), Point.create(width, 0), Point.create(width, height), Point.create(0, height), Point.create(0, 0),
+								Point.create(width*1/3, height*1/3), Point.create(width*2/3, height*1/3), Point.create(width*2/3, height*2/3), Point.create(width*1/3, height*2/3), Point.create(width*1/3, height*1/3)
+						),
+						width/10, height/10, 
+						true,"Путешествующий источник минералов"));
+				*/
 			}
 			default -> throw new AssertionError();
 		}
@@ -388,6 +450,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		final var ret =  switch (type) {
 			case LINE_H -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
 			case LINE_V -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
+			case RECTANGLE -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
 			default ->throw new AssertionError();
 		};
 		return ret;

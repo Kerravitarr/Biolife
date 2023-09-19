@@ -386,7 +386,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 				requiredH = (1.0 + world.getUborder() + world.getDborder()) * requiredW * Configurations.getHeight() / Configurations.getWidth();
 			} case LINE_V -> {
 				requiredW = (1.0 + world.getLborder() + world.getRborder()) * requiredH * Configurations.getWidth() / Configurations.getHeight();
-			}
+			} case RECTANGLE -> {}
 			default -> throw new AssertionError();
 		}
 		horizont.setUnitIncrement((int)Math.max(1, requiredW / 100));

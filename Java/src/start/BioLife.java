@@ -51,7 +51,7 @@ public class BioLife{
 			System.out.println("Опции находятся в допустимых пределах. Параметры запуска: " + optsStr);
 		}
 		//Создаём мир
-		final var defType = Configurations.WORLD_TYPE.LINE_V;
+		final var defType = Configurations.WORLD_TYPE.RECTANGLE;
 		final var load = _opts.get('L').get(String.class);
 		if(!_opts.get('V').get(Boolean.class)){
 			//С графической частью

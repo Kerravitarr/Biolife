@@ -115,12 +115,13 @@ public class Settings extends javax.swing.JPanel {
 			if(status == CellObject.LV_STATUS.GHOST) continue;
 			final var buildGrav = Configurations.gravitation[i];
 			final var defDir = switch (Configurations.confoguration.world_type) {
-				case LINE_H,LINE_V -> Gravitation.Direction.DOWN;
+				case LINE_H,LINE_V,RECTANGLE -> Gravitation.Direction.DOWN;
 				default -> throw new AssertionError();
 			};
 			final var defPower = switch (Configurations.confoguration.world_type) {
 				case LINE_H -> 2;
 				case LINE_V -> 100;
+				case RECTANGLE -> 1000;
 				default -> throw new AssertionError();
 			};
 			//Немного говнокода вам в копилочку.
