@@ -493,6 +493,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	}
 	/**Возвращает число узлов наследования и число живых клеток*/
 	private static Pair countPair(EvolutionTree.Node root) {
+		if(root.getChild() == null) return new Pair(0,0);
 		var next = new Pair(root.getChild().size(), root.countAliveCell());
 		for(var i : root.getChild()){
 			var add = countPair(i);
