@@ -464,25 +464,6 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 		if (getCell() instanceof AliveCell aliveCell) {
 			panel_DNA.setVisible(true);
 			generation.setText(Integer.toString(aliveCell.getGeneration()));
-			
-			StringBuilder sb = new StringBuilder();
-			final var SM = new HashMap<AliveCell.Specialization.TYPE, Integer>();
-			Arrays.stream(AliveCell.Specialization.TYPE.values()).forEach(key -> SM.put(key, aliveCell.getSpecialization().get(key)));
-		    for(var i : Utils.sortByValue(SM)) {
-		    	if(i.getValue() == 0) continue;
-				if (sb.isEmpty())
-					sb.append(i.getKey().toString());
-				else
-					sb.append(i.getKey().toSString());
-	    		sb.append(' ');
-	    		sb.append(i.getValue());
-	    		sb.append('%');
-	    		sb.append(' ');
-		    }
-			
-			photos.setText(sb.toString());
-			phenotype.setBackground(aliveCell.phenotype);
-			phenotype.setText(MessageFormat.format("R{0} G{1} B{2}", aliveCell.phenotype.getRed(), aliveCell.phenotype.getGreen(), aliveCell.phenotype.getBlue()));
 			filogen.setText(aliveCell.getBranch());
 			
 			DefaultListModel<String> model = new DefaultListModel<> ();
@@ -544,6 +525,27 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 				mucosa.setText(String.valueOf(alive.getMucosa()));
 			else
 				mucosa.clear();
+			
+			StringBuilder sb = new StringBuilder();
+			final var SM = new HashMap<AliveCell.Specialization.TYPE, Integer>();
+			final var specialization = alive.getSpecialization();
+			Arrays.stream(AliveCell.Specialization.TYPE.values).forEach(key -> SM.put(key, specialization.get(key)));
+		    for(var i : Utils.sortByValue(SM)) {
+		    	if(i.getValue() == 0) continue;
+				if (sb.isEmpty())
+					sb.append(i.getKey().toString());
+				else
+					sb.append(i.getKey().toSString());
+	    		sb.append(' ');
+	    		sb.append(i.getValue());
+	    		sb.append('%');
+	    		sb.append(' ');
+		    }
+			
+			photos.setText(sb.toString());
+			phenotype.setBackground(alive.phenotype);
+			phenotype.setText(MessageFormat.format("R{0} G{1} B{2}", alive.phenotype.getRed(), alive.phenotype.getGreen(), alive.phenotype.getBlue()));
+			
 		} else if (getCell() instanceof Poison poison){
 			hp.setText(String.valueOf((int)getCell().getHealth()));
 			toxicFIeld.setText(poison.getType().toString());
