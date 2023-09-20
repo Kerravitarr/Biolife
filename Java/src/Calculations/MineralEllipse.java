@@ -176,7 +176,7 @@ public class MineralEllipse extends MineralAbstract {
 		final var x0 = transform.toScrinX(posX);
 		final var y0 = transform.toScrinY(posY);
 
-		final var maxAlf = (255 * power / Configurations.getMaxConcentrationMinerals());
+		final var maxAlf = (64 + 192 * power / Configurations.getMaxConcentrationMinerals());
 		final var colorMaxLight = AllColors.toDark(AllColors.MINERALS, (int)maxAlf );
 		
 		//Где солнышко заканчивается

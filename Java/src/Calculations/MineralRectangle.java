@@ -129,7 +129,7 @@ public class MineralRectangle extends MineralAbstract {
 		//Соотношение цветов
 		final var fractions = new float[] { 0.0f, 1.0f };
 		//Сами цвета
-		final var colors = new Color[] { AllColors.toDark(AllColors.MINERALS, (int) (255 * power / Configurations.getMaxConcentrationMinerals())), AllColors.MINERALS_DARK };
+		final var colors = new Color[] { AllColors.toDark(AllColors.MINERALS, (int) (64 + 192 * power / Configurations.getMaxConcentrationMinerals())), AllColors.MINERALS_DARK };
 
 		//Рисуем внешнее излучение
 		// Left

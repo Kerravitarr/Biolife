@@ -135,7 +135,8 @@ public class SunRectangle extends SunAbstract {
 		//Соотношение цветов
 		final var fractions = new float[] { 0.0f, 1.0f };
 		//Сами цвета
-		final var colors = new Color[] { AllColors.toDark(AllColors.SUN, (int) (255 * power / Configurations.getMaxSunPower())), AllColors.SUN_DARK };
+		final var colors = new Color[] { AllColors.toDark(AllColors.SUN, (int) (64 + 192 * power / Configurations.getMaxSunPower())), AllColors.SUN_DARK };
+		//final var colors = new Color[] { AllColors.SUN,AllColors.SUN};
 
 		//Рисуем внешнее излучение
 		// Left

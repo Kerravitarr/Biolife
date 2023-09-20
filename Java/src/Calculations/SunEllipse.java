@@ -174,7 +174,7 @@ public class SunEllipse extends SunAbstract {
 		final var x0 = transform.toScrinX(posX);
 		final var y0 = transform.toScrinY(posY);
 
-		final var maxAlf = (255 * power / Configurations.getMaxSunPower());
+		final var maxAlf = (64 + 192 * power / Configurations.getMaxSunPower());
 		final var colorMaxLight = AllColors.toDark(AllColors.SUN, (int)maxAlf );
 		
 		//Где солнышко заканчивается
