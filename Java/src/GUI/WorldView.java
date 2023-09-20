@@ -79,13 +79,13 @@ public class WorldView extends javax.swing.JPanel {
 		* @param x координата на экране
 		* @return x координата на поле. Эта координата может выходить за размеры мира!!!
 		*/
-	   public int toWorldX(int x) {return (int) Math.round((x - border.width)/scalePxPerCell - 0.5);}
+	   public int toWorldX(int x) {return (int) ((x - border.width)/scalePxPerCell);}
 	   /**
 		* Переводит координаты экрана в координаты мира
 		* @param y координата на экране
 		* @return x координата на поле. Эта координата может выходить за размеры мира!!!
 		*/
-	   public int toWorldY(int y) {return (int) Math.round((y - border.height)/scalePxPerCell - 0.5);}
+	   public int toWorldY(int y) {return (int) ((y - border.height)/scalePxPerCell);}
 	   
 		/** Специальная функция, которая обновляет все масштабные коэффициенты */
 		private void recalculate() {
@@ -94,28 +94,10 @@ public class WorldView extends javax.swing.JPanel {
 			final double w = getWidth();
 			//Пересчёт размера мира
 			scalePxPerCell = Math.min(h * (1d - getUborder() - getDborder()) / (Configurations.getHeight()), w * (1d - getLborder() - getRborder()) / (Configurations.getWidth()));
-			switch (Configurations.confoguration.world_type) {
-				case LINE_H -> {
-					border.width = 0;
-					border.height = (int) Math.round((h - Configurations.getHeight() * scalePxPerCell) / 2);
-					pixelXDel = (w - Configurations.getWidth() * scalePxPerCell) / 2;
-					pixelYDel = border.height + scalePxPerCell / 2;
-				}
-				case LINE_V -> {
-					border.width = (int) Math.round((w - Configurations.getWidth() * scalePxPerCell) / 2);
-					border.height = 0;
-					pixelXDel = border.width + scalePxPerCell / 2;
-					pixelYDel = (h - Configurations.getHeight() * scalePxPerCell) / 2;
-				}
-				case RECTANGLE -> {
-					border.width = (int) Math.round((w - Configurations.getWidth() * scalePxPerCell) / 2);
-					border.height = (int) Math.round((h - Configurations.getHeight() * scalePxPerCell) / 2);
-					pixelXDel = (w - Configurations.getWidth() * scalePxPerCell) / 2;
-					pixelYDel = (h - Configurations.getHeight() * scalePxPerCell) / 2;
-				}
-				default ->
-					throw new AssertionError();
-			}
+			border.width = (int) Math.round((w - Configurations.getWidth() * scalePxPerCell) / 2);
+			border.height = (int) Math.round((h - Configurations.getHeight() * scalePxPerCell) / 2);
+			pixelXDel = (w - (Configurations.getWidth() - 1) * scalePxPerCell) / 2;
+			pixelYDel = (h - (Configurations.getHeight() - 1) * scalePxPerCell) / 2;
 		}
 	}
 
@@ -185,7 +167,7 @@ public class WorldView extends javax.swing.JPanel {
     }//GEN-LAST:event_formMousePressed
 
     private void formMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseReleased
-        selectPoint[1] = recalculation(evt.getX(),evt.getY());
+         selectPoint[1] = recalculation(evt.getX(),evt.getY());
 		if(selectPoint[0] == null || selectPoint[1] == null) return;
 		if ( Configurations.getViewer() instanceof DefaultViewer df) {
 			final var menu = df.getMenu();
@@ -344,7 +326,7 @@ public class WorldView extends javax.swing.JPanel {
 		int r = transforms.toScrin(1);
 		for (int x = 0; x < Configurations.getWidth(); x++) {
 			for (int y = 0; y < Configurations.getHeight(); y++) {
-				final var pos = new Point(x, y);
+				final var pos = Point.create(x, y);
 				if(!pos.valid()) continue;
 				if(x % 10 == 0)
 					g.setColor(Color.RED);
@@ -437,7 +419,7 @@ public class WorldView extends javax.swing.JPanel {
 				
 				yd[1] = yd[2] = 0;
 				yw[0] = yw[1] = yd[5] = yd[6] = transforms.toScrinY(0);
-				yd[0] = yd[3] = yd[4] = yd[7] = yu[0] = yu[3] = yu[4] = yu[7] = transforms.toScrinY(Configurations.getHeight()-2); //Место сшивания полей
+				yd[0] = yd[3] = yd[4] = yd[7] = yu[0] = yu[3] = yu[4] = yu[7] = transforms.toScrinY(Configurations.getHeight()-3); //Место сшивания полей
 				yw[2] = yw[3] = yu[5] = yu[6] = transforms.toScrinY(Configurations.getHeight()-1);
 				yu[1] = yu[2] = getHeight();
 				
@@ -525,9 +507,9 @@ public class WorldView extends javax.swing.JPanel {
 	 * @return точку в реальном пространстве или null, если эта точка за гранью
 	 */
 	private Point recalculation(int x, int y) {
-		x = Utils.betwin(Transforms.border.width, x, getWidth() - Transforms.border.width);
-		y = Utils.betwin(Transforms.border.height, y, getWidth() - Transforms.border.height);
-		return Point.create(transforms.toWorldX(x), transforms.toWorldY(y));
+		x = (int) Utils.betwin(transforms.pixelXDel, x, getWidth() - Transforms.border.width);
+		y = (int) Utils.betwin(transforms.pixelYDel, y, getWidth() - Transforms.border.height);
+ 		return Point.create(transforms.toWorldX(x), transforms.toWorldY(y));
 	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
