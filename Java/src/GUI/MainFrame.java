@@ -256,7 +256,12 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 			if(nowStatus.ordinal() < status.ordinal()){
 				java.awt.Toolkit.getDefaultToolkit().beep();
 				Configurations.world.awaitStop();
-				JOptionPane.showMessageDialog(null, Configurations.getProperty(MainFrame.class,status.name()), "BioLife", JOptionPane.WARNING_MESSAGE);
+				final var ret = JOptionPane.showConfirmDialog(null, Configurations.getProperty(MainFrame.class,status.name()), "BioLife", JOptionPane.OK_CANCEL_OPTION,JOptionPane.WARNING_MESSAGE);
+				if(ret == JOptionPane.OK_OPTION){
+					final var  dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
+					Configurations.makeDefaultWord(dc.world_type, dc.MAP_CELLS.width, dc.MAP_CELLS.height);
+					Configurations.world.start();
+				}
 			}
 			nowStatus = status;
 		
