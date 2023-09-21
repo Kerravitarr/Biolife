@@ -111,6 +111,10 @@ public class SettingsSelect<T> extends javax.swing.JPanel {
 
         add(resetAndInsert, java.awt.BorderLayout.EAST);
 
+        select.setFocusable(false);
+        select.setMaximumSize(new java.awt.Dimension(32767, 20));
+        select.setMinimumSize(new java.awt.Dimension(72, 20));
+        select.setPreferredSize(new java.awt.Dimension(72, 20));
         add(select, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 

@@ -110,12 +110,12 @@ public class SunRectangle extends SunAbstract {
 	
 	
 	@Override
-	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {
+	public void paint(Graphics2D g, Transforms transform, int posX, int posY, boolean isSelected) {
 		final var DIRTY_WATER = Configurations.confoguration.DIRTY_WATER;
 		if(DIRTY_WATER == 0d){
 			if(posX == position.getX() && posY == position.getY()){
 				//Если у нас чистая вода, то солнце осветит собой всё, что можно
-				g.setColor(AllColors.SUN);				
+				g.setColor(isSelected ? AllColors.SUN_DARK : AllColors.SUN);
 				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.getWidth()), transform.toScrin(Configurations.getHeight()));
 			}
 			return;
@@ -135,7 +135,7 @@ public class SunRectangle extends SunAbstract {
 		//Соотношение цветов
 		final var fractions = new float[] { 0.0f, 1.0f };
 		//Сами цвета
-		final var colors = new Color[] { AllColors.toDark(AllColors.SUN, (int) (64 + 192 * power / Configurations.getMaxSunPower())), AllColors.SUN_DARK };
+		final var colors = new Color[] { AllColors.toDark(AllColors.SUN, (int) getColorAlfa(isSelected)), AllColors.SUN_DARK };
 		//final var colors = new Color[] { AllColors.SUN,AllColors.SUN};
 
 		//Рисуем внешнее излучение

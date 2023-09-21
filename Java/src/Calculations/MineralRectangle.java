@@ -73,7 +73,7 @@ public class MineralRectangle extends MineralAbstract {
 	}
 	@Override
 	public List<ParamObject> getParams(){
-		final java.util.ArrayList<Calculations.ParamObject> ret = new ArrayList<ParamObject>(2);
+		final var ret = new ArrayList<ParamObject>(2);
 		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){
 			@Override
 			public void setValue(Object value) throws ClassCastException {
@@ -107,10 +107,10 @@ public class MineralRectangle extends MineralAbstract {
 		return j;
 	}
 	@Override
-	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {
+	public void paint(Graphics2D g, Transforms transform, int posX, int posY, boolean isSelect) {
 		if(getAttenuation() == 0d){
 			if(posX == position.getX() && posY == position.getY()){
-				g.setColor(AllColors.MINERALS);				
+				g.setColor(isSelect ? AllColors.MINERALS_DARK : AllColors.MINERALS);				
 				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.getWidth()), transform.toScrin(Configurations.getHeight()));
 			}
 			return;
@@ -129,7 +129,7 @@ public class MineralRectangle extends MineralAbstract {
 		//Соотношение цветов
 		final var fractions = new float[] { 0.0f, 1.0f };
 		//Сами цвета
-		final var colors = new Color[] { AllColors.toDark(AllColors.MINERALS, (int) (64 + 192 * power / Configurations.getMaxConcentrationMinerals())), AllColors.MINERALS_DARK };
+		final var colors = new Color[] { AllColors.toDark(AllColors.MINERALS, (int) getColorAlfa(isSelect)), AllColors.MINERALS_DARK };
 
 		//Рисуем внешнее излучение
 		// Left

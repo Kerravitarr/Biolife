@@ -117,6 +117,10 @@ public class Gravitation {
 	 * @return куда поток сейчас дует
 	 */
 	public Direction getDirection(){return direction;}
+	/**Возвращает точку к которой стремится гравитация
+	 * @return точка на карте или null. 
+	 */
+	public Point getPoint(){return direction == Direction.TO_POINT ? target : null;}
 	/**Возвращает необходимость движения под действием гравитации
 	 * @param o кто спрашивает
 	 * @return true, если нужно куда-то сдвинуться

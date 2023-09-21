@@ -1,12 +1,7 @@
 package Calculations;
 
-import GUI.AllColors;
-import GUI.WorldView.Transforms;
 import Utils.JSON;
-import java.awt.Graphics2D;
 import java.lang.reflect.InvocationTargetException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Болванка минералов.
@@ -57,6 +52,21 @@ public abstract class MineralAbstract extends DefaultEmitter{
 	 */
 	public void setAttenuation(double attenuation) {
 		this.attenuation = attenuation;
+	}
+	
+	/**Возвращает занчение альфа канала для цвета.
+	 * @param isSelected жила выбранна или нет?
+	 * @return значение альфа канала, где 0 - полная прозрачность, а 255 - полная светимость
+	 */
+	protected double getColorAlfa(boolean isSelected){
+		final var mp = Configurations.getMaxConcentrationMinerals();
+		if(mp == power){
+			return isSelected ? 63 : 255;
+		} else if(isSelected){
+			return 255;
+		} else {
+			return (64 + 192 * power / mp);
+		}
 	}
 	
 	@Override

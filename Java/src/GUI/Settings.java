@@ -11,6 +11,8 @@ import Calculations.Trajectory;
 import MapObjects.CellObject;
 import java.awt.Color;
 import java.awt.event.ComponentEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JOptionPane;
@@ -38,6 +40,7 @@ public class Settings extends javax.swing.JPanel {
 	}
 	/**Пересоздаёт все ползунки*/
 	public void rebuild(){
+		blinks.clear();
 		rebuildConfig();
 		rebuildGravitation();
 		rebuildSuns();
@@ -57,18 +60,15 @@ public class Settings extends javax.swing.JPanel {
 		configuationsRebuild.removeAll();
 			
 		final var dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
-		final var width = new SettingsNumber("configuations.width", 100, dc.MAP_CELLS.width, 1_000_000, Configurations.getWidth(), e -> {
+		final var size = new SettingsPoint("configuations.size", 
+				100, dc.MAP_CELLS.width, 1_000_000,Configurations.getWidth(),
+				100, dc.MAP_CELLS.height, 1_000_000,Configurations.getHeight(),  e -> {
 			Configurations.world.awaitStop();
-			Configurations.rebuildMap(new Configurations(Configurations.confoguration,Configurations.confoguration.world_type, e, Configurations.getHeight()));
+			Configurations.rebuildMap(new Configurations(Configurations.confoguration,Configurations.confoguration.world_type, e.x, e.y));
 			final var w = Configurations.getViewer().get(WorldView.class);
 			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
 		});
-		final var height = new SettingsNumber("configuations.height", 100, dc.MAP_CELLS.height, 1_000_000, Configurations.getHeight(), e -> {
-			Configurations.world.awaitStop();
-			Configurations.rebuildMap(new Configurations(Configurations.confoguration,Configurations.confoguration.world_type,Configurations.getWidth() , e));
-			final var w = Configurations.getViewer().get(WorldView.class);
-			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
-		});
+	
 		final var wt = new SettingsSelect<>("configuations.WORLD_TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.confoguration.world_type, e -> {
 			Configurations.world.awaitStop();
 			Configurations.rebuildMap(new Configurations(Configurations.confoguration,e,Configurations.getWidth() , Configurations.getHeight()));
@@ -78,10 +78,8 @@ public class Settings extends javax.swing.JPanel {
 			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
 		});
 		
-		width.setBackground(Color.red);
-		configuationsRebuild.add(width);
-		height.setBackground(Color.red);
-		configuationsRebuild.add(height);
+		size.setBackground(Color.red);
+		configuationsRebuild.add(size);
 		wt.setBackground(Color.red);
 		configuationsRebuild.add(wt);
 		//========================================================
@@ -129,51 +127,61 @@ public class Settings extends javax.swing.JPanel {
 			//Но объявить можно только финальный объект
 			//Ну значит будет у нас... Вот такая вот шляпа :)
 			final var sliders = new javax.swing.JPanel[3];
+			//Мощность гравитации
 			sliders[0] = new SettingsSlider("gravitation." + status.name(), 0, defPower, 1000, 0, buildGrav.getValue(),null,e -> {
 				final var g = Configurations.gravitation[status.ordinal()];
-				if (sliders[1] instanceof SettingsSelect<?> direction) {
-					if (e == 0){
-						Configurations.gravitation[status.ordinal()] = new Gravitation();
-						direction.setVisible(false);
-					} else if(g.getDirection() != Gravitation.Direction.NONE) {
-						Configurations.gravitation[status.ordinal()] = new Gravitation(e,g.getDirection());
-						direction.setVisible(true);
-						((SettingsSelect<Gravitation.Direction>)direction).setValue(g.getDirection());
-					} else {
-						Configurations.gravitation[status.ordinal()] = new Gravitation(e,defDir);
-						direction.setVisible(true);
-						((SettingsSelect<Gravitation.Direction>)direction).setValue(defDir);
-					}
+				final var direction = (SettingsSelect<Gravitation.Direction>)sliders[1];
+				final var toPoint = (SettingsPoint)sliders[2];
+				if (e == 0){
+					Configurations.gravitation[status.ordinal()] = new Gravitation();
+					direction.setVisible(false);
+					toPoint.setVisible(false);
+				} if(g.getDirection() == Gravitation.Direction.TO_POINT) {
+					Configurations.gravitation[status.ordinal()] = new Gravitation(e,Point.create(toPoint.getValue().x,toPoint.getValue().y));
+				} else if(g.getDirection() != Gravitation.Direction.NONE) {
+					Configurations.gravitation[status.ordinal()] = new Gravitation(e,g.getDirection());
+				} else {
+					Configurations.gravitation[status.ordinal()] = new Gravitation(e,defDir);
+					direction.setVisible(true);
+					((SettingsSelect<Gravitation.Direction>)direction).setValue(defDir);
 				}
 			});
+			//Направление гравитации
 			sliders[1] = new SettingsSelect<>("gravitation.dir", Gravitation.Direction.values, defDir, buildGrav.getDirection(),e -> {
 				final var g = Configurations.gravitation[status.ordinal()];
-				if (sliders[0] instanceof SettingsSlider power) {
-					switch (e) {
-						case NONE -> {
-							Configurations.gravitation[status.ordinal()] = new Gravitation();
-							if (sliders[1] instanceof SettingsSelect<?> direction) {
-								direction.setVisible(false);
-							}
-						}
-						case TO_POINT -> {
-							power.setVisible(true);
-							final var p = g.getDirection() != Gravitation.Direction.NONE ? g.getValue() : defPower;
-							Configurations.gravitation[status.ordinal()] = new Gravitation(p, Point.create(Configurations.getWidth()/2, Configurations.getHeight() / 2));
-							power.setValue(defPower);
-						}
-						default -> {
-							power.setVisible(true);
-							final var p = g.getDirection() != Gravitation.Direction.NONE ? g.getValue() : defPower;
-							Configurations.gravitation[status.ordinal()] = new Gravitation(p, e);
-							power.setValue(p);
-						}
+				final var power = (SettingsSlider) sliders[0];
+				final var direction = (SettingsSelect<Gravitation.Direction>) sliders[1];
+				final var toPoint = (SettingsPoint)sliders[2];
+				switch (e) {
+					case NONE -> {
+						direction.setVisible(false);
+						toPoint.setVisible(false);
+						Configurations.gravitation[status.ordinal()] = new Gravitation();
+					}
+					case TO_POINT -> {
+						toPoint.setVisible(true);
+						final var p = g.getDirection() != Gravitation.Direction.NONE ? g.getValue() : defPower;
+						Configurations.gravitation[status.ordinal()] = new Gravitation(p, Point.create(toPoint.getValue().x,toPoint.getValue().y));
+						power.setValue(p);
+					}
+					default -> {
+						toPoint.setVisible(false);
+						final var p = g.getDirection() != Gravitation.Direction.NONE ? g.getValue() : defPower;
+						Configurations.gravitation[status.ordinal()] = new Gravitation(p, e);
+						power.setValue(p);
 					}
 				}
 			});
-			sliders[1].setVisible(buildGrav.getDirection() != Gravitation.Direction.NONE);
+			//Точка, к которой гравитация стремиться
+			sliders[2] = new SettingsPoint("gravitation.point", 
+					0, Configurations.getWidth()/2, Configurations.getWidth(),buildGrav.getPoint() == null ? Configurations.getWidth()/2 : buildGrav.getPoint().getX(),
+					0, Configurations.getHeight()/2, Configurations.getHeight(),buildGrav.getPoint() == null ? Configurations.getHeight()/2 : buildGrav.getPoint().getY(),  e -> {
+				final var g = Configurations.gravitation[status.ordinal()];
+				Configurations.gravitation[status.ordinal()] = new Gravitation(g.getValue(), Point.create(e.x,e.y));
+			});
 			gravitations.add(sliders[0]);
 			gravitations.add(sliders[1]);
+			gravitations.add(sliders[2]);
 		}
 		borderClick(gravitations, null);
 		borderClick(gravitations, null);
@@ -220,6 +228,13 @@ public class Settings extends javax.swing.JPanel {
 				suns2.add(new JPopupMenu.Separator());
 			final var sun = Configurations.suns.get(i);
 			suns2.add(new SettingsString("object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
+			//Подсветить звезду
+			suns2.add(addBlink(sun.getSelect(), e->sun.setSelect(e)));
+			//Задать новую траекторию
+			//Изменить траекторию
+			//Задать новую звезду
+			//Удалить звезду
+			//final var tr = sun.getTrajectory();
 			
 		}
 		borderClick(suns2, null);
@@ -292,7 +307,26 @@ public class Settings extends javax.swing.JPanel {
 		borderClick(streams, null);
 		borderClick(streams, null);
 	}
-	
+	/**Добавляет кнопку мигания
+	 * @param nowValue текущее состояние объекта
+	 * @param doing что нужно сделать при включении (выключении) мигания?
+	 * @return панель с кнопкой мигания
+	 */
+	private javax.swing.JPanel addBlink(boolean nowValue, SettingsBoolean.AdjustmentListener doing){
+		final var panels = new SettingsBoolean[1];
+		panels[0] = new SettingsBoolean("object.blink", nowValue, e -> {
+			if(e == true){
+				for(final var i : blinks){
+					if(panels[0] != i)
+						i.setValue(false);
+				}
+			}
+			panels[0].setValue(e);
+			doing.adjustmentValueChanged(e);
+		});
+		blinks.add(panels[0]);
+		return panels[0];
+	}
 	/** This method is called from within the constructor to
 	 * initialize the form.
 	 * WARNING: Do NOT modify this code. The content of this method is
@@ -460,8 +494,13 @@ public class Settings extends javax.swing.JPanel {
 				final var checkbox = new javax.swing.JCheckBox(Configurations.getProperty(Settings.class, "hideWarning"));
 				String message = Configurations.getProperty(Settings.class, "warningText");
 				Object[] params = {message, checkbox};
-				int n = JOptionPane.showConfirmDialog(this, params, "BioLife", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE);
+				JOptionPane.showConfirmDialog(this, params, "BioLife", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE);
 				isNeedWarning = !checkbox.isSelected();
+			}
+		} else {
+			//Сбрасываем выделение
+			for(final var i : blinks){
+				i.setValue(false);
 			}
 		}
     }//GEN-LAST:event_tableListsMouseClicked
@@ -506,8 +545,23 @@ public class Settings extends javax.swing.JPanel {
 			if(evt == null || bounds.contains(evt.getPoint())){
 				if(title.contains("\\/")) {
 					tb.setTitle(title.replace("\\/", "/\\"));
-					for (final var c : panel.getComponents()) {
-						c.setVisible(true);
+					if (panel == gravitations) { //Сравниваем именно указатели!
+						boolean isVisiblePoint = false;
+						for (final var c : panel.getComponents()) {
+							if (c instanceof SettingsSelect<?>) {
+								final var settingsSelect = (SettingsSelect<Gravitation.Direction>) c;
+								c.setVisible(settingsSelect.getValue() != Gravitation.Direction.NONE);
+								isVisiblePoint = settingsSelect.getValue() == Gravitation.Direction.TO_POINT;
+							} else if (c instanceof SettingsPoint sp) {
+								sp.setVisible(isVisiblePoint);
+							} else {
+								c.setVisible(true);
+							}
+						}
+					} else {
+						for (final var c : panel.getComponents()) {
+							c.setVisible(true);
+						}
 					}
 				} else {
 					if(title.contains("/\\")) tb.setTitle(title.replace("/\\", "\\/"));
@@ -535,5 +589,8 @@ public class Settings extends javax.swing.JPanel {
     private javax.swing.JPanel suns2;
     private javax.swing.JTabbedPane tableLists;
     // End of variables declaration//GEN-END:variables
+	/**Нужна печать предупреждения при редактировании карты?*/
 	private boolean isNeedWarning = true;
+	/**Список всех подсвеченных объектов. Нужен для того, чтобы подсвечивался только один объект*/
+	private ArrayList<SettingsBoolean> blinks = new ArrayList<>();
 }

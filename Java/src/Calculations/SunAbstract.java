@@ -47,6 +47,21 @@ public abstract class SunAbstract extends DefaultEmitter{
 	 */
 	public abstract double getEnergy(Point pos);
 	
+	/**Возвращает занчение альфа канала для цвета звезды.
+	 * @param isSelected звезда выбранна или нет?
+	 * @return значение альфа канала, где 0 - полная прозрачность, а 255 - полная светимость
+	 */
+	protected double getColorAlfa(boolean isSelected){
+		final var mp = Configurations.getMaxSunPower();
+		if(mp == power){
+			return isSelected ? 63 : 255;
+		} else if(isSelected){
+			return 255;
+		} else {
+			return (64 + 192 * power / mp);
+		}
+	}
+	
 	@Override
 	public JSON toJSON(){
 		final var j = super.toJSON();

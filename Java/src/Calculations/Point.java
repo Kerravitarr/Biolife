@@ -6,6 +6,7 @@ import static Calculations.Configurations.WORLD_TYPE.LINE_H;
 import static Calculations.Configurations.WORLD_TYPE.LINE_V;
 import static Calculations.Configurations.WORLD_TYPE.RECTANGLE;
 import Utils.JSON;
+import java.util.Objects;
 
 /**
 Точка на карте мира.
@@ -242,6 +243,22 @@ public final class Point{
 		public String toString() {
 			return "V⃗ (" + x + "; " + y + "). |V⃗|="+getHypotenuse();
 		}
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof Point.Vector p) {
+				return (this.x == p.x) && (this.y == p.y);
+			} else {
+				return super.equals(obj);
+			}
+		}
+
+		@Override
+		public int hashCode() {
+			int hash = 3;
+			hash = 23 * hash + this.x;
+			hash = 23 * hash + this.y;
+			return hash;
+		}
 	}
 	
 	/**Координата по Х*/
@@ -346,14 +363,20 @@ public final class Point{
 	@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof Point p) {
-			return equals(p);
+			return (this.x == p.x) && (this.y == p.y);
 		} else {
 			return super.equals(obj);
 		}
 	}
-	public boolean equals(Point obj) {
-        return (this.x == obj.x) && (this.y == obj.y);
-    }
+
+	@Override
+	public int hashCode() {
+		int hash = 5;
+		hash = 23 * hash + this.x;
+		hash = 23 * hash + this.y;
+		return hash;
+	}
+	
 	public int getX() {return x;}
 	public int getY() {return y;}
 	

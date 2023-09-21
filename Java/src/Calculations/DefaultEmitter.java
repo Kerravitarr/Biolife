@@ -25,6 +25,16 @@ public abstract class DefaultEmitter {
 	/**Если тут true, то у нас излучает только поверхность, а если false - то излучает вся площадь*/
 	protected boolean isLine;
 	
+	//Отдельные переменные только для отрисовки!
+	/**Флаг выбора излучателя для "мигания"*/
+	private boolean isSelected = false;
+	/**Флаг, показывающий, в текущем кадре звезда должна выглядеть как выбранная или нет*/
+	private static boolean isSelectedFrame = false;
+	/**Счётчик времени для подсвечивания и высвечивания объекта*/
+	private static long nextSelected = 0;
+	/**Сколько мс должно пройти чтобы объект изменил параметр выбора*/
+	private static final long SELECT_PERIOD = 1000;
+	
 	protected DefaultEmitter(JSON j, long v) throws GenerateClassException{
 		power = j.get("power");
 		name = j.get("name");
@@ -68,6 +78,15 @@ public abstract class DefaultEmitter {
 	 * @param transform преобразователь размеров мировых в размеры экранные
 	 */
 	public void paint(Graphics2D g, Transforms transform){
+		//Мигалка выбора
+		if(isSelected){
+			final var mc = System.currentTimeMillis();
+			if(nextSelected < mc){
+				nextSelected = mc + SELECT_PERIOD;
+				isSelectedFrame = !isSelectedFrame;
+			}
+		}
+		
 		//Мы нарусем не один излучатель, а сразу все 4!
 		//i = 0 Главный
 		//i = 1 Его-же справа (слева)
@@ -94,7 +113,7 @@ public abstract class DefaultEmitter {
 				case 2,3 -> position.getY() + (position.getY() > Configurations.confoguration.MAP_CELLS.height/2 ?  -Configurations.confoguration.MAP_CELLS.height : Configurations.confoguration.MAP_CELLS.height);
 				default -> throw new AssertionError();
 			};
-			paint(g,transform, posX, posY);
+			paint(g,transform, posX, posY, isSelected && isSelectedFrame);
 		}
 	}
 	/**
@@ -104,8 +123,9 @@ public abstract class DefaultEmitter {
 	 * @param transform преобразователь размеров мировых в размеры экранные
 	 * @param posX текущаяя координата
 	 * @param posY текущаяя координата
+	 * @param isSelected отрисовывать объект, как выбранный или нет?
 	 */
-	protected abstract void paint(Graphics2D g, Transforms transform, int posX, int posY);
+	protected abstract void paint(Graphics2D g, Transforms transform, int posX, int posY, boolean isSelected);
 	/**Возвращает максимальную энергию излучателя
 	 * @return сколько можно получить энергии от этого источника
 	 */
@@ -122,6 +142,14 @@ public abstract class DefaultEmitter {
 	 * @param isL если true, то у нас излучает только поверхность, а если false - то излучает вся площадь
 	 */
 	public void setIsLine(boolean isL){isLine = isL;}
+	/**Возвращает значение параметра отображения звездны - выделяется она на экране или нет
+	 * @return Если тут true, то излучатель будет подмигивать прозрачностью
+	 */
+	public boolean getSelect(){return isSelected;}
+	/**Сохраняет значение параметра отображения звездны - выделяется она на экране или нет
+	 * @param isS если true, то излучатель будет подмигивать прозрачностью
+	 */
+	public void setSelect(boolean isS){isSelected = isS;}
 	/**Возвращает траекторию движения излучателя
 	 * @return закон, по которому движется излучаетль
 	 */

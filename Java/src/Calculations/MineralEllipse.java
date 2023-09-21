@@ -164,10 +164,10 @@ public class MineralEllipse extends MineralAbstract {
 
 	
 	@Override
-	public void paint(Graphics2D g, Transforms transform, int posX, int posY) {
+	public void paint(Graphics2D g, Transforms transform, int posX, int posY, boolean isSelect) {
 		if(getAttenuation() == 0d){
 			if(posX == position.getX() && posY == position.getY()){
-				g.setColor(AllColors.MINERALS);				
+				g.setColor(isSelect ? AllColors.MINERALS_DARK : AllColors.MINERALS);				
 				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.getWidth()), transform.toScrin(Configurations.getHeight()));
 			}
 			return;
@@ -176,7 +176,7 @@ public class MineralEllipse extends MineralAbstract {
 		final var x0 = transform.toScrinX(posX);
 		final var y0 = transform.toScrinY(posY);
 
-		final var maxAlf = (64 + 192 * power / Configurations.getMaxConcentrationMinerals());
+		final var maxAlf = getColorAlfa(isSelect);
 		final var colorMaxLight = AllColors.toDark(AllColors.MINERALS, (int)maxAlf );
 		
 		//Где солнышко заканчивается
