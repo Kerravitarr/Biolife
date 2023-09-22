@@ -43,55 +43,83 @@ public class WorldView extends javax.swing.JPanel {
 		* @param x координата в масштабах клеток
 		* @return x координата в масштабе окна, пк
 		*/
-	   public int toScrinX(int x) {return (int) Math.round(x*scalePxPerCell + pixelXDel);}
+		public int toScrinX(int x) {return (int) Math.round(x*scalePxPerCell + pixelXDel);}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param point объект с координатами, из которого выбирается только Х
 		* @return x координата в масштабе окна, пк
 		*/
-	   public int toScrinX(Point point) {return toScrinX(point.getX());}
+		public int toScrinX(Point point) {return toScrinX(point.getX());}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param y координата в масштабах клетки
 		* @return y координата в масштабе окна, пк
 		*/
-	   public int toScrinY(int y) {return (int) Math.round(y*scalePxPerCell + pixelYDel);}
+		public int toScrinY(int y) {return (int) Math.round(y*scalePxPerCell + pixelYDel);}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param point объект с координатами, из которого выбирается только Y
 		* @return y координата в масштабе окна, пк
 		*/
-	   public int toScrinY(Point point) {return toScrinY(point.getY());}
+		public int toScrinY(Point point) {return toScrinY(point.getY());}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param point объект с координатами мира
 		* @return объект с координатами экрана
 		*/
-	   public java.awt.Point toScrin(Point point) {return new java.awt.Point(toScrinX(point),toScrinY(point));}
+		public java.awt.Point toScrin(Point point) {return new java.awt.Point(toScrinX(point),toScrinY(point));}
 	   
 	   /**Возвращает размеры мира в пикселях
 		* @param r размер объекта в клетках мира
 		* @return радиус объекта в пикселях
 		*/
-	   public int toScrin(int r) {return (int) Math.round(r * scalePxPerCell) ;}
+		public int toScrin(int r) {return (int) Math.round(r * scalePxPerCell) ;}
 	   /**
 		* Переводит координаты экрана в координаты мира
 		* @param x координата на экране
 		* @return x координата на поле. Эта координата может выходить за размеры мира!!!
 		*/
-	   public int toWorldX(int x) {return (int) ((x - border.width)/scalePxPerCell);}
+		public int toWorldX(int x) {return (int) ((x - border.width)/scalePxPerCell);}
 	   /**
 		* Переводит координаты экрана в координаты мира
 		* @param y координата на экране
 		* @return x координата на поле. Эта координата может выходить за размеры мира!!!
 		*/
-	   public int toWorldY(int y) {return (int) ((y - border.height)/scalePxPerCell);}
+		public int toWorldY(int y) {return (int) ((y - border.height)/scalePxPerCell);}
+		
+		/**
+		 * Пересчитыавет координаты мировые в пикселях в координаты ячейки
+		 *
+		 * @param event событие мыши для этой области
+		 *
+		 * @return точку в реальном пространстве
+		 */
+		public Point toWorldPoint(java.awt.event.MouseEvent event) {
+			if(event.getSource() == WorldView.this){
+				return recalculation(event.getX(),event.getY());
+			} else {
+				throw new UnsupportedOperationException("Обождите!");
+			}
+		}
+		/**
+		 * Пересчитыавет координаты мировые в пикселях в координаты ячейки
+		 *
+		 * @param x экранная координата х
+		 * @param y экранная координата у
+		 *
+		 * @return точку в реальном пространстве
+		 */
+		private Point recalculation(int x, int y) {
+			x = (int) Utils.betwin(transforms.pixelXDel, x, WorldView.this.getWidth() - Transforms.border.width);
+			y = (int) Utils.betwin(transforms.pixelYDel, y, WorldView.this.getHeight() - Transforms.border.height);
+			return Point.create(transforms.toWorldX(x), transforms.toWorldY(y));
+		}
 	   
 		/** Специальная функция, которая обновляет все масштабные коэффициенты */
 		private void recalculate() {
 			//Размеры мира, с учётом обязательного запаса
-			final double h = getHeight();
-			final double w = getWidth();
+			final double h = WorldView.this.getHeight();
+			final double w = WorldView.this.getWidth();
 			//Пересчёт размера мира
 			scalePxPerCell = Math.min(h * (1d - getUborder() - getDborder()) / (Configurations.getHeight()), w * (1d - getLborder() - getRborder()) / (Configurations.getWidth()));
 			border.width = (int) Math.round((w - Configurations.getWidth() * scalePxPerCell) / 2);
@@ -160,14 +188,14 @@ public class WorldView extends javax.swing.JPanel {
     private void formMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMousePressed
        if ( Configurations.getViewer() instanceof DefaultViewer df) {
 			if(df.getMenu().isSelectedCell()){
-				selectPoint[1] = recalculation(evt.getX(),evt.getY());
+				selectPoint[1] = transforms.toWorldPoint(evt);
 				selectPoint[0] = selectPoint[1];
 			}
 		}
     }//GEN-LAST:event_formMousePressed
 
     private void formMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseReleased
-         selectPoint[1] = recalculation(evt.getX(),evt.getY());
+         selectPoint[1] = transforms.toWorldPoint(evt);
 		if(selectPoint[0] == null || selectPoint[1] == null) return;
 		if ( Configurations.getViewer() instanceof DefaultViewer df) {
 			final var menu = df.getMenu();
@@ -196,14 +224,14 @@ public class WorldView extends javax.swing.JPanel {
     }//GEN-LAST:event_formMouseReleased
 
     private void formMouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseDragged
-        selectPoint[1] = recalculation(evt.getX(),evt.getY());
+        selectPoint[1] = transforms.toWorldPoint(evt);
     }//GEN-LAST:event_formMouseDragged
 
     private void formMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseClicked
         if ( Configurations.getViewer() instanceof DefaultViewer df) {
 			final var info = df.getBotInfo();
 			if(info.isVisible()) {
-				Point point = recalculation(evt.getX(),evt.getY());
+				Point point = transforms.toWorldPoint(evt);
 				if(point != null && point.valid())
 					info.setCell(Configurations.world.get(point));
 			}
@@ -500,17 +528,6 @@ public class WorldView extends javax.swing.JPanel {
 	 */
 	public int getZoom() {return zoom;}
 	
-	/**
-	 * Пересчитыавет координаты мировые в пикселях в координаты ячейки
-	 * @param x экранная координата х
-	 * @param y экранная координата у
-	 * @return точку в реальном пространстве или null, если эта точка за гранью
-	 */
-	private Point recalculation(int x, int y) {
-		x = (int) Utils.betwin(transforms.pixelXDel, x, getWidth() - Transforms.border.width);
-		y = (int) Utils.betwin(transforms.pixelYDel, y, getWidth() - Transforms.border.height);
- 		return Point.create(transforms.toWorldX(x), transforms.toWorldY(y));
-	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     // End of variables declaration//GEN-END:variables

@@ -8,9 +8,13 @@ import Calculations.Configurations;
 import Calculations.Point;
 import Utils.MyMessageFormat;
 import java.awt.Dimension;
+import java.awt.Frame;
+import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
 import java.util.EventListener;
+import javax.swing.WindowConstants;
 
 /**
  *Универсальный набор:
@@ -48,9 +52,49 @@ public class SettingsPoint extends javax.swing.JPanel {
         spinnerY.setModel(new javax.swing.SpinnerNumberModel(nowY, minY, maxY, 1));
 		
 		Configurations.setIcon(reset, "reset");
-		reset.setPreferredSize(BUT_SIZE);
 		reset.addActionListener(e -> setValue(Point.Vector.create(defX,defY)));
 		reset.setToolTipText(Configurations.getHProperty(SettingsPoint.class, "resetSlider"));
+		
+		Configurations.setIcon(select, "selectPoint");
+		select.addActionListener(e -> {
+			final var dialog = new javax.swing.JDialog((Frame)null, "", false);
+			dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+			final var panel = new javax.swing.JPanel();
+			final var pointLabel = new javax.swing.JLabel(Configurations.getHProperty(SettingsPoint.class, "emptySelectLabel"));
+			final var world = Configurations.getViewer().get(WorldView.class);
+			final var transform = world.getTransform();
+			panel.add(pointLabel);
+			dialog.add(panel);
+			dialog.setBounds(SettingsPoint.this.getLocationOnScreen().x, SettingsPoint.this.getLocationOnScreen().y, 200, 50);
+			final var clickListener = new java.awt.event.MouseAdapter() {
+				@Override
+				public void mouseClicked(MouseEvent e) {
+					if(e.getButton() == MouseEvent.BUTTON1){
+						setValue(transform.toWorldPoint(e));
+					}
+					dialog.dispose();
+				}
+			};
+			final var movedListener = new java.awt.event.MouseMotionAdapter() {
+				@Override
+				public void mouseMoved(MouseEvent e) {
+					final var point = transform.toWorldPoint(e);
+					pointLabel.setText(Configurations.getHProperty(SettingsPoint.class, "selectLabel",point.getX(),point.getY()));
+				}
+			};
+			
+			world.addMouseListener(clickListener);
+			world.addMouseMotionListener(movedListener);
+			dialog.addComponentListener(new java.awt.event.ComponentAdapter() {
+				@Override
+				public void componentHidden(ComponentEvent e) {
+					world.removeMouseMotionListener(movedListener);
+					world.removeMouseListener(clickListener);
+				}
+			});
+			dialog.setVisible(true);
+		});
+		select.setToolTipText(Configurations.getHProperty(SettingsPoint.class, "selectButton"));
 
 		value = null;
 		setValue(Point.Vector.create(nowX,nowY));
@@ -83,6 +127,13 @@ public class SettingsPoint extends javax.swing.JPanel {
 				}
 			});
 		}
+	}
+	
+	/**Сохранить значение слайдера
+	 * @param val 
+	 */
+	public void setValue(Point val) {
+		setValue(Point.Vector.create(val.getX(), val.getY()));
 	}
 	/**Сохранить значение слайдера
 	 * @param val 
@@ -120,12 +171,12 @@ public class SettingsPoint extends javax.swing.JPanel {
 
         label = new javax.swing.JLabel();
         resetAndInsert = new javax.swing.JPanel();
-        reset = new javax.swing.JButton();
-        jPanel1 = new javax.swing.JPanel();
         labelX = new javax.swing.JLabel();
         spinnerX = new javax.swing.JSpinner();
         labelY = new javax.swing.JLabel();
         spinnerY = new javax.swing.JSpinner();
+        reset = new javax.swing.JButton();
+        select = new javax.swing.JButton();
 
         setAlignmentX(0.0F);
         setAlignmentY(0.0F);
@@ -137,31 +188,24 @@ public class SettingsPoint extends javax.swing.JPanel {
         label.setAlignmentY(0.0F);
         add(label, java.awt.BorderLayout.NORTH);
 
-        resetAndInsert.setLayout(new java.awt.BorderLayout());
-
-        reset.setText("reset");
-        resetAndInsert.add(reset, java.awt.BorderLayout.WEST);
-
-        add(resetAndInsert, java.awt.BorderLayout.EAST);
-
-        jPanel1.setLayout(new javax.swing.BoxLayout(jPanel1, javax.swing.BoxLayout.LINE_AXIS));
+        resetAndInsert.setLayout(new javax.swing.BoxLayout(resetAndInsert, javax.swing.BoxLayout.LINE_AXIS));
 
         labelX.setText("X:");
         labelX.setAlignmentY(0.0F);
         labelX.setPreferredSize(new java.awt.Dimension(15, 20));
-        jPanel1.add(labelX);
+        resetAndInsert.add(labelX);
 
         spinnerX.setModel(new javax.swing.SpinnerNumberModel(0, 0, null, 1));
         spinnerX.setAlignmentY(0.0F);
         spinnerX.setMaximumSize(new java.awt.Dimension(32767, 20));
         spinnerX.setMinimumSize(new java.awt.Dimension(64, 20));
         spinnerX.setPreferredSize(new java.awt.Dimension(64, 20));
-        jPanel1.add(spinnerX);
+        resetAndInsert.add(spinnerX);
 
         labelY.setText("Y:");
         labelY.setAlignmentY(0.0F);
         labelY.setPreferredSize(new java.awt.Dimension(15, 20));
-        jPanel1.add(labelY);
+        resetAndInsert.add(labelY);
 
         spinnerY.setModel(new javax.swing.SpinnerNumberModel(100, 0, null, 1));
         spinnerY.setAlignmentX(0.0F);
@@ -169,25 +213,31 @@ public class SettingsPoint extends javax.swing.JPanel {
         spinnerY.setMaximumSize(new java.awt.Dimension(32767, 20));
         spinnerY.setMinimumSize(new java.awt.Dimension(68, 20));
         spinnerY.setPreferredSize(new java.awt.Dimension(68, 20));
-        jPanel1.add(spinnerY);
+        resetAndInsert.add(spinnerY);
 
-        add(jPanel1, java.awt.BorderLayout.CENTER);
+        reset.setText("reset");
+        reset.setAlignmentY(0.0F);
+        resetAndInsert.add(reset);
+
+        select.setText("jButton1");
+        select.setAlignmentY(0.0F);
+        resetAndInsert.add(select);
+
+        add(resetAndInsert, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JPanel jPanel1;
     private javax.swing.JLabel label;
     private javax.swing.JLabel labelX;
     private javax.swing.JLabel labelY;
     private javax.swing.JButton reset;
     private javax.swing.JPanel resetAndInsert;
+    private javax.swing.JButton select;
     private javax.swing.JSpinner spinnerX;
     private javax.swing.JSpinner spinnerY;
     // End of variables declaration//GEN-END:variables
 	
-	/**Размер кнопок*/
-	private static final Dimension BUT_SIZE = new Dimension(20,15);
 	/**Реальное значение*/
 	private Point.Vector value;
 	/**Слушатель события, что значение в ячейке изменилось*/

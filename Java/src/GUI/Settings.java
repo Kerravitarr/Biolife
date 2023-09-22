@@ -34,7 +34,9 @@ public class Settings extends javax.swing.JPanel {
 		borderClick(suns, null);
 		borderClick(suns2, null);
 		borderClick(streams, null);
+		borderClick(streams2, null);
 		borderClick(minerals, null);
+		borderClick(minerals2, null);
 		
 		rebuild();	
 	}
@@ -201,7 +203,7 @@ public class Settings extends javax.swing.JPanel {
 			suns.add(new SettingsBoolean("emitter.isLine", !sun.getIsLine(), e -> {
 				sun.setIsLine(!e);
 			}));
-			for(final Calculations.ParamObject p : sun.getParams()){
+			for(final Utils.ParamObject p : sun.getParams()){
 				switch (p.type) {
 					case INT -> {
 						suns.add(new SettingsSlider(String.format("%s.%s", sun.getClass().getName(),p.name), p.minD,  p.maxD, p.minA,p.getI(),  p.maxA, e -> {
@@ -228,14 +230,17 @@ public class Settings extends javax.swing.JPanel {
 				suns2.add(new JPopupMenu.Separator());
 			final var sun = Configurations.suns.get(i);
 			suns2.add(new SettingsString("object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
-			//Подсветить звезду
 			suns2.add(addBlink(sun.getSelect(), e->sun.setSelect(e)));
 			//Задать новую траекторию
+			//final var tr = sun.getTrajectory();
 			//Изменить траекторию
 			//Задать новую звезду
-			//Удалить звезду
-			//final var tr = sun.getTrajectory();
-			
+			final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.remove"));
+			remove.addActionListener( e -> {
+				Configurations.suns.remove(sun);
+				rebuildSuns();
+			});
+			suns2.add(remove);
 		}
 		borderClick(suns2, null);
 		borderClick(suns2, null);
@@ -258,7 +263,7 @@ public class Settings extends javax.swing.JPanel {
 			minerals.add(new SettingsBoolean("emitter.isLine", !mineral.getIsLine(), e -> {
 				mineral.setIsLine(!e);
 			}));
-			for(final Calculations.ParamObject p : mineral.getParams()){
+			for(final Utils.ParamObject p : mineral.getParams()){
 				switch (p.type) {
 					case INT -> {
 						minerals.add(new SettingsSlider(String.format("%s.%s", mineral.getClass().getName(),p.name), p.minD,  p.maxD, p.minA,p.getI(),  p.maxA, e -> {
@@ -277,6 +282,26 @@ public class Settings extends javax.swing.JPanel {
 		}
 		borderClick(minerals, null);
 		borderClick(minerals, null);
+		
+		
+		minerals2.removeAll();
+		
+		for (int i = 0; i < Configurations.minerals.size(); i++) {
+			if(i > 0)
+				minerals2.add(new JPopupMenu.Separator());
+			final var mineral = Configurations.minerals.get(i);
+			minerals2.add(new SettingsString("object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
+			minerals2.add(addBlink(mineral.getSelect(), e->mineral.setSelect(e)));
+			
+			final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.remove"));
+			remove.addActionListener( e -> {
+				Configurations.minerals.remove(mineral);
+				rebuildMinerals();
+			});
+			minerals2.add(remove);
+		}
+		borderClick(minerals2, null);
+		borderClick(minerals2, null);
 	}
 	/**Пересоздаёт потоки*/
 	private void rebuildStreams(){
@@ -287,7 +312,7 @@ public class Settings extends javax.swing.JPanel {
 			final var stream = Configurations.streams.get(i);
 			streams.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",stream.toString())));
 			
-			for(final Calculations.ParamObject p : stream.getParams()){
+			for(final Utils.ParamObject p : stream.getParams()){
 				switch (p.type) {
 					case INT -> {
 						streams.add(new SettingsSlider(String.format("%s.%s", stream.getClass().getName(),p.name), p.minD,  p.maxD, p.minA,p.getI(),  p.maxA, e -> {
@@ -306,6 +331,25 @@ public class Settings extends javax.swing.JPanel {
 		}
 		borderClick(streams, null);
 		borderClick(streams, null);
+		
+		streams2.removeAll();
+		
+		for (int i = 0; i < Configurations.streams.size(); i++) {
+			if(i > 0)
+				streams2.add(new JPopupMenu.Separator());
+			final var stream = Configurations.streams.get(i);
+			streams2.add(new SettingsString("object.editname", "Залеж", stream.toString(), e -> stream.setName(e)));
+			streams2.add(addBlink(stream.getSelect(), e->stream.setSelect(e)));
+			
+			final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.remove"));
+			remove.addActionListener( e -> {
+				Configurations.streams.remove(stream);
+				rebuildStreams();
+			});
+			streams2.add(remove);
+		}
+		borderClick(streams2, null);
+		borderClick(streams2, null);
 	}
 	/**Добавляет кнопку мигания
 	 * @param nowValue текущее состояние объекта
@@ -348,6 +392,8 @@ public class Settings extends javax.swing.JPanel {
         jPanel2 = new javax.swing.JPanel();
         configuationsRebuild = new javax.swing.JPanel();
         suns2 = new javax.swing.JPanel();
+        streams2 = new javax.swing.JPanel();
+        minerals2 = new javax.swing.JPanel();
 
         setToolTipText(Configurations.getProperty(Settings.class,"toolTop"));
         setLayout(new javax.swing.BoxLayout(this, javax.swing.BoxLayout.Y_AXIS));
@@ -450,19 +496,44 @@ public class Settings extends javax.swing.JPanel {
         });
         suns2.setLayout(new javax.swing.BoxLayout(suns2, javax.swing.BoxLayout.Y_AXIS));
 
+        streams2.setBackground(new java.awt.Color(204, 204, 204));
+        streams2.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"streams"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        streams2.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                streams2MouseClicked(evt);
+            }
+        });
+        streams2.setLayout(new javax.swing.BoxLayout(streams2, javax.swing.BoxLayout.Y_AXIS));
+
+        minerals2.setBackground(new java.awt.Color(237, 255, 33));
+        minerals2.setBorder(javax.swing.BorderFactory.createTitledBorder(null, Configurations.getProperty(Settings.class,"minerals"), javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
+        minerals2.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                minerals2MouseClicked(evt);
+            }
+        });
+        minerals2.setLayout(new javax.swing.BoxLayout(minerals2, javax.swing.BoxLayout.Y_AXIS));
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(configuationsRebuild, javax.swing.GroupLayout.DEFAULT_SIZE, 236, Short.MAX_VALUE)
             .addComponent(suns2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(streams2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(minerals2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addComponent(configuationsRebuild, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(suns2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(suns2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(streams2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(minerals2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         tableLists.addTab(Configurations.getProperty(Settings.class,"rebuild.name"), null, jPanel2, Configurations.getProperty(Settings.class,"rebuild.tooltip"));
@@ -532,6 +603,14 @@ public class Settings extends javax.swing.JPanel {
     private void suns2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_suns2MouseClicked
         borderClick(suns2, evt);
     }//GEN-LAST:event_suns2MouseClicked
+
+    private void streams2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_streams2MouseClicked
+         borderClick(streams2, evt);
+    }//GEN-LAST:event_streams2MouseClicked
+
+    private void minerals2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_minerals2MouseClicked
+         borderClick(minerals2, evt);
+    }//GEN-LAST:event_minerals2MouseClicked
 	/**Обрабатывает событие нажатия на рамку параметра
 	 * @param panel панель, рамку которой нажали
 	 * @param evt событие нажатия. Если тут будет null, то это тоже будет означать нажатие
@@ -583,8 +662,10 @@ public class Settings extends javax.swing.JPanel {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel minerals;
+    private javax.swing.JPanel minerals2;
     private javax.swing.JScrollPane scroll;
     private javax.swing.JPanel streams;
+    private javax.swing.JPanel streams2;
     private javax.swing.JPanel suns;
     private javax.swing.JPanel suns2;
     private javax.swing.JTabbedPane tableLists;
