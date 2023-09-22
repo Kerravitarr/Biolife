@@ -1,5 +1,6 @@
 package Calculations;
 
+import Utils.ParamObject;
 import static Calculations.Configurations.WORLD_TYPE.CIRCLE;
 import static Calculations.Configurations.WORLD_TYPE.FIELD_R;
 import static Calculations.Configurations.WORLD_TYPE.LINE_H;
@@ -25,6 +26,19 @@ public abstract class StreamAbstract{
 	protected StreamAttenuation shadow;
 	/**Имя этого потока*/
 	private String name;
+	
+	
+	//Отдельные переменные только для отрисовки!
+	/**Номер кадра для рисования*/
+	protected int frame = Integer.MAX_VALUE / 2;
+	/**Флаг выбора излучателя для "мигания"*/
+	private boolean isSelected = false;
+	/**Флаг, показывающий, в текущем кадре звезда должна выглядеть как выбранная или нет*/
+	private static boolean isSelectedFrame = false;
+	/**Счётчик времени для подсвечивания и высвечивания объекта*/
+	private static long nextSelected = 0;
+	/**Сколько мс должно пройти чтобы объект изменил параметр выбора*/
+	private static final long SELECT_PERIOD = 500;
 	
 	/**Создание гейзера
 	 * @param move форма движения
@@ -72,6 +86,14 @@ public abstract class StreamAbstract{
 	 * @return список из всех доступных параметров
 	 */
 	public abstract List<ParamObject> getParams();
+	/**Возвращает значение параметра отображения звездны - выделяется она на экране или нет
+	 * @return Если тут true, то излучатель будет подмигивать прозрачностью
+	 */
+	public boolean getSelect(){return isSelected;}
+	/**Сохраняет значение параметра отображения звездны - выделяется она на экране или нет
+	 * @param isS если true, то излучатель будет подмигивать прозрачностью
+	 */
+	public void setSelect(boolean isS){isSelected = isS;}
 	
 	/**Превращает текущий объект в объект его описания
 	 * @return объект описания. По нему можно гарантированно восстановить исходник
@@ -112,6 +134,15 @@ public abstract class StreamAbstract{
 	 * @param transform преобразователь размеров мировых в размеры экранные
 	 */
 	public void paint(Graphics2D g, WorldView.Transforms transform){
+		frame++;
+		//Мигалка выбора
+		if(isSelected){
+			final var mc = System.currentTimeMillis();
+			if(nextSelected < mc){
+				nextSelected = mc + SELECT_PERIOD;
+				isSelectedFrame = !isSelectedFrame;
+			}
+		}
 		//Мы нарусем не один объек, а сразу все 4!
 		//i = 0 Главный
 		//i = 1 Его-же справа (слева)
@@ -138,7 +169,8 @@ public abstract class StreamAbstract{
 				case 2,3 -> position.getY() + (position.getY() > Configurations.confoguration.MAP_CELLS.height/2 ?  -Configurations.confoguration.MAP_CELLS.height : Configurations.confoguration.MAP_CELLS.height);
 				default -> throw new AssertionError();
 			};
-			paint(g,transform, posX, posY);
+			if(!isSelected || isSelectedFrame)
+				paint(g,transform, posX, posY, frame);
 		}
 	}
 	/**
@@ -148,8 +180,9 @@ public abstract class StreamAbstract{
 	 * @param transform преобразователь размеров мировых в размеры экранные
 	 * @param posX текущаяя координата
 	 * @param posY текущаяя координата
+	 * @param frame некоторый счётчик, который создаёт анимацию
 	 */
-	protected abstract void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY);
+	protected abstract void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY, int frame);
 	
 	@Override
 	public String toString(){

@@ -1,5 +1,6 @@
 package Calculations;
 
+import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
 import Utils.JSON;
@@ -33,7 +34,7 @@ public abstract class DefaultEmitter {
 	/**Счётчик времени для подсвечивания и высвечивания объекта*/
 	private static long nextSelected = 0;
 	/**Сколько мс должно пройти чтобы объект изменил параметр выбора*/
-	private static final long SELECT_PERIOD = 1000;
+	private static final long SELECT_PERIOD = 500;
 	
 	protected DefaultEmitter(JSON j, long v) throws GenerateClassException{
 		power = j.get("power");

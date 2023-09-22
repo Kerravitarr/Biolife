@@ -4,6 +4,7 @@
  */
 package Calculations;
 
+import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView;
 import MapObjects.CellObject;
@@ -98,10 +99,8 @@ public class StreamSwirl extends StreamAbstract {
 	}
 	
 	
-	/**Специальный счётчик кадров, нужен для отрисовки "движения" воды*/
-	private int frame = Integer.MAX_VALUE / 2;
 	@Override
-	public void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY) {
+	public void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY, int frame) {
 		final var x0 = transform.toScrinX(posX);
 		final var y0 = transform.toScrinY(posY);
 		
@@ -130,7 +129,6 @@ public class StreamSwirl extends StreamAbstract {
 				g.drawLine(x1, y1, x2, y2);
 			}
 		}
-		frame++;
 	}
 
 }

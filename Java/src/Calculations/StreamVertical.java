@@ -4,14 +4,13 @@
  */
 package Calculations;
 
+import Utils.ParamObject;
 import Calculations.Point.DIRECTION;
 import GUI.AllColors;
 import GUI.WorldView;
 import MapObjects.CellObject;
 import Utils.JSON;
-import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
@@ -79,7 +78,7 @@ public class StreamVertical extends StreamAbstract {
 	protected void move() {}
 	@Override
 	public List<ParamObject> getParams() {
-		final java.util.ArrayList<Calculations.ParamObject> ret = new ArrayList<ParamObject>(2);
+		final var ret = new ArrayList<ParamObject>(2);
 		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){
 			@Override
 			public void setValue(Object value) throws ClassCastException {
@@ -110,11 +109,8 @@ public class StreamVertical extends StreamAbstract {
 		j.add("height", height);
 		return j;
 	}
-	
-	/**Специальный счётчик кадров, нужен для отрисовки "движения" воды*/
-	private int frame = Integer.MAX_VALUE / 2;
 	@Override
-	protected void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY){
+	protected void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY, int frame){
 		
 		final var x0 = transform.toScrinX(posX - width/2);
 		final var y0 = transform.toScrinY(posY - height/2);
@@ -142,7 +138,5 @@ public class StreamVertical extends StreamAbstract {
 				g.fill(new Rectangle2D.Double(xr0, yc, wRow, 2));
 			}
 		}
-		
-		frame++;
 	}
 }

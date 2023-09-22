@@ -4,18 +4,13 @@
  */
 package Calculations;
 
+import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView;
 import MapObjects.CellObject;
 import Utils.JSON;
-import java.awt.Color;
 import java.awt.Graphics2D;
-import java.awt.MultipleGradientPaint;
-import java.awt.RadialGradientPaint;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -133,7 +128,7 @@ public class StreamEllipse extends StreamAbstract {
 	}
 	@Override
 	public List<ParamObject> getParams(){
-		final java.util.ArrayList<Calculations.ParamObject> ret = new ArrayList<ParamObject>(2);
+		final var ret = new ArrayList<ParamObject>(2);
 		ret.add(new ParamObject("a2", 2,Configurations.getWidth(),2,null){
 			@Override
 			public void setValue(Object value) throws ClassCastException {
@@ -169,9 +164,8 @@ public class StreamEllipse extends StreamAbstract {
 	
 	
 	/**Специальный счётчик кадров, нужен для отрисовки "движения" воды*/
-	private int frame = Integer.MAX_VALUE / 2;
 	@Override
-	public void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY) {
+	public void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY, int frame) {
 		final var x0 = transform.toScrinX((int)(posX - a));
 		final var y0 = transform.toScrinY((int)(posY - b));
 		
@@ -195,7 +189,6 @@ public class StreamEllipse extends StreamAbstract {
 			final var dy = curcle * hy + hy * step / Math.abs(F);
 			g.draw(new Ellipse2D.Double(x0 + dx, y0 + dy, w0 - dx * 2, h0 - dy * 2));
 		}
-		frame++;
 	}
 
 }
