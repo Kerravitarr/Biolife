@@ -4,11 +4,22 @@
  */
 package Calculations;
 
+import Utils.ParamConstructor;
 import GUI.AllColors;
 import GUI.WorldView;
 import Utils.JSON;
 import java.awt.Graphics2D;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URLDecoder;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * болванка для таректории по которой могут двигаться объекты карты
@@ -99,6 +110,42 @@ public class Trajectory {
 		j.add("_className", this.getClass().getName());
 		return j;
 	}
+	/**
+	 * Возвращает все переменные, необходимые для создания объекта
+	 * @return список из всех доступных параметров
+	 */
+	protected static ParamConstructor.GenerateVariants<Trajectory> generate(){
+		final var ret = new ParamConstructor.GenerateVariants<Trajectory>(Trajectory.class);
+		final var constructor1 = new ParamConstructor.GenerateObject<Trajectory>(Configurations.getProperty(Trajectory.class, "constructor.name"));
+		constructor1.add(new ParamConstructor(Configurations.getProperty(Trajectory.class, "parametr.name"), Point.create(0, 0)));
+		ret.add(constructor1);
+		return ret;
+	}
+	
+	
+	/**
+	 * Возвращает списко объекто, которые позволяют создать абсолютно любую траекторию
+	 * @return каждый пункт списка - возможность создать объект
+	 */
+	public static List<ParamConstructor.GenerateVariants<Trajectory>> getAllGenerators(){
+		final var allTrajectories = new ArrayList<ParamConstructor.GenerateVariants<Trajectory>>();
+	
+		
+        /*for(final var url : urlCl.getDefinedPackages()) {
+			final var name = url.getName();
+			if(name.endsWith(".class")){
+				try {
+					final var cl = Class.forName(name.replace('/', '.')).asSubclass(Trajectory.class);
+					final var m = cl.getMethod("generate");
+					allTrajectories.add((ParamConstructor.GenerateVariants<Trajectory>) m.invoke(null));
+				} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException ex) {
+					Logger.getLogger(Trajectory.class.getName()).log(Level.SEVERE, null, ex);
+				}
+			}
+        }*/
+		return allTrajectories;
+	}
+	
 	/** * Создаёт реальное солнце на основе JSON файла.Тут может быть любое из существующих солнц
 	 * @param json объект, описывающий солнце
 	 * @param version версия файла json в котором объект сохранён

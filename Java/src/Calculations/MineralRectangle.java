@@ -4,6 +4,7 @@
  */
 package Calculations;
 
+import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
 import Utils.JSON;

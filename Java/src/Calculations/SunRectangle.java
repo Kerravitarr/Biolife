@@ -4,6 +4,7 @@
  */
 package Calculations;
 
+import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
 import Utils.JSON;
@@ -74,7 +75,7 @@ public class SunRectangle extends SunAbstract {
 
 	@Override
 	public List<ParamObject> getParams(){
-		final java.util.ArrayList<Calculations.ParamObject> ret = new ArrayList<ParamObject>(2);
+		final java.util.ArrayList<Utils.ParamObject> ret = new ArrayList<ParamObject>(2);
 		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){
 			@Override
 			public void setValue(Object value) throws ClassCastException {

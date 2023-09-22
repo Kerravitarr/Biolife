@@ -2,7 +2,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package Calculations;
+package Utils;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**Функция для работы с неформализуемыми параметрами
  * По факту, этот класс позволяет имея доступ только к указателю на объект
@@ -11,7 +15,16 @@ package Calculations;
  * @author Kerravitarr
  */
 public abstract class ParamObject {
-
+	/**Набор изменяемых параметров*/
+	public static class EditParams {
+		/**Параметры этого объекта*/
+		private final List<ParamObject> params = new ArrayList<ParamObject>();
+		/**Добавляет параметр в набор
+		 * @param param параметр объекта
+		 */
+		public void add(ParamObject param){params.add(param);}
+	}
+	
 	/**Название параметра*/
 	public final String name;
 	/**Тип параметра*/
