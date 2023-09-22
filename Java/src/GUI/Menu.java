@@ -73,7 +73,10 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		//add(makeButton("search", e-> System.out.println(e)));
 		add(start = makeButton("play", e -> {if (Configurations.world.isActiv())Configurations.world.stop();else Configurations.world.start();} ));
 		add(record = makeButton("record", e-> record()));
-		add(makeButton("graph", e-> evolTreeDialog.setVisible(true)));
+		add(makeButton("graph", e-> {
+			evolTreeDialog.setVisible(true);
+			evolTreeDialog.setLocation(Menu.this.getLocationOnScreen());
+		}));
 		add(makeButton("cursor", e-> toDefault()));
 		JButton kill;
 		add(kill = makeButton("kill", e-> remove(REMOVE_O.ALL)));
@@ -87,7 +90,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 						visible.addActionListener( e -> remove(i));
 						jPopupMenu1.add(visible);
 					}
-					jPopupMenu1.show(Menu.this, evt.getX(), evt.getY());
+					jPopupMenu1.show(kill, evt.getX(), evt.getY());
 				}
 			}
 		});
@@ -207,7 +210,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			final var v = Configurations.getViewer();
 			if(!(v instanceof DefaultViewer)) return;
 			final var vw = ((DefaultViewer) v).getWorld();
-			int result = javax.swing.JOptionPane.showConfirmDialog(null, 
+			int result = javax.swing.JOptionPane.showConfirmDialog(vw, 
 					MessageFormat.format(Configurations.getHProperty(Menu.class,"record.warning"),vw.getWidth(),vw.getHeight()),
 					"BioLife", javax.swing.JOptionPane.OK_CANCEL_OPTION);
 			if(result == javax.swing.JOptionPane.CANCEL_OPTION) return;
@@ -228,7 +231,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 				gifs = new GifSequenceWriter(fileName, true, vw.getSize());
 				Configurations.world.start();
 			} catch (IOException e1) {
-				JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"record.error")
+				JOptionPane.showMessageDialog(vw,	Configurations.getHProperty(Menu.class,"record.error")
 						+ e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
 			}
 		} else { // Закончили
@@ -243,13 +246,14 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		if(Configurations.confoguration.lastSaveCount == Configurations.world.step) return;
 		boolean oldStateWorld = Configurations.world.isActiv();	
 		Configurations.world.awaitStop();
+		final var vw = Configurations.getViewer().get(WorldView.class);
 		
 		JFileChooser fileopen = new JFileChooser(System.getProperty("user.dir"));
 		final var extension = "zbmap";
 		final var title = "BioLife";
 		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
 		while(true) {
-			int ret = fileopen.showDialog(null, Configurations.getProperty(this.getClass(),"save.selectTitle"));
+			int ret = fileopen.showDialog(vw, Configurations.getProperty(this.getClass(),"save.selectTitle"));
 			if (ret != JFileChooser.APPROVE_OPTION) return;
 			String fileName = fileopen.getSelectedFile().getPath();
 			if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
@@ -262,9 +266,9 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			if(file.exists()) {
 				int result;
 				if(fileName.lastIndexOf("\\") != -1)
-					result = JOptionPane.showConfirmDialog(null,MessageFormat.format(Configurations.getProperty(this.getClass(),"save.fileExist"),fileName.substring(fileName.lastIndexOf("\\")+1)), title,JOptionPane.YES_NO_CANCEL_OPTION);
+					result = JOptionPane.showConfirmDialog(vw,MessageFormat.format(Configurations.getProperty(this.getClass(),"save.fileExist"),fileName.substring(fileName.lastIndexOf("\\")+1)), title,JOptionPane.YES_NO_CANCEL_OPTION);
 				else
-					result = JOptionPane.showConfirmDialog(null,MessageFormat.format(Configurations.getProperty(this.getClass(),"save.fileExist"),fileName), "BioLife",JOptionPane.YES_NO_CANCEL_OPTION);
+					result = JOptionPane.showConfirmDialog(vw,MessageFormat.format(Configurations.getProperty(this.getClass(),"save.fileExist"),fileName), "BioLife",JOptionPane.YES_NO_CANCEL_OPTION);
 				switch (result) {
 					case JOptionPane.YES_OPTION-> {file.delete();}
 					case JOptionPane.NO_OPTION-> {continue;}
@@ -273,11 +277,11 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			}
 			try {
 				Configurations.save(fileName);
-				JOptionPane.showMessageDialog(null,	Configurations.getProperty(this.getClass(),"save.ok"),	title, JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(vw,	Configurations.getProperty(this.getClass(),"save.ok"),	title, JOptionPane.INFORMATION_MESSAGE);
 				break;
 			} catch (IOException ex) {
 				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-				JOptionPane.showMessageDialog(null,	Configurations.getHProperty(this.getClass(),"save.error") + ex,	title, JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(vw,	Configurations.getHProperty(this.getClass(),"save.error") + ex,	title, JOptionPane.ERROR_MESSAGE);
 			}
 		}
 		if (oldStateWorld)
@@ -286,12 +290,13 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	/**Открывает окошечко загрузки мира и... Загружает мир, собственно*/
 	public void load() {
 		Configurations.world.awaitStop();
+		final var vw = Configurations.getViewer().get(WorldView.class);
 		
 		JFileChooser fileopen = new JFileChooser(System.getProperty("user.dir"));
 		final var extension = "zbmap";
 		final var title = "BioLife";
 		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
-		int ret = fileopen.showDialog(null, Configurations.getProperty(this.getClass(),"load.selectTitle"));
+		int ret = fileopen.showDialog(vw, Configurations.getProperty(this.getClass(),"load.selectTitle"));
 		if (ret == JFileChooser.APPROVE_OPTION) {
 			try {
 				Configurations.load(fileopen.getSelectedFile().getPath());
@@ -301,10 +306,10 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 				evolTreeDialog.restart();
 			} catch (IOException ex) {
 				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-				JOptionPane.showMessageDialog(null,	Configurations.getHProperty(this.getClass(),"load.error") + ex,	title, JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(vw,	Configurations.getHProperty(this.getClass(),"load.error") + ex,	title, JOptionPane.ERROR_MESSAGE);
 			} catch (GenerateClassException ex) {
 				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-				JOptionPane.showMessageDialog(null,	ex.getLocalizedMessage(),	title, JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(vw,	ex.getLocalizedMessage(),	title, JOptionPane.ERROR_MESSAGE);
 			}
 		}
 	}
