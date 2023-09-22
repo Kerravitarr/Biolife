@@ -653,6 +653,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		button.setFocusPainted(false);
 		button.setContentAreaFilled(false);
 		button.setFocusable(false);
+		button.setPreferredSize(new Dimension(15,15));
+		button.setMinimumSize(new Dimension(15,15));
 	}
 	
 	/**Тестирует шрифт на возможность вывода на экран всех ключей.
