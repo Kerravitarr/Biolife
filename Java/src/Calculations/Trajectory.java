@@ -7,31 +7,55 @@ package Calculations;
 import Utils.ParamConstructor;
 import GUI.AllColors;
 import GUI.WorldView;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URLDecoder;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Vector;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Map;
 
 /**
  * болванка для таректории по которой могут двигаться объекты карты
  * @author Kerravitarr
  */
-public class Trajectory {
+public class Trajectory{
 	/**Скорость объекта. Единица измерения: секунд на 1 шаг*/
 	private long speed;
 	/**Для неподвижных объектов, точка нахождения*/
-	private final Point pos;
+	private Point pos;
 	/**Текущий шаг траектории*/
 	private long step;
+	
+	/**Все возможные траектории, которые мы можем создать*/
+	private final static Map<String, ClassBuilder<Trajectory>> TRAJECTORIES = new HashMap<>();
+	static{
+		final var builder = new ClassBuilder<Trajectory>("Точка"){
+			@Override
+			public Trajectory build(JSON json, long version){
+				return new Trajectory(json, version);
+			}
+		};
+		builder.addParam(new ClassBuilder.MapPointParam<Trajectory>() {
+			@Override public Point get(Trajectory who) {return who.pos;}
+			@Override public Point getDefault() { return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+			@Override public void setValue(Trajectory who, Point value) {who.pos = value;}
+			@Override public String name() {return "position";}
+		});
+		builder.addConstructor(new ClassBuilder.Constructor<Trajectory>(){
+			@Override
+			protected Trajectory build(List<ClassBuilder.ConstructParam> _params) {
+				throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+			}
+		});
+		Trajectory.register(builder);
+	}
+	/**Регистрирует наследника как одного из возможных дочерних классов.
+	 * То есть мы можем создать траекторию такого типа
+	 * @param trajectory фабрика по созданию наследников
+	 */
+	protected static void register(ClassBuilder<Trajectory> trajectory){TRAJECTORIES.put(trajectory.name(), trajectory);};
 	
 	private Trajectory(long speed, Point pos){
 		if(speed < 0) throw new IllegalArgumentException("Скорость не может быть меньше 0!");

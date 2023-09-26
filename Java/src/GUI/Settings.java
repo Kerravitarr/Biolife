@@ -90,8 +90,8 @@ public class Settings extends javax.swing.JPanel {
 		configuationsNorm.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "worldType",Configurations.confoguration.world_type)));
 		configuationsNorm.add(new SettingsSlider("configuations.speed", 0, 0, 1000, 0,(int)Configurations.world.getSpeed(),null, e -> Configurations.world.setSpeed(e)));
 		configuationsNorm.add(new JPopupMenu.Separator());
-		configuationsNorm.add(new SettingsNumber("configuations.savePeriod", 1_000, (int)dc.SAVE_PERIOD, 10_000_000, (int)Configurations.confoguration.SAVE_PERIOD, e -> Configurations.confoguration.SAVE_PERIOD = e));
-		configuationsNorm.add(new SettingsNumber("configuations.countSave", 1, dc.COUNT_SAVE, 10, Configurations.confoguration.COUNT_SAVE, e -> Configurations.confoguration.COUNT_SAVE = e));
+		configuationsNorm.add(new SettingsSlider("configuations.savePeriod", 1_000, (int)dc.SAVE_PERIOD, 10_000_000,1_000, (int)Configurations.confoguration.SAVE_PERIOD,null, e -> Configurations.confoguration.SAVE_PERIOD = e));
+		configuationsNorm.add(new SettingsSlider("configuations.countSave", 1, dc.COUNT_SAVE, 10,1, Configurations.confoguration.COUNT_SAVE,null, e -> Configurations.confoguration.COUNT_SAVE = e));
 		configuationsNorm.add(new JPopupMenu.Separator());
 		configuationsNorm.add(new SettingsSlider("configuations.mutagenicity",
 				0, dc.AGGRESSIVE_ENVIRONMENT, 100,
