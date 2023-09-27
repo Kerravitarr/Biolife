@@ -29,16 +29,6 @@ public abstract class ClassBuilder <T>{
 		public String name();
 	}
 	/**
-	 * Параметр конструктора класса
-	 * @param <P> тип этого параметра - Integer, Boolean...
-	 */
-	public interface ConstructorParametr<P, T> extends Parametr<P>{
-		/**Позволяет сохранить значение в текущий объект
-		 * @param value сохраняемое значение
-		 */
-		public abstract void setValue(P value);
-	}
-	/**
 	 * Изменяемый параметр реально существующего класса
 	 * @param <P> тип этого параметра - Integer, Boolean...
 	 * @param <T> собственно тот класс, чьим параметром будет являеться этот объект
@@ -60,12 +50,14 @@ public abstract class ClassBuilder <T>{
 	public interface BooleanParam<T> extends EditParametr<Boolean, T>{}
 	/**Векторный параметр типа Да/Нет. То ессть требуется задать ряд значений типа boolean, от 1 до бесконечности*/
 	public interface BooleanVectorParam<T> extends EditParametr<Boolean[], T>{}
+	
 	/**Параметр типа Строка*/
 	public interface StringParam<T> extends EditParametr<String, T>{}
 	/**Векторный параметр типа Строка. То ессть требуется задать ряд значений типа String, от 1 до бесконечности*/
 	public interface StringVectorParam<T> extends EditParametr<String[], T>{}
+	
 	/**Параметр типа число*/
-	protected interface NumberParam<T> extends EditParametr<Integer, T>{
+	public interface NumberP{
 		/**Возвращает минимальное значение для слайдера.
 		 * Слайдером можно задавать значение этой переменной без ввода числа. Просто слайдер
 		 * @return числовое минимальное значение
@@ -91,39 +83,19 @@ public abstract class ClassBuilder <T>{
 		 */
 		public Integer getRealMaximum();
 	}
+	/**Параметр типа число*/
+	public interface NumberParam<T> extends NumberP, EditParametr<Integer, T>{}
 	/**Векторный параметр типа число. То ессть требуется задать ряд чисел, от 1 до бесконечности*/
-	protected interface NumberVectorParam<T> extends EditParametr<Integer[], T>{
-		/**Возвращает минимальное значение для слайдера.
-		 * Слайдером можно задавать значение этой переменной без ввода числа. Просто слайдер
-		 * @return числовое минимальное значение
-		 */
-		public int getSliderMinimum();
-		/**Возвращает максимальное значение для слайдера.
-		 * Слайдером можно задавать значение этой переменной без ввода числа. Просто слайдер
-		 * @return числовое максимальное значение
-		 */
-		public int getSliderMaximum();
-		
-		/**Возвращает минимальное значение для переменной.
-		 * Так как слайдер ограничен - он короткий и на нём не всегда удобно вводить числа с маленьким шагом
-		 * то есть возможсность ввода вручную
-		 * Слайдером можно задавать значение этой переменной без ввода числа. Просто слайдер
-		 * @return числовое минимальное значение или null, если снизу параметр не ограничен
-		 */
-		public Integer getRealMinimum();
-		/**Возвращает максимальное значение для переменной.
-		 * Так как слайдер ограничен - он короткий и на нём не всегда удобно вводить числа с маленьким шагом
-		 * Слайдером можно задавать значение этой переменной без ввода числа. Просто слайдер
-		 * @return числовое максимальное значение или null, если сверху параметр не ограничен
-		 */
-		public Integer getRealMaximum();
-	}
+	public interface NumberVectorParam<T> extends NumberP, EditParametr<Integer[], T>{}
+	
 	/**Параметр типа точка на карте*/
 	public interface MapPointParam<T> extends EditParametr<Point, T>{}
 	/**Векторный параметр типа точка на карте. То ессть требуется задать ряд точек, от 1 до бесконечности*/
 	public interface MapPointVectorParam<T> extends EditParametr<Point[], T>{}
+	
+	
 	/**Параметр типа абстрактные два значения. Х - первое значение, Y - второе*/
-	public interface Abstract2Param<T> extends EditParametr<Point.Vector, T>{
+	public interface Abstract2P{
 		/**Минимальное значение для первого параметра
 		 * @return меньше него не получится задать
 		 */
@@ -149,93 +121,220 @@ public abstract class ClassBuilder <T>{
 		 */
 		public int get2Maximum();
 	}
-	/**Векторный параметр типа абстрактные два значения. Х - первое значение, Y - второе. То ессть требуется задать ряд точек, от 1 до бесконечности*/
-	public interface Abstract2VectorParam<T> extends EditParametr<Point.Vector, T>{
-		/**Минимальное значение для первого параметра
-		 * @return меньше него не получится задать
-		 */
-		public int get1Minimum();
-		/**Значение по умолчанию для первого параметра
-		 * @return оно будет выставленно при сбросе
-		 */
-		public int get1Default();
-		/**Максимальное значение для первого параметра
-		 * @return больше него нельзя будет задать
-		 */
-		public int get1Maximum();
-		/**Минимальное значение для второго параметра
-		 * @return меньше него не получится задать
-		 */
-		public int get2Minimum();
-		/**Значение по умолчанию для второго параметра
-		 * @return оно будет выставленно при сбросе
-		 */
-		public int get2Default();
-		/**Максимальное значение для второго параметра
-		 * @return больше него нельзя будет задать
-		 */
-		public int get2Maximum();
-	}
+	/**Параметр типа абстрактные два значения. Х - первое значение, Y - второе*/
+	public interface Abstract2Param<T> extends Abstract2P, EditParametr<Point.Vector, T>{}
+	/**Параметр типа абстрактные два значения. Х - первое значение, Y - второе*/
+	public interface Abstract2VectorParam<T> extends Abstract2P, EditParametr<Point.Vector[], T>{}
+	
 	
 	/**Параметр конструктора объекта
 	 * @param <P> тип параметра
 	 * @param <T> тип объекта, чей это параметр
 	 */
-	public static abstract class ConstructParam<P, T> implements ConstructorParametr<P,T>{
-		//Текущее значение параметра конструктора
-		protected P paramValue;
-		protected ConstructParam(){
-			paramValue = getDefault();
-		}
+	public static abstract class ConstructorParametr<P, T> implements Parametr<P>{
+		/**Текущее значение параметра конструктора*/
+		private P value;
+		
+		protected ConstructorParametr(){value = getDefault();}
+		
 		/**Позволяет сохранить значение в текущий объект
 		 * @param value сохраняемое значение
 		 */
-		@Override
-		public void setValue(P value){paramValue = value;}
+		public void setValue(P value){this.value = value;}
 	}
-	/**Изменяемый векторный параметр конструктора. То ессть требуется задать целый рад параметров, от 1 до бесконечности*/
-	private static abstract class ConstructVectorParam <P, T> extends ConstructParam<P[], T>{}	
+
+	/**Параметр типа Да/Нет*/
+	public static abstract class BooleanConstructorParam<T> extends ConstructorParametr<Boolean, T>{}
+	/**Векторный параметр типа Да/Нет. То ессть требуется задать ряд значений типа boolean, от 1 до бесконечности*/
+	public static abstract class BooleanVectorConstructorParam<T> extends ConstructorParametr<Boolean[], T>{}
+	
+	/**Параметр типа Строка*/
+	public static abstract class StringConstructorParam<T> extends ConstructorParametr<String, T>{}
+	/**Векторный параметр типа Строка. То ессть требуется задать ряд значений типа String, от 1 до бесконечности*/
+	public static abstract class StringVectorConstructorParam<T> extends ConstructorParametr<String[], T>{}
+	
+	/**Параметр типа число*/
+	public static abstract class NumberConstructorParam<T> extends ConstructorParametr<Integer, T> implements NumberP{}
+	/**Векторный параметр типа число. То ессть требуется задать ряд чисел, от 1 до бесконечности*/
+	public static abstract class NumberVectorConstructorParam<T> extends ConstructorParametr<Integer[], T> implements NumberP{}
+	
+	/**Параметр типа точка на карте*/
+	public static abstract class MapPointConstructorParam<T> extends ConstructorParametr<Point, T>{}
+	/**Векторный параметр типа точка на карте. То ессть требуется задать ряд точек, от 1 до бесконечности*/
+	public static abstract class MapPointVectorConstructorParam<T> extends ConstructorParametr<Point[], T>{}
+	
+	/**Параметр типа абстрактные два значения. Х - первое значение, Y - второе*/
+	public static abstract class Abstract2ConstructorParam<T> extends ConstructorParametr<Point.Vector, T> implements Abstract2P{}
+	/**Параметр типа абстрактные два значения. Х - первое значение, Y - второе*/
+	public static abstract class Abstract2VectorConstructorParam<T> extends ConstructorParametr<Point.Vector[], T> implements Abstract2P{}
+	
 	
 	/**Конструктор класса*/
-	public static abstract class Constructor<T>{
+	public static abstract class Constructor<CT>{
 		/**Параметры конструктора, которые можно менять по своему желанию*/
-		protected final List<ConstructParam> _params = new ArrayList<>();
+		private final List<ConstructorParametr<?,CT>> _params = new ArrayList<>();
 		/**Строит и возвращает текущий объект по конструктору
+		 * Для удобства нужно воспользоваться функцией getParam
 		 * @return объект, который надо сконструировать
 		 */
-		public T build(){
-			return build(_params);
-		}
-		/**Задача наследника - реально сконструировать текущий класс через параметры
-		 * @param _params список заданных изначально параметров с уже установленными значениями
-		 * @return объект, который сконструирован
+		public abstract CT build();
+		/**Возвращает ключ к локализованному имени конструктора этого класса.
+		 * Например, по двум точкам и углу, или по трём точкам или ещё как.
+		 * @return ключ по которому в файле локализации можно найти имя этого конструктора
 		 */
-		protected abstract T build(List<ConstructParam> _params);
+		public abstract String name();
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param <K> один из классов наследников, представленный в текущем классе 
+		 * @param param параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		private <K extends ConstructorParametr<?, CT>> void addEditParam(K param){_params.add(param);}
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		public void addParam(BooleanConstructorParam<CT> bp){addEditParam(bp);}
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		public void addParam(BooleanVectorConstructorParam<CT> bp){addEditParam(bp);}
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		public void addParam(StringConstructorParam<CT> bp){addEditParam(bp);}
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		public void addParam(StringVectorConstructorParam<CT> bp){addEditParam(bp);}
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		public void addParam(NumberConstructorParam<CT> bp){addEditParam(bp);}
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		public void addParam(NumberVectorConstructorParam<CT> bp){addEditParam(bp);}
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		public void addParam(MapPointConstructorParam<CT> bp){addEditParam(bp);}
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		public void addParam(MapPointVectorConstructorParam<CT> bp){addEditParam(bp);}
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		public void addParam(Abstract2ConstructorParam<CT> bp){addEditParam(bp);}
+		/**
+		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+		 */
+		public void addParam(Abstract2VectorConstructorParam<CT> bp){addEditParam(bp);}
+		
+		/**Возвращает параметр по типу
+		 * @param <R> тип возвращаемого параметра
+		 * @param index порядковый номер параметра
+		 * @param type тип параметраметра
+		 * @return числовое значение параметра
+		 */
+		private <R extends ConstructorParametr<R, CT>> R getParam_(int index, Class<R> type){
+			final var p = _params.get(index);
+			if(p.value.getClass().equals(type))
+				return (R) p.value;
+			else
+				throw new ClassCastException("Невозможно привести " + p.value.getClass() + " к классу " + type);
+		}
+		
+		/**Возвращает параметр по типу
+		 * @param index порядковый номер параметра
+		 * @param type тип параметраметра
+		 * @return числовое значение параметра
+		 */
+		protected boolean getParam(int index, Class<BooleanConstructorParam<CT>> type){ return getParam_(index, type);}
 	}
-	
-	/**Название класса. Оно постоянное, по нему будут искать последователей этого класса*/
-	private final String _name;
 	/**Параметры объекта, которые можно менять по своему желанию*/
 	private final List<EditParametr> _params = new ArrayList<>();
 	/**Конструкторы объекта из которых можно создать текущий объект*/
 	private final List<Constructor> _constructors = new ArrayList<>();
 	
-	protected ClassBuilder(String n) {
-		_name = n;
-	}
-	
 	/**Имя класса, который может создавать этот строитель. То есть название самого класса
 	 * может измениться, а имя его останется
 	 * @return постоянное имя. По нему будет искаться объект
 	 */
-	public String name(){return _name;}
+	public abstract String serializerName();
+	/**Объект класса. Он нужен, потому что по нему будет получено
+	 * локализованное имя создаваемого объекта
+	 * @return класс по которому будет создано локализованное имя объекта
+	 */
+	public abstract Class<T> printName();
 	
 	/**
 	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
 	 * @param <K> один из классов наследников, представленный в текущем классе 
 	 * @param param параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
 	 */
-	public <K extends EditParametr<?, T>> void addParam(K param){_params.add(param);}
+	private <K extends EditParametr<?, T>> void addEditParam(K param){_params.add(param);}
+	/**
+	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+	 */
+	public void addParam(BooleanParam<T> bp){addEditParam(bp);}
+	/**
+	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+	 */
+	public void addParam(BooleanVectorParam<T> bp){addEditParam(bp);}
+	/**
+	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+	 */
+	public void addParam(StringParam<T> bp){addEditParam(bp);}
+	/**
+	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+	 */
+	public void addParam(StringVectorParam<T> bp){addEditParam(bp);}
+	/**
+	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+	 */
+	public void addParam(NumberParam<T> bp){addEditParam(bp);}
+	/**
+	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+	 */
+	public void addParam(NumberVectorParam<T> bp){addEditParam(bp);}
+	/**
+	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+	 */
+	public void addParam(MapPointParam<T> bp){addEditParam(bp);}
+	/**
+	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+	 */
+	public void addParam(MapPointVectorParam<T> bp){addEditParam(bp);}
+	/**
+	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+	 */
+	public void addParam(Abstract2Param<T> bp){addEditParam(bp);}
+	/**
+	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
+	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
+	 */
+	public void addParam(Abstract2VectorParam<T> bp){addEditParam(bp);}
+	
+	
 	/**
 	 * Добавляет конструктор объекта. 
 	 * @param constructor конструктор объекта, который может создать новый объект

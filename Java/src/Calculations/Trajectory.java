@@ -31,11 +31,14 @@ public class Trajectory{
 	/**Все возможные траектории, которые мы можем создать*/
 	private final static Map<String, ClassBuilder<Trajectory>> TRAJECTORIES = new HashMap<>();
 	static{
-		final var builder = new ClassBuilder<Trajectory>("Точка"){
+		final var builder = new ClassBuilder<Trajectory>(){
 			@Override
 			public Trajectory build(JSON json, long version){
 				return new Trajectory(json, version);
 			}
+
+			@Override public String serializerName() {return "Точка";}
+			@Override public Class printName() {return Trajectory.class;}
 		};
 		builder.addParam(new ClassBuilder.MapPointParam<Trajectory>() {
 			@Override public Point get(Trajectory who) {return who.pos;}
@@ -44,10 +47,17 @@ public class Trajectory{
 			@Override public String name() {return "position";}
 		});
 		builder.addConstructor(new ClassBuilder.Constructor<Trajectory>(){
-			@Override
-			protected Trajectory build(List<ClassBuilder.ConstructParam> _params) {
-				throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+			{
+				addParam(new ClassBuilder.MapPointConstructorParam(){
+					@Override public Object getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "constructor.parametr";}
+				});
 			}
+			@Override
+			protected Trajectory build() {
+				return new Trajectory();
+			}
+			@Override public String name() {return "constructor.name";}
 		});
 		Trajectory.register(builder);
 	}
