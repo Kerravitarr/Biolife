@@ -8,6 +8,7 @@ import static Calculations.Configurations.WORLD_TYPE.LINE_V;
 import static Calculations.Configurations.WORLD_TYPE.RECTANGLE;
 import GUI.WorldView;
 import MapObjects.CellObject;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
 import java.lang.reflect.InvocationTargetException;
@@ -26,6 +27,8 @@ public abstract class StreamAbstract{
 	protected StreamAttenuation shadow;
 	/**Имя этого потока*/
 	private String name;
+	/**Построитель для любых потомков текущего класса*/
+	private final static ClassBuilder.StaticBuilder<StreamAbstract> BUILDER = new ClassBuilder.StaticBuilder<>();
 	
 	
 	//Отдельные переменные только для отрисовки!
@@ -59,11 +62,11 @@ public abstract class StreamAbstract{
 	protected StreamAbstract(Trajectory move, int p, String name) {
 		this(move, new StreamAttenuation.NoneStreamAttenuation(p), name);
 	}
-	protected StreamAbstract(JSON j, long v)throws GenerateClassException{
+	protected StreamAbstract(JSON j, long v){
 		position = Point.create(j.getJ("position"));
-		shadow = StreamAttenuation.generate(j.get("shadow"),v);
+		shadow = StreamAttenuation.generation(j.get("shadow"),v);
 		name = j.get("name");
-		move = Trajectory.generate(j.getJ("move"),v);
+		move = Trajectory.generation(j.getJ("move"),v);
 	}
 
 	/**Этот метод будет вызываться каждый раз, когда изменится местоположение объекта*/
@@ -81,11 +84,6 @@ public abstract class StreamAbstract{
 	 * @param cell клетка, на которую поток воздействует
 	 */
 	public abstract void action(CellObject cell);
-	/**
-	 * Возвращает все изменяемые параметры потока
-	 * @return список из всех доступных параметров
-	 */
-	public abstract List<ParamObject> getParams();
 	/**Возвращает значение параметра отображения звездны - выделяется она на экране или нет
 	 * @return Если тут true, то излучатель будет подмигивать прозрачностью
 	 */
@@ -100,7 +98,6 @@ public abstract class StreamAbstract{
 	 */
 	public JSON toJSON(){
 		final var j = new JSON();
-		j.add("_className", this.getClass().getName());
 		j.add("position",position.toJSON());
 		j.add("name",name);
 		j.add("shadow",shadow.toJSON());
@@ -108,25 +105,31 @@ public abstract class StreamAbstract{
 		return j;
 	}
 	
-	/** * Создаёт объект на основе JSON файла. Тут может быть любой из наследников этого класса
-	 * @param json объект, описывающий искомый объект
-	 * @param version версия файла json в котором объект сохранён
-	 * @return найденный потомок
-	 * @throws GenerateClassException исключение, вызываемое ошибкой
+	/** * Регистрирует наследника как одного из возможных дочерних классов.То есть мы можем создать траекторию такого типа
+	 * @param <T> класс наследника текущего класса
+	 * @param trajectory фабрика по созданию наследников
 	 */
-	public static StreamAbstract generate(JSON json, long version) throws GenerateClassException{
-		String className = json.get("_className");
-		try{
-			final var ac = Class.forName(className).asSubclass(StreamAbstract.class);
-			var constructor = ac.getDeclaredConstructor(JSON.class, long.class);
-			return constructor.newInstance(json,version);
-		}catch (ClassNotFoundException ex)		{throw new GenerateClassException(ex,className);}
-		catch (NoSuchMethodException ex)		{throw new GenerateClassException(ex);}
-		catch (InstantiationException ex)		{throw new GenerateClassException(ex);}
-		catch (IllegalAccessException ex)		{throw new GenerateClassException(ex);} 
-		catch (IllegalArgumentException ex)		{throw new GenerateClassException(ex);}
-		catch (InvocationTargetException ex)	{throw new GenerateClassException(ex);}
-	}
+	protected static <T extends StreamAbstract> void register(ClassBuilder<T> trajectory){BUILDER.register(trajectory);};
+	/** * Создаёт реальный объект на основе JSON файла.
+	 * Самое главное, чтобы этот объект был ранее зарегистрирован в этом классе
+	 * @param json объект, описывающий объект подкласса CT
+	 * @param version версия файла json в котором объект сохранён
+	 * @return объект сериализации
+	 * 
+	 */
+	public static StreamAbstract generation(JSON json, long version){return BUILDER.generation(json, version);}
+	/**Укладывает текущий объект в объект сереализации для дальнейшего сохранения
+	 * @param <T> тип объекта, который надо упаковать. Может быть любым наследником текущего класса,
+	 *  зарегистрированного ранее в классе
+	 * @param object объект, который надо упаковать
+	 * @return JSON объект или null, если такой класс не зарегистрирован у нас
+	 */
+	public static <T extends StreamAbstract> JSON serialization(T object){return BUILDER.serialization(object);}
+	/**
+	 * Возвращает список всех параметров объекта, которые можно покрутить в живом эфире
+	 * @return список параметров объекта
+	 */
+	public List<ClassBuilder.EditParametr> getParams(){return BUILDER.get(this.getClass()).getParams();}
 	
 	
 	/**Рисует объект на экране

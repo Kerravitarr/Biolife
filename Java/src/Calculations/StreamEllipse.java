@@ -4,18 +4,89 @@
  */
 package Calculations;
 
-import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView;
 import MapObjects.CellObject;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
 import java.awt.geom.Ellipse2D;
-import java.util.ArrayList;
-import java.util.List;
 
 /**Круглый поток*/
 public class StreamEllipse extends StreamAbstract {
+	static{
+		final var builder = new ClassBuilder<StreamEllipse>(){
+			@Override public StreamEllipse generation(JSON json, long version){return new StreamEllipse(json, version);}
+			@Override public JSON serialization(StreamEllipse object) { return object.toJSON();}
+
+			@Override public String serializerName() {return "Точка";}
+			@Override public Class printName() {return StreamVertical.class;}
+
+		};
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,StreamEllipse>("a2",0,0,0,0,null) {
+			@Override public Integer get(StreamEllipse who) {return who.a2;}
+			@Override public void setValue(StreamEllipse who, Integer value) {who.setA2(value);}
+			@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+		});
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,StreamEllipse>("b2",0,0,0,0,null) {
+			@Override public Integer get(StreamEllipse who) {return who.b2;}
+			@Override public void setValue(StreamEllipse who, Integer value) {who.setB2(value);}
+			@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+		});
+		final var center = new ClassBuilder.MapPointConstructorParam(){
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "center";}
+				};
+		final var power = new ClassBuilder.NumberConstructorParamAdapter("power",-1000,1,1000,null,null);
+		final var name = new ClassBuilder.StringConstructorParam(){
+				@Override public Object getDefault() {return "Поток";}
+				@Override public String name() { return "name";}
+
+			};
+		builder.addConstructor(new ClassBuilder.Constructor<StreamEllipse>(){
+			{
+				addParam(center);
+				addParam(power);
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("a2",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("b2",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+				});
+				addParam(name);
+			}
+
+			@Override
+			public StreamEllipse build() {
+				return new StreamEllipse(new Trajectory(getParam(0,Point.class)), getParam(1,Integer.class), getParam(2,Integer.class), getParam(3,Integer.class), getParam(4,String.class));
+			}
+			@Override public String name() {return "ellipse.name";}
+		});
+		builder.addConstructor(new ClassBuilder.Constructor<StreamEllipse>(){
+			{
+				addParam(center);
+				addParam(power);
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("r",0,0,0,0,null){
+					@Override public Integer getDefault() {return Math.min(Configurations.getWidth(),Configurations.getHeight())/2;}
+					@Override public Integer getSliderMaximum() {return Math.min(Configurations.getWidth(),Configurations.getHeight());}
+				});
+				addParam(name);
+			}
+
+			@Override
+			public StreamEllipse build() {
+				return new StreamEllipse(new Trajectory(getParam(0,Point.class)), getParam(1,Integer.class), getParam(2,Integer.class), getParam(3,String.class));
+			}
+			@Override public String name() {return "circle.name";}
+		});
+		StreamAbstract.register(builder);
+	}
+	
+	
 	/**Большая ось эллипса - лежит на оси Х*/
 	private int a2;
 	/**Большая полуось эллипса, лежит на оси X*/
@@ -82,7 +153,7 @@ public class StreamEllipse extends StreamAbstract {
 	public StreamEllipse(Trajectory move, int d, int power, String name) {
 		this(move, d,d,  power,name);
 	}
-	protected StreamEllipse(JSON j, long v) throws GenerateClassException{
+	protected StreamEllipse(JSON j, long v){
 		super(j,v);
 		setA2(j.get("a2"));
 		setB2(j.get("b2"));
@@ -125,31 +196,6 @@ public class StreamEllipse extends StreamAbstract {
 				else		cell.moveD(dir.inversion());
 			}
 		}
-	}
-	@Override
-	public List<ParamObject> getParams(){
-		final var ret = new ArrayList<ParamObject>(2);
-		ret.add(new ParamObject("a2", 2,Configurations.getWidth(),2,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				setA2(((Number) value).intValue());
-			}
-			@Override
-			protected Object get() {
-				return a2;
-			}
-		});
-		ret.add(new ParamObject("b2", 2,Configurations.getHeight(),2,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				setB2(((Number) value).intValue());
-			}
-			@Override
-			protected Object get() {
-				return b2;
-			}
-		});
-		return ret;
 	}
 	@Override
 	protected void move() {}

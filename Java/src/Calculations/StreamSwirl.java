@@ -8,6 +8,7 @@ import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView;
 import MapObjects.CellObject;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
@@ -18,6 +19,51 @@ import java.util.List;
  * @author Kerravitarr
  */
 public class StreamSwirl extends StreamAbstract {
+	static{
+		final var builder = new ClassBuilder<StreamSwirl>(){
+			@Override public StreamSwirl generation(JSON json, long version){return new StreamSwirl(json, version);}
+			@Override public JSON serialization(StreamSwirl object) { return object.toJSON();}
+
+			@Override public String serializerName() {return "Круговорот";}
+			@Override public Class printName() {return StreamVertical.class;}
+
+		};
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,StreamSwirl>("d",0,0,0,0,null) {
+			@Override public Integer get(StreamSwirl who) {return (int)(who.r*2);}
+			@Override public void setValue(StreamSwirl who, Integer value) {who.setR(value);}
+			@Override public Integer getDefault() {return Math.min(Configurations.getWidth(),Configurations.getHeight())/2;}
+			@Override public Integer getSliderMaximum() {return Math.min(Configurations.getWidth(),Configurations.getHeight());}
+		});
+		final var center = new ClassBuilder.MapPointConstructorParam(){
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "center";}
+				};
+		final var power = new ClassBuilder.NumberConstructorParamAdapter("power",-1000,1,1000,null,null);
+		final var name = new ClassBuilder.StringConstructorParam(){
+				@Override public Object getDefault() {return "Поток";}
+				@Override public String name() { return "name";}
+
+			};
+		builder.addConstructor(new ClassBuilder.Constructor<StreamSwirl>(){
+			{
+				addParam(center);
+				addParam(power);
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("d",0,0,0,0,null){
+					@Override public Integer getDefault() {return Math.min(Configurations.getWidth(),Configurations.getHeight())/2;}
+					@Override public Integer getSliderMaximum() {return Math.min(Configurations.getWidth(),Configurations.getHeight());}
+				});
+				addParam(name);
+			}
+
+			@Override
+			public StreamSwirl build() {
+				return new StreamSwirl(new Trajectory(getParam(0,Point.class)), getParam(1,Integer.class), getParam(2,Integer.class), getParam(3,String.class));
+			}
+			@Override public String name() {return "";}
+		});
+		StreamAbstract.register(builder);
+	}
+	
 	/**Диаметр потока*/
 	private double r;
 	
@@ -48,7 +94,7 @@ public class StreamSwirl extends StreamAbstract {
 		super(move, power, name);
 		setR(d/2d);
 	}
-	protected StreamSwirl(JSON j, long v) throws GenerateClassException{
+	protected StreamSwirl(JSON j, long v){
 		super(j,v);
 		setR(j.get("r"));
 	}
@@ -72,21 +118,6 @@ public class StreamSwirl extends StreamAbstract {
 			if(dir != null)
 				cell.moveD(perpendicular.direction());
 		}
-	}
-	@Override
-	public List<ParamObject> getParams(){
-		final var ret = new ArrayList<ParamObject>(1);
-		ret.add(new ParamObject("d", 2,Configurations.getWidth(),2,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				setR(((Number) value).doubleValue() / 2);
-			}
-			@Override
-			protected Object get() {
-				return (int)(r*2);
-			}
-		});
-		return ret;
 	}
 	@Override
 	protected void move() {}

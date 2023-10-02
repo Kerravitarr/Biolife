@@ -36,11 +36,13 @@ public abstract class DefaultEmitter {
 	/**Сколько мс должно пройти чтобы объект изменил параметр выбора*/
 	private static final long SELECT_PERIOD = 500;
 	
+	
+	
 	protected DefaultEmitter(JSON j, long v) throws GenerateClassException{
 		power = j.get("power");
 		name = j.get("name");
 		isLine = j.get("isLine");
-		move = Trajectory.generate(j.getJ("move"),v);
+		move = Trajectory.generation(j.getJ("move"),v);
 		position = Point.create(j.getJ("position"));
 	}
 

@@ -6,6 +6,7 @@ package Calculations;
 
 import GUI.AllColors;
 import GUI.WorldView;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
@@ -56,6 +57,38 @@ public class TrajectoryPolyLine extends Trajectory{
 			j.add("dy", dy);
 			return j;
 		}
+	}
+	
+	
+	static{
+		final var builder = new ClassBuilder<TrajectoryPolyLine>(){
+			@Override public TrajectoryPolyLine generation(JSON json, long version){return new TrajectoryPolyLine(json, version);}
+			@Override public JSON serialization(TrajectoryPolyLine object) { return object.toJSON();}
+
+			@Override public String serializerName() {return "Полилиния";}
+			@Override public Class printName() {return TrajectoryEllipse.class;}
+
+		};
+		builder.addConstructor(new ClassBuilder.Constructor<TrajectoryPolyLine>(){
+			{
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("constructor.speed", 0,500,1000,0,null));
+				addParam(new ClassBuilder.BooleanConstructorParam(){
+					@Override public Object getDefault() {return false;}
+					@Override public String name() {return "constructor.isJamp";}
+					
+				});
+				addParam(new ClassBuilder.MapPointVectorConstructorParam(){
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "constructor.points";}
+				});
+			}
+			@Override
+			public TrajectoryPolyLine build() {
+				return new TrajectoryPolyLine(getParam(0,Integer.class),getParam(1,Boolean.class),getParam(2,Point[].class));
+			}
+			@Override public String name() {return "constructor.name";}
+		});
+		Trajectory.register(builder);
 	}
 	
 	/** * Создаёт линейную, траекторию от точки к точке.объект смещается каждый раз на 1 клетку мира

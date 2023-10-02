@@ -6,10 +6,13 @@ package Utils;
 
 import Calculations.Point;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Это основной класс-строитель для всех объектов карты.
+ * 
  * 
  * @author Kerravitarr
  * @param <T> Тип строящегося объекта
@@ -57,17 +60,17 @@ public abstract class ClassBuilder <T>{
 	public interface StringVectorParam<T> extends EditParametr<String[], T>{}
 	
 	/**Параметр типа число*/
-	public interface NumberP{
+	public interface NumberP<T extends Number>{
 		/**Возвращает минимальное значение для слайдера.
 		 * Слайдером можно задавать значение этой переменной без ввода числа. Просто слайдер
 		 * @return числовое минимальное значение
 		 */
-		public int getSliderMinimum();
+		public T getSliderMinimum();
 		/**Возвращает максимальное значение для слайдера.
 		 * Слайдером можно задавать значение этой переменной без ввода числа. Просто слайдер
 		 * @return числовое максимальное значение
 		 */
-		public int getSliderMaximum();
+		public T getSliderMaximum();
 		
 		/**Возвращает минимальное значение для переменной.
 		 * Так как слайдер ограничен - он короткий и на нём не всегда удобно вводить числа с маленьким шагом
@@ -75,18 +78,45 @@ public abstract class ClassBuilder <T>{
 		 * Слайдером можно задавать значение этой переменной без ввода числа. Просто слайдер
 		 * @return числовое минимальное значение или null, если снизу параметр не ограничен
 		 */
-		public Integer getRealMinimum();
+		public T getRealMinimum();
 		/**Возвращает максимальное значение для переменной.
 		 * Так как слайдер ограничен - он короткий и на нём не всегда удобно вводить числа с маленьким шагом
 		 * Слайдером можно задавать значение этой переменной без ввода числа. Просто слайдер
 		 * @return числовое максимальное значение или null, если сверху параметр не ограничен
 		 */
-		public Integer getRealMaximum();
+		public T getRealMaximum();
 	}
 	/**Параметр типа число*/
-	public interface NumberParam<T> extends NumberP, EditParametr<Integer, T>{}
+	public interface NumberParam<NT extends Number, T> extends NumberP<NT>, EditParametr<NT, T>{}
+	/**Параметр типа число, адаптер*/
+	public abstract static class NumberParamAdapter<TP extends Number,T> implements NumberParam<TP,T>{
+		private final String name;
+		private final TP smin;
+		private final TP def;
+		private final TP smax;
+		private final TP min;
+		private final TP max;
+		/**
+		 * Создаёт числовой параметр
+		 * @param name его имя
+		 * @param sliderMin минимальное значение графического слайдера
+		 * @param def значение по умолчанию
+		 * @param sliderMaximum макисмальное значение графического слайдера
+		 * @param min миниманльно возможное значение
+		 * @param max максимально возможное значение
+		 */
+		public NumberParamAdapter(String name, TP sliderMin, TP def, TP sliderMaximum, TP min, TP max){
+			this.name = name; smin=sliderMin; smax = sliderMaximum; this.def= def; this.min = min; this.max = max;
+		}
+		@Override public TP getDefault() {return def;}
+		@Override public String name() {return name;}
+		@Override public TP getSliderMinimum() {return smin;}
+		@Override public TP getSliderMaximum() {return smax;}
+		@Override public TP getRealMinimum() { return min;}
+		@Override public TP getRealMaximum() { return max;}
+	}
 	/**Векторный параметр типа число. То ессть требуется задать ряд чисел, от 1 до бесконечности*/
-	public interface NumberVectorParam<T> extends NumberP, EditParametr<Integer[], T>{}
+	public interface NumberVectorParam<NT extends Number, T> extends NumberP<NT>, EditParametr<Integer[], T>{}
 	
 	/**Параметр типа точка на карте*/
 	public interface MapPointParam<T> extends EditParametr<Point, T>{}
@@ -154,9 +184,36 @@ public abstract class ClassBuilder <T>{
 	public static abstract class StringVectorConstructorParam<T> extends ConstructorParametr<String[], T>{}
 	
 	/**Параметр типа число*/
-	public static abstract class NumberConstructorParam<T> extends ConstructorParametr<Integer, T> implements NumberP{}
+	public static abstract class NumberConstructorParam<TP extends Number,T> extends ConstructorParametr<TP, T> implements NumberP<TP>{}
+	/**Параметр типа число, адаптер*/
+	public static class NumberConstructorParamAdapter<TP extends Number,T> extends NumberConstructorParam<TP,T>{
+		private final String name;
+		private final TP smin;
+		private final TP def;
+		private final TP smax;
+		private final TP min;
+		private final TP max;
+		/**
+		 * Создаёт числовой параметр
+		 * @param name его имя
+		 * @param sliderMin минимальное значение графического слайдера
+		 * @param def значение по умолчанию
+		 * @param sliderMaximum макисмальное значение графического слайдера
+		 * @param min миниманльно возможное значение
+		 * @param max максимально возможное значение
+		 */
+		public NumberConstructorParamAdapter(String name, TP sliderMin, TP def, TP sliderMaximum, TP min, TP max){
+			this.name = name; smin=sliderMin; smax = sliderMaximum; this.def= def; this.min = min; this.max = max;
+		}
+		@Override public TP getDefault() {return def;}
+		@Override public String name() {return name;}
+		@Override public TP getSliderMinimum() {return smin;}
+		@Override public TP getSliderMaximum() {return smax;}
+		@Override public TP getRealMinimum() { return min;}
+		@Override public TP getRealMaximum() { return max;}
+	}
 	/**Векторный параметр типа число. То ессть требуется задать ряд чисел, от 1 до бесконечности*/
-	public static abstract class NumberVectorConstructorParam<T> extends ConstructorParametr<Integer[], T> implements NumberP{}
+	public static abstract class NumberVectorConstructorParam<TP extends Number,T> extends ConstructorParametr<TP[], T> implements NumberP<TP>{}
 	
 	/**Параметр типа точка на карте*/
 	public static abstract class MapPointConstructorParam<T> extends ConstructorParametr<Point, T>{}
@@ -213,12 +270,12 @@ public abstract class ClassBuilder <T>{
 		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
 		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
 		 */
-		public void addParam(NumberConstructorParam<CT> bp){addEditParam(bp);}
+		public <NT extends Number> void addParam(NumberConstructorParam<NT, CT> bp){addEditParam(bp);}
 		/**
 		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
 		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
 		 */
-		public void addParam(NumberVectorConstructorParam<CT> bp){addEditParam(bp);}
+		public <NT extends Number> void addParam(NumberVectorConstructorParam<NT, CT> bp){addEditParam(bp);}
 		/**
 		 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
 		 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
@@ -246,21 +303,137 @@ public abstract class ClassBuilder <T>{
 		 * @param type тип параметраметра
 		 * @return числовое значение параметра
 		 */
-		private <R extends ConstructorParametr<R, CT>> R getParam_(int index, Class<R> type){
+		private <T, R extends ConstructorParametr<T, ?>> T getParam_(int index, Class<R> type){
 			final var p = _params.get(index);
 			if(p.value.getClass().equals(type))
-				return (R) p.value;
+				return (T) p.value;
 			else
 				throw new ClassCastException("Невозможно привести " + p.value.getClass() + " к классу " + type);
 		}
-		
-		/**Возвращает параметр по типу
-		 * @param index порядковый номер параметра
+		/** * Возвращает параметр по по типу.Или первый, если параметр всего 1 или первый, если других таких параметров нет
+		 * @param <T> тип возвращаемого параметра
+		 * @param <R> объект класса параметра
 		 * @param type тип параметраметра
 		 * @return числовое значение параметра
 		 */
-		protected boolean getParam(int index, Class<BooleanConstructorParam<CT>> type){ return getParam_(index, type);}
+		private <T, R extends ConstructorParametr<T, ?>> T getParam_(Class<R> type){
+			if(_params.size() == 1) return getParam_(0,type);
+			for (int index = 0; index < _params.size(); index++) {
+				final var get = _params.get(index);
+				if(get.getClass().equals(type))
+					return getParam_(index,type);
+			}
+			throw new IllegalArgumentException("Отпустствует параметр " + type);
+		}
+		/**Возвращает параметр запрошенного класса.
+		 * Доступны только Boolean, Boolean[]
+		 *				   String, String[]
+		 *					Integer,Integer[]
+		 *					Point,Point[]
+		 *					Point.Vector,Point.Vector[]
+		 * @param <T> тип параметра, который нужен
+		 * @param cls объект класса этого параметра
+		 * @return Единственный параметр, если такой параметр правда единственный, или первый из параметров, если всего у класса много параметров
+		 * @throws ClassCastException возникает при любом несоответствии классов
+		 */
+		protected <T> T getParam(Class<T> cls) {
+			if(cls.equals(Boolean.class)) return (T) getParam_( ClassBuilder.BooleanConstructorParam.class);
+			else if(cls.equals(Boolean[].class)) return (T) getParam_( ClassBuilder.BooleanVectorConstructorParam.class);
+			else if(cls.equals(String.class)) return (T) getParam_( ClassBuilder.StringConstructorParam.class);
+			else if(cls.equals(String[].class)) return (T) getParam_( ClassBuilder.StringVectorConstructorParam.class);
+			else if(cls.equals(Integer.class)) return (T) getParam_( ClassBuilder.NumberConstructorParam.class);
+			else if(cls.equals(Integer[].class)) return (T) getParam_( ClassBuilder.NumberVectorConstructorParam.class);
+			else if(cls.equals(Point.class)) return (T) getParam_( ClassBuilder.MapPointConstructorParam.class);
+			else if(cls.equals(Point[].class)) return (T) getParam_( ClassBuilder.MapPointVectorConstructorParam.class);
+			else if(cls.equals(Point.Vector.class)) return (T) getParam_( ClassBuilder.Abstract2ConstructorParam.class);
+			else if(cls.equals(Point.Vector[].class)) return (T) getParam_( ClassBuilder.Abstract2VectorConstructorParam.class);
+			else throw new ClassCastException("Невозможно получить параметр типа " + cls);
+		}
+		
+		/** * Возвращает параметр запрошенного класса.Доступны только Boolean, Boolean[]
+				   String, String[]
+					Integer,Integer[]
+					Double,Double[]
+					Point,Point[]
+					Point.Vector,Point.Vector[]
+		 * @param <T> тип параметра, который нужен
+		 * @param index порядковый номер параметра
+		 * @param cls объект класса этого параметра
+		 * @return Единственный параметр, если такой параметр правда единственный, или первый из параметров, если всего у класса много параметров
+		 * @throws ClassCastException возникает при любом несоответствии классов
+		 */
+		protected <T> T getParam(int index, Class<T> cls) {
+			if(cls.equals(Boolean.class)) return (T) getParam_(index, ClassBuilder.BooleanConstructorParam.class);
+			else if(cls.equals(Boolean[].class)) return (T) getParam_(index, ClassBuilder.BooleanVectorConstructorParam.class);
+			else if(cls.equals(String.class)) return (T) getParam_( index,ClassBuilder.StringConstructorParam.class);
+			else if(cls.equals(String[].class)) return (T) getParam_( index,ClassBuilder.StringVectorConstructorParam.class);
+			else if(cls.equals(Integer.class)) return (T) getParam_( index,ClassBuilder.NumberConstructorParam.class);
+			else if(cls.equals(Integer[].class)) return (T) getParam_( index,ClassBuilder.NumberVectorConstructorParam.class);
+			else if(cls.equals(Double.class)) return (T) getParam_( index,ClassBuilder.NumberConstructorParam.class);
+			else if(cls.equals(Double[].class)) return (T) getParam_( index,ClassBuilder.NumberVectorConstructorParam.class);
+			else if(cls.equals(Point.class)) return (T) getParam_( index,ClassBuilder.MapPointConstructorParam.class);
+			else if(cls.equals(Point[].class)) return (T) getParam_( index,ClassBuilder.MapPointVectorConstructorParam.class);
+			else if(cls.equals(Point.Vector.class)) return (T) getParam_( index,ClassBuilder.Abstract2ConstructorParam.class);
+			else if(cls.equals(Point.Vector[].class)) return (T) getParam_( index,ClassBuilder.Abstract2VectorConstructorParam.class);
+			else throw new ClassCastException("Невозможно получить параметр типа " + cls);
+		}
 	}
+	/**Класс для постройки объектов */
+	public static class StaticBuilder<CT>{
+		/**Все объекты сереализации по имени*/
+		private final Map<String, ClassBuilder<? extends CT>> OBJECTS_BY_NAME = new HashMap<>();
+		/**Все объекты сереализации по реальному классу*/
+		private final Map<Class<?>, ClassBuilder<? extends CT>> OBJECTS_BY_CLASS = new HashMap<>();
+		
+		/** * Регистрирует наследника как одного из возможных дочерних классов.То есть регистрирует объект, через который можно создавать любых наследников
+		 * @param <T> любой класс наследник текущего
+		 * @param object фабрика по созданию наследников
+		 */
+		public <T extends CT> void register(ClassBuilder<T> object) {
+			if(OBJECTS_BY_NAME.containsKey(object.serializerName()))
+				throw new IllegalArgumentException("Объект с серилаизационным именем " + object.serializerName() + " уже зарегистрирован");
+			else
+				OBJECTS_BY_NAME.put(object.serializerName(), object);
+			if(OBJECTS_BY_CLASS.containsKey(object.printName()))
+				throw new IllegalArgumentException("Объект класса " + object.printName() + " уже зарегистрирован");
+			else
+				OBJECTS_BY_CLASS.put(object.printName(), object);
+		}
+		
+		/** * Возвращает построитель объекта по его классу
+		 * @param <T> любой класс наследник текущего
+		 * @param object объект класса этого типа
+		 * @return фабрика для построения этого объекта
+		 */
+		public <T extends CT> ClassBuilder<T> get(Class<T> object) {
+			return (ClassBuilder<T>) OBJECTS_BY_CLASS.get(object.getClass());
+		}
+		
+		
+		/** * Создаёт реальный объект на основе JSON файла.
+		 * Самое главное, чтобы этот объект был ранее зарегистрирован в этом классе
+		 * @param json объект, описывающий объект подкласса CT
+		 * @param version версия файла json в котором объект сохранён
+		 * @return объект сериализации
+		 * 
+		 */
+		public CT generation(JSON json, long version){
+			return OBJECTS_BY_NAME.get((String)json.get("_serializerName")).generation(json, version);
+		}
+		/**Укладывает текущий объект в объект сереализации для дальнейшего сохранения
+		 * @param <T> тип объекта, который надо упаковать. Может быть любым наследником текущего класса,
+		 *  зарегистрированного ранее в классе
+		 * @param object объект, который надо упаковать
+		 * @return JSON объект или null, если такой класс не зарегистрирован у нас
+		 */
+		public <T extends CT> JSON serialization(T object){
+			final var builder = get((Class<T>) object.getClass());
+			final var json = builder.serialization(object);
+			json.add("", builder.serializerName());
+			return json;
+		}
+	}
+	
 	/**Параметры объекта, которые можно менять по своему желанию*/
 	private final List<EditParametr> _params = new ArrayList<>();
 	/**Конструкторы объекта из которых можно создать текущий объект*/
@@ -307,12 +480,12 @@ public abstract class ClassBuilder <T>{
 	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
 	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
 	 */
-	public void addParam(NumberParam<T> bp){addEditParam(bp);}
+	public <NT extends Number> void addParam(NumberParam<NT,T> bp){addEditParam(bp);}
 	/**
 	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
 	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
 	 */
-	public void addParam(NumberVectorParam<T> bp){addEditParam(bp);}
+	public <NT extends Number> void addParam(NumberVectorParam<NT, T> bp){addEditParam(bp);}
 	/**
 	 * Добавляет параметр объекта.Этот параметр можно менять по своему желанию
 	 * @param bp параметр, который может дать своё значение, значение по умолчанию и обрабатывать изменение значения
@@ -336,7 +509,7 @@ public abstract class ClassBuilder <T>{
 	
 	
 	/**
-	 * Добавляет конструктор объекта. 
+	 * Добавляет конструктор объекта. Таких конструкторов может быть сколько угодно
 	 * @param constructor конструктор объекта, который может создать новый объект
 	 */
 	public void addConstructor(Constructor<T> constructor){_constructors.add(constructor);}
@@ -347,5 +520,15 @@ public abstract class ClassBuilder <T>{
 	 * @param version версия файла JSON
 	 * @return объект заявленного типа
 	 */
-	public abstract T build(JSON json, long version);
+	public abstract T generation(JSON json, long version);
+	
+	/** * Преобразует объект в серилизованный объект, который можно теперь отправить в любое место
+	 * @param object объект, который надо сереализовать
+	 * @return JSON объект из которого можно восстановить текущий объект
+	 */
+	public abstract JSON serialization(T object);
+	/**Возвращает список всех параметров объекта
+	 * @return список со всеми праметрами
+	 */
+	public List<EditParametr> getParams(){return _params;};
 }

@@ -9,6 +9,7 @@ import Calculations.Point.DIRECTION;
 import GUI.AllColors;
 import GUI.WorldView;
 import MapObjects.CellObject;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
@@ -17,11 +18,64 @@ import java.util.List;
 
 /**Прямоугольный вертикальный поток*/
 public class StreamVertical extends StreamAbstract {
+	static{
+		final var builder = new ClassBuilder<StreamVertical>(){
+			@Override public StreamVertical generation(JSON json, long version){return new StreamVertical(json, version);}
+			@Override public JSON serialization(StreamVertical object) { return object.toJSON();}
+
+			@Override public String serializerName() {return "Точка";}
+			@Override public Class printName() {return StreamVertical.class;}
+
+		};
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,StreamVertical>("width",0,0,0,0,null){
+			@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+			@Override public Integer get(StreamVertical who) {return who.width;}
+			@Override public void setValue(StreamVertical who, Integer value) {who.width = value;}
+		});
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,StreamVertical>("height",0,0,0,0,null){
+			@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+			@Override public Integer get(StreamVertical who) {return who.height;}
+			@Override public void setValue(StreamVertical who, Integer value) {who.height = value;}
+		});
+		builder.addConstructor(new ClassBuilder.Constructor<StreamVertical>(){
+			{
+				addParam(new ClassBuilder.MapPointConstructorParam(){
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "center";}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("width",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("height",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("power",-1000,1,1000,null,null));
+				addParam(new ClassBuilder.StringConstructorParam(){
+					@Override public Object getDefault() {return "Поток";}
+					@Override public String name() { return "name";}
+					
+				});
+			}
+
+			@Override
+			public StreamVertical build() {
+				return new StreamVertical(new Trajectory(getParam(0,Point.class)), getParam(1,Integer.class), getParam(2,Integer.class), getParam(3,Integer.class), getParam(4,String.class));
+			}
+			@Override public String name() {return "name";}
+		});
+		StreamAbstract.register(builder);
+	}
+	
+	
 	/**Ширина потока*/
 	private int width;
 	/**Высота потока*/
 	private int height;
-
+	
 	/**Создание квадртаного потока
 	 *Об энергии: Если меньше 0, то каждый шаг поток будет тянуть клетку на дно
 	 *			если больше 0, то поток восходящий, то есть двигает клету к поверхности
@@ -54,7 +108,7 @@ public class StreamVertical extends StreamAbstract {
 		this.height = height;
 	}
 	
-	protected StreamVertical(JSON j, long v) throws GenerateClassException{
+	protected StreamVertical(JSON j, long v){
 		super(j,v);
 		this.width = j.get("width");
 		this.height = j.get("height");
@@ -76,31 +130,6 @@ public class StreamVertical extends StreamAbstract {
 
 	@Override
 	protected void move() {}
-	@Override
-	public List<ParamObject> getParams() {
-		final var ret = new ArrayList<ParamObject>(2);
-		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				width = ((Number) value).intValue();
-			}
-			@Override
-			protected Object get() {
-				return width;
-			}
-		});
-		ret.add(new ParamObject("height", 1,Configurations.getHeight(),1,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				height = ((Number) value).intValue();
-			}
-			@Override
-			protected Object get() {
-				return height;
-			}
-		});
-		return ret;	
-	}
 	
 	@Override
 	public JSON toJSON(){

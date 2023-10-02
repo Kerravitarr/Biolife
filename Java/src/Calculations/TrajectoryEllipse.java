@@ -6,6 +6,7 @@ package Calculations;
 
 import GUI.AllColors;
 import GUI.WorldView;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
 
@@ -22,6 +23,51 @@ public class TrajectoryEllipse extends Trajectory{
 	private final double a;
 	/**Малая ось*/
 	private final double b;
+	
+	static{
+		final var builder = new ClassBuilder<TrajectoryEllipse>(){
+			@Override public TrajectoryEllipse generation(JSON json, long version){return new TrajectoryEllipse(json, version);}
+			@Override public JSON serialization(TrajectoryEllipse object) { return object.toJSON();}
+
+			@Override public String serializerName() {return "Эллипс";}
+			@Override public Class printName() {return TrajectoryEllipse.class;}
+		};
+		final var speed = new ClassBuilder.NumberConstructorParamAdapter("speed",0,500,1000,0,null);
+		final var center = new ClassBuilder.MapPointConstructorParam(){
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "center";}
+				};
+		final var startAngle = new ClassBuilder.NumberConstructorParamAdapter("startAngle",-360,0,360,-360,360);
+		builder.addConstructor(new ClassBuilder.Constructor<TrajectoryEllipse>(){
+			{
+				addParam(speed);
+				addParam(center);
+				addParam(startAngle);
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("a2", 0,Configurations.getWidth()/2,Configurations.getWidth(),0,null));
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("b2", 0,Configurations.getWidth()/2,Configurations.getWidth(),0,null));
+			}
+			@Override
+			public TrajectoryEllipse build() {
+				return new TrajectoryEllipse(getParam(0,Integer.class),getParam(1,Point.class),Math.toRadians(getParam(2,Integer.class)),getParam(3,Integer.class),getParam(4,Integer.class));
+			}
+			@Override public String name() {return "ellipse.name";}
+		});
+		
+		builder.addConstructor(new ClassBuilder.Constructor<TrajectoryEllipse>(){
+			{
+				addParam(speed);
+				addParam(center);
+				addParam(startAngle);
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("r", 0,Configurations.getWidth()/2,Configurations.getWidth(),0,null));
+			}
+			@Override
+			public TrajectoryEllipse build() {
+				return new TrajectoryEllipse(getParam(0,Integer.class),getParam(1,Point.class),Math.toRadians(getParam(2,Integer.class)),getParam(3,Integer.class));
+			}
+			@Override public String name() {return "circle.name";}
+		});
+		Trajectory.register(builder);
+	}
 	
 	
 	/**Движение по орбите

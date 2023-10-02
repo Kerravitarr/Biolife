@@ -258,10 +258,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			}
 			for(final var j : configWorld.getAJ("STREAMS")){
 				try {
-					streams.add(StreamAbstract.generate(j, version));
-				} catch (GenerateClassException ex) {
+					streams.add(StreamAbstract.generation(j, version));
+				} catch (NullPointerException ex) {
 					logger.log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-					ex.addMsg(getProperty(this.getClass(),"loadStreamError",j.toBeautifulJSONString()));
 					throw ex;
 				}
 			}

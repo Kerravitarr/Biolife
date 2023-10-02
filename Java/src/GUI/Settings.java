@@ -312,15 +312,8 @@ public class Settings extends javax.swing.JPanel {
 			final var stream = Configurations.streams.get(i);
 			streams.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",stream.toString())));
 			
-			for(final Utils.ParamObject p : stream.getParams()){
-				switch (p.type) {
-					case INT -> {
-						streams.add(new SettingsSlider(String.format("%s.%s", stream.getClass().getName(),p.name), p.minD,  p.maxD, p.minA,p.getI(),  p.maxA, e -> {
-							p.setValue(e);
-						}));
-					}
-					default -> throw new AssertionError();
-				}
+			for(final var p : stream.getParams()){
+				streams.add(makePanel(stream,p));
 			}
 			final var tr = stream.getTrajectory();
 			if(!tr.getClass().equals(Trajectory.class)){
@@ -371,6 +364,38 @@ public class Settings extends javax.swing.JPanel {
 		blinks.add(panels[0]);
 		return panels[0];
 	}
+	
+	private <P, T> javax.swing.JPanel makePanel(T object, Utils.ClassBuilder.EditParametr<P,T> param){
+		if(param instanceof Utils.ClassBuilder.BooleanParam<?> np_){
+			final var np = (Utils.ClassBuilder.BooleanParam<T>) np_;
+			return new SettingsBoolean(np_.name(), np.get(object), e -> {np.setValue(object, e);});
+		} else if(param instanceof Utils.ClassBuilder.BooleanVectorParam<?> np_){
+			throw new AssertionError(String.valueOf(param));
+		} else if(param instanceof Utils.ClassBuilder.StringParam<?> np_){
+			throw new AssertionError(String.valueOf(param));
+		} else if(param instanceof Utils.ClassBuilder.StringVectorParam<?> np_){
+			throw new AssertionError(String.valueOf(param));
+		} else if(param instanceof Utils.ClassBuilder.NumberParam<? extends Number,?> np_){
+			throw new AssertionError(String.valueOf(param));
+			/*final var np = (Utils.ClassBuilder.NumberParam<Integer,T>) np_;
+			return new SettingsSlider(np.name(), np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
+					np.setValue(object, e);
+				});*/
+		}  else if(param instanceof Utils.ClassBuilder.NumberVectorParam<? extends Number,?> np_){
+			throw new AssertionError(String.valueOf(param));
+		} else if(param instanceof Utils.ClassBuilder.MapPointParam<?> np_){
+			throw new AssertionError(String.valueOf(param));
+		} else if(param instanceof Utils.ClassBuilder.MapPointVectorParam<?> np_){
+			throw new AssertionError(String.valueOf(param));
+		}  else if(param instanceof Utils.ClassBuilder.Abstract2Param<?> np_){
+			throw new AssertionError(String.valueOf(param));
+		} else if(param instanceof Utils.ClassBuilder.Abstract2VectorParam<?> np_){
+			throw new AssertionError(String.valueOf(param));
+		} else {
+			throw new AssertionError(String.valueOf(param));
+		}
+	}
+	
 	/** This method is called from within the constructor to
 	 * initialize the form.
 	 * WARNING: Do NOT modify this code. The content of this method is

@@ -4,6 +4,7 @@
  */
 package Calculations;
 
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.lang.reflect.InvocationTargetException;
 
@@ -14,6 +15,25 @@ import java.lang.reflect.InvocationTargetException;
 public abstract class StreamAttenuation {
 	/**Нет затухания*/
 	public static class NoneStreamAttenuation extends StreamAttenuation {
+		static{
+			final var builder = new ClassBuilder<NoneStreamAttenuation>(){
+				@Override public NoneStreamAttenuation generation(JSON json, long version){return new NoneStreamAttenuation(json, version);}
+				@Override public JSON serialization(NoneStreamAttenuation object) { return object.toJSON();}
+
+				@Override public String serializerName() {return "Без затухания";}
+				@Override public Class printName() {return NoneStreamAttenuation.class;}
+
+			};
+			builder.addConstructor(new ClassBuilder.Constructor<NoneStreamAttenuation>(){
+				{
+					addParam(new ClassBuilder.NumberConstructorParamAdapter<>("power",-1000,0,1000,null,null));
+				}
+				@Override public NoneStreamAttenuation build() {return new NoneStreamAttenuation(getParam(Integer.class));}
+				@Override public String name() {return "name";}
+			});
+			StreamAttenuation.register(builder);
+		}
+		
 		protected NoneStreamAttenuation(JSON j, long v){super(j,v);}
 		/**Поток без затухания
 		* Немного о мощности потока:
@@ -28,14 +48,29 @@ public abstract class StreamAttenuation {
 		}
 		@Override
 		public double transform(double dist) {return 0d;}
-
-		@Override
-		public String getName() {
-			return Configurations.getProperty(this.getClass(), "name");
-		}
 	}
 	/**Линейное затухание*/
 	public static class LinealStreamAttenuation extends StreamAttenuation {
+		static{
+			final var builder = new ClassBuilder<LinealStreamAttenuation>(){
+				@Override public LinealStreamAttenuation generation(JSON json, long version){return new LinealStreamAttenuation(json, version);}
+				@Override public JSON serialization(LinealStreamAttenuation object) { return object.toJSON();}
+
+				@Override public String serializerName() {return "Линейная";}
+				@Override public Class printName() {return LinealStreamAttenuation.class;}
+
+			};
+			builder.addConstructor(new ClassBuilder.Constructor<LinealStreamAttenuation>(){
+				{
+					addParam(new ClassBuilder.NumberConstructorParamAdapter<>("minimum",-1000,0,1000,null,null));
+					addParam(new ClassBuilder.NumberConstructorParamAdapter<>("maximum",-1000,0,1000,null,null));
+				}
+				@Override public LinealStreamAttenuation build() {return new LinealStreamAttenuation(getParam(0,Integer.class),getParam(1,Integer.class));}
+				@Override public String name() {return "name";}
+			});
+			StreamAttenuation.register(builder);
+		}
+		
 		protected LinealStreamAttenuation(JSON j, long v){super(j,v);}
 		/**Линейное затухание мощности потока
 		* Немного о мощности потока:
@@ -52,13 +87,32 @@ public abstract class StreamAttenuation {
 		@Override
 		public double transform(double dist) {return 1 - dist;}
 
-		@Override
-		public String getName() {
-			return Configurations.getProperty(this.getClass(), "name");
-		}
 	}
 	/**Степенное затухание*/
 	public static class PowerFunctionStreamAttenuation extends StreamAttenuation {
+		static{
+			final var builder = new ClassBuilder<PowerFunctionStreamAttenuation>(){
+				@Override public PowerFunctionStreamAttenuation generation(JSON json, long version){return new PowerFunctionStreamAttenuation(json, version);}
+				@Override public JSON serialization(PowerFunctionStreamAttenuation object) { return object.toJSON();}
+
+				@Override public String serializerName() {return "Степенное";}
+				@Override public Class printName() {return PowerFunctionStreamAttenuation.class;}
+
+			};
+			builder.addConstructor(new ClassBuilder.Constructor<PowerFunctionStreamAttenuation>(){
+				{
+					addParam(new ClassBuilder.NumberConstructorParamAdapter("minimum",-1000,0,1000,null,null));
+					addParam(new ClassBuilder.NumberConstructorParamAdapter("power",-10d,1d,10d,null,null));
+					addParam(new ClassBuilder.NumberConstructorParamAdapter("maximum",-1000,0,1000,null,null));
+				}
+				@Override
+				public PowerFunctionStreamAttenuation build() {
+					return new PowerFunctionStreamAttenuation(getParam(0, Integer.class), getParam(2, Integer.class),getParam(1, Double.class));
+				}
+				@Override public String name() {return "name";}
+			});
+			StreamAttenuation.register(builder);
+		}
 		/**Степень функции*/
 		private final double power;
 		/** Создание степенного затухания - функции вида y=a^power
@@ -87,14 +141,33 @@ public abstract class StreamAttenuation {
 			j.add("power", power);
 			return j;
 		}
-
-		@Override
-		public String getName() {
-			return Configurations.getProperty(this.getClass(), "name",power);
-		}
 	}
 	/**Синусоидальное затухание. То есть минимальное значение будет при dist = 0 и 1, а максимальное при dist = 0.5*/
 	public static class SinStreamAttenuation extends StreamAttenuation {
+		static{
+			final var builder = new ClassBuilder<SinStreamAttenuation>(){
+				@Override public SinStreamAttenuation generation(JSON json, long version){return new SinStreamAttenuation(json, version);}
+				@Override public JSON serialization(SinStreamAttenuation object) { return object.toJSON();}
+
+				@Override public String serializerName() {return "Синусоидальное";}
+				@Override public Class printName() {return SinStreamAttenuation.class;}
+
+			};
+			builder.addConstructor(new ClassBuilder.Constructor<SinStreamAttenuation>(){
+				{
+					addParam(new ClassBuilder.NumberConstructorParamAdapter("minimum",-1000,0,1000,null,null));
+					addParam(new ClassBuilder.NumberConstructorParamAdapter("power",-10d,1d,10d,null,null));
+					addParam(new ClassBuilder.NumberConstructorParamAdapter("maximum",-1000,0,1000,null,null));
+				}
+				@Override
+				public SinStreamAttenuation build() {
+					return new SinStreamAttenuation(getParam(0, Integer.class), getParam(2, Integer.class),getParam(1, Double.class));
+				}
+				@Override public String name() {return "name";}
+			});
+			StreamAttenuation.register(builder);
+		}
+		
 		/**Степень функции*/
 		private final double power;
 		/** Создание степенного затухания - функции вида y=sin(x*pi)^power
@@ -123,17 +196,18 @@ public abstract class StreamAttenuation {
 			j.add("power", power);
 			return j;
 		}
-		@Override
-		public String getName() {
-			return Configurations.getProperty(this.getClass(), "name",power);
-		}
 	}
+	
 	/**Сила потока на самом краешке*/
 	private final int minPower;
 	/**Сила потока прям в самом центре*/
 	protected final int maxPower;
 	/**Разница в силе потока, собственно функцией от этой величины и будет ребёнок*/
 	private final int dp;
+	/**Построитель для любых потомков текущего класса*/
+	private final static ClassBuilder.StaticBuilder<StreamAttenuation> BUILDER = new ClassBuilder.StaticBuilder<>();
+	
+	
 	/**Базовая заготовка для любой формы потока
 	 * Немного о мощности потока:
 	 *	Она не может быть 0
@@ -184,14 +258,9 @@ public abstract class StreamAttenuation {
 	 */
 	protected abstract double transform(double dist);
 	
-	/**Имя функции снижения мощности
-	 * @return строка с именем
-	 */
-	public abstract String getName();
-	
 	@Override
 	public String toString(){
-		return getName();
+		return Configurations.getProperty(BUILDER.get(this.getClass()).printName(), "name");
 	}
 	
 	/**Превращает текущий объект в объект его описания
@@ -201,27 +270,28 @@ public abstract class StreamAttenuation {
 		final var j = new JSON();
 		j.add("minPower", minPower);
 		j.add("maxPower", maxPower);
-		j.add("_className", this.getClass().getName());
 		return j;
 	}
 	
-	/** * Создаёт объект на основе JSON файла. Тут может быть любой из наследников этого класса
-	 * @param json объект, описывающий искомый объект
-	 * @param version версия файла json в котором объект сохранён
-	 * @return найденный потомок
-	 * @throws GenerateClassException исключение, вызываемое ошибкой
+	
+	/** * Регистрирует наследника как одного из возможных дочерних классов.То есть мы можем создать траекторию такого типа
+	 * @param <T> класс наследника текущего класса
+	 * @param trajectory фабрика по созданию наследников
 	 */
-	public static StreamAttenuation generate(JSON json, long version) throws GenerateClassException{
-		String className = json.get("_className");
-		try{
-			final var ac = Class.forName(className).asSubclass(StreamAttenuation.class);
-			var constructor = ac.getDeclaredConstructor(JSON.class, long.class);
-			return constructor.newInstance(json,version);
-		}catch (ClassNotFoundException ex)		{throw new GenerateClassException(ex,className);}
-		catch (NoSuchMethodException ex)		{throw new GenerateClassException(ex);}
-		catch (InstantiationException ex)		{throw new GenerateClassException(ex);}
-		catch (IllegalAccessException ex)		{throw new GenerateClassException(ex);} 
-		catch (IllegalArgumentException ex)		{throw new GenerateClassException(ex);}
-		catch (InvocationTargetException ex)	{throw new GenerateClassException(ex);}
-	}
+	protected static <T extends StreamAttenuation> void register(ClassBuilder<T> trajectory){BUILDER.register(trajectory);};
+	/** * Создаёт реальный объект на основе JSON файла.
+	 * Самое главное, чтобы этот объект был ранее зарегистрирован в этом классе
+	 * @param json объект, описывающий объект подкласса CT
+	 * @param version версия файла json в котором объект сохранён
+	 * @return объект сериализации
+	 * 
+	 */
+	public static StreamAttenuation generation(JSON json, long version){return BUILDER.generation(json, version);}
+	/**Укладывает текущий объект в объект сереализации для дальнейшего сохранения
+	 * @param <T> тип объекта, который надо упаковать. Может быть любым наследником текущего класса,
+	 *  зарегистрированного ранее в классе
+	 * @param object объект, который надо упаковать
+	 * @return JSON объект или null, если такой класс не зарегистрирован у нас
+	 */
+	public static <T extends StreamAttenuation> JSON serialization(T object){return BUILDER.serialization(object);}
 }

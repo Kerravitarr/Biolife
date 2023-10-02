@@ -29,16 +29,15 @@ public class Trajectory{
 	private long step;
 	
 	/**Все возможные траектории, которые мы можем создать*/
-	private final static Map<String, ClassBuilder<Trajectory>> TRAJECTORIES = new HashMap<>();
+	private final static ClassBuilder.StaticBuilder<Trajectory> TRAJECTORIES = new ClassBuilder.StaticBuilder<>();
 	static{
 		final var builder = new ClassBuilder<Trajectory>(){
-			@Override
-			public Trajectory build(JSON json, long version){
-				return new Trajectory(json, version);
-			}
+			@Override public Trajectory generation(JSON json, long version){return new Trajectory(json, version);}
+			@Override public JSON serialization(Trajectory object) { return object.toJSON();}
 
 			@Override public String serializerName() {return "Точка";}
 			@Override public Class printName() {return Trajectory.class;}
+
 		};
 		builder.addParam(new ClassBuilder.MapPointParam<Trajectory>() {
 			@Override public Point get(Trajectory who) {return who.pos;}
@@ -49,23 +48,15 @@ public class Trajectory{
 		builder.addConstructor(new ClassBuilder.Constructor<Trajectory>(){
 			{
 				addParam(new ClassBuilder.MapPointConstructorParam(){
-					@Override public Object getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
 					@Override public String name() {return "constructor.parametr";}
 				});
 			}
-			@Override
-			protected Trajectory build() {
-				return new Trajectory();
-			}
+			@Override public Trajectory build() {return new Trajectory(getParam(Point.class));}
 			@Override public String name() {return "constructor.name";}
 		});
 		Trajectory.register(builder);
 	}
-	/**Регистрирует наследника как одного из возможных дочерних классов.
-	 * То есть мы можем создать траекторию такого типа
-	 * @param trajectory фабрика по созданию наследников
-	 */
-	protected static void register(ClassBuilder<Trajectory> trajectory){TRAJECTORIES.put(trajectory.name(), trajectory);};
 	
 	private Trajectory(long speed, Point pos){
 		if(speed < 0) throw new IllegalArgumentException("Скорость не может быть меньше 0!");
@@ -136,80 +127,43 @@ public class Trajectory{
 	/**Превращает излучатель в серелизуемый объект
 	 * @return объект, который можно пересылать, засылать
 	 */
-	public JSON toJSON(){
+	protected JSON toJSON(){
 		final var j = new JSON();
 		j.add("speed", speed);
 		j.add("step", step);
 		j.add("pos", pos.toJSON());
-		j.add("_className", this.getClass().getName());
 		return j;
 	}
-	/**
-	 * Возвращает все переменные, необходимые для создания объекта
-	 * @return список из всех доступных параметров
+	/** * Регистрирует наследника как одного из возможных дочерних классов.То есть мы можем создать траекторию такого типа
+	 * @param <T> класс наследника текущего класса
+	 * @param trajectory фабрика по созданию наследников
 	 */
-	protected static ParamConstructor.GenerateVariants<Trajectory> generate(){
-		final var ret = new ParamConstructor.GenerateVariants<Trajectory>(Trajectory.class);
-		final var constructor1 = new ParamConstructor.GenerateObject<Trajectory>(Configurations.getProperty(Trajectory.class, "constructor.name"));
-		constructor1.add(new ParamConstructor(Configurations.getProperty(Trajectory.class, "parametr.name"), Point.create(0, 0)));
-		ret.add(constructor1);
-		return ret;
-	}
-	
-	
-	/**
-	 * Возвращает списко объекто, которые позволяют создать абсолютно любую траекторию
-	 * @return каждый пункт списка - возможность создать объект
-	 */
-	public static List<ParamConstructor.GenerateVariants<Trajectory>> getAllGenerators(){
-		final var allTrajectories = new ArrayList<ParamConstructor.GenerateVariants<Trajectory>>();
-	
-		
-        /*for(final var url : urlCl.getDefinedPackages()) {
-			final var name = url.getName();
-			if(name.endsWith(".class")){
-				try {
-					final var cl = Class.forName(name.replace('/', '.')).asSubclass(Trajectory.class);
-					final var m = cl.getMethod("generate");
-					allTrajectories.add((ParamConstructor.GenerateVariants<Trajectory>) m.invoke(null));
-				} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | InvocationTargetException ex) {
-					Logger.getLogger(Trajectory.class.getName()).log(Level.SEVERE, null, ex);
-				}
-			}
-        }*/
-		return allTrajectories;
-	}
-	
-	/** * Создаёт реальное солнце на основе JSON файла.Тут может быть любое из существующих солнц
-	 * @param json объект, описывающий солнце
+	protected static <T extends Trajectory> void register(ClassBuilder<T> trajectory){TRAJECTORIES.register(trajectory);};
+	/** * Создаёт реальный объект на основе JSON файла.
+	 * Самое главное, чтобы этот объект был ранее зарегистрирован в этом классе
+	 * @param json объект, описывающий объект подкласса CT
 	 * @param version версия файла json в котором объект сохранён
-	 * @return найденное солнце... Или null, если такого солнца не бывает
+	 * @return объект сериализации
 	 * 
-	 * @throws Calculations.GenerateClassException
 	 */
-	public static Trajectory generate(JSON json, long version) throws GenerateClassException{
-		String className = json.get("_className");
-		try{
-			Class<? extends Trajectory> ac = Class.forName(className).asSubclass(Trajectory.class);
-			var constructor = ac.getDeclaredConstructor(JSON.class, long.class);
-			return constructor.newInstance(json,version);
-		} catch (ClassNotFoundException ex)		{throw new GenerateClassException(ex,className);}
-		catch (NoSuchMethodException ex)		{throw new GenerateClassException(ex);}
-		catch (InstantiationException ex)		{throw new GenerateClassException(ex);}
-		catch (IllegalAccessException ex)		{throw new GenerateClassException(ex);} 
-		catch (IllegalArgumentException ex)		{throw new GenerateClassException(ex);}
-		catch (InvocationTargetException ex)	{throw new GenerateClassException(ex);}
-	}
+	public static Trajectory generation(JSON json, long version){return TRAJECTORIES.generation(json, version);}
+	/**Укладывает текущий объект в объект сереализации для дальнейшего сохранения
+	 * @param <T> тип объекта, который надо упаковать. Может быть любым наследником текущего класса,
+	 *  зарегистрированного ранее в классе
+	 * @param object объект, который надо упаковать
+	 * @return JSON объект или null, если такой класс не зарегистрирован у нас
+	 */
+	public static <T extends Trajectory> JSON serialization(T object){return TRAJECTORIES.serialization(object);}
 
 	/**Рисует объект на экране
 	 * @param g холст, на котором надо начертить солнышко
 	 * @param transform преобразователь размеров мировых в размеры экранные
 	 */
 	public void paint(Graphics2D g, WorldView.Transforms transform) {
-			int r = transform.toScrin(1);
-			int cx = transform.toScrinX(pos);
-			int cy = transform.toScrinY(pos);
-			g.setColor(AllColors.TRAJECTORY_POINT);
-			Utils.Utils.fillCircle(g, cx, cy, r);
+		int r = transform.toScrin(1);
+		int cx = transform.toScrinX(pos);
+		int cy = transform.toScrinY(pos);
+		g.setColor(AllColors.TRAJECTORY_POINT);
+		Utils.Utils.fillCircle(g, cx, cy, r);
 	}
 }
