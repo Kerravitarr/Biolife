@@ -34,18 +34,19 @@ public class SettingsString extends javax.swing.JPanel {
 	
 	/**
 	* Создаёт панельку настройки
-	* @param nameO имя параметра (по нему берутся навазния)
+	 * @param nameCl класс объекта для получения локализованного имени
+	* @param nameS имя параметра (по нему берутся навазния)
 	* @param defVal значение по умолчанию
 	* @param nowVal текущее значение
 	* @param list слушатель, который сработает, когда значение изменится
 	*/
-   public SettingsString(String nameO, String defVal, String nowVal, AdjustmentListener list) {
+   public SettingsString(Class<?> nameCl, String nameS, String defVal, String nowVal, AdjustmentListener list) {
 		initComponents();
 		
 		listener = e -> {};
 		
-		label.setText(Configurations.getHProperty(Settings.class, nameO + ".L"));
-		label.setToolTipText(Configurations.getHProperty(Settings.class, nameO + ".T"));
+		label.setText(Configurations.getHProperty(nameCl, nameS + ".L"));
+		label.setToolTipText(Configurations.getHProperty(nameCl, nameS + ".T"));
 		
 		text.setDocument(new RangeFilter());
 		

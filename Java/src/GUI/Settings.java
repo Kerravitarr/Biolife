@@ -88,16 +88,16 @@ public class Settings extends javax.swing.JPanel {
 		
 		configuationsNorm.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "worldSize",Configurations.getWidth(),Configurations.getHeight())));
 		configuationsNorm.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "worldType",Configurations.confoguration.world_type)));
-		configuationsNorm.add(new SettingsSlider("configuations.speed", 0, 0, 1000, 0,(int)Configurations.world.getSpeed(),null, e -> Configurations.world.setSpeed(e)));
+		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.speed", 0l, 0l, 1000l, 0l,Configurations.world.getSpeed(),null, e -> Configurations.world.setSpeed(e)));
 		configuationsNorm.add(new JPopupMenu.Separator());
-		configuationsNorm.add(new SettingsSlider("configuations.savePeriod", 1_000, (int)dc.SAVE_PERIOD, 10_000_000,1_000, (int)Configurations.confoguration.SAVE_PERIOD,null, e -> Configurations.confoguration.SAVE_PERIOD = e));
-		configuationsNorm.add(new SettingsSlider("configuations.countSave", 1, dc.COUNT_SAVE, 10,1, Configurations.confoguration.COUNT_SAVE,null, e -> Configurations.confoguration.COUNT_SAVE = e));
+		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.savePeriod", 1_000, (int)dc.SAVE_PERIOD, 10_000_000,1_000, (int)Configurations.confoguration.SAVE_PERIOD,null, e -> Configurations.confoguration.SAVE_PERIOD = e));
+		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.countSave", 1, dc.COUNT_SAVE, 10,1, Configurations.confoguration.COUNT_SAVE,null, e -> Configurations.confoguration.COUNT_SAVE = e));
 		configuationsNorm.add(new JPopupMenu.Separator());
-		configuationsNorm.add(new SettingsSlider("configuations.mutagenicity",
+		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.mutagenicity",
 				0, dc.AGGRESSIVE_ENVIRONMENT, 100,
 				0, Configurations.confoguration.AGGRESSIVE_ENVIRONMENT, 100, e -> Configurations.confoguration.AGGRESSIVE_ENVIRONMENT = e));
-		configuationsNorm.add( new SettingsSlider("configuations.timeLifeOrg", 0, dc.TIK_TO_EXIT, 100, 0, Configurations.confoguration.TIK_TO_EXIT,null, e -> Configurations.confoguration.TIK_TO_EXIT = e));
-		configuationsNorm.add(new SettingsSlider("configuations.dirtiness",
+		configuationsNorm.add( new SettingsSlider<>(Settings.class,"configuations.timeLifeOrg", 0, dc.TIK_TO_EXIT, 100, 0, Configurations.confoguration.TIK_TO_EXIT,null, e -> Configurations.confoguration.TIK_TO_EXIT = e));
+		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.dirtiness",
 				0, (int)(dc.DIRTY_WATER * 100), 1000,
 				0, (int)(Configurations.confoguration.DIRTY_WATER * 100), null, e -> Configurations.confoguration.DIRTY_WATER = e / 100d));
 		
@@ -130,7 +130,7 @@ public class Settings extends javax.swing.JPanel {
 			//Ну значит будет у нас... Вот такая вот шляпа :)
 			final var sliders = new javax.swing.JPanel[3];
 			//Мощность гравитации
-			sliders[0] = new SettingsSlider("gravitation." + status.name(), 0, defPower, 1000, 0, buildGrav.getValue(),null,e -> {
+			sliders[0] = new SettingsSlider<>(Settings.class,"gravitation." + status.name(), 0, defPower, 1000, 0, buildGrav.getValue(),null,e -> {
 				final var g = Configurations.gravitation[status.ordinal()];
 				final var direction = (SettingsSelect<Gravitation.Direction>)sliders[1];
 				final var toPoint = (SettingsPoint)sliders[2];
@@ -197,25 +197,18 @@ public class Settings extends javax.swing.JPanel {
 			
 			final var sun = Configurations.suns.get(i);
 			suns.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",sun.toString())));
-			suns.add(new SettingsSlider("sun.power", 1, 30, 200, 1,(int)sun.getPower(),  null, e -> {
+			suns.add(new SettingsSlider<>(Settings.class,"sun.power", 1, 30, 200, 1,(int)sun.getPower(),  null, e -> {
 				sun.setPower(e);
 			}));
-			suns.add(new SettingsBoolean("emitter.isLine", !sun.getIsLine(), e -> {
+			suns.add(new SettingsBoolean(Settings.class,"emitter.isLine", !sun.getIsLine(), e -> {
 				sun.setIsLine(!e);
 			}));
-			for(final Utils.ParamObject p : sun.getParams()){
-				switch (p.type) {
-					case INT -> {
-						suns.add(new SettingsSlider(String.format("%s.%s", sun.getClass().getName(),p.name), p.minD,  p.maxD, p.minA,p.getI(),  p.maxA, e -> {
-							p.setValue(e);
-						}));
-					}
-					default -> throw new AssertionError();
-				}
-			}
+			for(final var p : sun.getParams())
+				suns.add(makePanel(sun,p));
+			
 			final var tr = sun.getTrajectory();
 			if(!tr.getClass().equals(Trajectory.class)){
-				suns.add(new SettingsSlider("trajectory.speed", 0,(int)tr.getSpeed(),1000,0,(int)tr.getSpeed(),null, e -> {
+				suns.add(new SettingsSlider<>(Settings.class,"trajectory.speed", 0,(int)tr.getSpeed(),1000,0,(int)tr.getSpeed(),null, e -> {
 					tr.setSpeed(e);
 				}));
 			}
@@ -229,7 +222,7 @@ public class Settings extends javax.swing.JPanel {
 			if(i > 0)
 				suns2.add(new JPopupMenu.Separator());
 			final var sun = Configurations.suns.get(i);
-			suns2.add(new SettingsString("object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
+			suns2.add(new SettingsString(Settings.class,"object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
 			suns2.add(addBlink(sun.getSelect(), e->sun.setSelect(e)));
 			//Задать новую траекторию
 			//final var tr = sun.getTrajectory();
@@ -254,28 +247,20 @@ public class Settings extends javax.swing.JPanel {
 				minerals.add(new JPopupMenu.Separator());
 			final var mineral = Configurations.minerals.get(i);
 			minerals.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",mineral.toString())));
-			minerals.add(new SettingsSlider("minerals.power", 1, 20, 200, 1,(int)mineral.getPower(),  null, e -> {
+			minerals.add(new SettingsSlider<>(Settings.class,"minerals.power", 1, 20, 200, 1,(int)mineral.getPower(),  null, e -> {
 				mineral.setPower(e);
 			}));
-			minerals.add(new SettingsSlider("minerals.attenuation",
+			minerals.add(new SettingsSlider<>(Settings.class,"minerals.attenuation",
 				0, (int)(dc.DIRTY_WATER * 100), 1000,
 				0, (int)(mineral.getAttenuation() * 100), null, e -> mineral.setAttenuation(e / 100d)));
-			minerals.add(new SettingsBoolean("emitter.isLine", !mineral.getIsLine(), e -> {
+			minerals.add(new SettingsBoolean(Settings.class,"emitter.isLine", !mineral.getIsLine(), e -> {
 				mineral.setIsLine(!e);
 			}));
-			for(final Utils.ParamObject p : mineral.getParams()){
-				switch (p.type) {
-					case INT -> {
-						minerals.add(new SettingsSlider(String.format("%s.%s", mineral.getClass().getName(),p.name), p.minD,  p.maxD, p.minA,p.getI(),  p.maxA, e -> {
-							p.setValue(e);
-						}));
-					}
-					default -> throw new AssertionError();
-				}
-			}
+			if(true)
+				throw new AssertionError();
 			final var tr = mineral.getTrajectory();
 			if(!tr.getClass().equals(Trajectory.class)){
-				minerals.add(new SettingsSlider("trajectory.speed", 0,(int)tr.getSpeed(),1000,0,(int)tr.getSpeed(),null, e -> {
+				minerals.add(new SettingsSlider<>(Settings.class,"trajectory.speed", 0l,tr.getSpeed(),1000l,0l,tr.getSpeed(),null, e -> {
 					tr.setSpeed(e);
 				}));
 			}
@@ -290,7 +275,7 @@ public class Settings extends javax.swing.JPanel {
 			if(i > 0)
 				minerals2.add(new JPopupMenu.Separator());
 			final var mineral = Configurations.minerals.get(i);
-			minerals2.add(new SettingsString("object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
+			minerals2.add(new SettingsString(Settings.class,"object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
 			minerals2.add(addBlink(mineral.getSelect(), e->mineral.setSelect(e)));
 			
 			final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.remove"));
@@ -312,12 +297,12 @@ public class Settings extends javax.swing.JPanel {
 			final var stream = Configurations.streams.get(i);
 			streams.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",stream.toString())));
 			
-			for(final var p : stream.getParams()){
+			for(final var p : stream.getParams())
 				streams.add(makePanel(stream,p));
-			}
+			
 			final var tr = stream.getTrajectory();
 			if(!tr.getClass().equals(Trajectory.class)){
-				streams.add(new SettingsSlider("trajectory.speed", 0,(int)tr.getSpeed(),1000,0,(int)tr.getSpeed(),null, e -> {
+				streams.add(new SettingsSlider<>(Settings.class,"trajectory.speed", 0l,tr.getSpeed(),1000l,0l,tr.getSpeed(),null, e -> {
 					tr.setSpeed(e);
 				}));
 			}
@@ -331,7 +316,7 @@ public class Settings extends javax.swing.JPanel {
 			if(i > 0)
 				streams2.add(new JPopupMenu.Separator());
 			final var stream = Configurations.streams.get(i);
-			streams2.add(new SettingsString("object.editname", "Залеж", stream.toString(), e -> stream.setName(e)));
+			streams2.add(new SettingsString(Settings.class,"object.editname", "Залеж", stream.toString(), e -> stream.setName(e)));
 			streams2.add(addBlink(stream.getSelect(), e->stream.setSelect(e)));
 			
 			final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.remove"));
@@ -351,7 +336,7 @@ public class Settings extends javax.swing.JPanel {
 	 */
 	private javax.swing.JPanel addBlink(boolean nowValue, SettingsBoolean.AdjustmentListener doing){
 		final var panels = new SettingsBoolean[1];
-		panels[0] = new SettingsBoolean("object.blink", nowValue, e -> {
+		panels[0] = new SettingsBoolean(Settings.class,"object.blink", nowValue, e -> {
 			if(e == true){
 				for(final var i : blinks){
 					if(panels[0] != i)
@@ -364,23 +349,54 @@ public class Settings extends javax.swing.JPanel {
 		blinks.add(panels[0]);
 		return panels[0];
 	}
-	
+	/**Создаёт панель параметров
+	 * @param <P> возвращаемый тип параметра - Boolean, Boolean[]
+	 * @param <T> тип объекта, который строим
+	 * @param object сам объект, параметр которого выписываем
+	 * @param param параметр, который мы будем крутить
+	 * @return готовая панель с нужными крутилками
+	 */
 	private <P, T> javax.swing.JPanel makePanel(T object, Utils.ClassBuilder.EditParametr<P,T> param){
+		final var clr = object.getClass();
+		final var parametrName = "parameter."+param.name();
 		if(param instanceof Utils.ClassBuilder.BooleanParam<?> np_){
 			final var np = (Utils.ClassBuilder.BooleanParam<T>) np_;
-			return new SettingsBoolean(np_.name(), np.get(object), e -> {np.setValue(object, e);});
+			return new SettingsBoolean(clr,parametrName, np.get(object), e -> {np.setValue(object, e);});
 		} else if(param instanceof Utils.ClassBuilder.BooleanVectorParam<?> np_){
+			final var np = (Utils.ClassBuilder.BooleanVectorParam<T>) np_;
+			final var nowVals = np.get(object);
+			final var panel = new javax.swing.JPanel();
+			panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
+			for (int i = 0; i < nowVals.length; i++) {
+				final var index = i;
+				panel.add(new SettingsBoolean(clr, parametrName, nowVals[index], e -> {
+					nowVals[index] = e;
+					np.setValue(object, nowVals);
+				}));
+			}
 			throw new AssertionError(String.valueOf(param));
+			//return panel; Я просто не уверен, что сделал всё верно :)
 		} else if(param instanceof Utils.ClassBuilder.StringParam<?> np_){
-			throw new AssertionError(String.valueOf(param));
+			final var np = (Utils.ClassBuilder.StringParam<T>) np_;
+			return new SettingsString(clr,parametrName, np.getDefault(),np.get(object), e -> {np.setValue(object, e);});
 		} else if(param instanceof Utils.ClassBuilder.StringVectorParam<?> np_){
 			throw new AssertionError(String.valueOf(param));
 		} else if(param instanceof Utils.ClassBuilder.NumberParam<? extends Number,?> np_){
-			throw new AssertionError(String.valueOf(param));
-			/*final var np = (Utils.ClassBuilder.NumberParam<Integer,T>) np_;
-			return new SettingsSlider(np.name(), np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
+			final var npn = (Utils.ClassBuilder.NumberParam<? extends Number,T>) np_;
+			final var def = npn.getDefault().getClass();
+			if(def.equals(Integer.class)){
+				final var np = (Utils.ClassBuilder.NumberParam<Integer,T>) npn;
+				return new SettingsSlider<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
 					np.setValue(object, e);
-				});*/
+				});
+			} else if(def.equals(Double.class)){
+				final var np = (Utils.ClassBuilder.NumberParam<Double,T>) npn;
+				return new SettingsSlider<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
+					np.setValue(object, e);
+				});
+			} else {
+				throw new IllegalArgumentException("Класс " + def + " пока не поддерживается");
+			}
 		}  else if(param instanceof Utils.ClassBuilder.NumberVectorParam<? extends Number,?> np_){
 			throw new AssertionError(String.valueOf(param));
 		} else if(param instanceof Utils.ClassBuilder.MapPointParam<?> np_){

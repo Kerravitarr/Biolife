@@ -20,18 +20,19 @@ public class SettingsBoolean extends javax.swing.JPanel {
 	
 	/**
 	* Создаёт панельку настройки
-	* @param nameO имя параметра (по нему берутся навазния)
+	 * @param nameCl класс параметра, тоже для формирования локализованных подписей
+	* @param nameS имя параметра (по нему берутся навазния)
 	* @param defVal значение по умолчанию
 	* @param nowVal текущее значение
 	* @param list слушатель, который сработает, когда значение изменится
 	*/
-   public SettingsBoolean(String nameO, boolean nowVal, AdjustmentListener list) {
+   public SettingsBoolean(Class<?> nameCl, String nameS, boolean nowVal, AdjustmentListener list) {
 		initComponents();
 		
 		listener = e -> {};
-		_label.setText(Configurations.getHProperty(Settings.class, nameO + ".L"));
-		_label.setToolTipText(Configurations.getHProperty(Settings.class, nameO + ".T"));
-		_checkBox.setToolTipText(Configurations.getHProperty(Settings.class, nameO + ".T"));
+		_label.setText(Configurations.getHProperty(nameCl, nameS + ".L"));
+		_label.setToolTipText(Configurations.getHProperty(nameCl, nameS + ".T"));
+		_checkBox.setToolTipText(Configurations.getHProperty(nameCl, nameS + ".T"));
 		value = !nowVal;
 		setValue(nowVal);
 		

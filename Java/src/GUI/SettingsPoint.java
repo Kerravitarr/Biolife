@@ -7,7 +7,6 @@ package GUI;
 import Calculations.Configurations;
 import Calculations.Point;
 import Utils.MyMessageFormat;
-import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
