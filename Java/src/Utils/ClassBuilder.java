@@ -12,7 +12,139 @@ import java.util.Map;
 
 /**
  * Это основной класс-строитель для всех объектов карты.
+ * А теперь попишем чутка.
+ * Каждый, кто будет создавать себе динамических наследников, должен иметь у себя
+ * Статический объект класса
  * 
+ * private final static ClassBuilder.StaticBuilder<BASE> BUILDER = new ClassBuilder.StaticBuilder<>();
+ * 
+ * Собственно этот дружок и будет главным действующим лицом. В классе ClassBuilder.StaticBuilder реализована уже вся логика.
+ * Наследовать его, к сожанию, нельзя. Потому что ClassBuilder.StaticBuilder - динамический класс, а для создания объекта
+ * Нужны статические функции.
+ * Ну да это лирика. Точное формирование программы - дело вкуса.
+ * 
+ * Вернёмся к базовому классу, у которого уже есть BUILDER.
+ * Ему-же требуется добавить себе все методы ClassBuilder.StaticBuilder:
+ * Для регистрации потомков, которых можно создать и редактировать
+ *	protected static <T extends BASE> void register(ClassBuilder<T> builder){BUILDER.register(builder);};
+ * Для непосредственного создания потомков из JSON
+ *	public static T generation(JSON json, long version){return BUILDER.generation(json, version);}
+ * Для упаковки объекта в JSON и дальнейшего его сохранения
+ *	public static <T extends BASE> JSON serialization(T object){return BUILDER.serialization(object);}
+ * Для возврата параметров потока, которые можно крутить
+ *	public List<ClassBuilder.EditParametr> getParams(){return BUILDER.get(this.getClass()).getParams();}
+ * 
+ * Собственно с базовым классом всё.
+ * Теперь перейдём к потомку.
+ * Если он хочет быть обработанным, то ему нужно зарегистрировать себя у предка в функции register
+ * Понятное дело, что лучше всего это делать внутри конструкции
+ * static{}
+ * 
+ * Теперь поговорим о том, как, собственно, потомку собрать свой ClassBuilder<CHILD>
+ * ClassBuilder - класс абстрактный, потому что потомку нужно реализовать четыре функции:
+ * 
+ * @Override 
+ * public CHILD generation(JSON json, long version){return new CHILD(json, version);}
+ * Эта функция должна построить ребёнка на основе JSON. Не зря-же класс - строитель!
+ * 
+ * @Override 
+ * public JSON serialization(CHILD object) { return object.toJSON();}
+ * Эта функция напротив - засовывает ребёнка в JSON. Причём объект ребёнка функции передаётся!
+ * 
+ * @Override 
+ * public String serializerName() {return "";}
+ * Это уже сложнее - это уникальное имя объекта. Своеобразный ключ, чтобы отличать разных потомков. И чтобы
+ * можно было переименовать класс, но всё равно строить объекты по этому ключу
+ * 
+ * @Override 
+ * public Class printName() {return CHILD.class;}
+ * А эта функция наоборот возвращает объект класса потомка. Он много где используется, но его главное предназначение - 
+ * искать в файлах локализации все текстовые переменные к этому объекту - названия параметров, название объекта и прочее
+ * В базовом случае. название объекта берётся из файла локализации по строке printName().name
+ * 
+ * Собственно построитель - всё.
+ * Но что, если мы хотим не только строить объекты, но и редактировать параметры текущий объектов?
+ * Тогда построителю, ClassBuilder<CHILD>, нужно дать об этом знать!
+ *	
+ * private <K extends EditParametr<?, CHILD>> void addEditParam(K param)
+ * Эта функция принимает к себе объект, описывающий изменяющийся параметр, и регистрирует у себя.
+ * Теперь, что касается EditParametr. Сам этот класс нельзя зарегистрировать, но можно одного из его наследников.
+ * 
+ * ClassBuilder.BooleanParam и ClassBuilder.BooleanVectorParam
+ * Описывают логический параметр уже созданого объекта. Покажу как это выглядит
+ * new ClassBuilder.BooleanParam<CHILD>(){
+ *		@Override
+ *		public Boolean get(CHILD who) {
+ *			//В этой функции нужно вернуть текущее значение этого параметра у объекта who
+ *			return who.parameter;
+ *		}
+ *		@Override
+ *		public void setValue(CHILD who, Boolean value) {
+ *			//В этой функции нужно сохранить текущее значение этого параметра у объекту who
+ *			who.parameter = value;
+ *		}
+ *		@Override
+ *		public Boolean getDefault() {
+ *			//В этой функции нужно вернуть параметр по умолчанию
+ *			return default;
+ *		}
+ *		@Override
+ *		public String name() {
+ *			//Эта функция должна вернуть название параметра в файле локализации
+ *			//Параметр будет искаться по строке CHILD.parameter.name()
+ *			return "название параметра в файле локализации";
+ *		}
+ * };
+ * ClassBuilder.BooleanVectorParam тоже самое, но определяет не один параметр, а целый массив [].
+ * Единственное, что у него есть функция @Override public Boolean[] getDefault(). Вот эта функция должна возвращать всего 1 элемент
+ * Этот элемент будет базовым для всех
+ * 
+ * Остальные параметры не сильно отличаются:
+ * ClassBuilder.StringParam и ClassBuilder.StringVectorParam - для строк
+ * ClassBuilder.MapPointParam и ClassBuilder.MapPointParam - для точек на игровом поле
+ * 
+ * Но есть и нюансы.
+ * ClassBuilder.NumberParam и ClassBuilder.NumberVectorParam - для чисел.
+ * Помимо уже описанных выше методов они дополнительно должны реализовать 
+ * 
+ * @Override 
+ * public TP getSliderMinimum() - минимальное значение для слайдера (ползунка)
+ * @Override 
+ * public TP getSliderMaximum() - максимальное значение для слайдера (ползунка)
+ * Слайдер - особый ползунок для возможности задания чисел без ввода непосредственно цифр.
+ * Если эти параметры будут null, слайдер будет заменён на текстовую, не изменяемую надпись, и тогда
+ * изменить параметр удастся только через генерируемое окно ввода тех самых цифр.
+ * Соответственно TP - тип чисел. Integer, Float, Double - поддерживаются все
+ * 
+ * @Override 
+ * public TP getRealMinimum() - минимальное реальное значение
+ * @Override 
+ * public TP getRealMaximum() - максимальное реальное значение
+ * И всё-же. Слайдер - не самая удобная штука. Он маленький и если число может менять от 0 до миллиона
+ * То делать для такого слайдер - не разумно.
+ * К тому-же могут быть адекватные значния, а могут быть - эксперементальные.
+ * Вот для всего этого есть возможность задавать числа вводом с клавиатуры.
+ * Эти два параметра и определяют как будет вести себя поле ввода.
+ * 
+ * Дополнительно, для ClassBuilder.NumberParam есть адаптер - ClassBuilder.NumberParamAdapter
+ * Его можно использовать для короткой записи. Но надо помнить, что функция
+ * @Override public TP getSliderMaximum() - динамическая. Она может обновлять своё значение при каждом вызове
+ * Если-же в адаптере задать это значение, оно будет фиксированным.
+ * Например. Если ширина объекта, для сладера, не может быть больше ширины экрана (логичное предположение)
+ * То переопределив @Override public TP getSliderMaximum() можно каждый раз рассчитывать это значение
+ * Без преопределения размеры мира могут поменяться и вся логика порушится!
+ * Это не считая того, что при работе статических функций размер мира ещё не определён
+ * 
+ * 
+ * Другой подобный параметр
+ * ClassBuilder.Abstract2Param и ClassBuilder.Abstract2VectorParam - для пары чисел
+ * У него тоже требуется переопределить дополнительные функции, определяющие границы для ввода чисел
+ * 
+ * Вот, собственно и всё, что касается параметров. Теперь мы можем строить объект из JSON, укладываеть его в JSON и даже менять параметры
+ * реально существующего объекта!
+ * Следующий и финальный шаг - создание новых объектов. Прям вызов любых конструкторов!
+ * 
+ *  
  * 
  * @author Kerravitarr
  * @param <T> Тип строящегося объекта
@@ -27,7 +159,9 @@ public abstract class ClassBuilder <T>{
 		 */
 		public P getDefault();
 		/**Возвращает имя параметра. По этому имени будет искаться локализованное название параметра в файлах локали
-		 * @return название ключа имени параметра
+		 * @return название ключа имени параметра. 
+		 *	Параметр существующего объекта будет искаться по пути CHILD.parameter.name()
+		 *	Для параметра конструктора по пути CHILD.(constructor.name()).name()
 		 */
 		public String name();
 	}
@@ -406,7 +540,8 @@ public abstract class ClassBuilder <T>{
 		 * @return фабрика для построения этого объекта
 		 */
 		public <T extends CT> ClassBuilder<T> get(Class<T> object) {
-			return (ClassBuilder<T>) OBJECTS_BY_CLASS.get(object.getClass());
+			assert OBJECTS_BY_CLASS.get(object) != null : "Объетк " + object + " не зарегистрирован";
+			return (ClassBuilder<T>) OBJECTS_BY_CLASS.get(object);
 		}
 		
 		
@@ -429,7 +564,7 @@ public abstract class ClassBuilder <T>{
 		public <T extends CT> JSON serialization(T object){
 			final var builder = get((Class<T>) object.getClass());
 			final var json = builder.serialization(object);
-			json.add("", builder.serializerName());
+			json.add("_serializerName", builder.serializerName());
 			return json;
 		}
 	}
