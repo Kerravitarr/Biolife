@@ -4,9 +4,9 @@
  */
 package Calculations;
 
-import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -16,8 +16,6 @@ import java.awt.RadialGradientPaint;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Пипец какое необычное эллипсоидное солнце
@@ -26,6 +24,86 @@ import java.util.List;
  * @author Kerravitarr
  */
 public class SunEllipse extends SunAbstract {
+	static{
+		final var builder = new ClassBuilder<SunEllipse>(){
+			@Override public SunEllipse generation(JSON json, long version){return new SunEllipse(json, version);}
+			@Override public JSON serialization(SunEllipse object) { return object.toJSON();}
+
+			@Override public String serializerName() {return "Элиптическое";}
+			@Override public Class printName() {return SunEllipse.class;}
+
+		};
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,SunEllipse>("a2",0,0,0,0,null) {
+			@Override public Integer get(SunEllipse who) {return who.a2;}
+			@Override public void setValue(SunEllipse who, Integer value) {who.setA2(value);}
+			@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+		});
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,SunEllipse>("b2",0,0,0,0,null) {
+			@Override public Integer get(SunEllipse who) {return who.b2;}
+			@Override public void setValue(SunEllipse who, Integer value) {who.setB2(value);}
+			@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+		});
+		final var power = new ClassBuilder.NumberConstructorParamAdapter("power",1,30,200,1,null);
+		final var center = new ClassBuilder.MapPointConstructorParam(){
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "center";}
+				};
+		final var name = new ClassBuilder.StringConstructorParam(){
+				@Override public Object getDefault() {return "Поток";}
+				@Override public String name() { return "name";}
+			};
+		final var isLine = new ClassBuilder.BooleanConstructorParam(){
+				@Override public Object getDefault() {return false;}
+				@Override public String name() { return "isLine";}
+
+			};
+		builder.addConstructor(new ClassBuilder.Constructor<SunEllipse>(){
+			{
+				addParam(center);
+				addParam(power);
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("a2",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("b2",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+				});
+				addParam(isLine);
+				addParam(name);
+			}
+
+			@Override
+			public SunEllipse build() {
+				return new SunEllipse(getParam(0,Integer.class),new Trajectory(getParam(1,Point.class)),  getParam(2,Integer.class), getParam(3,Integer.class), getParam(4,Boolean.class), getParam(5,String.class));
+			}
+			@Override public String name() {return "ellipse.name";}
+		});
+		builder.addConstructor(new ClassBuilder.Constructor<SunEllipse>(){
+			{
+				addParam(center);
+				addParam(power);
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("r",0,0,0,0,null){
+					@Override public Integer getDefault() {return Math.min(Configurations.getWidth(),Configurations.getHeight())/2;}
+					@Override public Integer getSliderMaximum() {return Math.min(Configurations.getWidth(),Configurations.getHeight());}
+				});
+				addParam(isLine);
+				addParam(name);
+			}
+
+			@Override
+			public SunEllipse build() {
+				return new SunEllipse(getParam(0,Integer.class),new Trajectory(getParam(1,Point.class)),  getParam(2,Integer.class), getParam(3,Boolean.class), getParam(4,String.class));
+			}
+			@Override public String name() {return "circle.name";}
+		});
+		SunAbstract.register(builder);
+	}
+	
+	
+	
 	/**Большая ось эллипса - лежит на оси Х*/
 	private int a2;
 	/**Большая полуось эллипса, лежит на оси X*/
@@ -62,7 +140,7 @@ public class SunEllipse extends SunAbstract {
 	public SunEllipse(double p, Trajectory move, int d, boolean isLine, String name) {
 		this(p, move,d,d,isLine,name);
 	}
-	protected SunEllipse(JSON j, long v) throws GenerateClassException{
+	protected SunEllipse(JSON j, long v){
 		super(j,v);
 		setA2(j.get("a2"));
 		setB2(j.get("b2"));
@@ -125,31 +203,6 @@ public class SunEllipse extends SunAbstract {
 				return Math.max(0, power - Configurations.confoguration.DIRTY_WATER * dist);
 			}
 		}
-	}
-	@Override
-	public List<ParamObject> getParams(){
-		final java.util.ArrayList<Utils.ParamObject> ret = new ArrayList<ParamObject>(2);
-		ret.add(new ParamObject("a2", 2,Configurations.getWidth(),2,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				setA2(((Number) value).intValue());
-			}
-			@Override
-			protected Object get() {
-				return a2;
-			}
-		});
-		ret.add(new ParamObject("b2", 2,Configurations.getHeight(),2,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				setB2(((Number) value).intValue());
-			}
-			@Override
-			protected Object get() {
-				return b2;
-			}
-		});
-		return ret;
 	}
 	@Override
 	protected void move() {}

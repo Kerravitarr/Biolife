@@ -1,14 +1,9 @@
 package Calculations;
 
-import GUI.AllColors;
-import GUI.WorldView.Transforms;
+import Utils.ClassBuilder;
 import Utils.JSON;
-import Utils.SaveAndLoad;
-import java.awt.Graphics2D;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Болванка солнышка. Любое солнце должно быть похоже на это!
@@ -22,6 +17,8 @@ import java.util.logging.Logger;
  *
  */
 public abstract class SunAbstract extends DefaultEmitter{
+	/**Построитель для любых потомков текущего класса*/
+	private final static ClassBuilder.StaticBuilder<SunAbstract> BUILDER = new ClassBuilder.StaticBuilder<>();
 	
 	/**Создаёт солнце
 	 * @param p максимальная энергия солнца, будто и не было тени
@@ -37,7 +34,7 @@ public abstract class SunAbstract extends DefaultEmitter{
 	 * @param v версия файла
 	 * @throws Calculations.GenerateClassException может возникать при создании родителя из ошибочного файла JSON
 	 */
-	protected SunAbstract(JSON j, long v) throws GenerateClassException{
+	protected SunAbstract(JSON j, long v){
 		super(j,v);
 	}
 	/**
@@ -62,12 +59,32 @@ public abstract class SunAbstract extends DefaultEmitter{
 		}
 	}
 	
-	@Override
-	public JSON toJSON(){
-		final var j = super.toJSON();
-		j.add("_className", this.getClass().getName());
-		return j;
-	}
+	/** * Регистрирует наследника как одного из возможных дочерних классов.
+	 * @param <T> класс наследника текущего класса
+	 * @param builder фабрика по созданию наследников
+	 */
+	protected static <T extends SunAbstract> void register(ClassBuilder<T> builder){BUILDER.register(builder);};
+	/** * Создаёт реальный объект на основе JSON файла.
+	 * Самое главное, чтобы этот объект был ранее зарегистрирован в этом классе
+	 * @param json объект, описывающий объект подкласса CT
+	 * @param version версия файла json в котором объект сохранён
+	 * @return объект сериализации
+	 * 
+	 */
+	public static SunAbstract generation(JSON json, long version){return BUILDER.generation(json, version);}
+	/**Укладывает текущий объект в объект сереализации для дальнейшего сохранения
+	 * @param <T> тип объекта, который надо упаковать. Может быть любым наследником текущего класса,
+	 *  зарегистрированного ранее в классе
+	 * @param object объект, который надо упаковать
+	 * @return JSON объект или null, если такой класс не зарегистрирован у нас
+	 */
+	public static <T extends SunAbstract> JSON serialization(T object){return BUILDER.serialization(object);}
+	/**
+	 * Возвращает список всех параметров объекта, которые можно покрутить в живом эфире
+	 * @return список параметров объекта
+	 */
+	public List<ClassBuilder.EditParametr> getParams(){return BUILDER.get(this.getClass()).getParams();}
+	
 	
 	/** * Создаёт реальное солнце на основе JSON файла.Тут может быть любое из существующих солнц
 	 * @param json объект, описывающий солнце

@@ -25,7 +25,7 @@ public class StreamSwirl extends StreamAbstract {
 			@Override public JSON serialization(StreamSwirl object) { return object.toJSON();}
 
 			@Override public String serializerName() {return "Круговорот";}
-			@Override public Class printName() {return StreamVertical.class;}
+			@Override public Class printName() {return StreamSwirl.class;}
 
 		};
 		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,StreamSwirl>("d",0,0,0,0,null) {

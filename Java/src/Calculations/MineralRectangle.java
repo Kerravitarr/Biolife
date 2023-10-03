@@ -72,7 +72,6 @@ public class MineralRectangle extends MineralAbstract {
 				return Math.max(0, power - getAttenuation() * Math.max(absX - width / 2, absY - height / 2));
 		}
 	}
-	@Override
 	public List<ParamObject> getParams(){
 		final var ret = new ArrayList<ParamObject>(2);
 		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){

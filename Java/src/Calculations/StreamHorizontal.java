@@ -23,7 +23,7 @@ public class StreamHorizontal extends StreamAbstract {
 			@Override public StreamHorizontal generation(JSON json, long version){return new StreamHorizontal(json, version);}
 			@Override public JSON serialization(StreamHorizontal object) { return object.toJSON();}
 
-			@Override public String serializerName() {return "Точка";}
+			@Override public String serializerName() {return "Горизонтальный";}
 			@Override public Class printName() {return StreamVertical.class;}
 
 		};

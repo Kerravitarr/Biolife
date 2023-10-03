@@ -19,8 +19,8 @@ public class StreamEllipse extends StreamAbstract {
 			@Override public StreamEllipse generation(JSON json, long version){return new StreamEllipse(json, version);}
 			@Override public JSON serialization(StreamEllipse object) { return object.toJSON();}
 
-			@Override public String serializerName() {return "Точка";}
-			@Override public Class printName() {return StreamVertical.class;}
+			@Override public String serializerName() {return "Элиптический";}
+			@Override public Class printName() {return StreamEllipse.class;}
 
 		};
 		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,StreamEllipse>("a2",0,0,0,0,null) {
@@ -41,7 +41,7 @@ public class StreamEllipse extends StreamAbstract {
 				};
 		final var power = new ClassBuilder.NumberConstructorParamAdapter("power",-1000,1,1000,null,null);
 		final var name = new ClassBuilder.StringConstructorParam(){
-				@Override public Object getDefault() {return "Поток";}
+				@Override public Object getDefault() {return "Солнце";}
 				@Override public String name() { return "name";}
 
 			};

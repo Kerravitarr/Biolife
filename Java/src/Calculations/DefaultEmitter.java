@@ -1,13 +1,8 @@
 package Calculations;
 
-import Utils.ParamObject;
-import GUI.AllColors;
 import GUI.WorldView.Transforms;
 import Utils.JSON;
-import Utils.SaveAndLoad;
 import java.awt.Graphics2D;
-import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 
 /**
  * Болванка любого излучателя - солнца или минералов
@@ -38,7 +33,7 @@ public abstract class DefaultEmitter {
 	
 	
 	
-	protected DefaultEmitter(JSON j, long v) throws GenerateClassException{
+	protected DefaultEmitter(JSON j, long v){
 		power = j.get("power");
 		name = j.get("name");
 		isLine = j.get("isLine");
@@ -59,11 +54,6 @@ public abstract class DefaultEmitter {
 		this.name = n;
 		this.isLine = isLine;
 	}
-	/**
-	 * Возвращает все изменяемые параметры излучателя
-	 * @return список из всех доступных параметров
-	 */
-	public abstract List<ParamObject> getParams();
 
 	/**Этот метод будет вызываться каждый раз, когда изменится местоположение объекта*/
 	protected abstract void move();

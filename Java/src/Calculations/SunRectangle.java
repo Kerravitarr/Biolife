@@ -7,6 +7,7 @@ package Calculations;
 import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Color;
 import java.awt.GradientPaint;
@@ -25,6 +26,62 @@ import java.util.List;
  * @author Kerravitarr
  */
 public class SunRectangle extends SunAbstract {
+	static{
+		final var builder = new ClassBuilder<SunRectangle>(){
+			@Override public SunRectangle generation(JSON json, long version){return new SunRectangle(json, version);}
+			@Override public JSON serialization(SunRectangle object) { return object.toJSON();}
+
+			@Override public String serializerName() {return "Горизонтальный";}
+			@Override public Class printName() {return SunRectangle.class;}
+
+		};
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,SunRectangle>("width",0,0,0,0,null){
+			@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+			@Override public Integer get(SunRectangle who) {return who.width;}
+			@Override public void setValue(SunRectangle who, Integer value) {who.width = value;}
+		});
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,SunRectangle>("height",0,0,0,0,null){
+			@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+			@Override public Integer get(SunRectangle who) {return who.height;}
+			@Override public void setValue(SunRectangle who, Integer value) {who.height = value;}
+		});
+		builder.addConstructor(new ClassBuilder.Constructor<SunRectangle>(){
+			{
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("power",1,30,100,1,null));
+				addParam(new ClassBuilder.MapPointConstructorParam(){
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "center";}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("width",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("height",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+				});
+				addParam(new ClassBuilder.BooleanConstructorParam(){
+					@Override public Object getDefault() {return false;}
+					@Override public String name() { return "isLine";}
+				});
+				addParam(new ClassBuilder.StringConstructorParam(){
+					@Override public Object getDefault() {return "Лампа";}
+					@Override public String name() { return "name";}
+					
+				});
+			}
+
+			@Override
+			public SunRectangle build() {
+				return new SunRectangle(getParam(0,Integer.class),new Trajectory(getParam(1,Point.class)),  getParam(2,Integer.class), getParam(3,Integer.class),getParam(4,Boolean.class), getParam(5,String.class));
+			}
+			@Override public String name() {return "name";}
+		});
+		SunAbstract.register(builder);
+	}
+	
 	/**Ширина излучающей поверхности*/
 	private int width;
 	/**Высота излучающей поверхности*/
@@ -43,7 +100,7 @@ public class SunRectangle extends SunAbstract {
 		this.width = width;
 		this.height = height;
 	}	
-	protected SunRectangle(JSON j, long v) throws GenerateClassException{
+	protected SunRectangle(JSON j, long v){
 		super(j,v);
 		this.width = j.get("width");
 		this.height = j.get("height");
@@ -71,32 +128,6 @@ public class SunRectangle extends SunAbstract {
 			else
 				return Math.max(0, power - DIRTY_WATER * Math.max(absX - width / 2, absY - height / 2));
 		}
-	}
-
-	@Override
-	public List<ParamObject> getParams(){
-		final java.util.ArrayList<Utils.ParamObject> ret = new ArrayList<ParamObject>(2);
-		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				width = ((Number) value).intValue();
-			}
-			@Override
-			protected Object get() {
-				return width;
-			}
-		});
-		ret.add(new ParamObject("height", 1,Configurations.getHeight(),1,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				height = ((Number) value).intValue();
-			}
-			@Override
-			protected Object get() {
-				return height;
-			}
-		});
-		return ret;
 	}
 	
 	@Override

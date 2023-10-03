@@ -128,7 +128,6 @@ public class MineralEllipse extends MineralAbstract {
 			}
 		}
 	}
-	@Override
 	public List<ParamObject> getParams(){
 		final java.util.ArrayList<Utils.ParamObject> ret = new ArrayList<ParamObject>(2);
 		ret.add(new ParamObject("a2", 2,Configurations.getWidth(),2,null){
