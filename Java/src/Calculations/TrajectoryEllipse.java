@@ -15,15 +15,6 @@ import java.awt.Graphics2D;
  * @author Kerravitarr
  */
 public class TrajectoryEllipse extends Trajectory{
-	/**Центр, вокруг которого вращаемся*/
-	private final Point center;
-	/**Эксцентрическая аномалия эллипса. Угол, на который сместилось солнце от начала, Дополнительный параметр для смещения начального угла*/
-	private double angle;
-	/**Большая ось*/
-	private final double a;
-	/**Малая ось*/
-	private final double b;
-	
 	static{
 		final var builder = new ClassBuilder<TrajectoryEllipse>(){
 			@Override public TrajectoryEllipse generation(JSON json, long version){return new TrajectoryEllipse(json, version);}
@@ -43,14 +34,20 @@ public class TrajectoryEllipse extends Trajectory{
 				addParam(speed);
 				addParam(center);
 				addParam(startAngle);
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("a2", 0,Configurations.getWidth()/2,Configurations.getWidth(),0,null));
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("b2", 0,Configurations.getWidth()/2,Configurations.getWidth(),0,null));
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("a2", 0, 0, 0, 0, null){
+					@Override public Integer getDefault() {return getSliderMaximum() / 2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("b2", 0, 0, 0, 0, null){
+					@Override public Integer getDefault() {return getSliderMaximum()/ 2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+				});
 			}
 			@Override
 			public TrajectoryEllipse build() {
 				return new TrajectoryEllipse(getParam(0,Integer.class),getParam(1,Point.class),Math.toRadians(getParam(2,Integer.class)),getParam(3,Integer.class),getParam(4,Integer.class));
 			}
-			@Override public String name() {return "ellipse.name";}
+			@Override public String name() {return "ellipse";}
 		});
 		
 		builder.addConstructor(new ClassBuilder.Constructor<TrajectoryEllipse>(){
@@ -58,16 +55,28 @@ public class TrajectoryEllipse extends Trajectory{
 				addParam(speed);
 				addParam(center);
 				addParam(startAngle);
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("r", 0,Configurations.getWidth()/2,Configurations.getWidth(),0,null));
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("d", 0,0,0,0,null){
+					@Override public Integer getDefault() {return getSliderMaximum()/ 2;}
+					@Override public Integer getSliderMaximum() {return Math.min(Configurations.getWidth(), Configurations.getHeight());}
+				});
 			}
 			@Override
 			public TrajectoryEllipse build() {
 				return new TrajectoryEllipse(getParam(0,Integer.class),getParam(1,Point.class),Math.toRadians(getParam(2,Integer.class)),getParam(3,Integer.class));
 			}
-			@Override public String name() {return "circle.name";}
+			@Override public String name() {return "circle";}
 		});
 		Trajectory.register(builder);
 	}
+	
+	/**Центр, вокруг которого вращаемся*/
+	private final Point center;
+	/**Эксцентрическая аномалия эллипса. Угол, на который сместилось солнце от начала, Дополнительный параметр для смещения начального угла*/
+	private double angle;
+	/**Большая ось*/
+	private final double a;
+	/**Малая ось*/
+	private final double b;
 	
 	
 	/**Движение по орбите

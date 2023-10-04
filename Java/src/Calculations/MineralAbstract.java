@@ -1,7 +1,8 @@
 package Calculations;
 
+import Utils.ClassBuilder;
 import Utils.JSON;
-import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 
 /**
  * Болванка минералов.
@@ -10,6 +11,9 @@ import java.lang.reflect.InvocationTargetException;
  *
  */
 public abstract class MineralAbstract extends DefaultEmitter{
+	/**Построитель для любых потомков текущего класса*/
+	private final static ClassBuilder.StaticBuilder<MineralAbstract> BUILDER = new ClassBuilder.StaticBuilder<>();
+	
 	/**Коээфициент "затухания" для минералов. Каждая минеральная нычка может иметь своё затухание*/
 	private double attenuation;
 
@@ -28,7 +32,7 @@ public abstract class MineralAbstract extends DefaultEmitter{
 	 * @param j описание предка
 	 * @param v версия файла
 	 */
-	protected MineralAbstract(JSON j, long v) throws GenerateClassException{
+	protected MineralAbstract(JSON j, long v){
 		super(j,v);
 		attenuation = j.get("attenuation");
 	}
@@ -77,23 +81,29 @@ public abstract class MineralAbstract extends DefaultEmitter{
 		return j;
 	}
 	
-	/** * Создаёт реальную залеж на основе JSON файла.Это реальный генератор
-	 * @param json объект, описывающий залеж
-	 * @param version версия файла json в котором объект сохранён
-	 * @return найденное солнце... Или null, если такой залежи не бывает не бывает
-	 * @throws Calculations.GenerateClassException ошибка загрузки
+	/** * Регистрирует наследника как одного из возможных дочерних классов.
+	 * @param <T> класс наследника текущего класса
+	 * @param builder фабрика по созданию наследников
 	 */
-	public static MineralAbstract generate(JSON json, long version) throws GenerateClassException{
-		String className = json.get("_className");
-		try {
-			final var ac = Class.forName(className).asSubclass(MineralAbstract.class);
-			var constructor = ac.getDeclaredConstructor(JSON.class, long.class);
-			return constructor.newInstance(json,version);
-		}  catch (ClassNotFoundException ex)	{throw new GenerateClassException(ex,className);}
-		catch (NoSuchMethodException ex)		{throw new GenerateClassException(ex);}
-		catch (InstantiationException ex)		{throw new GenerateClassException(ex);}
-		catch (IllegalAccessException ex)		{throw new GenerateClassException(ex);} 
-		catch (IllegalArgumentException ex)		{throw new GenerateClassException(ex);}
-		catch (InvocationTargetException ex)	{throw new GenerateClassException(ex);}
-	}
+	protected static <T extends MineralAbstract> void register(ClassBuilder<T> builder){BUILDER.register(builder);};
+	/** * Создаёт реальный объект на основе JSON файла.
+	 * Самое главное, чтобы этот объект был ранее зарегистрирован в этом классе
+	 * @param json объект, описывающий объект подкласса CT
+	 * @param version версия файла json в котором объект сохранён
+	 * @return объект сериализации
+	 * 
+	 */
+	public static MineralAbstract generation(JSON json, long version){return BUILDER.generation(json, version);}
+	/**Укладывает текущий объект в объект сереализации для дальнейшего сохранения
+	 * @param <T> тип объекта, который надо упаковать. Может быть любым наследником текущего класса,
+	 *  зарегистрированного ранее в классе
+	 * @param object объект, который надо упаковать
+	 * @return JSON объект или null, если такой класс не зарегистрирован у нас
+	 */
+	public static <T extends MineralAbstract> JSON serialization(T object){return BUILDER.serialization(object);}
+	/**
+	 * Возвращает список всех параметров объекта, которые можно покрутить в живом эфире
+	 * @return список параметров объекта
+	 */
+	public List<ClassBuilder.EditParametr> getParams(){return BUILDER.get(this.getClass()).getParams();}
 }

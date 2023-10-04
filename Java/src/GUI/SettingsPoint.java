@@ -21,14 +21,28 @@ import javax.swing.WindowConstants;
  * @author Kerravitarr
  */
 public class SettingsPoint extends javax.swing.JPanel {
-	/**Интерфейс, который срабатывает при обновлении значения*/
-	public interface AdjustmentListener extends EventListener {
-		public void adjustmentValueChanged(Point.Vector nVal);
+	/**Интерфейс, который срабатывает при обновлении значении
+	 * @param <P> тип слайдера может быть или Point или Point.Vector
+	 */
+	public interface AdjustmentListener<P> extends EventListener {
+		public void adjustmentValueChanged(P nVal);
 	}
 	
 	/**
+	* Создаёт панельку настройки для ввода точки на карте
+	 * @param nameCl класс для поиска локализованного имени
+	* @param nameS имя параметра (по нему берутся навазния)
+	 * @param def значение параметра Х по умолчанию
+	 * @param nowValue текущее значение параметра Y
+	* @param list слушатель, который сработает, когда значение изменится
+	*/
+   public SettingsPoint(Class<?> nameCl, String nameS, Point def, Point nowValue, AdjustmentListener<Point> list) {
+		this(nameCl,nameS,Configurations.getHProperty(SettingsPoint.class, "X"),Configurations.getHProperty(SettingsPoint.class, "Y"),null,def.getX(),null,nowValue.getX(),null,def.getY(),null,nowValue.getY(), list, true);
+   }
+	/**
 	* Создаёт панельку настройки для ввода двух чисел
-	* @param nameO имя параметра (по нему берутся навазния)
+	 * @param nameCl класс для поиска локализованного имени
+	* @param nameS имя параметра (по нему берутся навазния)
 	 * @param minX минимальное значение параметра Х
 	 * @param defX значение параметра Х по умолчанию
 	 * @param maxX максимамльное значение параметра Х
@@ -39,21 +53,26 @@ public class SettingsPoint extends javax.swing.JPanel {
 	 * @param nowY текущее значение параметра Y
 	* @param list слушатель, который сработает, когда значение изменится
 	*/
-   public SettingsPoint(String nameO, int minX, int defX, int maxX, int nowX, int minY, int defY, int maxY, int nowY, AdjustmentListener list) {
-		this();
+   public SettingsPoint(Class<?> nameCl, String nameS, int minX, int defX, int maxX, int nowX, int minY, int defY, int maxY, int nowY, AdjustmentListener<Point.Vector> list) {
+		this(nameCl,nameS,Configurations.getHProperty(nameCl, nameS + ".P1"),Configurations.getHProperty(nameCl, nameS + ".P2"), minX, defX, maxX, nowX, minY, defY, maxY, nowY, list, false);
+	}
+   
+   
+	private SettingsPoint(Class<?> nameCl, String nameS, String xLabel, String yLabel, Integer minX, Integer defX, Integer maxX, Integer nowX, Integer minY, Integer defY, Integer maxY, Integer nowY, AdjustmentListener<?> list, boolean isP) {
+		initComponents();
 		listener = e -> {};
 		
-		label.setText(Configurations.getHProperty(Settings.class, nameO + ".L"));
-		labelX.setText(Configurations.getHProperty(Settings.class, nameO + ".X"));
-		labelY.setText(Configurations.getHProperty(Settings.class, nameO + ".Y"));
-		label.setToolTipText(Configurations.getHProperty(Settings.class, nameO + ".T"));
-        spinnerX.setModel(new javax.swing.SpinnerNumberModel(nowX, minX, maxX, 1));
-        spinnerY.setModel(new javax.swing.SpinnerNumberModel(nowY, minY, maxY, 1));
+		label.setText(Configurations.getHProperty(nameCl, nameS + ".L"));
+		label.setToolTipText(Configurations.getHProperty(nameCl, nameS + ".T"));
+		labelX.setText(xLabel);
+		labelY.setText(yLabel);
+		
+        spinnerX.setModel(new javax.swing.SpinnerNumberModel(nowX, minX, maxX, Integer.valueOf(1)));
+        spinnerY.setModel(new javax.swing.SpinnerNumberModel(nowY, minY, maxY, Integer.valueOf(1)));
 		
 		Configurations.setIcon(reset, "reset");
 		reset.addActionListener(e -> setValue(Point.Vector.create(defX,defY)));
 		reset.setToolTipText(Configurations.getHProperty(SettingsPoint.class, "resetSlider"));
-		
 		Configurations.setIcon(select, "selectPoint");
 		select.addActionListener(e -> {
 			final var dialog = new javax.swing.JDialog((Frame)null, "", false);
@@ -98,13 +117,6 @@ public class SettingsPoint extends javax.swing.JPanel {
 		value = null;
 		setValue(Point.Vector.create(nowX,nowY));
 		
-		listener = list;
-		spinnerX.addChangeListener((e) -> setValue(Point.Vector.create(((Number)spinnerX.getValue()).intValue(),((Number)spinnerY.getValue()).intValue())));
-		spinnerY.addChangeListener((e) -> setValue(Point.Vector.create(((Number)spinnerX.getValue()).intValue(),((Number)spinnerY.getValue()).intValue())));
-	}
-	/** Creates new form Slider */
-	private SettingsPoint() {
-		initComponents();
 		for (int i = 0; i < 2; i++) {
 			final var spinner = i == 0 ? spinnerX : spinnerY;
 			
@@ -126,6 +138,11 @@ public class SettingsPoint extends javax.swing.JPanel {
 				}
 			});
 		}
+		
+		listener = list;
+		isPoint = isP;
+		spinnerX.addChangeListener((e) -> setValue(Point.Vector.create(((Number)spinnerX.getValue()).intValue(),((Number)spinnerY.getValue()).intValue())));
+		spinnerY.addChangeListener((e) -> setValue(Point.Vector.create(((Number)spinnerX.getValue()).intValue(),((Number)spinnerY.getValue()).intValue())));
 	}
 	
 	/**Сохранить значение слайдера
@@ -140,9 +157,16 @@ public class SettingsPoint extends javax.swing.JPanel {
 	public void setValue(Point.Vector val) {
 		if (!val.equals(value)) {
 			value = val;
-			spinnerX.setValue(val.x);
-			spinnerY.setValue(val.y);
-			listener.adjustmentValueChanged(val);
+			if (isPoint) {
+				final var p = Point.create(val.x, val.y);
+				spinnerX.setValue(p.getX());
+				spinnerY.setValue(p.getY());
+				listener.adjustmentValueChanged(p);
+			} else {
+				spinnerX.setValue(val.x);
+				spinnerY.setValue(val.y);
+				listener.adjustmentValueChanged(val);
+			}
 		}
 	}
 	/**Получить текущее значение слайдера
@@ -239,8 +263,8 @@ public class SettingsPoint extends javax.swing.JPanel {
 	
 	/**Реальное значение*/
 	private Point.Vector value;
+	/**У нас точка на карте или абстрактная точка в любом месте? Влияет на то, как работает счётчик (может идит по кругу*/
+	private final boolean isPoint;
 	/**Слушатель события, что значение в ячейке изменилось*/
 	private AdjustmentListener listener;
-	/**Форматирование высплывающего окна над значением*/
-	private final MyMessageFormat valueFormat = new MyMessageFormat(Configurations.getProperty(Settings.class,"scrollTtext"));
 }

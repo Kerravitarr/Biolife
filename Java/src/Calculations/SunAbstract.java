@@ -84,25 +84,4 @@ public abstract class SunAbstract extends DefaultEmitter{
 	 * @return список параметров объекта
 	 */
 	public List<ClassBuilder.EditParametr> getParams(){return BUILDER.get(this.getClass()).getParams();}
-	
-	
-	/** * Создаёт реальное солнце на основе JSON файла.Тут может быть любое из существующих солнц
-	 * @param json объект, описывающий солнце
-	 * @param version версия файла json в котором объект сохранён
-	 * @return найденное солнце... Или null, если такого солнца не бывает
-	 * @throws GenerateClassException исключение, вызываемое ошибкой
-	 */
-	public static SunAbstract generate(JSON json, long version) throws GenerateClassException{
-		String className = json.get("_className");
-		try{
-			final var ac = Class.forName(className).asSubclass(SunAbstract.class);
-			var constructor = ac.getDeclaredConstructor(JSON.class, long.class);
-			return constructor.newInstance(json,version);
-		}catch (ClassNotFoundException ex)		{throw new GenerateClassException(ex,className);}
-		catch (NoSuchMethodException ex)		{throw new GenerateClassException(ex);}
-		catch (InstantiationException ex)		{throw new GenerateClassException(ex);}
-		catch (IllegalAccessException ex)		{throw new GenerateClassException(ex);} 
-		catch (IllegalArgumentException ex)		{throw new GenerateClassException(ex);}
-		catch (InvocationTargetException ex)	{throw new GenerateClassException(ex);}
-	}
 }

@@ -4,9 +4,9 @@
  */
 package Calculations;
 
-import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Color;
 import java.awt.GradientPaint;
@@ -15,8 +15,6 @@ import java.awt.MultipleGradientPaint.CycleMethod;
 import java.awt.RadialGradientPaint;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  *Самое обычное прямоугольное залежо минералов.
@@ -24,6 +22,66 @@ import java.util.List;
  * @author Kerravitarr
  */
 public class MineralRectangle extends MineralAbstract {
+	static{
+		final var builder = new ClassBuilder<MineralRectangle>(){
+			@Override public MineralRectangle generation(JSON json, long version){return new MineralRectangle(json, version);}
+			@Override public JSON serialization(MineralRectangle object) { return object.toJSON();}
+
+			@Override public String serializerName() {return "Куб";}
+			@Override public Class printName() {return MineralRectangle.class;}
+
+		};
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,MineralRectangle>("width",0,0,0,0,null){
+			@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+			@Override public Integer get(MineralRectangle who) {return who.width;}
+			@Override public void setValue(MineralRectangle who, Integer value) {who.width = value;}
+		});
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,MineralRectangle>("height",0,0,0,0,null){
+			@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+			@Override public Integer get(MineralRectangle who) {return who.height;}
+			@Override public void setValue(MineralRectangle who, Integer value) {who.height = value;}
+		});
+		final var attenuation = new ClassBuilder.NumberConstructorParamAdapter("attenuation",0d,0d,30d,0d,null){
+			@Override public Double getDefault() {return Configurations.confoguration.DIRTY_WATER;}
+		};
+		builder.addConstructor(new ClassBuilder.Constructor<MineralRectangle>(){
+			{
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("power",1,30,100,1,null));
+				addParam(attenuation);
+				addParam(new ClassBuilder.MapPointConstructorParam(){
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "center";}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("width",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("height",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+				});
+				addParam(new ClassBuilder.BooleanConstructorParam(){
+					@Override public Object getDefault() {return false;}
+					@Override public String name() { return "isLine";}
+				});
+				addParam(new ClassBuilder.StringConstructorParam(){
+					@Override public Object getDefault() {return "Кубик";}
+					@Override public String name() { return "name";}
+					
+				});
+			}
+
+			@Override
+			public MineralRectangle build() {
+				return new MineralRectangle(getParam(0,Integer.class),getParam(1,Double.class),new Trajectory(getParam(2,Point.class)),  getParam(3,Integer.class), getParam(4,Integer.class),getParam(5,Boolean.class), getParam(6,String.class));
+			}
+			@Override public String name() {return "name";}
+		});
+		MineralAbstract.register(builder);
+	}
+	
 	/**Ширина излучающей поверхности*/
 	private int width;
 	/**Высота излучающей поверхности*/
@@ -43,7 +101,7 @@ public class MineralRectangle extends MineralAbstract {
 		this.width = width;
 		this.height = height;
 	}
-	protected MineralRectangle(JSON j, long v) throws GenerateClassException{
+	protected MineralRectangle(JSON j, long v){
 		super(j,v);
 		this.width = j.get("width");
 		this.height = j.get("height");
@@ -71,30 +129,6 @@ public class MineralRectangle extends MineralAbstract {
 			else
 				return Math.max(0, power - getAttenuation() * Math.max(absX - width / 2, absY - height / 2));
 		}
-	}
-	public List<ParamObject> getParams(){
-		final var ret = new ArrayList<ParamObject>(2);
-		ret.add(new ParamObject("width", 1,Configurations.getWidth(),1,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				width = ((Number) value).intValue();
-			}
-			@Override
-			protected Object get() {
-				return width;
-			}
-		});
-		ret.add(new ParamObject("height", 1,Configurations.getHeight(),1,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				height = ((Number) value).intValue();
-			}
-			@Override
-			protected Object get() {
-				return height;
-			}
-		});
-		return ret;
 	}
 
 	@Override

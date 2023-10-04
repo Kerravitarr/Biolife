@@ -163,7 +163,7 @@ public abstract class DefaultEmitter {
 		j.add("power", power);
 		j.add("name", name);
 		j.add("isLine", isLine);
-		j.add("move", move.toJSON());
+		j.add("move", Trajectory.serialization(move));
 		j.add("position", position.toJSON());
 		return j;
 	}

@@ -9,12 +9,11 @@ import Calculations.Gravitation;
 import Calculations.Point;
 import Calculations.Trajectory;
 import MapObjects.CellObject;
+import Utils.ClassBuilder;
 import java.awt.Color;
 import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 
@@ -62,7 +61,7 @@ public class Settings extends javax.swing.JPanel {
 		configuationsRebuild.removeAll();
 			
 		final var dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
-		final var size = new SettingsPoint("configuations.size", 
+		final var size = new SettingsPoint(Settings.class,"configuations.size", 
 				100, dc.MAP_CELLS.width, 1_000_000,Configurations.getWidth(),
 				100, dc.MAP_CELLS.height, 1_000_000,Configurations.getHeight(),  e -> {
 			Configurations.world.awaitStop();
@@ -175,11 +174,10 @@ public class Settings extends javax.swing.JPanel {
 				}
 			});
 			//Точка, к которой гравитация стремиться
-			sliders[2] = new SettingsPoint("gravitation.point", 
-					0, Configurations.getWidth()/2, Configurations.getWidth(),buildGrav.getPoint() == null ? Configurations.getWidth()/2 : buildGrav.getPoint().getX(),
-					0, Configurations.getHeight()/2, Configurations.getHeight(),buildGrav.getPoint() == null ? Configurations.getHeight()/2 : buildGrav.getPoint().getY(),  e -> {
+			final var center = Point.create(Configurations.getWidth()/2,Configurations.getHeight()/2);
+			sliders[2] = new SettingsPoint(Settings.class,"gravitation.point", center,buildGrav.getPoint() == null ? center :buildGrav.getPoint(),  e -> {
 				final var g = Configurations.gravitation[status.ordinal()];
-				Configurations.gravitation[status.ordinal()] = new Gravitation(g.getValue(), Point.create(e.x,e.y));
+				Configurations.gravitation[status.ordinal()] = new Gravitation(g.getValue(), e);
 			});
 			gravitations.add(sliders[0]);
 			gravitations.add(sliders[1]);
@@ -225,15 +223,11 @@ public class Settings extends javax.swing.JPanel {
 			suns2.add(new SettingsString(Settings.class,"object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
 			suns2.add(addBlink(sun.getSelect(), e->sun.setSelect(e)));
 			//Задать новую траекторию
+			suns2.add(addNewTrajectory(Trajectory.getChildrens()));
 			//final var tr = sun.getTrajectory();
 			//Изменить траекторию
 			//Задать новую звезду
-			final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.remove"));
-			remove.addActionListener( e -> {
-				Configurations.suns.remove(sun);
-				rebuildSuns();
-			});
-			suns2.add(remove);
+			suns2.add(addRemove(Configurations.suns,sun));
 		}
 		borderClick(suns2, null);
 		borderClick(suns2, null);
@@ -256,8 +250,9 @@ public class Settings extends javax.swing.JPanel {
 			minerals.add(new SettingsBoolean(Settings.class,"emitter.isLine", !mineral.getIsLine(), e -> {
 				mineral.setIsLine(!e);
 			}));
-			if(true)
-				throw new AssertionError();
+			for(final var p : mineral.getParams())
+				minerals.add(makePanel(mineral,p));
+			
 			final var tr = mineral.getTrajectory();
 			if(!tr.getClass().equals(Trajectory.class)){
 				minerals.add(new SettingsSlider<>(Settings.class,"trajectory.speed", 0l,tr.getSpeed(),1000l,0l,tr.getSpeed(),null, e -> {
@@ -268,7 +263,6 @@ public class Settings extends javax.swing.JPanel {
 		borderClick(minerals, null);
 		borderClick(minerals, null);
 		
-		
 		minerals2.removeAll();
 		
 		for (int i = 0; i < Configurations.minerals.size(); i++) {
@@ -278,12 +272,7 @@ public class Settings extends javax.swing.JPanel {
 			minerals2.add(new SettingsString(Settings.class,"object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
 			minerals2.add(addBlink(mineral.getSelect(), e->mineral.setSelect(e)));
 			
-			final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.remove"));
-			remove.addActionListener( e -> {
-				Configurations.minerals.remove(mineral);
-				rebuildMinerals();
-			});
-			minerals2.add(remove);
+			minerals2.add(addRemove(Configurations.minerals,mineral));
 		}
 		borderClick(minerals2, null);
 		borderClick(minerals2, null);
@@ -329,6 +318,40 @@ public class Settings extends javax.swing.JPanel {
 		borderClick(streams2, null);
 		borderClick(streams2, null);
 	}
+	/**
+	 * Создаёт кнопку удаления объекта
+	 * @param <T>
+	 * @param list список, из которого объект удаляется
+	 * @param object сам удаляемый объект
+	 * @return объект кнопки, который нужно добавить на панель
+	 */
+	private <T> javax.swing.JButton addRemove(final List<T> list, final T object){
+		final var remove = new javax.swing.JButton(Configurations.getProperty(Settings.class, "object.parameter.remove.L"));
+		remove.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.remove.T"));
+		remove.addActionListener( e -> {
+			list.remove(object);
+			rebuild();
+		});
+		return remove;
+	}
+	/**
+	 * Создаёт кнопку генерации новой траектории для объекта
+	 * @param <T>
+	 * @param object сам объект, траектория которого нас ну оооочень интересует
+	 * @return объект кнопки, который нужно добавить на панель
+	 */
+	private <T> javax.swing.JButton addNewTrajectory(final List<ClassBuilder> constructorList){
+		final var newT = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.newTrajectory.L"));
+		newT.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.newTrajectory.T"));
+		newT.addActionListener( e -> {
+			final var make = new SettingsMake(false, constructorList);
+			make.setBounds(newT.getLocationOnScreen().x, newT.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
+			make.setVisible(true);
+			rebuild();
+		});
+		return newT;
+	}
+	
 	/**Добавляет кнопку мигания
 	 * @param nowValue текущее состояние объекта
 	 * @param doing что нужно сделать при включении (выключении) мигания?
@@ -496,7 +519,7 @@ public class Settings extends javax.swing.JPanel {
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(configuationsNorm, javax.swing.GroupLayout.DEFAULT_SIZE, 236, Short.MAX_VALUE)
+            .addComponent(configuationsNorm, javax.swing.GroupLayout.DEFAULT_SIZE, 234, Short.MAX_VALUE)
             .addComponent(gravitations, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(suns, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(streams, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -559,7 +582,7 @@ public class Settings extends javax.swing.JPanel {
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(configuationsRebuild, javax.swing.GroupLayout.DEFAULT_SIZE, 236, Short.MAX_VALUE)
+            .addComponent(configuationsRebuild, javax.swing.GroupLayout.DEFAULT_SIZE, 234, Short.MAX_VALUE)
             .addComponent(suns2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(streams2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(minerals2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
@@ -583,7 +606,9 @@ public class Settings extends javax.swing.JPanel {
         jPanel.setLayout(jPanelLayout);
         jPanelLayout.setHorizontalGroup(
             jPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(tableLists)
+            .addGroup(jPanelLayout.createSequentialGroup()
+                .addComponent(tableLists, javax.swing.GroupLayout.DEFAULT_SIZE, 234, Short.MAX_VALUE)
+                .addContainerGap())
         );
         jPanelLayout.setVerticalGroup(
             jPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)

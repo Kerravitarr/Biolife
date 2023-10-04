@@ -4,8 +4,10 @@
  */
 package Utils;
 
+import Calculations.Configurations;
 import Calculations.Point;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,8 @@ import java.util.Map;
  *	public static <T extends BASE> JSON serialization(T object){return BUILDER.serialization(object);}
  * Для возврата параметров потока, которые можно крутить
  *	public List<ClassBuilder.EditParametr> getParams(){return BUILDER.get(this.getClass()).getParams();}
+ * Для возврата всех строителей - строителей всех детей
+ *	public static List<ClassBuilder> getChildrens(){return BUILDER.getChildrens();}
  * 
  * Собственно с базовым классом всё.
  * Теперь перейдём к потомку.
@@ -305,6 +309,10 @@ public abstract class ClassBuilder <T>{
 		 * @param value сохраняемое значение
 		 */
 		public void setValue(P value){this.value = value;}
+		@Override
+		public String toString() {
+			return "Параметр для " + value.getClass().getName();
+		}
 	}
 
 	/**Параметр типа Да/Нет*/
@@ -364,6 +372,8 @@ public abstract class ClassBuilder <T>{
 	public static abstract class Constructor<CT>{
 		/**Параметры конструктора, которые можно менять по своему желанию*/
 		private final List<ConstructorParametr<?,CT>> _params = new ArrayList<>();
+		/**Класс, который мы строим. Перменная задаётся тут, внутри ClassBuilder*/
+		private Class<CT> classGenerate;
 		/**Строит и возвращает текущий объект по конструктору
 		 * Для удобства нужно воспользоваться функцией getParam
 		 * @return объект, который надо сконструировать
@@ -511,6 +521,19 @@ public abstract class ClassBuilder <T>{
 			else if(cls.equals(Point.Vector[].class)) return (T) getParam_( index,ClassBuilder.Abstract2VectorConstructorParam.class);
 			else throw new ClassCastException("Невозможно получить параметр типа " + cls);
 		}
+		/**
+		 * Возвращает все параметры конструктора
+		 * @return список параметров, которые надо заполнить и по которым можно построить объект
+		 */
+		public List<ConstructorParametr<?, CT>> getParams(){return _params;};
+		@Override
+		public String toString() {
+			final var name = name();
+			if(name.isEmpty())
+				return Configurations.getProperty(classGenerate, "constructor.name");
+			else
+				return Configurations.getProperty(classGenerate, String.format("constructor.%s.name", name));
+		}
 	}
 	/**Класс для постройки объектов */
 	public static class StaticBuilder<CT>{
@@ -518,6 +541,8 @@ public abstract class ClassBuilder <T>{
 		private final Map<String, ClassBuilder<? extends CT>> OBJECTS_BY_NAME = new HashMap<>();
 		/**Все объекты сереализации по реальному классу*/
 		private final Map<Class<?>, ClassBuilder<? extends CT>> OBJECTS_BY_CLASS = new HashMap<>();
+		/**И просто список всех объектов*/
+		private final List<ClassBuilder> OBJECTS_LIST = new ArrayList<>();
 		
 		/** * Регистрирует наследника как одного из возможных дочерних классов.То есть регистрирует объект, через который можно создавать любых наследников
 		 * @param <T> любой класс наследник текущего
@@ -532,6 +557,7 @@ public abstract class ClassBuilder <T>{
 				throw new IllegalArgumentException("Объект класса " + object.printName() + " уже зарегистрирован");
 			else
 				OBJECTS_BY_CLASS.put(object.printName(), object);
+			OBJECTS_LIST.add(object);
 		}
 		
 		/** * Возвращает построитель объекта по его классу
@@ -567,6 +593,10 @@ public abstract class ClassBuilder <T>{
 			json.add("_serializerName", builder.serializerName());
 			return json;
 		}
+		/**Возвращает список всех детей.
+		 * @return список построителей для всех наследников
+		 */
+		public List<ClassBuilder> getChildrens() {return OBJECTS_LIST;}
 	}
 	
 	/**Параметры объекта, которые можно менять по своему желанию*/
@@ -647,7 +677,10 @@ public abstract class ClassBuilder <T>{
 	 * Добавляет конструктор объекта. Таких конструкторов может быть сколько угодно
 	 * @param constructor конструктор объекта, который может создать новый объект
 	 */
-	public void addConstructor(Constructor<T> constructor){_constructors.add(constructor);}
+	public void addConstructor(Constructor<T> constructor) {
+		constructor.classGenerate = printName();
+		_constructors.add(constructor);
+	}
 	
 	/**Создаёт объект из предложенных параметров.
 	 * Главное не забыть в конструкторе вызвать конструктор родителя с такими параметрами!
@@ -666,4 +699,11 @@ public abstract class ClassBuilder <T>{
 	 * @return список со всеми праметрами
 	 */
 	public List<EditParametr> getParams(){return _params;};
+	/**Возвращает список всех конструкторов этого объекта
+	 * @return список со всеми пконструкторами объекта
+	 */
+	public List<Constructor> getConstructors(){return _constructors;};
+	
+	@Override
+	public String toString(){return Configurations.getProperty(printName(),"name");}
 }

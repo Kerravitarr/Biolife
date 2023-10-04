@@ -12,6 +12,7 @@ import Utils.JSON;
 import java.awt.Graphics2D;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,11 +50,11 @@ public class Trajectory{
 			{
 				addParam(new ClassBuilder.MapPointConstructorParam(){
 					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
-					@Override public String name() {return "constructor.parametr";}
+					@Override public String name() {return "center";}
 				});
 			}
 			@Override public Trajectory build() {return new Trajectory(getParam(Point.class));}
-			@Override public String name() {return "constructor.name";}
+			@Override public String name() {return "";}
 		});
 		Trajectory.register(builder);
 	}
@@ -154,6 +155,11 @@ public class Trajectory{
 	 * @return JSON объект или null, если такой класс не зарегистрирован у нас
 	 */
 	public static <T extends Trajectory> JSON serialization(T object){return TRAJECTORIES.serialization(object);}
+	/** * Возвращает всех возможных подклассов текущего
+	 * Самое главное, чтобы эти объекты были ранее зарегистрированы в этом классе
+	 * @return список из которого можно можно создать всех деток
+	 */
+	public static List<ClassBuilder> getChildrens(){return TRAJECTORIES.getChildrens();}
 
 	/**Рисует объект на экране
 	 * @param g холст, на котором надо начертить солнышко

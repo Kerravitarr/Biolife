@@ -4,9 +4,9 @@
  */
 package Calculations;
 
-import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
+import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -16,14 +16,95 @@ import java.awt.RadialGradientPaint;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Эллипсоидная залежа минералов
  * @author Kerravitarr
  */
 public class MineralEllipse extends MineralAbstract {
+	static{
+		final var builder = new ClassBuilder<MineralEllipse>(){
+			@Override public MineralEllipse generation(JSON json, long version){return new MineralEllipse(json, version);}
+			@Override public JSON serialization(MineralEllipse object) { return object.toJSON();}
+
+			@Override public String serializerName() {return "Эллипс";}
+			@Override public Class printName() {return MineralEllipse.class;}
+
+		};
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,MineralEllipse>("a2",0,0,0,0,null) {
+			@Override public Integer get(MineralEllipse who) {return who.a2;}
+			@Override public void setValue(MineralEllipse who, Integer value) {who.setA2(value);}
+			@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+		});
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,MineralEllipse>("b2",0,0,0,0,null) {
+			@Override public Integer get(MineralEllipse who) {return who.b2;}
+			@Override public void setValue(MineralEllipse who, Integer value) {who.setB2(value);}
+			@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+			@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+		});
+		final var power = new ClassBuilder.NumberConstructorParamAdapter("power",1,30,200,1,null);
+		final var attenuation = new ClassBuilder.NumberConstructorParamAdapter("attenuation",0d,0d,30d,0d,null){
+			@Override public Double getDefault() {return Configurations.confoguration.DIRTY_WATER;}
+		};
+		final var center = new ClassBuilder.MapPointConstructorParam(){
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "center";}
+				};
+		final var name = new ClassBuilder.StringConstructorParam(){
+				@Override public Object getDefault() {return "Залеж";}
+				@Override public String name() { return "name";}
+			};
+		final var isLine = new ClassBuilder.BooleanConstructorParam(){
+				@Override public Object getDefault() {return false;}
+				@Override public String name() { return "isLine";}
+
+			};
+		builder.addConstructor(new ClassBuilder.Constructor<MineralEllipse>(){
+			{
+				addParam(power);
+				addParam(attenuation);
+				addParam(center);
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("a2",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getWidth()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
+				});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("b2",0,0,0,0,null){
+					@Override public Integer getDefault() {return Configurations.getHeight()/2;}
+					@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
+				});
+				addParam(isLine);
+				addParam(name);
+			}
+
+			@Override
+			public MineralEllipse build() {
+				return new MineralEllipse(getParam(0,Integer.class),getParam(1,Double.class),new Trajectory(getParam(2,Point.class)),  getParam(3,Integer.class), getParam(4,Integer.class), getParam(5,Boolean.class), getParam(6,String.class));
+			}
+			@Override public String name() {return "ellipse.name";}
+		});
+		builder.addConstructor(new ClassBuilder.Constructor<MineralEllipse>(){
+			{
+				addParam(power);
+				addParam(attenuation);
+				addParam(center);
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("r",0,0,0,0,null){
+					@Override public Integer getDefault() {return Math.min(Configurations.getWidth(),Configurations.getHeight())/2;}
+					@Override public Integer getSliderMaximum() {return Math.min(Configurations.getWidth(),Configurations.getHeight());}
+				});
+				addParam(isLine);
+				addParam(name);
+			}
+
+			@Override
+			public MineralEllipse build() {
+				return new MineralEllipse(getParam(0,Integer.class),getParam(1,Integer.class),new Trajectory(getParam(2,Point.class)),  getParam(3,Integer.class), getParam(4,Boolean.class), getParam(5,String.class));
+			}
+			@Override public String name() {return "circle.name";}
+		});
+		MineralAbstract.register(builder);
+	}
+	
 	/**Большая ось эллипса - лежит на оси Х*/
 	private int a2;
 	/**Большая полуось эллипса, лежит на оси X*/
@@ -51,7 +132,7 @@ public class MineralEllipse extends MineralAbstract {
 		setA2(a2);
 		setB2(b2);
 	}
-	protected MineralEllipse(JSON j, long v) throws GenerateClassException{
+	protected MineralEllipse(JSON j, long v){
 		super(j,v);
 		setA2(j.get("a2"));
 		setB2(j.get("b2"));
@@ -127,30 +208,6 @@ public class MineralEllipse extends MineralAbstract {
 				return Math.max(0, power - getAttenuation() * dist);
 			}
 		}
-	}
-	public List<ParamObject> getParams(){
-		final java.util.ArrayList<Utils.ParamObject> ret = new ArrayList<ParamObject>(2);
-		ret.add(new ParamObject("a2", 2,Configurations.getWidth(),2,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				setA2(((Number) value).intValue());
-			}
-			@Override
-			protected Object get() {
-				return a2;
-			}
-		});
-		ret.add(new ParamObject("b2", 2,Configurations.getHeight(),2,null){
-			@Override
-			public void setValue(Object value) throws ClassCastException {
-				setB2(((Number) value).intValue());
-			}
-			@Override
-			protected Object get() {
-				return b2;
-			}
-		});
-		return ret;
 	}
 	@Override
 	protected void move() {}

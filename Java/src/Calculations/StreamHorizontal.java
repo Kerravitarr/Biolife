@@ -24,7 +24,7 @@ public class StreamHorizontal extends StreamAbstract {
 			@Override public JSON serialization(StreamHorizontal object) { return object.toJSON();}
 
 			@Override public String serializerName() {return "Горизонтальный";}
-			@Override public Class printName() {return StreamVertical.class;}
+			@Override public Class printName() {return StreamHorizontal.class;}
 
 		};
 		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,StreamHorizontal>("width",0,0,0,0,null){

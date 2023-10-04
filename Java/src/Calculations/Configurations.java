@@ -53,7 +53,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 
 	//Разные глобальные объекты, отвечающие за мир
 	/**Текущая конфигруация мира*/
-	public static Configurations confoguration = null;
+	public static Configurations confoguration = new Configurations(WORLD_TYPE.LINE_H, 1, 1);
 	/**Гравитация в созданном мире. */
 	public static Gravitation[] gravitation = new Gravitation[CellObject.LV_STATUS.length];
 	/**Глобальный мир!*/
@@ -240,19 +240,17 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			DIRTY_WATER = configWorld.get("DIRTY_WATER");
 			for(final var j : configWorld.getAJ("SUNS")){
 				try {
-					suns.add(SunAbstract.generate(j, version));
-				} catch (GenerateClassException ex) {
+					suns.add(SunAbstract.generation(j, version));
+				} catch (NullPointerException ex) {
 					logger.log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-					ex.addMsg(getProperty(this.getClass(),"loadSerror",j.toBeautifulJSONString()));
 					throw ex;
 				}					
 			}
 			for(final var j : configWorld.getAJ("MINERALS")){
 				try {
-					minerals.add(MineralAbstract.generate(j, version));
-				} catch (GenerateClassException ex) {
+					minerals.add(MineralAbstract.generation(j, version));
+				} catch (NullPointerException ex) {
 					logger.log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-					ex.addMsg(getProperty(this.getClass(),"loadMerror",j.toBeautifulJSONString()));
 					throw ex;
 				}
 			}
@@ -279,9 +277,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		configWorld.add("TIK_TO_EXIT", TIK_TO_EXIT);
 		configWorld.add("DIRTY_WATER", DIRTY_WATER);
 		configWorld.add("WORLD_TYPE", world_type);
-		configWorld.add("SUNS", suns.stream().map(s -> s.toJSON()).toList());
-		configWorld.add("MINERALS", minerals.stream().map(s -> s.toJSON()).toList());
-		configWorld.add("STREAMS", streams.stream().map(s -> s.toJSON()).toList());
+		configWorld.add("SUNS", suns.stream().map(s -> SunAbstract.serialization(s)).toList());
+		configWorld.add("MINERALS", minerals.stream().map(s -> MineralAbstract.serialization(s)).toList());
+		configWorld.add("STREAMS", streams.stream().map(s -> StreamAbstract.serialization(s)).toList());
 		final var gj = new JSON();
 		for (int i = 0; i < gravitation.length; i++) {
 			gj.add(CellObject.LV_STATUS.values[i].name(), gravitation[i].toJSON());

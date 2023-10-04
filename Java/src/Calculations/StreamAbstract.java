@@ -101,7 +101,7 @@ public abstract class StreamAbstract{
 		j.add("position",position.toJSON());
 		j.add("name",name);
 		j.add("shadow",shadow.toJSON());
-		j.add("move", move.toJSON());
+		j.add("move", Trajectory.serialization(move));
 		return j;
 	}
 	

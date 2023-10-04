@@ -29,22 +29,22 @@ public class TrajectoryPolyLine extends Trajectory{
 		};
 		builder.addConstructor(new ClassBuilder.Constructor<TrajectoryPolyLine>(){
 			{
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("constructor.speed", 0,500,1000,0,null));
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("speed", 0,500,1000,0,null));
 				addParam(new ClassBuilder.BooleanConstructorParam(){
 					@Override public Object getDefault() {return false;}
-					@Override public String name() {return "constructor.isJamp";}
+					@Override public String name() {return "isJamp";}
 					
 				});
 				addParam(new ClassBuilder.MapPointVectorConstructorParam(){
-					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
-					@Override public String name() {return "constructor.points";}
+					@Override public Point[] getDefault() {return new Point[]{Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2)};}
+					@Override public String name() {return "points";}
 				});
 			}
 			@Override
 			public TrajectoryPolyLine build() {
 				return new TrajectoryPolyLine(getParam(0,Integer.class),getParam(1,Boolean.class),getParam(2,Point[].class));
 			}
-			@Override public String name() {return "constructor.name";}
+			@Override public String name() {return "";}
 		});
 		Trajectory.register(builder);
 	}
