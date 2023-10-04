@@ -58,13 +58,15 @@ public class Reflector {
                 try {
                     final var add = packageName.isEmpty() ? Class.forName(classFile.substring(0, classFile.length() - 6)) : Class.forName(packageName + '.' + classFile.substring(0, classFile.length() - 6));
                     var clP = add;
+					var oldclP = clP;
 					do{
+						oldclP = clP;
 						if (who.isAssignableFrom(clP)){
 							ret.add((Class<? extends T>) add);
 							break;
 						}
-					}while((clP = add.getSuperclass()) != Object.class);
-                } catch (NoClassDefFoundError e) {
+					}while((clP = add.getSuperclass()) != oldclP && clP != null);
+                } catch (java.lang.ExceptionInInitializerError | NoClassDefFoundError e) {
 					Logger.getLogger(Reflector.class.getName()).log(Level.SEVERE, "Не смогли загрзуть класс [" + classFile + "], хотя нашли его, что очень странно", e);
                 } catch (ClassNotFoundException e) {
 					Logger.getLogger(Reflector.class.getName()).log(Level.SEVERE, "Не смогли найти класс [" + classFile + "], что очень странно", e);

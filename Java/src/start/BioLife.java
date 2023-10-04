@@ -50,6 +50,8 @@ public class BioLife{
 				optsStr += String.format("-%s%s ",i.getKey(), i.getValue());
 			System.out.println("Опции находятся в допустимых пределах. Параметры запуска: " + optsStr);
 		}
+		//Рефлексия нужна, чтобы отработали статические методы даже в тех классах, на которые нет пути отсюда, из этой точки старта.
+		Utils.Reflector.getClassesByClasses(BioLife.class);
 		//Создаём мир
 		final var defType = Configurations.WORLD_TYPE.RECTANGLE;
 		final var load = _opts.get('L').get(String.class);
