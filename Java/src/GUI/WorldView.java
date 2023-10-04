@@ -73,7 +73,7 @@ public class WorldView extends javax.swing.JPanel {
 		* @param r размер объекта в клетках мира
 		* @return радиус объекта в пикселях
 		*/
-		public int toScrin(int r) {return (int) Math.round(r * scalePxPerCell) ;}
+		public int toScrin(int r) {return (int) Math.max(1l, Math.round(r * scalePxPerCell)) ;}
 	   /**
 		* Переводит координаты экрана в координаты мира
 		* @param x координата на экране
@@ -318,9 +318,9 @@ public class WorldView extends javax.swing.JPanel {
 		Configurations.streams.forEach(s -> s.paint(g,getTransform()));
 		if(edit){
 			//А теперь, ещё выше, рисуем все траектории
-			Configurations.suns.forEach(s -> s.getTrajectory().paint(g,getTransform()));
-			Configurations.minerals.forEach(s -> s.getTrajectory().paint(g,getTransform()));
-			Configurations.streams.forEach(s -> s.getTrajectory().paint(g,getTransform()));
+			//Configurations.suns.forEach(s -> s.getTrajectory().paint(g,getTransform()));
+			//Configurations.minerals.forEach(s -> s.getTrajectory().paint(g,getTransform()));
+			//Configurations.streams.forEach(s -> s.getTrajectory().paint(g,getTransform()));
 		}
 		
 		//Рисуем всё остальное
