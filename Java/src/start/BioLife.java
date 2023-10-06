@@ -53,7 +53,7 @@ public class BioLife{
 		//Рефлексия нужна, чтобы отработали статические методы даже в тех классах, на которые нет пути отсюда, из этой точки старта.
 		Utils.Reflector.getClassesByClasses(BioLife.class);
 		//Создаём мир
-		final var defType = Configurations.WORLD_TYPE.RECTANGLE;
+		final var defType = Configurations.WORLD_TYPE.FIELD_R;
 		final var load = _opts.get('L').get(String.class);
 		if(!_opts.get('V').get(Boolean.class)){
 			//С графической частью

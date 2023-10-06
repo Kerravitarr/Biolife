@@ -203,6 +203,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		switch (Configurations.confoguration.world_type) {
 			case LINE_H,RECTANGLE -> adam.setPos(Point.create(Configurations.getWidth()/2, 0));
 			case LINE_V -> adam.setPos(Point.create(Configurations.getWidth()*3/4, Configurations.getHeight()/2));
+			case FIELD_R -> adam.setPos(Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2));
 			default -> throw new AssertionError();
 		}
 		add(adam);

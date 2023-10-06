@@ -160,6 +160,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		 switch (type) {
 			case LINE_H,LINE_V -> DIRTY_WATER =  30d / (height * 0.33);
 			case RECTANGLE -> DIRTY_WATER =  30d / (Math.min(height, width) * 0.5); //Чтобы освещалась половина мира
+			case FIELD_R -> DIRTY_WATER = 0; //Чтобы освещался весь мир
 			default -> throw new AssertionError();
 		}
 		
@@ -400,6 +401,21 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 						true,"Путешествующий источник минералов"));
 				*/
 			}
+			case FIELD_R -> {
+				buildMap(new Configurations(type, width, height), null);
+				//Солнце тут будет одно, причём, всегда - день
+				suns.add(new SunEllipse(20, new Trajectory(Point.create(width/2, height/2)), 10, true,"Солнце"));
+				//Четыре нычки минералов двигающихся внутри потоков
+				final var atten = 30d / (Math.min(height, width) * 0.2);
+				final var size = Math.min(height, width) / 10;
+				final var T1 = new TrajectoryPolyLine(1000,false,
+								Point.create(0, 0), Point.create(width, 0), Point.create(width, height), Point.create(0, height), Point.create(0, 0),
+								Point.create(width*1/3, height*1/3), Point.create(width*2/3, height*1/3), Point.create(width*2/3, height*2/3), Point.create(width*1/3, height*2/3), Point.create(width*1/3, height*1/3)
+						);
+				minerals.add(new MineralEllipse(30,atten,T1, size, false,"1"));
+				streams.add(new StreamEllipse(T1, (int) (size + 30 * 2 / atten),new StreamAttenuation.PowerFunctionStreamAttenuation(3, 10,4),"1"));
+				streams.add(new StreamSwirl(T1,  (int) (size + 30 * 2 / atten ), new StreamAttenuation.PowerFunctionStreamAttenuation(-3, -10,4),"1"));
+			}
 			default -> throw new AssertionError();
 		}
 		//И конечно создаём адама.
@@ -445,9 +461,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public static Configurations getDefaultConfiguration(WORLD_TYPE type){
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
 		final var ret =  switch (type) {
-			case LINE_H -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
-			case LINE_V -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
-			case RECTANGLE -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
+			case LINE_H,RECTANGLE -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
+			case LINE_V,FIELD_R -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
 			default ->throw new AssertionError();
 		};
 		return ret;
@@ -600,6 +615,21 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			System.err.println(err);
 			return err;
 		}
+	}
+	/**Проверяет - существует такая локализованная строка или нет
+	 * @param cls - класс, в котором эта строка находится
+	 * @param name - ключ
+	 * @return true, если такой ключ существует
+	 */
+	public static boolean isHasPropery(Class<?> cls, String name){
+		return isHasPropery(MessageFormat.format("{0}.{1}", cls.getTypeName(),name));
+	}
+	/**Проверяет - существует такая локализованная строка или нет
+	 * @param name полное название ключа
+	 * @return true, если такой ключ существует
+	 */
+	public static boolean isHasPropery(String name){
+		return bundle.containsKey(name);
 	}
 	
 	/**
