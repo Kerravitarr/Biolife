@@ -5,8 +5,11 @@
 package GUI;
 
 import Calculations.Configurations;
+import Calculations.Point;
 import Utils.ClassBuilder;
+import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,8 +130,8 @@ public class SettingsMake extends java.awt.Dialog {
     }//GEN-LAST:event_selectTypeActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
-        jPanel1.updateUI();
-		jPanel2.updateUI();
+       	jPanel2.updateUI();
+		jPanel1.updateUI();
     }//GEN-LAST:event_formWindowOpened
 
     private void selectConstructorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectConstructorActionPerformed
@@ -137,7 +140,9 @@ public class SettingsMake extends java.awt.Dialog {
 			final var constructor = (ClassBuilder.Constructor) selectConstructor.getSelectedItem();
 			paramPanel.removeAll();
 			for(final var param : constructor.getParams()){
-				paramPanel.add(addPanel(type.printName(),constructor.name(),(ClassBuilder.ConstructorParametr) param));
+				final var panel = addPanel(type.printName(),constructor.name(),(ClassBuilder.ConstructorParametr) param);
+				panel.setAlignmentX(0);
+				paramPanel.add(panel);
 			}
 			paramPanel.updateUI();
 		}).start();
@@ -155,48 +160,134 @@ public class SettingsMake extends java.awt.Dialog {
 	/**Создаёт и добавляет панель с нужными параметрами
 	 * @param param 
 	 */
-	private javax.swing.JPanel addPanel(final Class<?> clr,final String constructorName, ClassBuilder.ConstructorParametr param) {
-		final String parametrName;
-		if(constructorName.isEmpty())
-			parametrName = String.format("constructor.parameter.%s", param.name());
-		else
-			parametrName = String.format("constructor.%s.parameter.%s", constructorName,param.name());
+	private javax.swing.JPanel addPanel(Class<?> clr,final String constructorName, ClassBuilder.ConstructorParametr param) {
+		final String parametrFullName;
+		if (param.name().startsWith("super.")) {
+			parametrFullName = String.format("constructor.parameter.%s", param.name().substring(6));
+			//А теперь ищем по суперклассу
+			var now = clr;
+			Class<?> old;
+			do{
+				old = now;
+				if(Configurations.isHasPropery(now,parametrFullName + ".L")){
+					clr = now;
+					break;
+				}
+			} while((now = now.getSuperclass()) != old && now != null);
+		} else if (param.name().startsWith("constructor.")) {
+			parametrFullName = String.format("constructor.parameter.%s", param.name().substring(12));
+		} else if (constructorName.isEmpty()) {
+			parametrFullName = String.format("constructor.parameter.%s", param.name());
+		} else {
+			parametrFullName = String.format("constructor.%s.parameter.%s", constructorName, param.name());
+		}
+
+		param.setValue(param.getDefault());
 		if(param instanceof Utils.ClassBuilder.BooleanConstructorParam<?> np){
-			return new SettingsBoolean(clr,parametrName, np.getDefault(), e -> {np.setValue(e);});
+			return new SettingsBoolean(clr,parametrFullName, np.getDefault(), e -> {np.setValue(e);});
 		} else if(param instanceof Utils.ClassBuilder.StringConstructorParam<?> np){
-			return new SettingsString(clr,parametrName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);});
+			return new SettingsString(clr,parametrFullName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);});
 		} else if(param instanceof Utils.ClassBuilder.NumberConstructorParam<?,?> np_){
 			final var npn = (Utils.ClassBuilder.NumberConstructorParam<? extends Number,?>) np_;
 			final var def = npn.getDefault().getClass();
 			if(def.equals(Integer.class)){
 				final var np = (Utils.ClassBuilder.NumberConstructorParam<Integer,?>) npn;
-				return new SettingsSlider<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
+				return new SettingsSlider<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
 					np.setValue( e);
 				});
 			} else if(def.equals(Double.class)){
 				final var np = (Utils.ClassBuilder.NumberConstructorParam<Double,?>) npn;
-				return new SettingsSlider<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
+				return new SettingsSlider<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
 					np.setValue( e);
 				});
 			} 
 		} else if(param instanceof Utils.ClassBuilder.MapPointConstructorParam<?> np){
-			return new SettingsPoint(clr,parametrName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);});
+			return new SettingsPoint(clr,parametrFullName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);});
 		} else if(param instanceof Utils.ClassBuilder.MapPointVectorConstructorParam<?> np){
 			final var panel = new javax.swing.JPanel();
 			final var def = np.getDefault()[0];
 			panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
-			/*final var points = new ArrayList<Calculations.Point>();
-			final var newP = new javax.swing.JButton(Configurations.getHProperty(SettingsMake.class, "newPoint.L"));
-			newP.setToolTipText(Configurations.getHProperty(Settings.class, "newPoint.T"));
-			newP.addActionListener( e -> {
-				final var set = new SettingsPoint(clr, parametrName, def, def, p -> {
-					points.add(p);
-				});
-				panel.add(set);
-			});*/
+			final var points = new ArrayList<Calculations.Point>();
+			points.add(def);
+			final var selectPoint = new int[1];
+			selectPoint[0] = 0;
+			
+			build(clr, parametrFullName,panel,np,points,selectPoint);
+			return panel;
 		}
-		
 		throw new AssertionError("Нет у нас реализации для " + String.valueOf(param));
+	}
+
+	private void build(final Class<?> clr, final String parametrName, javax.swing.JPanel panel, Utils.ClassBuilder.MapPointVectorConstructorParam<?> np, List<Calculations.Point> points, int[] selectPoint) {
+		final var def = np.getDefault()[0];
+		np.setValue(points.toArray(Point[]::new));
+		panel.removeAll();
+		for (int i = 0; i < points.size(); i++) {
+			final var nowIndex = i;
+			final var get = points.get(i);
+			final var panelPoint = new javax.swing.JPanel();
+			panelPoint.setLayout(new javax.swing.BoxLayout(panelPoint, javax.swing.BoxLayout.X_AXIS));
+			if(i == selectPoint[0]){
+				final var settings = new SettingsPoint(clr,parametrName, def,get, e -> {
+					points.set(nowIndex, e);
+					build(clr, parametrName,panel,np,points,selectPoint);
+				});
+				settings.setAlignmentX(0);
+				panelPoint.add(settings);
+			} else {
+				final var label = new javax.swing.JLabel(get.toString());
+				label.setToolTipText(Configurations.getHProperty(SettingsMake.class, "MapPointVectorConstructorParam.label"));
+				label.addMouseListener(new java.awt.event.MouseAdapter() {
+						@Override public void mouseClicked(MouseEvent e) {
+							selectPoint[0] = nowIndex;
+							build(clr, parametrName,panel,np,points,selectPoint);
+						}
+				});
+				label.setAlignmentX(0);
+				panelPoint.add(javax.swing.Box.createRigidArea(new Dimension(5,0))); //Отступ
+				panelPoint.add(label);
+			}
+			final var panelBottom = new javax.swing.JPanel();
+			panelBottom.setLayout(new javax.swing.BoxLayout(panelBottom, javax.swing.BoxLayout.X_AXIS));
+			final var butSize = new Dimension(20,15);
+			panelBottom.setSize(butSize.width*2, butSize.height);
+			if(points.size() > 1){
+				final var remBut = new javax.swing.JButton("-");
+				remBut.setPreferredSize(butSize);
+				remBut.setMinimumSize(butSize);
+				remBut.setToolTipText(Configurations.getHProperty(SettingsMake.class, "MapPointVectorConstructorParam.remove.L"));
+				remBut.setContentAreaFilled(false);
+				remBut.setMargin(new java.awt.Insets(0,3,0,3));
+				remBut.addActionListener(e -> {
+					points.remove(get);
+					if(selectPoint[0] >= nowIndex && selectPoint[0] > 0){
+						selectPoint[0]--;
+					}
+					build(clr, parametrName,panel,np,points,selectPoint);
+				});
+				panelBottom.add(remBut);
+			}
+			final var addBut = new javax.swing.JButton("+");
+			addBut.setPreferredSize(butSize);
+			addBut.setMinimumSize(butSize);
+			addBut.setToolTipText(Configurations.getHProperty(SettingsMake.class, "MapPointVectorConstructorParam.add.L"));
+			addBut.setContentAreaFilled(false);
+			addBut.setMargin(new java.awt.Insets(0,2,0,2));
+			addBut.addActionListener(e -> {
+				points.add(nowIndex+1, def);
+				selectPoint[0] = nowIndex + 1;
+				build(clr, parametrName,panel,np,points,selectPoint);
+			});
+			panelBottom.add(addBut);
+			
+			panelBottom.setAlignmentX(0);
+			panelPoint.add(javax.swing.Box.createHorizontalGlue()); //Связующее звено, чтобы точка писалась сбоку
+			panelPoint.add(panelBottom);
+			
+			panelPoint.setAlignmentX(0);
+			panel.add(panelPoint);
+		}
+		panel.updateUI();
 	}
 	/**Возвращает построенный объект
 	 * @param <T>
