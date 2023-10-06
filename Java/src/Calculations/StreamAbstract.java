@@ -18,9 +18,9 @@ import java.util.List;
  * Поток жидкости
  *
  */
-public abstract class StreamAbstract{
+public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 	/**Траектория движения*/
-	private final Trajectory move;
+	private Trajectory move;
 	/**Позиция центра потока*/
 	protected Point position;
 	/**способ уменьшения мощности потока от расстояния*/
@@ -49,8 +49,7 @@ public abstract class StreamAbstract{
 	 * @param name имя этого поткоа, то, что его отличает от дргих
 	 */
 	protected StreamAbstract(Trajectory move, StreamAttenuation s,  String name) {
-		this.move = move;
-		position = move.start();
+		set(move);
 		shadow = s;
 		this.name = name;
 	}
@@ -71,9 +70,8 @@ public abstract class StreamAbstract{
 
 	/**Этот метод будет вызываться каждый раз, когда изменится местоположение объекта*/
 	protected abstract void move();
-	/**Шаг мира для пересчёта
-	 * @param step номер шага мира
-	 */
+
+	@Override
 	public void step(long step) {
 		if(move != null && move.isStep(step)){
 			position = move.nextPosition();
@@ -92,6 +90,13 @@ public abstract class StreamAbstract{
 	 * @param isS если true, то излучатель будет подмигивать прозрачностью
 	 */
 	public void setSelect(boolean isS){isSelected = isS;}
+	@Override
+	public Trajectory getTrajectory(){return move;}
+	@Override
+	public final void set(Trajectory trajectory){
+		move = trajectory;
+		position = move.start();
+	}
 	
 	/**Превращает текущий объект в объект его описания
 	 * @return объект описания. По нему можно гарантированно восстановить исходник
@@ -130,6 +135,11 @@ public abstract class StreamAbstract{
 	 * @return список параметров объекта
 	 */
 	public List<ClassBuilder.EditParametr> getParams(){return BUILDER.get(this.getClass()).getParams();}
+	/** * Возвращает всех возможных подклассов текущего
+	 * Самое главное, чтобы эти объекты были ранее зарегистрированы в этом классе
+	 * @return список из которого можно можно создать всех деток
+	 */
+	public static List<ClassBuilder> getChildrens(){return BUILDER.getChildrens();}
 	
 	
 	/**Рисует объект на экране
@@ -195,8 +205,4 @@ public abstract class StreamAbstract{
 	 * @param n как его теперь будут звать
 	 */
 	public void setName(String n){name = n;}
-	/**Возвращает траекторию движения потока
-	 * @return закон, по которому движется излучаетль
-	 */
-	public Trajectory getTrajectory(){return move;}
 }

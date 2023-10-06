@@ -9,9 +9,9 @@ import java.awt.Graphics2D;
  * @author Илья
  *
  */
-public abstract class DefaultEmitter {
+public abstract class DefaultEmitter implements Trajectory.HasTrajectory{
 	/**Траектория движения*/
-	private final Trajectory move;
+	private Trajectory move;
 	/**Позиция ткущая. Это условная позиция, наследник может с ней делать что угодно*/
 	protected Point position;
 	/**Наибольшая энергия*/
@@ -31,8 +31,6 @@ public abstract class DefaultEmitter {
 	/**Сколько мс должно пройти чтобы объект изменил параметр выбора*/
 	private static final long SELECT_PERIOD = 500;
 	
-	
-	
 	protected DefaultEmitter(JSON j, long v){
 		power = j.get("power");
 		name = j.get("name");
@@ -48,8 +46,7 @@ public abstract class DefaultEmitter {
 	 * @param isLine если true, то у нас излучает только поверхность, а если false - то излучает вся площадь
 	 */
 	public DefaultEmitter(double p, Trajectory move, String n, boolean isLine){
-		this.move = move;
-		position = move.start();
+		set(move);
 		power = p;
 		this.name = n;
 		this.isLine = isLine;
@@ -143,10 +140,14 @@ public abstract class DefaultEmitter {
 	 * @param isS если true, то излучатель будет подмигивать прозрачностью
 	 */
 	public void setSelect(boolean isS){isSelected = isS;}
-	/**Возвращает траекторию движения излучателя
-	 * @return закон, по которому движется излучаетль
-	 */
+	
+	@Override
 	public Trajectory getTrajectory(){return move;}
+	@Override
+	public final void set(Trajectory trajectory){
+		move = trajectory;
+		position = move.start();
+	}
 	/**Сохраняет имя излучателя
 	 * @param n как его теперь будут звать
 	 */

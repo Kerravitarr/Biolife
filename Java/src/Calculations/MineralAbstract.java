@@ -106,4 +106,9 @@ public abstract class MineralAbstract extends DefaultEmitter{
 	 * @return список параметров объекта
 	 */
 	public List<ClassBuilder.EditParametr> getParams(){return BUILDER.get(this.getClass()).getParams();}
+	/** * Возвращает всех возможных подклассов текущего
+	 * Самое главное, чтобы эти объекты были ранее зарегистрированы в этом классе
+	 * @return список из которого можно можно создать всех деток
+	 */
+	public static List<ClassBuilder> getChildrens(){return BUILDER.getChildrens();}
 }

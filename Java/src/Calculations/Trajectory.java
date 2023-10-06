@@ -22,6 +22,22 @@ import java.util.Map;
  * @author Kerravitarr
  */
 public class Trajectory{
+	/**Интерфейс, показывает, что объект содержит траекторию у себя*/
+	public interface HasTrajectory{
+		/**Возвращает текущую траекторию
+		 * @return траектория, по которой объект двигается сейчас
+		 */
+		public Trajectory getTrajectory();
+		/**Сохраняет новую траекторию для объекта
+		 * @param trajectory 
+		 */
+		public void set(Trajectory trajectory);
+		/**Шаг мира для пересчёта
+		* @param step номер шага мира
+		*/
+	   public void step(long step);
+	}
+	
 	/**Скорость объекта. Единица измерения: секунд на 1 шаг*/
 	private long speed;
 	/**Для неподвижных объектов, точка нахождения*/

@@ -6,7 +6,10 @@ package GUI;
 
 import Calculations.Configurations;
 import Calculations.Gravitation;
+import Calculations.MineralAbstract;
 import Calculations.Point;
+import Calculations.StreamAbstract;
+import Calculations.SunAbstract;
 import Calculations.Trajectory;
 import MapObjects.CellObject;
 import Utils.ClassBuilder;
@@ -14,6 +17,8 @@ import java.awt.Color;
 import java.awt.event.ComponentEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 
@@ -37,16 +42,36 @@ public class Settings extends javax.swing.JPanel {
 		borderClick(minerals, null);
 		borderClick(minerals2, null);
 		
-		rebuild();	
+		isNeedWarning = false;
+		Logger.getLogger(Settings.class.getName()).log(Level.WARNING, "Поправить настройки");
+		
+		rebuildEdit();	
+	}
+	/**перестраивает настрйоки*/
+	public void rebuild(){
+		 if(tableLists.getSelectedIndex() == 1){
+			 rebuildBuild();
+		 } else {
+			 rebuildEdit();
+		 }
 	}
 	/**Пересоздаёт все ползунки*/
-	public void rebuild(){
+	private void rebuildEdit(){
 		blinks.clear();
-		rebuildConfig();
+		rebuildEditConfig();
 		rebuildGravitation();
-		rebuildSuns();
-		rebuildMinerals();
-		rebuildStreams();
+		rebuildEditSuns();
+		rebuildEditMinerals();
+		rebuildEditStreams();
+	}
+	/**Пересоздаёт все ползунки*/
+	private void rebuildBuild(){
+		blinks.clear();
+		rebuildBuildConfig();
+		gravitations.removeAll();
+		rebuildBuildSuns();
+		rebuildBuildMinerals();
+		rebuildBuildStreams();
 	}
 	/**Режим работы настреок
 	 * @return true - тогда мы в режиме редактора карты. Не надо отображать клетки, инфу по боту и остальное
@@ -56,33 +81,11 @@ public class Settings extends javax.swing.JPanel {
 	}
 	
 	/**Пересоздаёт конфигурацию мира*/
-	private void rebuildConfig(){
+	private void rebuildEditConfig(){
 		configuationsNorm.removeAll();
 		configuationsRebuild.removeAll();
 			
 		final var dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
-		final var size = new SettingsPoint(Settings.class,"configuations.size", 
-				100, dc.MAP_CELLS.width, 1_000_000,Configurations.getWidth(),
-				100, dc.MAP_CELLS.height, 1_000_000,Configurations.getHeight(),  e -> {
-			Configurations.world.awaitStop();
-			Configurations.rebuildMap(new Configurations(Configurations.confoguration,Configurations.confoguration.world_type, e.x, e.y));
-			final var w = Configurations.getViewer().get(WorldView.class);
-			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
-		});
-	
-		final var wt = new SettingsSelect<>("configuations.WORLD_TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.confoguration.world_type, e -> {
-			Configurations.world.awaitStop();
-			Configurations.rebuildMap(new Configurations(Configurations.confoguration,e,Configurations.getWidth() , Configurations.getHeight()));
-			rebuild();
-			updateUI();
-			final var w = Configurations.getViewer().get(WorldView.class);
-			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
-		});
-		
-		size.setBackground(Color.red);
-		configuationsRebuild.add(size);
-		wt.setBackground(Color.red);
-		configuationsRebuild.add(wt);
 		//========================================================
 		
 		configuationsNorm.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "worldSize",Configurations.getWidth(),Configurations.getHeight())));
@@ -103,6 +106,47 @@ public class Settings extends javax.swing.JPanel {
 		//А теперь мы обновляем состояние ячеек
 		borderClick(configuationsNorm, null);
 		borderClick(configuationsNorm, null);
+	}
+	/**Пересоздаёт конфигурацию мира*/
+	private void rebuildBuildConfig(){
+		configuationsNorm.removeAll();
+		configuationsRebuild.removeAll();
+			
+		final var dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
+		final var size = new SettingsPoint(Settings.class,"configuations.size", 
+				100, dc.MAP_CELLS.width, 1_000_000,Configurations.getWidth(),
+				100, dc.MAP_CELLS.height, 1_000_000,Configurations.getHeight(),  e -> {
+			Configurations.world.awaitStop();
+			Configurations.rebuildMap(new Configurations(Configurations.confoguration,Configurations.confoguration.world_type, e.x, e.y));
+			final var w = Configurations.getViewer().get(WorldView.class);
+			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
+		});
+	
+		final var wt = new SettingsSelect<>("configuations.WORLD_TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.confoguration.world_type, e -> {
+			Configurations.world.awaitStop();
+			Configurations.rebuildMap(new Configurations(Configurations.confoguration,e,Configurations.getWidth() , Configurations.getHeight()));
+			rebuildBuild();
+			updateUI();
+			final var w = Configurations.getViewer().get(WorldView.class);
+			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
+		});
+		final var rebuild = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "configuations.rebuild.L"));
+		rebuild.setToolTipText(Configurations.getHProperty(Settings.class, "configuations.rebuild.T"));
+		rebuild.addActionListener( e -> {
+			Configurations.world.awaitStop();
+			Configurations.makeDefaultWord(Configurations.confoguration.world_type,Configurations.getWidth() , Configurations.getHeight());
+			rebuildBuild();
+			updateUI();
+			final var w = Configurations.getViewer().get(WorldView.class);
+			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
+		});
+		
+		size.setBackground(Color.red);
+		configuationsRebuild.add(size);
+		wt.setBackground(Color.red);
+		configuationsRebuild.add(wt);
+		rebuild.setBackground(Color.red);
+		configuationsRebuild.add(rebuild);
 		borderClick(configuationsRebuild, null);
 		borderClick(configuationsRebuild, null);
 	}
@@ -115,12 +159,13 @@ public class Settings extends javax.swing.JPanel {
 			final var buildGrav = Configurations.gravitation[i];
 			final var defDir = switch (Configurations.confoguration.world_type) {
 				case LINE_H,LINE_V,RECTANGLE -> Gravitation.Direction.DOWN;
+				case FIELD_R -> Gravitation.Direction.CENTER;
 				default -> throw new AssertionError();
 			};
 			final var defPower = switch (Configurations.confoguration.world_type) {
 				case LINE_H -> 2;
 				case LINE_V -> 100;
-				case RECTANGLE -> 1000;
+				case RECTANGLE,FIELD_R -> 1000;
 				default -> throw new AssertionError();
 			};
 			//Немного говнокода вам в копилочку.
@@ -187,8 +232,9 @@ public class Settings extends javax.swing.JPanel {
 		borderClick(gravitations, null);
 	}
 	/**Пересоздаёт звёзды*/
-	private void rebuildSuns(){
+	private void rebuildEditSuns(){
 		suns.removeAll();
+		suns2.removeAll();
 		for (int i = 0; i < Configurations.suns.size(); i++) {
 			if(i > 0)
 				suns.add(new JPopupMenu.Separator());
@@ -213,7 +259,10 @@ public class Settings extends javax.swing.JPanel {
 		}
 		borderClick(suns, null);
 		borderClick(suns, null);
-		
+	}
+	/**Пересоздаёт звёзды*/
+	private void rebuildBuildSuns(){
+		suns.removeAll();
 		suns2.removeAll();
 		
 		for (int i = 0; i < Configurations.suns.size(); i++) {
@@ -222,19 +271,18 @@ public class Settings extends javax.swing.JPanel {
 			final var sun = Configurations.suns.get(i);
 			suns2.add(new SettingsString(Settings.class,"object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
 			suns2.add(addBlink(sun.getSelect(), e->sun.setSelect(e)));
-			//Задать новую траекторию
-			suns2.add(addNewTrajectory(Trajectory.getChildrens()));
-			//final var tr = sun.getTrajectory();
-			//Изменить траекторию
-			//Задать новую звезду
+			suns2.add(addNew(sun, Trajectory.getChildrens()));
 			suns2.add(addRemove(Configurations.suns,sun));
 		}
+		suns2.add(new JPopupMenu.Separator());
+		suns2.add(addNew(Configurations.suns,SunAbstract.getChildrens()));
 		borderClick(suns2, null);
 		borderClick(suns2, null);
 	}
 	/**Пересоздаёт минералы*/
-	private void rebuildMinerals(){
+	private void rebuildEditMinerals(){
 		minerals.removeAll();
+		minerals2.removeAll();
 		final var dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
 		for (int i = 0; i < Configurations.minerals.size(); i++) {
 			if(i > 0)
@@ -262,7 +310,10 @@ public class Settings extends javax.swing.JPanel {
 		}
 		borderClick(minerals, null);
 		borderClick(minerals, null);
-		
+	}
+	/**Пересоздаёт минералы*/
+	private void rebuildBuildMinerals(){
+		minerals.removeAll();
 		minerals2.removeAll();
 		
 		for (int i = 0; i < Configurations.minerals.size(); i++) {
@@ -271,15 +322,18 @@ public class Settings extends javax.swing.JPanel {
 			final var mineral = Configurations.minerals.get(i);
 			minerals2.add(new SettingsString(Settings.class,"object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
 			minerals2.add(addBlink(mineral.getSelect(), e->mineral.setSelect(e)));
-			
+			minerals2.add(addNew(mineral, Trajectory.getChildrens()));
 			minerals2.add(addRemove(Configurations.minerals,mineral));
 		}
+		minerals2.add(new JPopupMenu.Separator());
+		minerals2.add(addNew(Configurations.minerals,MineralAbstract.getChildrens()));
 		borderClick(minerals2, null);
 		borderClick(minerals2, null);
 	}
 	/**Пересоздаёт потоки*/
-	private void rebuildStreams(){
+	private void rebuildEditStreams(){
 		streams.removeAll();
+		streams2.removeAll();
 		for (int i = 0; i < Configurations.streams.size(); i++) {
 			if(i > 0)
 				streams.add(new JPopupMenu.Separator());
@@ -298,7 +352,10 @@ public class Settings extends javax.swing.JPanel {
 		}
 		borderClick(streams, null);
 		borderClick(streams, null);
-		
+	}
+	/**Пересоздаёт потоки*/
+	private void rebuildBuildStreams(){
+		streams.removeAll();
 		streams2.removeAll();
 		
 		for (int i = 0; i < Configurations.streams.size(); i++) {
@@ -307,14 +364,12 @@ public class Settings extends javax.swing.JPanel {
 			final var stream = Configurations.streams.get(i);
 			streams2.add(new SettingsString(Settings.class,"object.editname", "Залеж", stream.toString(), e -> stream.setName(e)));
 			streams2.add(addBlink(stream.getSelect(), e->stream.setSelect(e)));
-			
-			final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.remove"));
-			remove.addActionListener( e -> {
-				Configurations.streams.remove(stream);
-				rebuildStreams();
-			});
-			streams2.add(remove);
+			streams2.add(addNew(stream, Trajectory.getChildrens()));
+			streams2.add(addRemove(Configurations.streams,stream));
 		}
+		streams2.add(new JPopupMenu.Separator());
+		streams2.add(addNew(Configurations.streams,StreamAbstract.getChildrens()));
+		
 		borderClick(streams2, null);
 		borderClick(streams2, null);
 	}
@@ -326,11 +381,11 @@ public class Settings extends javax.swing.JPanel {
 	 * @return объект кнопки, который нужно добавить на панель
 	 */
 	private <T> javax.swing.JButton addRemove(final List<T> list, final T object){
-		final var remove = new javax.swing.JButton(Configurations.getProperty(Settings.class, "object.parameter.remove.L"));
+		final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.remove.L"));
 		remove.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.remove.T"));
 		remove.addActionListener( e -> {
 			list.remove(object);
-			rebuild();
+			rebuildBuild();
 		});
 		return remove;
 	}
@@ -340,14 +395,38 @@ public class Settings extends javax.swing.JPanel {
 	 * @param object сам объект, траектория которого нас ну оооочень интересует
 	 * @return объект кнопки, который нужно добавить на панель
 	 */
-	private <T> javax.swing.JButton addNewTrajectory(final List<ClassBuilder> constructorList){
+	private javax.swing.JButton addNew(Trajectory.HasTrajectory o, final List<ClassBuilder> constructorList){
 		final var newT = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.newTrajectory.L"));
 		newT.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.newTrajectory.T"));
 		newT.addActionListener( e -> {
 			final var make = new SettingsMake(false, constructorList);
 			make.setBounds(newT.getLocationOnScreen().x, newT.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
 			make.setVisible(true);
-			rebuild();
+			final var ret = make.get(Trajectory.class);
+			if(ret != null)
+				o.set(ret);
+			rebuildBuild();
+		});
+		return newT;
+	}
+	
+	/**
+	 * Создаёт кнопку генерации новой траектории для объекта
+	 * @param <T>
+	 * @param list уже существующие объекты
+	 * @return объект кнопки, который нужно добавить на панель
+	 */
+	private <T> javax.swing.JButton addNew(final List<T> list, final List<ClassBuilder> constructorList){
+		final var newT = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.newObject.L"));
+		newT.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.newObject.T"));
+		newT.addActionListener( e -> {
+			final var make = new SettingsMake(false, constructorList);
+			make.setBounds(newT.getLocationOnScreen().x, newT.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
+			make.setVisible(true);
+			final var ret = (T) make.get(Object.class);
+			if(ret != null)
+				list.add(ret);
+			rebuildBuild();
 		});
 		return newT;
 	}
@@ -640,6 +719,7 @@ public class Settings extends javax.swing.JPanel {
 				i.setValue(false);
 			}
 		}
+		rebuild();
     }//GEN-LAST:event_tableListsMouseClicked
 
     private void configuationsRebuildMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_configuationsRebuildMouseClicked
