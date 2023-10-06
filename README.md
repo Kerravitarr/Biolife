@@ -86,6 +86,7 @@ Now on a six-core machine and a 500x200 field, it is possible to achieve 80-120 
 - Для Windows: Необходимо обновить переменную среды _Path_, указав в ней путь к нужней версией Java.
 1. В Linux/Ubuntu не отображается большинство символов unicode.
 Это значит, что не хватает шрифтов. Установить необходимый пакет можно командой: `sudo apt install ttf-ancient-fonts`.
+1. 'javadoc' не распознается как внутренняя или внешняя команда, работающая программа или пакетный файл.
 
 # Startup problems?:
 1. linux has been compiled by a more recent version of the Java Runtime (class file version 60.0), this version of the Java Runtime only recognizes class file versions up to 55.0
