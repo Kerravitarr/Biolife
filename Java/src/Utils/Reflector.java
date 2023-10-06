@@ -65,7 +65,7 @@ public class Reflector {
 							ret.add((Class<? extends T>) add);
 							break;
 						}
-					}while((clP = add.getSuperclass()) != oldclP && clP != null);
+					}while((clP = clP.getSuperclass()) != oldclP && clP != null);
                 } catch (java.lang.ExceptionInInitializerError | NoClassDefFoundError e) {
 					Logger.getLogger(Reflector.class.getName()).log(Level.SEVERE, "Не смогли загрзуть класс [" + classFile + "], хотя нашли его, что очень странно", e);
                 } catch (ClassNotFoundException e) {

@@ -4,7 +4,6 @@
  */
 package Calculations;
 
-import Utils.ParamObject;
 import Calculations.Point.DIRECTION;
 import GUI.AllColors;
 import GUI.WorldView;
@@ -13,8 +12,6 @@ import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
-import java.util.ArrayList;
-import java.util.List;
 
 /**Прямоугольный вертикальный поток*/
 public class StreamHorizontal extends StreamAbstract {
@@ -55,8 +52,8 @@ public class StreamHorizontal extends StreamAbstract {
 				});
 				addParam(new ClassBuilder.NumberConstructorParamAdapter("power",-1000,1,1000,null,null));
 				addParam(new ClassBuilder.StringConstructorParam(){
-					@Override public Object getDefault() {return "Поток";}
-					@Override public String name() { return "name";}
+					@Override public Object getDefault() {return "Течение";}
+					@Override public String name() { return "super.name";}
 					
 				});
 			}
@@ -65,7 +62,7 @@ public class StreamHorizontal extends StreamAbstract {
 			public StreamHorizontal build() {
 				return new StreamHorizontal(new Trajectory(getParam(0,Point.class)), getParam(1,Integer.class), getParam(2,Integer.class), getParam(3,Integer.class), getParam(4,String.class));
 			}
-			@Override public String name() {return "name";}
+			@Override public String name() {return "";}
 		});
 		StreamAbstract.register(builder);
 	}

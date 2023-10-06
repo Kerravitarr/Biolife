@@ -53,10 +53,10 @@ public class StreamVertical extends StreamAbstract {
 					@Override public Integer getDefault() {return Configurations.getHeight()/2;}
 					@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
 				});
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("power",-1000,1,1000,null,null));
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("super.power",-1000,1,1000,null,null));
 				addParam(new ClassBuilder.StringConstructorParam(){
-					@Override public Object getDefault() {return "Поток";}
-					@Override public String name() { return "name";}
+					@Override public Object getDefault() {return "Конвекция";}
+					@Override public String name() { return "super.name";}
 					
 				});
 			}
@@ -65,7 +65,7 @@ public class StreamVertical extends StreamAbstract {
 			public StreamVertical build() {
 				return new StreamVertical(new Trajectory(getParam(0,Point.class)), getParam(1,Integer.class), getParam(2,Integer.class), getParam(3,Integer.class), getParam(4,String.class));
 			}
-			@Override public String name() {return "name";}
+			@Override public String name() {return "";}
 		});
 		StreamAbstract.register(builder);
 	}

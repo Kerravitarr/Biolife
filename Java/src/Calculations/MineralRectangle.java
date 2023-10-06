@@ -43,16 +43,16 @@ public class MineralRectangle extends MineralAbstract {
 			@Override public Integer get(MineralRectangle who) {return who.height;}
 			@Override public void setValue(MineralRectangle who, Integer value) {who.height = value;}
 		});
-		final var attenuation = new ClassBuilder.NumberConstructorParamAdapter("attenuation",0d,0d,30d,0d,null){
+		final var attenuation = new ClassBuilder.NumberConstructorParamAdapter("super.attenuation",0d,0d,30d,0d,null){
 			@Override public Double getDefault() {return Configurations.confoguration.DIRTY_WATER;}
 		};
 		builder.addConstructor(new ClassBuilder.Constructor<MineralRectangle>(){
 			{
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("power",1,30,100,1,null));
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("super.power",1,30,100,1,null));
 				addParam(attenuation);
 				addParam(new ClassBuilder.MapPointConstructorParam(){
 					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
-					@Override public String name() {return "center";}
+					@Override public String name() {return "super.center";}
 				});
 				addParam(new ClassBuilder.NumberConstructorParamAdapter("width",0,0,0,0,null){
 					@Override public Integer getDefault() {return Configurations.getWidth()/2;}
@@ -64,11 +64,11 @@ public class MineralRectangle extends MineralAbstract {
 				});
 				addParam(new ClassBuilder.BooleanConstructorParam(){
 					@Override public Object getDefault() {return false;}
-					@Override public String name() { return "isLine";}
+					@Override public String name() { return "super.isLine";}
 				});
 				addParam(new ClassBuilder.StringConstructorParam(){
 					@Override public Object getDefault() {return "Кубик";}
-					@Override public String name() { return "name";}
+					@Override public String name() { return "super.name";}
 					
 				});
 			}
@@ -77,7 +77,7 @@ public class MineralRectangle extends MineralAbstract {
 			public MineralRectangle build() {
 				return new MineralRectangle(getParam(0,Integer.class),getParam(1,Double.class),new Trajectory(getParam(2,Point.class)),  getParam(3,Integer.class), getParam(4,Integer.class),getParam(5,Boolean.class), getParam(6,String.class));
 			}
-			@Override public String name() {return "name";}
+			@Override public String name() {return "";}
 		});
 		MineralAbstract.register(builder);
 	}

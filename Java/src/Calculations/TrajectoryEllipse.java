@@ -23,12 +23,12 @@ public class TrajectoryEllipse extends Trajectory{
 			@Override public String serializerName() {return "Эллипс";}
 			@Override public Class printName() {return TrajectoryEllipse.class;}
 		};
-		final var speed = new ClassBuilder.NumberConstructorParamAdapter("speed",0,500,1000,0,null);
+		final var speed = new ClassBuilder.NumberConstructorParamAdapter("super.speed",0,500,1000,0,null);
 		final var center = new ClassBuilder.MapPointConstructorParam(){
 					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
-					@Override public String name() {return "center";}
+					@Override public String name() {return "constructor.center";}
 				};
-		final var startAngle = new ClassBuilder.NumberConstructorParamAdapter("startAngle",-360,0,360,-360,360);
+		final var startAngle = new ClassBuilder.NumberConstructorParamAdapter("constructor.startAngle",-360,0,360,-360,360);
 		builder.addConstructor(new ClassBuilder.Constructor<TrajectoryEllipse>(){
 			{
 				addParam(speed);

@@ -29,7 +29,7 @@ public class TrajectoryPolyLine extends Trajectory{
 		};
 		builder.addConstructor(new ClassBuilder.Constructor<TrajectoryPolyLine>(){
 			{
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("speed", 0,500,1000,0,null));
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("super.speed", 0,500,1000,0,null));
 				addParam(new ClassBuilder.BooleanConstructorParam(){
 					@Override public Object getDefault() {return false;}
 					@Override public String name() {return "isJamp";}

@@ -11,6 +11,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Это основной класс-строитель для всех объектов карты.
@@ -165,7 +167,11 @@ public abstract class ClassBuilder <T>{
 		/**Возвращает имя параметра. По этому имени будет искаться локализованное название параметра в файлах локали
 		 * @return название ключа имени параметра. 
 		 *	Параметр существующего объекта будет искаться по пути CHILD.parameter.name()
-		 *	Для параметра конструктора по пути CHILD.(constructor.name()).name()
+		 *	Для параметра конструктора по пути CHILD.(constructor.name()).parameter.name()
+		 *	Если эта функция вернёт имя начинающееся с  "constructor.", то имя будет искаться по пути CHILD.constructor.parameter.name()
+		 *		Это специально для общих параметров у разных конструкторов
+		 *	Если эта функция вернёт имя начинающееся с  "super.", то имя будет искаться по пути PERRENT.constructor.parameter.name()
+		 *		Это специально для параметров, которые унаследованы от суперкласса
 		 */
 		public String name();
 	}
@@ -346,6 +352,7 @@ public abstract class ClassBuilder <T>{
 		 */
 		public NumberConstructorParamAdapter(String name, TP sliderMin, TP def, TP sliderMaximum, TP min, TP max){
 			this.name = name; smin=sliderMin; smax = sliderMaximum; this.def= def; this.min = min; this.max = max;
+			setValue(def);
 		}
 		@Override public TP getDefault() {return def;}
 		@Override public String name() {return name;}
@@ -447,12 +454,12 @@ public abstract class ClassBuilder <T>{
 		 * @param type тип параметраметра
 		 * @return числовое значение параметра
 		 */
-		private <T, R extends ConstructorParametr<T, ?>> T getParam_(int index, Class<R> type){
-			final var p = _params.get(index);
-			if(p.value.getClass().equals(type))
-				return (T) p.value;
+		private <T, R extends ConstructorParametr<T, ?>> T getParam_(int index, Class<T> valueType){
+			final var p =  _params.get(index);
+			if(valueType.equals(p.value.getClass()))
+				return (T)  _params.get(index).value;
 			else
-				throw new ClassCastException("Невозможно привести " + p.value.getClass() + " к классу " + type);
+				throw new ClassCastException("Невозможно привести " + p.value.getClass() + " к классу " + valueType + " для параметра №" + index);
 		}
 		/** * Возвращает параметр по по типу.Или первый, если параметр всего 1 или первый, если других таких параметров нет
 		 * @param <T> тип возвращаемого параметра
@@ -460,12 +467,12 @@ public abstract class ClassBuilder <T>{
 		 * @param type тип параметраметра
 		 * @return числовое значение параметра
 		 */
-		private <T, R extends ConstructorParametr<T, ?>> T getParam_(Class<R> type){
-			if(_params.size() == 1) return getParam_(0,type);
+		private <T, R extends ConstructorParametr<T, ?>> T getParam_(Class<R> type, Class<T> valueType){
+			if(_params.size() == 1) return getParam_(0,valueType);
 			for (int index = 0; index < _params.size(); index++) {
 				final var get = _params.get(index);
 				if(get.getClass().equals(type))
-					return getParam_(index,type);
+					return getParam_(index,valueType);
 			}
 			throw new IllegalArgumentException("Отпустствует параметр " + type);
 		}
@@ -481,16 +488,16 @@ public abstract class ClassBuilder <T>{
 		 * @throws ClassCastException возникает при любом несоответствии классов
 		 */
 		protected <T> T getParam(Class<T> cls) {
-			if(cls.equals(Boolean.class)) return (T) getParam_( ClassBuilder.BooleanConstructorParam.class);
-			else if(cls.equals(Boolean[].class)) return (T) getParam_( ClassBuilder.BooleanVectorConstructorParam.class);
-			else if(cls.equals(String.class)) return (T) getParam_( ClassBuilder.StringConstructorParam.class);
-			else if(cls.equals(String[].class)) return (T) getParam_( ClassBuilder.StringVectorConstructorParam.class);
-			else if(cls.equals(Integer.class)) return (T) getParam_( ClassBuilder.NumberConstructorParam.class);
-			else if(cls.equals(Integer[].class)) return (T) getParam_( ClassBuilder.NumberVectorConstructorParam.class);
-			else if(cls.equals(Point.class)) return (T) getParam_( ClassBuilder.MapPointConstructorParam.class);
-			else if(cls.equals(Point[].class)) return (T) getParam_( ClassBuilder.MapPointVectorConstructorParam.class);
-			else if(cls.equals(Point.Vector.class)) return (T) getParam_( ClassBuilder.Abstract2ConstructorParam.class);
-			else if(cls.equals(Point.Vector[].class)) return (T) getParam_( ClassBuilder.Abstract2VectorConstructorParam.class);
+			if(cls.equals(Boolean.class)) return (T) getParam_( ClassBuilder.BooleanConstructorParam.class,cls);
+			else if(cls.equals(Boolean[].class)) return (T) getParam_( ClassBuilder.BooleanVectorConstructorParam.class,cls);
+			else if(cls.equals(String.class)) return (T) getParam_( ClassBuilder.StringConstructorParam.class,cls);
+			else if(cls.equals(String[].class)) return (T) getParam_( ClassBuilder.StringVectorConstructorParam.class,cls);
+			else if(cls.equals(Integer.class)) return (T) getParam_( ClassBuilder.NumberConstructorParam.class,cls);
+			else if(cls.equals(Integer[].class)) return (T) getParam_( ClassBuilder.NumberVectorConstructorParam.class,cls);
+			else if(cls.equals(Point.class)) return (T) getParam_( ClassBuilder.MapPointConstructorParam.class,cls);
+			else if(cls.equals(Point[].class)) return (T) getParam_( ClassBuilder.MapPointVectorConstructorParam.class,cls);
+			else if(cls.equals(Point.Vector.class)) return (T) getParam_( ClassBuilder.Abstract2ConstructorParam.class,cls);
+			else if(cls.equals(Point.Vector[].class)) return (T) getParam_( ClassBuilder.Abstract2VectorConstructorParam.class,cls);
 			else throw new ClassCastException("Невозможно получить параметр типа " + cls);
 		}
 		
@@ -507,18 +514,18 @@ public abstract class ClassBuilder <T>{
 		 * @throws ClassCastException возникает при любом несоответствии классов
 		 */
 		protected <T> T getParam(int index, Class<T> cls) {
-			if(cls.equals(Boolean.class)) return (T) getParam_(index, ClassBuilder.BooleanConstructorParam.class);
-			else if(cls.equals(Boolean[].class)) return (T) getParam_(index, ClassBuilder.BooleanVectorConstructorParam.class);
-			else if(cls.equals(String.class)) return (T) getParam_( index,ClassBuilder.StringConstructorParam.class);
-			else if(cls.equals(String[].class)) return (T) getParam_( index,ClassBuilder.StringVectorConstructorParam.class);
-			else if(cls.equals(Integer.class)) return (T) getParam_( index,ClassBuilder.NumberConstructorParam.class);
-			else if(cls.equals(Integer[].class)) return (T) getParam_( index,ClassBuilder.NumberVectorConstructorParam.class);
-			else if(cls.equals(Double.class)) return (T) getParam_( index,ClassBuilder.NumberConstructorParam.class);
-			else if(cls.equals(Double[].class)) return (T) getParam_( index,ClassBuilder.NumberVectorConstructorParam.class);
-			else if(cls.equals(Point.class)) return (T) getParam_( index,ClassBuilder.MapPointConstructorParam.class);
-			else if(cls.equals(Point[].class)) return (T) getParam_( index,ClassBuilder.MapPointVectorConstructorParam.class);
-			else if(cls.equals(Point.Vector.class)) return (T) getParam_( index,ClassBuilder.Abstract2ConstructorParam.class);
-			else if(cls.equals(Point.Vector[].class)) return (T) getParam_( index,ClassBuilder.Abstract2VectorConstructorParam.class);
+			if(cls.equals(Boolean.class)) return (T) getParam_(index, cls);
+			else if(cls.equals(Boolean[].class)) return (T) getParam_(index, cls);
+			else if(cls.equals(String.class)) return (T) getParam_( index,cls);
+			else if(cls.equals(String[].class)) return (T) getParam_( index,cls);
+			else if(cls.equals(Integer.class)) return (T) getParam_( index,cls);
+			else if(cls.equals(Integer[].class)) return (T) getParam_( index,cls);
+			else if(cls.equals(Double.class)) return (T) getParam_( index,cls);
+			else if(cls.equals(Double[].class)) return (T) getParam_( index,cls);
+			else if(cls.equals(Point.class)) return (T) getParam_( index,cls);
+			else if(cls.equals(Point[].class)) return (T) getParam_( index,cls);
+			else if(cls.equals(Point.Vector.class)) return (T) getParam_( index,cls);
+			else if(cls.equals(Point.Vector[].class)) return (T) getParam_( index,cls);
 			else throw new ClassCastException("Невозможно получить параметр типа " + cls);
 		}
 		/**

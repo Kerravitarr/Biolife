@@ -45,18 +45,18 @@ public class SunEllipse extends SunAbstract {
 			@Override public Integer getDefault() {return Configurations.getHeight()/2;}
 			@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
 		});
-		final var power = new ClassBuilder.NumberConstructorParamAdapter("power",1,30,200,1,null);
+		final var power = new ClassBuilder.NumberConstructorParamAdapter("super.power",1,30,200,1,null);
 		final var center = new ClassBuilder.MapPointConstructorParam(){
 					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
-					@Override public String name() {return "center";}
+					@Override public String name() {return "constructor.center";}
 				};
 		final var name = new ClassBuilder.StringConstructorParam(){
-				@Override public Object getDefault() {return "Поток";}
-				@Override public String name() { return "name";}
+				@Override public Object getDefault() {return "Солнце";}
+				@Override public String name() { return "super.name";}
 			};
 		final var isLine = new ClassBuilder.BooleanConstructorParam(){
 				@Override public Object getDefault() {return false;}
-				@Override public String name() { return "isLine";}
+				@Override public String name() { return "super.isLine";}
 
 			};
 		builder.addConstructor(new ClassBuilder.Constructor<SunEllipse>(){
@@ -79,13 +79,13 @@ public class SunEllipse extends SunAbstract {
 			public SunEllipse build() {
 				return new SunEllipse(getParam(0,Integer.class),new Trajectory(getParam(1,Point.class)),  getParam(2,Integer.class), getParam(3,Integer.class), getParam(4,Boolean.class), getParam(5,String.class));
 			}
-			@Override public String name() {return "ellipse.name";}
+			@Override public String name() {return "ellipse";}
 		});
 		builder.addConstructor(new ClassBuilder.Constructor<SunEllipse>(){
 			{
 				addParam(center);
 				addParam(power);
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("r",0,0,0,0,null){
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("d",0,0,0,0,null){
 					@Override public Integer getDefault() {return Math.min(Configurations.getWidth(),Configurations.getHeight())/2;}
 					@Override public Integer getSliderMaximum() {return Math.min(Configurations.getWidth(),Configurations.getHeight());}
 				});
@@ -97,7 +97,7 @@ public class SunEllipse extends SunAbstract {
 			public SunEllipse build() {
 				return new SunEllipse(getParam(0,Integer.class),new Trajectory(getParam(1,Point.class)),  getParam(2,Integer.class), getParam(3,Boolean.class), getParam(4,String.class));
 			}
-			@Override public String name() {return "circle.name";}
+			@Override public String name() {return "circle";}
 		});
 		SunAbstract.register(builder);
 	}

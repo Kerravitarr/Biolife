@@ -37,12 +37,12 @@ public class StreamEllipse extends StreamAbstract {
 		});
 		final var center = new ClassBuilder.MapPointConstructorParam(){
 					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
-					@Override public String name() {return "center";}
+					@Override public String name() {return "constructor.center";}
 				};
-		final var power = new ClassBuilder.NumberConstructorParamAdapter("power",-1000,1,1000,null,null);
+		final var power = new ClassBuilder.NumberConstructorParamAdapter("super.power",-1000,1,1000,null,null);
 		final var name = new ClassBuilder.StringConstructorParam(){
-				@Override public Object getDefault() {return "Солнце";}
-				@Override public String name() { return "name";}
+				@Override public Object getDefault() {return "Воронка";}
+				@Override public String name() { return "super.name";}
 
 			};
 		builder.addConstructor(new ClassBuilder.Constructor<StreamEllipse>(){
@@ -64,13 +64,13 @@ public class StreamEllipse extends StreamAbstract {
 			public StreamEllipse build() {
 				return new StreamEllipse(new Trajectory(getParam(0,Point.class)), getParam(1,Integer.class), getParam(2,Integer.class), getParam(3,Integer.class), getParam(4,String.class));
 			}
-			@Override public String name() {return "ellipse.name";}
+			@Override public String name() {return "ellipse";}
 		});
 		builder.addConstructor(new ClassBuilder.Constructor<StreamEllipse>(){
 			{
 				addParam(center);
 				addParam(power);
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("r",0,0,0,0,null){
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("d",0,0,0,0,null){
 					@Override public Integer getDefault() {return Math.min(Configurations.getWidth(),Configurations.getHeight())/2;}
 					@Override public Integer getSliderMaximum() {return Math.min(Configurations.getWidth(),Configurations.getHeight());}
 				});
@@ -81,7 +81,7 @@ public class StreamEllipse extends StreamAbstract {
 			public StreamEllipse build() {
 				return new StreamEllipse(new Trajectory(getParam(0,Point.class)), getParam(1,Integer.class), getParam(2,Integer.class), getParam(3,String.class));
 			}
-			@Override public String name() {return "circle.name";}
+			@Override public String name() {return "circle";}
 		});
 		StreamAbstract.register(builder);
 	}
@@ -223,7 +223,7 @@ public class StreamEllipse extends StreamAbstract {
 		//g.fill(new Ellipse2D.Double(x0, y0,w0,h0));
 		
 		//А теперь приступим к порнографии - создании подэллипсов для движения!
-		final var whc = 50; //Ширина/высота круга
+		final var whc = Math.min(50,Math.min(w0, h0)); //Ширина/высота круга
 		final var countCurc = Math.max(w0, h0) / whc; //Сколкьо будет кругов
 		final var wx = w0 / (countCurc * 2); //Ширина круга
 		final var hy = h0 / (countCurc * 2); //Высота круга
@@ -235,6 +235,7 @@ public class StreamEllipse extends StreamAbstract {
 			final var dy = curcle * hy + hy * step / Math.abs(F);
 			g.draw(new Ellipse2D.Double(x0 + dx, y0 + dy, w0 - dx * 2, h0 - dy * 2));
 		}
+		g.draw(new Ellipse2D.Double(x0, y0, w0, h0));
 	}
 
 }

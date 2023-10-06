@@ -38,20 +38,20 @@ public class StreamSwirl extends StreamAbstract {
 					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
 					@Override public String name() {return "center";}
 				};
-		final var power = new ClassBuilder.NumberConstructorParamAdapter("power",-1000,1,1000,null,null);
+		final var power = new ClassBuilder.NumberConstructorParamAdapter("super.power",-1000,1,1000,null,null);
 		final var name = new ClassBuilder.StringConstructorParam(){
-				@Override public Object getDefault() {return "Поток";}
-				@Override public String name() { return "name";}
+				@Override public Object getDefault() {return "Водоворот";}
+				@Override public String name() { return "super.name";}
 
 			};
 		builder.addConstructor(new ClassBuilder.Constructor<StreamSwirl>(){
 			{
 				addParam(center);
-				addParam(power);
 				addParam(new ClassBuilder.NumberConstructorParamAdapter("d",0,0,0,0,null){
-					@Override public Integer getDefault() {return Math.min(Configurations.getWidth(),Configurations.getHeight())/2;}
+					@Override public Integer getDefault() {return getSliderMaximum()/2;}
 					@Override public Integer getSliderMaximum() {return Math.min(Configurations.getWidth(),Configurations.getHeight());}
 				});
+				addParam(power);
 				addParam(name);
 			}
 
@@ -142,7 +142,7 @@ public class StreamSwirl extends StreamAbstract {
 		//g.fill(new Ellipse2D.Double(x0, y0,w0,h0));
 		
 		//А теперь приступим к порнографии - создании подкругов для движения!
-		final var whc = 50; //Каждые сколько пк будет круг
+		final var whc = Math.min(50,r0); //Каждые сколько пк будет круг
 		final var countCurc = r0 / whc; //Сколкьо будет кругов
 		for (int curcle = 0; curcle < countCurc; curcle++) {
 			var F = shadow.power(10000,100,(curcle + 0.5d) / countCurc);

@@ -211,24 +211,20 @@ public class SettingsPoint extends javax.swing.JPanel {
         label.setAlignmentY(0.0F);
         add(label, java.awt.BorderLayout.NORTH);
 
-        resetAndInsert.setLayout(new javax.swing.BoxLayout(resetAndInsert, javax.swing.BoxLayout.LINE_AXIS));
-
         labelX.setText("X:");
         labelX.setAlignmentY(0.0F);
         labelX.setPreferredSize(new java.awt.Dimension(15, 20));
-        resetAndInsert.add(labelX);
 
         spinnerX.setModel(new javax.swing.SpinnerNumberModel(0, 0, null, 1));
+        spinnerX.setAlignmentX(0.0F);
         spinnerX.setAlignmentY(0.0F);
         spinnerX.setMaximumSize(new java.awt.Dimension(32767, 20));
         spinnerX.setMinimumSize(new java.awt.Dimension(64, 20));
         spinnerX.setPreferredSize(new java.awt.Dimension(64, 20));
-        resetAndInsert.add(spinnerX);
 
         labelY.setText("Y:");
         labelY.setAlignmentY(0.0F);
         labelY.setPreferredSize(new java.awt.Dimension(15, 20));
-        resetAndInsert.add(labelY);
 
         spinnerY.setModel(new javax.swing.SpinnerNumberModel(100, 0, null, 1));
         spinnerY.setAlignmentX(0.0F);
@@ -236,15 +232,39 @@ public class SettingsPoint extends javax.swing.JPanel {
         spinnerY.setMaximumSize(new java.awt.Dimension(32767, 20));
         spinnerY.setMinimumSize(new java.awt.Dimension(68, 20));
         spinnerY.setPreferredSize(new java.awt.Dimension(68, 20));
-        resetAndInsert.add(spinnerY);
 
         reset.setText("reset");
         reset.setAlignmentY(0.0F);
-        resetAndInsert.add(reset);
 
         select.setText("jButton1");
         select.setAlignmentY(0.0F);
-        resetAndInsert.add(select);
+
+        javax.swing.GroupLayout resetAndInsertLayout = new javax.swing.GroupLayout(resetAndInsert);
+        resetAndInsert.setLayout(resetAndInsertLayout);
+        resetAndInsertLayout.setHorizontalGroup(
+            resetAndInsertLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(resetAndInsertLayout.createSequentialGroup()
+                .addComponent(labelX, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, 0)
+                .addComponent(spinnerX, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(0, 0, 0)
+                .addComponent(labelY, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, 0)
+                .addComponent(spinnerY, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(0, 0, 0)
+                .addComponent(reset)
+                .addGap(0, 0, 0)
+                .addComponent(select))
+        );
+        resetAndInsertLayout.setVerticalGroup(
+            resetAndInsertLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(labelX, javax.swing.GroupLayout.PREFERRED_SIZE, 19, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(spinnerX, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(labelY, javax.swing.GroupLayout.PREFERRED_SIZE, 17, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(spinnerY, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(reset, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addComponent(select, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+        );
 
         add(resetAndInsert, java.awt.BorderLayout.CENTER);
     }// </editor-fold>//GEN-END:initComponents

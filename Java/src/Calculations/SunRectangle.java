@@ -49,7 +49,7 @@ public class SunRectangle extends SunAbstract {
 		});
 		builder.addConstructor(new ClassBuilder.Constructor<SunRectangle>(){
 			{
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("power",1,30,100,1,null));
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("super.power",1,30,100,1,null));
 				addParam(new ClassBuilder.MapPointConstructorParam(){
 					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
 					@Override public String name() {return "center";}
@@ -64,11 +64,11 @@ public class SunRectangle extends SunAbstract {
 				});
 				addParam(new ClassBuilder.BooleanConstructorParam(){
 					@Override public Object getDefault() {return false;}
-					@Override public String name() { return "isLine";}
+					@Override public String name() { return "super.isLine";}
 				});
 				addParam(new ClassBuilder.StringConstructorParam(){
 					@Override public Object getDefault() {return "Лампа";}
-					@Override public String name() { return "name";}
+					@Override public String name() { return "super.name";}
 					
 				});
 			}
@@ -77,7 +77,7 @@ public class SunRectangle extends SunAbstract {
 			public SunRectangle build() {
 				return new SunRectangle(getParam(0,Integer.class),new Trajectory(getParam(1,Point.class)),  getParam(2,Integer.class), getParam(3,Integer.class),getParam(4,Boolean.class), getParam(5,String.class));
 			}
-			@Override public String name() {return "name";}
+			@Override public String name() {return "";}
 		});
 		SunAbstract.register(builder);
 	}
