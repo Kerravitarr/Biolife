@@ -1,5 +1,5 @@
 package Utils;
-//Версия 2.4 от 16 сентября 2023 года!
+//Версия 2.5 от 7 октября 2023 года!
 
 
 
@@ -382,7 +382,7 @@ public final class JSON{
 	/**Специальный класс, который хранит только значение*/
 	private class JSON_O<T> implements JSON_par{
 		/**Вариант, когда значение - простой тип*/
-		T value_o = null;
+		T value_o;
 		/**
 		 * Создаёт параметр
 		 * @param value - значение
@@ -405,14 +405,14 @@ public final class JSON{
 				} else {
 					((JSON) value_o).toBeautifulJSONString(writer, null);
 				}
-			} else if(value_o != null) {
-				writer.write(getVal(value_o));
 			} else {
-				writer.write("null");
+				writer.write(getVal(value_o));
 			}
 		}
 		private String getVal(T value_o) {
-			if(value_o instanceof String) {
+			if(value_o == null)
+				return "null";
+			else if(value_o instanceof String) {
 				var ret = value_o.toString().replace("\\", "\\\\")
 						.replace("\t", "\\t")
 						.replace("\b", "\\b")
@@ -722,7 +722,7 @@ public final class JSON{
 	 * @param value - значение
 	 */
 	public <T> void add(String key, T value) {
-		if(value.getClass().isArray()) // Массивы
+		if(value != null && value.getClass().isArray()) // Массивы
 			parametrs.put(key, new JSON_A<>(value));
 		else
 			parametrs.put(key, new JSON_O<>(value));
