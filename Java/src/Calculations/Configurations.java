@@ -1,5 +1,21 @@
 package Calculations;
 
+import Calculations.Emitters.EmitterSet;
+import Calculations.Streams.StreamVertical;
+import Calculations.Streams.StreamSwirl;
+import Calculations.Streams.StreamAbstract;
+import Calculations.Streams.StreamAttenuation;
+import Calculations.Streams.StreamHorizontal;
+import Calculations.Streams.StreamEllipse;
+import Calculations.Emitters.MineralRectangle;
+import Calculations.Emitters.MineralAbstract;
+import Calculations.Emitters.MineralEllipse;
+import Calculations.Emitters.SunAbstract;
+import Calculations.Emitters.SunRectangle;
+import Calculations.Emitters.SunEllipse;
+import Calculations.Trajectories.TrajectoryPolyLine;
+import Calculations.Trajectories.Trajectory;
+import Calculations.Trajectories.TrajectoryEllipse;
 import java.awt.Dimension;
 import java.awt.Image;
 import java.text.MessageFormat;
@@ -20,21 +36,17 @@ import Utils.SaveAndLoad;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import GUI.EvolTreeDialog;
-import GUI.Settings;
 import GUI.Viewers;
 import MapObjects.CellObject;
 import java.awt.Toolkit;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.AbstractButton;
-import javax.swing.JOptionPane;
 
 /**
  * Так как некоторые переменные мира используются повсеместно
@@ -59,9 +71,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	/**Глобальный мир!*/
 	public static World world = null;
 	/**Звёзды нашего мира*/
-	public static List<SunAbstract> suns = null;
+	public static EmitterSet<SunAbstract> suns = null;
 	/**Минералы нашего мира*/
-	public static List<MineralAbstract> minerals = null;
+	public static EmitterSet<MineralAbstract> minerals = null;
 	/**Потоки воды, которые заставлют клетки двигаться*/
 	public static List<StreamAbstract> streams = null;
 	/**Эволюционное дерево мира*/
@@ -87,7 +99,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	//Графическая часть
 	/**Указатель на глобальный объект отображения. Тут прячутся все наборы панелей, которые в настоящий момент показываются на экране*/
 	private static Viewers _viewers = null;
-	private static Logger logger = Logger.getLogger(Configurations.class.getName());
+	/**Логгер, который печатает все ошибки от нашего имени*/
+	private static final Logger logger = Logger.getLogger(Configurations.class.getName());
 	
 	//Общие классы для программы
 	/**ГСЧ для симуляции*/
@@ -278,8 +291,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		configWorld.add("TIK_TO_EXIT", TIK_TO_EXIT);
 		configWorld.add("DIRTY_WATER", DIRTY_WATER);
 		configWorld.add("WORLD_TYPE", world_type);
-		configWorld.add("SUNS", suns.stream().map(s -> SunAbstract.serialization(s)).toList());
-		configWorld.add("MINERALS", minerals.stream().map(s -> MineralAbstract.serialization(s)).toList());
+		configWorld.add("SUNS", suns.serialization(s -> SunAbstract.serialization(s)));
+		configWorld.add("MINERALS", minerals.serialization(s -> MineralAbstract.serialization(s)));
 		configWorld.add("STREAMS", streams.stream().map(s -> StreamAbstract.serialization(s)).toList());
 		final var gj = new JSON();
 		for (int i = 0; i < gravitation.length; i++) {
@@ -429,9 +442,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public static void buildMap(Configurations confoguration, Map<CellObject.LV_STATUS, Gravitation> gravitations){
 		rebuildMap(confoguration);
 		//Солнца
-		suns = new ArrayList<>();
+		suns = new EmitterSet<>();
 		//Минералы
-		minerals = new ArrayList<>();
+		minerals = new EmitterSet<>();
 		//Потоки
 		streams = new ArrayList<>();
 		//Создаём магическое притяжение
@@ -452,6 +465,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		if(world != null)
 			world.destroy();
 		world = new World(confoguration.MAP_CELLS);
+		//Нужно обновить энергетические матрицы
+		suns.updateMatrix();
+		minerals.updateMatrix();
 	}
 	/** * Возвращает размер мира по умолчанию для текущего разрешения экрана
 	 * Понятное дело, что если экрана нет - то вернёт он лишь null.Впрочем, без экрана вызывать эту функцию в принципе не следует!
@@ -473,26 +489,14 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @return сколько в единицах HP энергии тут
 	 */
 	public static double getSunPower(Point pos){
-		return suns.stream().reduce(0d, (a,b) -> a + b.getEnergy(pos), Double::sum);
-	}
-	/**Возвращает максимально возможное количество солнечной энергии в мире
-	 * @return сколько в единицах HP энергии всего в мире
-	 */
-	public static double getMaxSunPower(){
-		return suns.stream().reduce(0d, (a,b) -> a + b.power, Double::sum);
+		return suns.getE(pos);
 	}
 	/**Возвращает концентрацию минералов вокруг клетки
 	 * @param pos где смотрим параметр
 	 * @return сколько в единицах MP энергии тут
 	 */
 	public static double getConcentrationMinerals(Point pos){
-		return minerals.stream().reduce(0d, (a,b) -> a + b.getConcentration(pos), Double::sum);
-	}
-	/**Возвращает максимально возможное количество минералов в мире
-	 * @return сколько в единицах MP энергии всего в мире
-	 */
-	public static double getMaxConcentrationMinerals(){
-		return minerals.stream().reduce(0d, (a,b) -> a + b.power, Double::sum);
+		return minerals.getE(pos);
 	}
 	/**Сохраняет текущий вид графического отображения
 	 * @param defaultViewer набор панелей, которые теперь будут на экране
@@ -672,7 +676,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			button.setText("");
 			button.setIcon(new ImageIcon(icon_const.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)));
 		}
-		final var select_image = icon_select != null ? new ImageIcon(icon_select.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)) : new ImageIcon(icon_const.getImage().getScaledInstance(10, 10, Image.SCALE_SMOOTH));
+		final var select_image = icon_select != null ? 
+				new ImageIcon(icon_select.getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH)) : 
+				new ImageIcon(icon_const.getImage().getScaledInstance(10, 10, Image.SCALE_SMOOTH));
 		button.setRolloverIcon(select_image);
 		button.setSelectedIcon(select_image);
 

@@ -1,5 +1,8 @@
-package Calculations;
+package Calculations.Emitters;
 
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Trajectories.Trajectory;
 import Utils.ClassBuilder;
 import Utils.JSON;
 import java.lang.reflect.InvocationTargetException;
@@ -36,27 +39,6 @@ public abstract class SunAbstract extends DefaultEmitter{
 	 */
 	protected SunAbstract(JSON j, long v){
 		super(j,v);
-	}
-	/**
-	 * Возвращает количество солнечной энергии в этой точке пространства
-	 * @param pos позиция в пространстве
-	 * @return количество энергии.
-	 */
-	public abstract double getEnergy(Point pos);
-	
-	/**Возвращает занчение альфа канала для цвета звезды.
-	 * @param isSelected звезда выбранна или нет?
-	 * @return значение альфа канала, где 0 - полная прозрачность, а 255 - полная светимость
-	 */
-	protected double getColorAlfa(boolean isSelected){
-		final var mp = Configurations.getMaxSunPower();
-		if(mp == power){
-			return isSelected ? 63 : 255;
-		} else if(isSelected){
-			return 255;
-		} else {
-			return (64 + 192 * power / mp);
-		}
 	}
 	
 	/** * Регистрирует наследника как одного из возможных дочерних классов.

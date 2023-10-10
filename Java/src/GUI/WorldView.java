@@ -255,7 +255,7 @@ public class WorldView extends javax.swing.JPanel {
 		final var legend = v.get(Legend.class);
 		final var settings = v.get(Settings.class);
 		
-		paintField(g, settings.isEdit());
+		paintField(g);
 		
 		if(!settings.isEdit()){
 			int r = transforms.toScrin(1);
@@ -300,7 +300,7 @@ public class WorldView extends javax.swing.JPanel {
 	 * @param g полотно, которое красим
 	 * @param edit нужно ли делать доплонительное построение для редактирования?
 	 */
-	private void paintField(Graphics2D g, boolean edit) {
+	private void paintField(Graphics2D g) {
 		//Рисуем игровое поле
 		switch (Configurations.confoguration.world_type) {
 			case LINE_H,LINE_V, RECTANGLE,FIELD_R ->{
@@ -316,12 +316,11 @@ public class WorldView extends javax.swing.JPanel {
 		Configurations.minerals.forEach(s -> s.paint(g,getTransform()));
 		//И и шлефанём всё это потоками
 		Configurations.streams.forEach(s -> s.paint(g,getTransform()));
-		if(edit){
 			//А теперь, ещё выше, рисуем все траектории
 			//Configurations.suns.forEach(s -> s.getTrajectory().paint(g,getTransform()));
 			//Configurations.minerals.forEach(s -> s.getTrajectory().paint(g,getTransform()));
 			//Configurations.streams.forEach(s -> s.getTrajectory().paint(g,getTransform()));
-		}
+
 		
 		//Рисуем всё остальное
 		switch (Configurations.confoguration.world_type) {

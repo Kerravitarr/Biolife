@@ -2,8 +2,10 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package Calculations;
+package Calculations.Trajectories;
 
+import Calculations.Configurations;
+import Calculations.Point;
 import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ClassBuilder;

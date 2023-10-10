@@ -276,6 +276,9 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	}
 	/**Оперции, которые должны быть выполнены до совершения шага мира*/
 	private void preStep(){
+		Configurations.suns.step(step);
+		Configurations.minerals.step(step);
+		
 		isFirst = Configurations.rnd.nextBoolean();
 	}
 	/**
@@ -317,8 +320,6 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	}
 	/**Операции, которые должны быть выполнены после шага*/
 	private void postStep(){
-		Configurations.suns.forEach( s -> s.step(step));
-		Configurations.minerals.forEach( s -> s.step(step));
 		Configurations.streams.forEach( s -> s.step(step));
 		Configurations.tree.step();
 

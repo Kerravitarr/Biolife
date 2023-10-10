@@ -1,5 +1,8 @@
-package Calculations;
+package Calculations.Streams;
 
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Trajectories.Trajectory;
 import Utils.ParamObject;
 import static Calculations.Configurations.WORLD_TYPE.CIRCLE;
 import static Calculations.Configurations.WORLD_TYPE.FIELD_R;

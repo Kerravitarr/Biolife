@@ -2,20 +2,13 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package Calculations;
+package Calculations.Emitters;
 
-import GUI.AllColors;
-import GUI.WorldView.Transforms;
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Trajectories.Trajectory;
 import Utils.ClassBuilder;
 import Utils.JSON;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.MultipleGradientPaint;
-import java.awt.MultipleGradientPaint.CycleMethod;
-import java.awt.RadialGradientPaint;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Ellipse2D;
-import java.awt.geom.Point2D;
 
 /**
  * Эллипсоидная залежа минералов
@@ -144,7 +137,6 @@ public class MineralEllipse extends MineralAbstract {
 	 * @param d диаметр круга
 	 * @param isLine если true, то объект представляет собой только излучающую окружность
 	 * @param name название солнца
-	 * @param name название залежи
 	 */
 	public MineralEllipse(double p,double attenuation, Trajectory move, int d, boolean isLine, String name) {
 		this(p,attenuation, move,d,d,isLine,name);
@@ -154,31 +146,33 @@ public class MineralEllipse extends MineralAbstract {
 		this.a2 = a2;
 		a = a2 / 2d;
 		aa = a * a;
+		updateMatrix();
 	}
 	private void setB2(int b2){
 		this.b2 = b2;
 		b = b2 / 2d;
 		bb = b * b;
+		updateMatrix();
 	}
 	@Override
-	public double getConcentration(Point pos) {
+	public double calculation(Point pos) {
 		if(getAttenuation() == 0d)
-			return power;
+			return getPower();
 		//Расстояние от центра до точки
 		var d = pos.distance(position);
 		if (a2 == b2) {
 			//У нас круг!
-			if (!isLine && d.getHypotenuse() <= a) {
-				return power;
+			if (!getIsLine() && d.getHypotenuse() <= a) {
+				return getPower();
 			} else {
-				return Math.max(0, power - getAttenuation() * Math.abs(d.getHypotenuse() - a));
+				return Math.max(0, getPower() - getAttenuation() * Math.abs(d.getHypotenuse() - a));
 			}
 		} else {
 			//У нас эллипс. Расстояние от некой точки до эллипса...
 			//Жесть это, а не матан.
 			//Стырено отсюда: https://github.com/0xfaded/ellipse_demo/blob/master/ellipse.py
-			if (!isLine && Math.pow(d.x, 2) / (aa) + Math.pow(d.y, 2) / (bb) <= 1) {
-				return power;
+			if (!getIsLine() && Math.pow(d.x, 2) / (aa) + Math.pow(d.y, 2) / (bb) <= 1) {
+				return getPower();
 			} else {
 				double tx = 0.707, ty = 0.707;
 				for (int i = 0; i < 3; i++) {
@@ -205,81 +199,16 @@ public class MineralEllipse extends MineralAbstract {
 					ty /= t;
 				}
 				final var dist = Math.hypot(d.x - Math.copySign(a * tx, d.x), d.y - Math.copySign(b * ty, d.y));
-				return Math.max(0, power - getAttenuation() * dist);
+				return Math.max(0, getPower() - getAttenuation() * dist);
 			}
 		}
 	}
-	@Override
-	protected void move() {}
 	@Override
 	public JSON toJSON(){
 		final var j = super.toJSON();
 		j.add("a2", a2);
 		j.add("b2", b2);
 		return j;
-	}
-
-	
-	@Override
-	public void paint(Graphics2D g, Transforms transform, int posX, int posY, boolean isSelect) {
-		if(getAttenuation() == 0d){
-			if(posX == position.getX() && posY == position.getY()){
-				g.setColor(isSelect ? AllColors.MINERALS_DARK : AllColors.MINERALS);				
-				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.getWidth()), transform.toScrin(Configurations.getHeight()));
-			}
-			return;
-		}
-		
-		final var x0 = transform.toScrinX(posX);
-		final var y0 = transform.toScrinY(posY);
-
-		final var maxAlf = getColorAlfa(isSelect);
-		final var colorMaxLight = AllColors.toDark(AllColors.MINERALS, (int)maxAlf );
-		
-		//Где солнышко заканчивается
-		final var a0 = transform.toScrin(Math.max(a2, b2))/2;
-		//Сколько энергии в солнышке
-		final var p = transform.toScrin((int)Math.round(power / getAttenuation()));
-		//Где заканчивается свет от него
-		final var s = Math.max(1, a0 + p);
-		//А в процентах расстояние от 0 до границы солнца
-		final var mineralP = ((float)a0) / s;
-		if(mineralP == 0) return;
-			
-		float[] fractions;
-		Color[] colors;
-		if(isLine){
-			//Соотношение цветов
-			fractions = new float[] {(p >= a0 ? 0f : mineralP - mineralP * p / a0), mineralP, 1.0f };
-			//Сами цвета
-			colors = new Color[] { AllColors.toDark(AllColors.MINERALS, (int) (a0 > p ? 0 : (maxAlf - maxAlf * a0 / p))) ,colorMaxLight , AllColors.MINERALS_DARK};
-		} else {
-			//Соотношение цветов
-			fractions = new float[] { 0.0f, mineralP, 1.0f };
-			//Сами цвета
-			 colors = new Color[]{colorMaxLight, colorMaxLight, AllColors.MINERALS_DARK};
-		}
-			
-		if(a2 == b2){
-			//Круглое солнышко - это збс
-			g.setPaint(new RadialGradientPaint(
-					new Point2D.Double(x0, y0), s,fractions, colors,CycleMethod.NO_CYCLE));
-			g.fill(new Ellipse2D.Double(x0 - s, y0 - s, s*2,s*2));
-		} else {
-			//А эллипс надо сначала деформировать
-			if(a > b) {
-				final var at = AffineTransform.getScaleInstance(1, b / a);
-				final var center = new Point2D.Double(x0, y0 * a / b);
-				g.setPaint(new RadialGradientPaint(center, s, center, fractions, colors, CycleMethod.NO_CYCLE, MultipleGradientPaint.ColorSpaceType.SRGB, at));
-				g.fill(new Ellipse2D.Double(x0 - s, y0 - s, s * 2, s * 2));
-			} else {
-				final var at = AffineTransform.getScaleInstance(a / b, 1);
-				final var center = new Point2D.Double(x0 * b / a, y0);
-				g.setPaint(new RadialGradientPaint(center, s, center, fractions, colors, CycleMethod.NO_CYCLE, MultipleGradientPaint.ColorSpaceType.SRGB, at));
-				g.fill(new Ellipse2D.Double(x0 - s, y0 - s, s*2,s*2));
-			}
-		}
-		
 	}
 	
 }

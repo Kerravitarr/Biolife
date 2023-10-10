@@ -1,5 +1,7 @@
-package Calculations;
+package Calculations.Emitters;
 
+import Calculations.Point;
+import Calculations.Trajectories.Trajectory;
 import Utils.ClassBuilder;
 import Utils.JSON;
 import java.util.List;
@@ -35,14 +37,7 @@ public abstract class MineralAbstract extends DefaultEmitter{
 	protected MineralAbstract(JSON j, long v){
 		super(j,v);
 		attenuation = j.get("attenuation");
-	}
-	/**
-	 * Возвращает концентрацию минералов в этой точке пространства
-	 * @param pos позиция в пространстве
-	 * @return количество энергии. Может быть отрицательным числом - это не поглащение минеравло, а удалённость от источника
-	 */
-	public abstract double getConcentration(Point pos);
-	
+	}	
 
 	/**Растворимость минералов, как быстро теряется сила
 	 * @return сколько минералов теряется на 1 клетку поля
@@ -55,23 +50,11 @@ public abstract class MineralAbstract extends DefaultEmitter{
 	 * @param attenuation сколько минералов теряется на 1 клетку поля
 	 */
 	public void setAttenuation(double attenuation) {
+		if(attenuation != this.attenuation)
+			updateMatrix();
 		this.attenuation = attenuation;
 	}
 	
-	/**Возвращает занчение альфа канала для цвета.
-	 * @param isSelected жила выбранна или нет?
-	 * @return значение альфа канала, где 0 - полная прозрачность, а 255 - полная светимость
-	 */
-	protected double getColorAlfa(boolean isSelected){
-		final var mp = Configurations.getMaxConcentrationMinerals();
-		if(mp == power){
-			return isSelected ? 63 : 255;
-		} else if(isSelected){
-			return 255;
-		} else {
-			return (64 + 192 * power / mp);
-		}
-	}
 	
 	@Override
 	public JSON toJSON(){

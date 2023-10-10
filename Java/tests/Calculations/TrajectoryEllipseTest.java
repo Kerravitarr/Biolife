@@ -4,6 +4,7 @@
  */
 package Calculations;
 
+import Calculations.Trajectories.TrajectoryEllipse;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

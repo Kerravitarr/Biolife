@@ -1,6 +1,6 @@
 package MapObjects;
 
-import Calculations.StreamAbstract;
+import Calculations.Streams.StreamAbstract;
 import java.awt.Color;
 import java.awt.Graphics;
 

@@ -4,6 +4,7 @@
  */
 package Calculations;
 
+import Calculations.Streams.StreamEllipse;
 import MapObjects.CellObject;
 import Utils.JSON;
 import com.carrotsearch.junitbenchmarks.AbstractBenchmark;

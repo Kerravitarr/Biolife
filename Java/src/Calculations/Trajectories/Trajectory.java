@@ -2,27 +2,23 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package Calculations;
+package Calculations.Trajectories;
 
-import Utils.ParamConstructor;
+import Calculations.Configurations;
+import Calculations.Point;
 import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * болванка для таректории по которой могут двигаться объекты карты
  * @author Kerravitarr
  */
 public class Trajectory{
-	/**Интерфейс, показывает, что объект содержит траекторию у себя*/
+	/**Интерфейс, показывает, что объект содержит траекторию у себя и может меняться от времени*/
 	public interface HasTrajectory{
 		/**Возвращает текущую траекторию
 		 * @return траектория, по которой объект двигается сейчас
@@ -34,8 +30,9 @@ public class Trajectory{
 		public void set(Trajectory trajectory);
 		/**Шаг мира для пересчёта
 		* @param step номер шага мира
+		 * @return необходимость пересчёта объекта после этого шага
 		*/
-	   public void step(long step);
+	   public boolean step(long step);
 	}
 	
 	/**Скорость объекта. Единица измерения: секунд на 1 шаг*/

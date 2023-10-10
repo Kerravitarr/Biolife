@@ -2,8 +2,11 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package Calculations;
+package Calculations.Emitters;
 
+import Calculations.Configurations;
+import Calculations.Point;
+import Calculations.Trajectories.Trajectory;
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
 import Utils.ClassBuilder;
@@ -149,31 +152,33 @@ public class SunEllipse extends SunAbstract {
 		this.a2 = a2;
 		a = a2 / 2d;
 		aa = a * a;
+		updateMatrix();
 	}
 	private void setB2(int b2){
 		this.b2 = b2;
 		b = b2 / 2d;
 		bb = b * b;
+		updateMatrix();
 	}
 	@Override
-	public double getEnergy(Point pos) {
+	public double calculation(Point pos) {
 		if(Configurations.confoguration.DIRTY_WATER == 0d)
-			return power;
+			return getPower();
 		//Расстояние от центра до точки
 		var d = pos.distance(position);
 		if (a2 == b2) {
 			//У нас круг!
-			if (!isLine && d.getHypotenuse() <= a) {
-				return power;
+			if (!getIsLine() && d.getHypotenuse() <= a) {
+				return getPower();
 			} else {
-				return Math.max(0, power - Configurations.confoguration.DIRTY_WATER * Math.abs(d.getHypotenuse() - a));
+				return Math.max(0, getPower() - Configurations.confoguration.DIRTY_WATER * Math.abs(d.getHypotenuse() - a));
 			}
 		} else {
 			//У нас эллипс. Расстояние от некой точки до эллипса...
 			//Жесть это, а не матан.
 			//Стырено отсюда: https://github.com/0xfaded/ellipse_demo/blob/master/ellipse.py
-			if (!isLine && Math.pow(d.x, 2) / (aa) + Math.pow(d.y, 2) / (bb) <= 1) {
-				return power;
+			if (!getIsLine() && Math.pow(d.x, 2) / (aa) + Math.pow(d.y, 2) / (bb) <= 1) {
+				return getPower();
 			} else {
 				double tx = 0.707, ty = 0.707;
 				for (int i = 0; i < 3; i++) {
@@ -200,81 +205,15 @@ public class SunEllipse extends SunAbstract {
 					ty /= t;
 				}
 				final var dist = Math.hypot(d.x - Math.copySign(a * tx, d.x), d.y - Math.copySign(b * ty, d.y));
-				return Math.max(0, power - Configurations.confoguration.DIRTY_WATER * dist);
+				return Math.max(0, getPower() - Configurations.confoguration.DIRTY_WATER * dist);
 			}
 		}
 	}
-	@Override
-	protected void move() {}
 	@Override
 	public JSON toJSON(){
 		final var j = super.toJSON();
 		j.add("a2", a2);
 		j.add("b2", b2);
 		return j;
-	}
-	
-	@Override
-	public void paint(Graphics2D g, Transforms transform, int posX, int posY, boolean isSelect) {
-		if(Configurations.confoguration.DIRTY_WATER == 0d){
-			if(posX == position.getX() && posY == position.getY()){
-				//Если у нас чистая вода, то солнце осветит собой всё, что можно
-				g.setColor(isSelect ? AllColors.SUN_DARK : AllColors.SUN);
-				g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.confoguration.MAP_CELLS.width), transform.toScrin(Configurations.confoguration.MAP_CELLS.height));
-			}
-			return;
-		}
-		
-		final var x0 = transform.toScrinX(posX);
-		final var y0 = transform.toScrinY(posY);
-
-		final var maxAlf = getColorAlfa(isSelect);
-		final var colorMaxLight = AllColors.toDark(AllColors.SUN, (int)maxAlf );
-		
-		//Где солнышко заканчивается
-		final var a0 = transform.toScrin(Math.max(a2, b2))/2;
-		//Сколько энергии в солнышке
-		final var p = transform.toScrin((int)Math.round(power / Configurations.confoguration.DIRTY_WATER));
-		//Где заканчивается свет от него
-		final var s = Math.max(1, a0 + p);
-		//А в процентах расстояние от 0 до границы солнца
-		final var sunP = ((float)a0) / s;
-		if(sunP == 0) return;
-			
-		float[] fractions;
-		Color[] colors;
-		if(isLine){
-			//Соотношение цветов
-			fractions = new float[] {(p >= a0 ? 0f : sunP - sunP * p / a0), sunP, 1.0f };
-			//Сами цвета
-			colors = new Color[] { AllColors.toDark(AllColors.SUN, (int) (a0 > p ? 0 : (maxAlf - maxAlf * a0 / p))) ,colorMaxLight , AllColors.SUN_DARK};
-		} else {
-			//Соотношение цветов
-			fractions = new float[] { 0.0f, sunP, 1.0f };
-			//Сами цвета
-			 colors = new Color[]{colorMaxLight, colorMaxLight, AllColors.SUN_DARK};
-		}
-			
-		if(a2 == b2){
-			//Круглое солнышко - это збс
-			g.setPaint(new RadialGradientPaint(
-					new Point2D.Double(x0, y0), s,fractions, colors,CycleMethod.NO_CYCLE));
-			g.fill(new Ellipse2D.Double(x0 - s, y0 - s, s*2,s*2));
-		} else {
-			//А эллипс надо сначала деформировать
-			if(a > b) {
-				final var at = AffineTransform.getScaleInstance(1, b / a);
-				final var center = new Point2D.Double(x0, y0 * a / b);
-				g.setPaint(new RadialGradientPaint(center, s, center, fractions, colors, CycleMethod.NO_CYCLE, MultipleGradientPaint.ColorSpaceType.SRGB, at));
-				g.fill(new Ellipse2D.Double(x0 - s, y0 - s, s * 2, s * 2));
-			} else {
-				final var at = AffineTransform.getScaleInstance(a / b, 1);
-				final var center = new Point2D.Double(x0 * b / a, y0);
-				g.setPaint(new RadialGradientPaint(center, s, center, fractions, colors, CycleMethod.NO_CYCLE, MultipleGradientPaint.ColorSpaceType.SRGB, at));
-				g.fill(new Ellipse2D.Double(x0 - s, y0 - s, s*2,s*2));
-			}
-		}
-		
-	}
-	
+	}	
 }

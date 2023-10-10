@@ -5,12 +5,14 @@
 package GUI;
 
 import Calculations.Configurations;
+import Calculations.Emitters.DefaultEmitter;
+import Calculations.Emitters.EmitterSet;
 import Calculations.Gravitation;
-import Calculations.MineralAbstract;
+import Calculations.Emitters.MineralAbstract;
 import Calculations.Point;
-import Calculations.StreamAbstract;
-import Calculations.SunAbstract;
-import Calculations.Trajectory;
+import Calculations.Streams.StreamAbstract;
+import Calculations.Emitters.SunAbstract;
+import Calculations.Trajectories.Trajectory;
 import MapObjects.CellObject;
 import Utils.ClassBuilder;
 import java.awt.Color;
@@ -101,7 +103,7 @@ public class Settings extends javax.swing.JPanel {
 		configuationsNorm.add( new SettingsSlider<>(Settings.class,"configuations.timeLifeOrg", 0, dc.TIK_TO_EXIT, 100, 0, Configurations.confoguration.TIK_TO_EXIT,null, e -> Configurations.confoguration.TIK_TO_EXIT = e));
 		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.dirtiness",
 				0, (int)(dc.DIRTY_WATER * 100), 1000,
-				0, (int)(Configurations.confoguration.DIRTY_WATER * 100), null, e -> Configurations.confoguration.DIRTY_WATER = e / 100d));
+				0, (int)(Configurations.confoguration.DIRTY_WATER * 100), null, e -> {Configurations.confoguration.DIRTY_WATER = e / 100d; Configurations.suns.updateMatrix();}));
 		
 		//А теперь мы обновляем состояние ячеек
 		borderClick(configuationsNorm, null);
@@ -270,7 +272,7 @@ public class Settings extends javax.swing.JPanel {
 				suns2.add(new JPopupMenu.Separator());
 			final var sun = Configurations.suns.get(i);
 			suns2.add(new SettingsString(Settings.class,"object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
-			suns2.add(addBlink(sun.getSelect(), e->sun.setSelect(e)));
+			//suns2.add(addBlink(sun.getSelect(), e->sun.setSelect(e)));
 			suns2.add(addNew(sun, Trajectory.getChildrens()));
 			suns2.add(addRemove(Configurations.suns,sun));
 		}
@@ -321,7 +323,7 @@ public class Settings extends javax.swing.JPanel {
 				minerals2.add(new JPopupMenu.Separator());
 			final var mineral = Configurations.minerals.get(i);
 			minerals2.add(new SettingsString(Settings.class,"object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
-			minerals2.add(addBlink(mineral.getSelect(), e->mineral.setSelect(e)));
+			//minerals2.add(addBlink(mineral.getSelect(), e->mineral.setSelect(e)));
 			minerals2.add(addNew(mineral, Trajectory.getChildrens()));
 			minerals2.add(addRemove(Configurations.minerals,mineral));
 		}
@@ -390,6 +392,22 @@ public class Settings extends javax.swing.JPanel {
 		return remove;
 	}
 	/**
+	 * Создаёт кнопку удаления объекта
+	 * @param <T>
+	 * @param list список, из которого объект удаляется
+	 * @param object сам удаляемый объект
+	 * @return объект кнопки, который нужно добавить на панель
+	 */
+	private <T extends DefaultEmitter> javax.swing.JButton addRemove(final EmitterSet<T> list, final T object){
+		final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.remove.L"));
+		remove.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.remove.T"));
+		remove.addActionListener( e -> {
+			list.remove(object);
+			rebuildBuild();
+		});
+		return remove;
+	}
+	/**
 	 * Создаёт кнопку генерации новой траектории для объекта
 	 * @param <T>
 	 * @param object сам объект, траектория которого нас ну оооочень интересует
@@ -411,12 +429,32 @@ public class Settings extends javax.swing.JPanel {
 	}
 	
 	/**
-	 * Создаёт кнопку генерации новой траектории для объекта
+	 * Создаёт кнопку генерации нового объекта
 	 * @param <T>
 	 * @param list уже существующие объекты
 	 * @return объект кнопки, который нужно добавить на панель
 	 */
 	private <T> javax.swing.JButton addNew(final List<T> list, final List<ClassBuilder> constructorList){
+		final var newT = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.newObject.L"));
+		newT.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.newObject.T"));
+		newT.addActionListener( e -> {
+			final var make = new SettingsMake(false, constructorList);
+			make.setBounds(newT.getLocationOnScreen().x, newT.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
+			make.setVisible(true);
+			final var ret = (T) make.get(Object.class);
+			if(ret != null)
+				list.add(ret);
+			rebuildBuild();
+		});
+		return newT;
+	}
+	/**
+	 * Создаёт кнопку генерации нового объекта
+	 * @param <T>
+	 * @param list уже существующие объекты
+	 * @return объект кнопки, который нужно добавить на панель
+	 */
+	private <T extends DefaultEmitter> javax.swing.JButton addNew(final EmitterSet<T> list, final List<ClassBuilder> constructorList){
 		final var newT = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.newObject.L"));
 		newT.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.newObject.T"));
 		newT.addActionListener( e -> {
