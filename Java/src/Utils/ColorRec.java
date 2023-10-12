@@ -1,7 +1,7 @@
 package Utils;
 
 import java.awt.Color;
-import java.awt.GradientPaint;
+import java.awt.Paint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 
@@ -9,7 +9,7 @@ public class ColorRec{
 	/**Монотонный цвет*/
 	private final Color color;
 	/**Гаридаентный цвет*/
-	private final GradientPaint gradientColor;
+	private final Paint gradientColor;
 	/**Откуда начиная рисовать в координатах экрана*/
 	private final int x;
 	/**Откуда начиная рисовать в координатах экрана*/
@@ -33,10 +33,10 @@ public class ColorRec{
 		xp = null;
 		yp = null;
 	}
-	public ColorRec(int x0, int y0, int w, int h, GradientPaint c) {
+	public ColorRec(int x0, int y0, int w, int h, Paint c) {
 		this(createX(x0,w),createY(y0,h),c);
 	}
-	public ColorRec(int[] x0, int[] y0, GradientPaint c) {
+	public ColorRec(int[] x0, int[] y0, Paint c) {
 		x = 0;
 		y = 0;
 		width = 0;

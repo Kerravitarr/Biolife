@@ -71,9 +71,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	/**Глобальный мир!*/
 	public static World world = null;
 	/**Звёзды нашего мира*/
-	public static EmitterSet<SunAbstract> suns = null;
+	public static EmitterSet<SunAbstract> suns = new EmitterSet<>();
 	/**Минералы нашего мира*/
-	public static EmitterSet<MineralAbstract> minerals = null;
+	public static EmitterSet<MineralAbstract> minerals = new EmitterSet<>();
 	/**Потоки воды, которые заставлют клетки двигаться*/
 	public static List<StreamAbstract> streams = null;
 	/**Эволюционное дерево мира*/
@@ -124,16 +124,15 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	}
 	/**Возможные типы мира*/
 	public enum WORLD_TYPE{
-		/**Линейный мир представляет собой бесконечную полосу, ограниченную сверху и снизу. Справа и слева мир зациклен на себя.
-		 Это вертекальный срез бассейна*/
+		/**Вертикальный срез бассейна. Линейный мир представляет собой бесконечную полосу, ограниченную сверху и снизу. Справа и слева мир зациклен на себя.*/
 		LINE_H,
-		/**Линейный мир, но на этот раз бесконечная полоса вертикальна. Это тип река, вид сверху, кусок течения*/
+		/**Река, вид сверху. Линейный мир, но на этот раз бесконечная полоса вертикальна*/
 		LINE_V,
-		/**Прямоугольный мир, ограниченный со всех сторох. Это аквариум*/
+		/**Аквариум. Прямоугольный мир, ограниченный со всех сторох.*/
 		RECTANGLE,
-		/**Бесконечное прямоугольное поле - просто кусок океана*/
+		/**Океан. Бесконечное прямоугольное поле*/
 		FIELD_R,
-		/**Круглый мир, представляющий собой чашку петри*/
+		/**Чашка Петри. Круглый мир, представляющий собой чашку петри*/
 		CIRCLE,
 		/**И, наконец, круглое поле, но без стенок - просто кусок океана - быть не может.
 		 Тут вообще хорошо-бы расписать доказательство, но сводится оно к простой истине - 
@@ -467,7 +466,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		world = new World(confoguration.MAP_CELLS);
 		//Нужно обновить энергетические матрицы
 		suns.updateMatrix();
+		suns.recalculation();
 		minerals.updateMatrix();
+		minerals.recalculation();
 	}
 	/** * Возвращает размер мира по умолчанию для текущего разрешения экрана
 	 * Понятное дело, что если экрана нет - то вернёт он лишь null.Впрочем, без экрана вызывать эту функцию в принципе не следует!

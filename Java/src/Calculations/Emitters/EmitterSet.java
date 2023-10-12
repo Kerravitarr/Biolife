@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Набор излучателей
@@ -25,6 +24,12 @@ public class EmitterSet<T extends DefaultEmitter> {
 	private double[] NullE = new double[0];
 	/**Набор излучателей*/
 	private ArrayList<T> _emitters = new ArrayList<>();
+	/**Шаг последнего обновления, после него данные можно считать постояными*/
+	private long lastUpdate = -1;
+	
+	public EmitterSet(){
+		recalculation();
+	}
 	
 	/**Возвращает количество излучения в этой точке
 	 * @param where точка, где излучается
@@ -47,14 +52,22 @@ public class EmitterSet<T extends DefaultEmitter> {
 			}
 		});
 		if(recalculation[0]){
-			if (Energy.length != Configurations.getWidth() || Energy[0].length != Configurations.getHeight()) {
-				Energy = new double[Configurations.getWidth()][Configurations.getHeight()];
-				NullE = new double[Configurations.getHeight()];
-				Arrays.fill(NullE, -1d);
-			}
-			for (int x = 0; x < Configurations.getWidth(); x++) {
-				System.arraycopy(NullE	, 0, Energy[x], 0, NullE.length);
-			}
+			recalculation(step);
+		}
+	}
+	
+	public void recalculation(){
+		recalculation(lastUpdate > 0 ? -1 : lastUpdate - 1);
+	}
+	private void recalculation(long step){
+		lastUpdate = step;
+		if (Energy.length != Configurations.getWidth() || Energy[0].length != Configurations.getHeight()) {
+			Energy = new double[Configurations.getWidth()][Configurations.getHeight()];
+			NullE = new double[Configurations.getHeight()];
+			Arrays.fill(NullE, -1d);
+		}
+		for (int x = 0; x < Configurations.getWidth(); x++) {
+			System.arraycopy(NullE	, 0, Energy[x], 0, NullE.length);
 		}
 	}
 	
@@ -86,4 +99,11 @@ public class EmitterSet<T extends DefaultEmitter> {
 	public List<JSON> serialization(Function<T, JSON> mapper) {
 		return _emitters.stream().map(mapper).toList();
 	}
+	/**
+	 * Возвращает шаг, на котором было последнее обновление излучателей.
+	 * После него таблица излучения не перерисовывалась
+	 * @return шаг мира. Это просто абстрактное число, оно может быть даже отрицательным!
+	 *		Самое главное, что его можно запомнить и сравнить, для проверки :)
+	 */
+	public long getLustUpdate(){return lastUpdate;}
 }

@@ -75,11 +75,12 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 	protected abstract void move();
 
 	@Override
-	public void step(long step) {
+	public boolean step(long step) {
 		if(move != null && move.isStep(step)){
 			position = move.nextPosition();
 			move();
 		}
+		return false;
 	}
 	/**Обрабатывает сдувание клетки в определённую сторону потоком
 	 * @param cell клетка, на которую поток воздействует

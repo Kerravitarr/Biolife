@@ -106,6 +106,9 @@ public abstract class DefaultEmitter implements Trajectory.HasTrajectory{
 			Energy = new double[Configurations.getWidth()][Configurations.getHeight()];
 			NullE = new double[Configurations.getHeight()];
 			Arrays.fill(NullE, -1d);
+			for (int x = 0; x < Configurations.getWidth(); x++) {
+				System.arraycopy(NullE	, 0, Energy[x], 0, NullE.length);
+			}
 		}
 		isNeedRecalculateEnergy = true;
 	}
