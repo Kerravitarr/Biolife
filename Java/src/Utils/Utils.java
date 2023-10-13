@@ -82,9 +82,9 @@ public class Utils {
 	/**
 	 * Рисует круг
 	 * @param g
-	 * @param x
-	 * @param y
-	 * @param r
+	 * @param x центр круга
+	 * @param y центр круга
+	 * @param r радиус круга
 	 */
 	public static void fillCircle(Graphics g, int x, int y, int r) {
 		g.fillOval(x-r/2, y-r/2, r, r);

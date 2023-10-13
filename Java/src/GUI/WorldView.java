@@ -10,15 +10,16 @@ import Calculations.Point;
 import MapObjects.CellObject;
 import Utils.ColorRec;
 import Utils.FPScounter;
-import Utils.Utils;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
-import java.util.List;
 
+	import java.awt.*;
+import java.awt.image.*;
+import java.util.Objects;
 /**
  *
  * @author Kerravitarr
@@ -44,7 +45,13 @@ public class WorldView extends javax.swing.JPanel {
 		* @param x координата в масштабах клеток
 		* @return x координата в масштабе окна, пк
 		*/
-		public int toScrinX(int x) {return (int) Math.round(x*scalePxPerCell + pixelXDel);}
+		public int toScrinX(int x) {return (int) Math.round(toDScrinX(x));}
+		/**
+		* Переводит координаты мира в координаты экрана
+		* @param x координата в масштабах клеток
+		* @return x координата в масштабе окна, пк
+		*/
+		public double toDScrinX(int x) {return x*scalePxPerCell + pixelXDel;}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param point объект с координатами, из которого выбирается только Х
@@ -56,7 +63,13 @@ public class WorldView extends javax.swing.JPanel {
 		* @param y координата в масштабах клетки
 		* @return y координата в масштабе окна, пк
 		*/
-		public int toScrinY(int y) {return (int) Math.round(y*scalePxPerCell + pixelYDel);}
+		public int toScrinY(int y) {return (int) Math.round(toDScrinY(y));}
+	   /**
+		* Переводит координаты мира в координаты экрана
+		* @param y координата в масштабах клетки
+		* @return y координата в масштабе окна, пк
+		*/
+		public double toDScrinY(int y) {return y*scalePxPerCell + pixelYDel;}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param point объект с координатами, из которого выбирается только Y
@@ -74,7 +87,12 @@ public class WorldView extends javax.swing.JPanel {
 		* @param r размер объекта в клетках мира
 		* @return радиус объекта в пикселях
 		*/
-		public int toScrin(int r) {return (int) Math.max(1l, Math.round(r * scalePxPerCell)) ;}
+		public int toScrin(int r) {return (int) Math.round(toDScrin(r));}
+	   /**Возвращает размеры мира в пикселях
+		* @param r размер объекта в клетках мира
+		* @return радиус объекта в пикселях
+		*/
+		public double toDScrin(int r) {return r * scalePxPerCell;}
 	   /**
 		* Переводит координаты экрана в координаты мира
 		* @param x координата на экране
@@ -111,8 +129,8 @@ public class WorldView extends javax.swing.JPanel {
 		 * @return точку в реальном пространстве
 		 */
 		private Point recalculation(int x, int y) {
-			x = (int) Utils.betwin(transforms.pixelXDel, x, WorldView.this.getWidth() - Transforms.border.width);
-			y = (int) Utils.betwin(transforms.pixelYDel, y, WorldView.this.getHeight() - Transforms.border.height);
+			x = (int) Utils.Utils.betwin(transforms.pixelXDel, x, WorldView.this.getWidth() - Transforms.border.width);
+			y = (int) Utils.Utils.betwin(transforms.pixelYDel, y, WorldView.this.getHeight() - Transforms.border.height);
 			return Point.create(transforms.toWorldX(x), transforms.toWorldY(y));
 		}
 	   
@@ -129,14 +147,7 @@ public class WorldView extends javax.swing.JPanel {
 			pixelYDel = (h - (Configurations.getHeight() - 1) * scalePxPerCell) / 2;
 		}
 	}
-	/**Пара объектов для рисования на экране*/
-	private class SunMinPair{
-		/**Площадь, которую мы разукрашиваем*/
-		private final java.awt.geom.Area area;
-		/**Цвет этой площади*/
-		private final Color color;
-		SunMinPair(java.awt.geom.Area a, Color c){area=a;color=c;}
-	}
+
 	/** Creates new form WorldView */
 	public WorldView() {
 		initComponents();
@@ -304,10 +315,170 @@ public class WorldView extends javax.swing.JPanel {
 		fps.interapt();
 		repaint();
 	}
+	
+public class AdditiveComposite implements Composite {
+    private final Color chromaKey;
+
+    public AdditiveComposite(final Color chromaKey) {
+        this.chromaKey = Objects.requireNonNull(chromaKey);
+    }
+
+    public CompositeContext createContext(ColorModel srcColorModel,
+            ColorModel dstColorModel, RenderingHints hints) {
+        return new AdditiveCompositeContext(chromaKey);
+    }
+}
+
+	public class AdditiveCompositeContext implements CompositeContext {
+    private final Color chromaKey;
+
+    public AdditiveCompositeContext(final Color chromaKey) {
+        this.chromaKey = Objects.requireNonNull(chromaKey);
+    }
+
+    public void compose(Raster src, Raster dstIn, WritableRaster dstOut) {
+        int r = chromaKey.getRed(), g = chromaKey.getGreen(), b = chromaKey.getBlue();
+        int[] pxSrc = new int[src.getNumBands()];
+        int[] pxDst = new int[dstIn.getNumBands()];
+        int chans = Math.min(src.getNumBands(), dstIn.getNumBands());
+
+        for (int x = 0; x < dstIn.getWidth(); x++) {
+            for (int y = 0; y < dstIn.getHeight(); y++) {
+                pxSrc = src.getPixel(x, y, pxSrc);
+                pxDst = dstIn.getPixel(x, y, pxDst);
+
+                int alpha = pxSrc.length > 3? alpha = pxSrc[3] : 255;
+
+                if (pxDst[0] == r && pxDst[1] == g && pxDst[2] == b) {
+                    pxDst[0] = 0; pxDst[1] = 0; pxDst[2] = 0;
+                }
+
+                for (int i = 0; i < 3 && i < chans; i++) {
+                    pxDst[i] = Math.min(255, (pxSrc[i] * alpha / 255) + (pxDst[i]));
+                    dstOut.setPixel(x, y, pxDst);
+                }
+            }
+        }
+    }
+
+    @Override public void dispose() { }
+}
+	
+	int frame = 0;
+	long lstMs = 0;
 	/**Закрашивает картину, согласно текущему раскладу
 	 * @param g полотно, которое красим
 	 */
 	private void paintField(Graphics2D g) {
+		final var ms = System.currentTimeMillis();
+		if(ms > lstMs){
+			lstMs = ms + 1000;
+			frame++;
+		}
+		final var step = 10;		
+		final var rule = switch ((frame / step) % 4) {
+			case 0 -> AlphaComposite.SRC_OVER;
+			case 1 -> AlphaComposite.SRC_IN;
+			case 2 -> AlphaComposite.SRC_ATOP;
+			case 3 -> AlphaComposite.XOR;
+			default -> -1;
+		};
+		g.setComposite(AlphaComposite.getInstance( rule, 0.9f ));
+        g.setComposite(new AdditiveComposite(getBackground()));
+		if(frame % step == 0)
+			System.out.println((frame++ / step));
+		
+		var mx = getWidth();
+		var my = getHeight();
+		final var wh = Math.min(mx, my) / 6;
+		final var x0 = wh / 4;
+		final var y0 = wh / 4;
+		mx -= wh / 4;
+		my -= wh / 4;
+		
+		final var sx = new int[1];
+		final var sy = new int[1];
+		
+		final var index = new int[1];
+		final var dr = new Object(){
+			final int countSq = 5;
+			
+			public void drawS(){
+				g.setColor(Color.BLACK);
+				g.drawString("i" + (index[0]),sx[0] + wh/4, sy[0] + wh/2);
+			}
+			public void drawSM(int sunAlfa, int minAlfa, int i1, int i2){
+				g.setColor(AllColors.toDark(AllColors.SUN, sunAlfa));
+				draw(i1);
+				g.setColor(AllColors.toDark(AllColors.MINERALS, minAlfa));
+				draw(i2);
+			}
+			public void drawMS(int minAlfa, int sunAlfa, int i1, int i2){
+				g.setColor(AllColors.toDark(AllColors.MINERALS, minAlfa));
+				draw(i1);
+				g.setColor(AllColors.toDark(AllColors.SUN, sunAlfa));
+				draw(i2);
+			}
+			public void draw(int minAlfa, int sunAlfa){
+				g.setColor(Utils.DeprecatedMetods.blend(AllColors.toDark(AllColors.MINERALS, minAlfa), AllColors.toDark(AllColors.SUN, sunAlfa)));
+				draw(0);
+			}
+			private void draw(int index){
+				final var realWH = wh / 4;
+				switch (index) {
+					case 0 -> g.fillRect(sx[0] + realWH, sy[0] + realWH, realWH*2, realWH*2);
+					case 1 -> g.fillRect(sx[0], sy[0], realWH, realWH);
+					case 2 -> g.fillRect(sx[0] + realWH, sy[0], realWH, realWH);
+					case 3 -> g.fillRect(sx[0] + realWH*2, sy[0], realWH, realWH);
+					case 4 -> g.fillRect(sx[0] + realWH*3, sy[0], realWH, realWH);
+					
+					case 5 -> g.fillRect(sx[0], sy[0] +  + realWH*3, realWH, realWH);
+					case 6 -> g.fillRect(sx[0] + realWH, sy[0] +  + realWH*3, realWH, realWH);
+					case 7 -> g.fillRect(sx[0] + realWH*2, sy[0] +  + realWH*3, realWH, realWH);
+					case 8 -> g.fillRect(sx[0] + realWH*3, sy[0] +  + realWH*3, realWH, realWH);
+				}
+			}
+			public void test(int c1, int c2){
+				draw(c1,c2);
+				drawSM(c1,c2, 1,2);
+				drawSM(c2,c1, 3,4);
+				drawMS(c1,c2, 5,6);
+				drawMS(c2,c1, 7,8);
+				drawS();
+				/*switch (index[0] % 5) {
+					case 0 -> drawSM(c1,c2);
+					case 2 -> drawMS(c1,c2);
+					case 4 -> draw(c1,c2);
+				}*/
+			}
+		};
+		
+		for (sx[0] = x0; sx[0] < mx; sx[0] += wh * 2) {
+			for (sy[0] = y0; sy[0] < my; sy[0] += wh * 2, index[0]++) {
+				g.setColor(Color.WHITE);
+				g.fillRect(sx[0], sy[0], wh, wh);
+				switch (index[0]) {
+					case 0 -> dr.test(255,255);
+					case 1 -> dr.test(254,254);
+					case 2 -> dr.test(128,128);
+					case 3 -> dr.test(50,50);
+					case 4 -> dr.test(10,10);
+					case 5 -> dr.test(1,1);
+					case 6 -> dr.test(128,64);
+					case 7 -> dr.test(128,32);
+					case 8 -> dr.test(128,1);
+					case 9 -> dr.test(254,1);
+					default -> {
+						g.setColor(Color.red);
+						g.fillRect(sx[0], sy[0], wh, wh);
+					}
+				}
+			}
+		}
+		
+		if(true)
+			return;
+		
 		//Рисуем игровое поле
 		switch (Configurations.confoguration.world_type) {
 			case LINE_H,LINE_V, RECTANGLE,FIELD_R ->{
@@ -316,14 +487,15 @@ public class WorldView extends javax.swing.JPanel {
 			}
 			default -> 	throw new AssertionError();
 		}
+		
 		//А теперь, поверх воды, рисуем излучатели
-		paintEmitters(g);
+		Utils.DeprecatedMetods.paintEmitters(g,transforms);
 		//А теперь, поверх воды, рисуем солнышки
 		//Configurations.suns.forEach(s -> s.paint(g,getTransform()));
 		//И минералки
 		//Configurations.minerals.forEach(s -> s.paint(g,getTransform()));
 		//И и шлефанём всё это потоками
-		Configurations.streams.forEach(s -> s.paint(g,getTransform()));
+		//Configurations.streams.forEach(s -> s.paint(g,getTransform()));
 			//А теперь, ещё выше, рисуем все траектории
 			//Configurations.suns.forEach(s -> s.getTrajectory().paint(g,getTransform()));
 			//Configurations.minerals.forEach(s -> s.getTrajectory().paint(g,getTransform()));
@@ -352,252 +524,8 @@ public class WorldView extends javax.swing.JPanel {
 			default -> 	throw new AssertionError();
 		}
 		//Вспомогательное построение
-		//paintCells(g);
+		//Utils.DeprecatedMetods.paintCells(g);
 	}
-	/**
-	 * Рисует излучатели на поле
-	 * @param g полотно, которое красим
-	 */
-	private void paintEmitters(Graphics2D g){
-		
-		final var a = new java.awt.geom.Area();
-		a.subtract(a);
-		a.add(a);
-		
-		if(Configurations.suns.getLustUpdate() != lastUpdateSuns || Configurations.minerals.getLustUpdate() != lastUpdateMinerals){
-			final var ls = Configurations.suns.getLustUpdate();
-			final var lm = Configurations.minerals.getLustUpdate();
-			if(isPaint.length != Configurations.getWidth() || isPaint[0].length != Configurations.getHeight())
-				isPaint = new int[Configurations.getWidth()][Configurations.getHeight()];
-			final var oldIsMin = isPaint[0][0] < 0;
-			int index = oldIsMin ? 1 : -1;
-			int maxSP = 0, maxMP = 0;
-			for (int x = 0; x < Configurations.getWidth(); x++) {
-				for (int y = 0; y < Configurations.getHeight(); y++) {
-					if(isPaint[x][y] < 0 == oldIsMin){
-						isPaint[x][y] = index;
-						final var pos = Point.create(x, y);
-						final var sE = (int) Math.ceil(Configurations.suns.getE(pos));
-						final var mE = (int) Math.ceil(Configurations.minerals.getE(pos));
-						maxSP = Math.max(maxSP, sE);
-						maxMP = Math.max(maxMP, mE);
-						int size = 1;
-						while (paint(pos, size, oldIsMin, sE, mE, index) != 0){ //Цикл по всем радиусам
-							while (paint(pos, size, oldIsMin, sE, mE, index) != 0){}; //Цикл по одному радиусу, для надёжности. Бывают случаи, когда без него ни как
-							size++;
-						}
-						if(oldIsMin)
-							index++;
-						else
-							index--;
-					}
-				}
-			}
-			paintEmitters.clear();
-			final var wh = (float) transforms.scalePxPerCell;
-			for (int x = 0; x < Configurations.getWidth(); x++) {
-				for (int y = 0; y < Configurations.getHeight(); y++) {
-					final var i = Math.abs(isPaint[x][y]);
-					final var rectangle = new java.awt.geom.Area(new java.awt.geom.Rectangle2D.Float((float) (x*wh + transforms.pixelXDel - wh/2), (float) (y*wh + transforms.pixelYDel - wh/2), wh, wh));
-					if(paintEmitters.size() < i){
-						//Нужно создать наш элемент
-						final var pos = Point.create(x, y);
-						final var sE = (int) Math.ceil(Configurations.suns.getE(pos));
-						final var mE = (int) Math.ceil(Configurations.minerals.getE(pos));
-						final var sC = AllColors.toDark(AllColors.SUN, AllColors.SUN.getAlpha() * sE / maxSP);
-						final var mC = AllColors.toDark(AllColors.MINERALS, AllColors.MINERALS.getAlpha() * mE / maxMP);
-						
-						paintEmitters.add(new SunMinPair(rectangle,blend(sC,mC)));
-					} else {
-						paintEmitters.get(i-1).area.add(rectangle);
-					}
-				}
-			}
-			
-			lastUpdateSuns = ls;
-			lastUpdateMinerals = lm;
-		}
-		for(final var i : paintEmitters){
-			g.setColor(i.color);
-			g.fill(i.area);
-		}
-	}
-	/**Смешивает цвета пропорционально их альфа каналу
-	 * @param c0 первый цвет
-	 * @param c1 второй цвет
-	 * @return цвет, как сумма смешиваемых
-	 */
-	private static Color blend(Color c0, Color c1) {
-		final double totalAlpha = c0.getAlpha() + c1.getAlpha();
-		final double weight0 = totalAlpha == 0 ? 0.5d : c0.getAlpha() / totalAlpha;
-		final double weight1 = totalAlpha == 0 ? 0.5d : c1.getAlpha() / totalAlpha;
-
-		double r = weight0 * c0.getRed() + weight1 * c1.getRed();
-		double g = weight0 * c0.getGreen() + weight1 * c1.getGreen();
-		double b = weight0 * c0.getBlue() + weight1 * c1.getBlue();
-		double a = Math.max(c0.getAlpha(), c1.getAlpha());
-
-		return new Color((int) r, (int) g, (int) b, (int) a);
-	}
-	/**
-	 * Этот монстр разносит в карте разные области за разными объектами.
-	 * Его задача взять точку и обойти её по квадрату с радиусом size
-	 * И все точки на этом квадрате, что имеют те-же значения sE и mE, что и точка
-	 * start, а ещё что имеют с start прямой путь (без наискосок) связать с start
-	 * одним index.
-	 * @param start точка отсчёта, базовая точка
-	 * @param size радиус квадрата, который обхдоим
-	 * @param oldIsMin флаг, показываеющий, устаревшие значения меньше нуля?
-	 * @param sE значение интерсоляции в этой точке
-	 * @param mE значение плотности минералов в этой точке
-	 * @param index порядковый индекс точки start
-	 * @return количество точек, добавленных в коллекцию к start
-	 */
-	private int paint(Point start, int size, boolean oldIsMin, int sE, int mE, int index){
-		int countFind = 0;
-		final var mix = start.getX() - size;
-		final var miy = start.getY() - size;
-		final var max = start.getX() + size;
-		final var may = start.getY() + size;
-		
-		if(miy >= 0){
-			final var sx = Math.max(0, mix);
-			final var ex = Math.min(max + 1, Configurations.getWidth());  //+1, чтобы получился полный квадрат
-			for(int x = sx ; x < ex ; x++){
-				if(isPaint[x][miy] < 0 == oldIsMin){
-					final var pos = Point.create(x, miy);
-					if( (int) Math.ceil(Configurations.suns.getE(pos)) == sE && (int) Math.ceil(Configurations.minerals.getE(pos)) == mE){
-						boolean addPoint = (miy < Configurations.getHeight() - 2 && isPaint[x][miy + 1] == index) || ((x > 0) && (isPaint[x - 1][miy] == index));
-						if(addPoint || true){
-							isPaint[x][miy] = index;
-							countFind++;
-							/*for(int rx = x - 1; rx >= sx ; rx--){
-								if(isPaint[rx][miy] < 0 != oldIsMin) break;
-								final var rpos = Point.create(x, miy);
-								if( (int) Math.ceil(Configurations.suns.getE(rpos)) == sE && (int) Math.ceil(Configurations.minerals.getE(rpos)) == mE){
-									addPoint = (miy < Configurations.getHeight() - 2 && isPaint[rx][miy + 1] == index) || (isPaint[rx + 1][miy] == index);
-									if(addPoint){
-										isPaint[rx][miy] = index;
-										countFind++;
-									}
-								}
-							}*/
-						}
-					}
-				}
-			}
-		}
-		
-		if(may < Configurations.getHeight()){
-			final var sx = Math.max(0, mix);
-			final var ex = Math.min(max + 1, Configurations.getWidth());  //+1, чтобы получился полный квадрат
-			for(int x = sx ; x < ex ; x++){
-				if(isPaint[x][may] < 0 == oldIsMin){
-					final var pos = Point.create(x, may);
-					if( (int) Math.ceil(Configurations.suns.getE(pos)) == sE && (int) Math.ceil(Configurations.minerals.getE(pos)) == mE){
-						boolean addPoint = (may > 0 && isPaint[x][may - 1] == index) || ((x > 0) && (isPaint[x - 1][may] == index));
-						if(addPoint || true){
-							isPaint[x][may] = index;
-							countFind++;
-							/*for(int rx = x - 1; rx >= sx ; rx--){
-								if(isPaint[rx][may] < 0 != oldIsMin) break;
-								final var rpos = Point.create(rx, may);
-								if( (int) Math.ceil(Configurations.suns.getE(rpos)) == sE && (int) Math.ceil(Configurations.minerals.getE(rpos)) == mE){
-									addPoint = (may > 0 && isPaint[rx][may - 1] == index) || (isPaint[rx + 1][may] == index);
-									if(addPoint){
-										isPaint[rx][may] = index;
-										countFind++;
-									}
-								}
-							}*/
-						}
-					}
-				}
-			}
-		}
-		
-		if(mix >= 0){
-			final var sy = Math.max(0, miy);
-			final var ey = Math.min(may+1, Configurations.getHeight());  //+1, чтобы получился полный квадрат
-			for(int y = sy ; y < ey ; y++){
-				if(isPaint[mix][y] < 0 == oldIsMin){
-					final var pos = Point.create(mix, y);
-					if( (int) Math.ceil(Configurations.suns.getE(pos)) == sE && (int) Math.ceil(Configurations.minerals.getE(pos)) == mE){
-						boolean addPoint = (mix < Configurations.getWidth() - 2 && isPaint[mix + 1][y] == index) || ((y > 0) && (isPaint[mix][y] == index));
-						if(addPoint || true){
-							isPaint[mix][y] = index;
-							countFind++;
-							/*for(int ry = y - 1; ry >= sy ; ry--){
-								if(isPaint[mix][ry] < 0 != oldIsMin) break;
-								final var rpos = Point.create(mix, ry);
-								if( (int) Math.ceil(Configurations.suns.getE(rpos)) == sE && (int) Math.ceil(Configurations.minerals.getE(rpos)) == mE){
-									addPoint = (mix < Configurations.getWidth() - 2 && isPaint[mix + 1][ry] == index) || ((isPaint[mix][ry + 1] == index));
-									if(addPoint){
-										isPaint[mix][ry] = index;
-										countFind++;
-									}
-								}
-							}*/
-						}
-					}
-				}
-			}
-		}
-		
-		if(max < Configurations.getWidth()){
-			final var sy = Math.max(0, miy);
-			final var ey = Math.min(may+1, Configurations.getHeight());  //+1, чтобы получился полный квадрат
-			for(int y = sy ; y < ey ; y++){
-				if(isPaint[max][y] < 0 == oldIsMin){
-					final var pos = Point.create(max, y);
-					if( (int) Math.ceil(Configurations.suns.getE(pos)) == sE && (int) Math.ceil(Configurations.minerals.getE(pos)) == mE){
-						boolean addPoint = (max > 0 && isPaint[max - 1][y] == index) || ((y > 0) && (isPaint[max][y] == index));
-						if(addPoint || true){
-							isPaint[max][y] = index;
-							countFind++;
-							/*for(int ry = y - 1; ry >= sy ; ry--){
-								if(isPaint[max][ry] < 0 != oldIsMin) break;
-								final var rpos = Point.create(max, ry);
-								if( (int) Math.ceil(Configurations.suns.getE(rpos)) == sE && (int) Math.ceil(Configurations.minerals.getE(rpos)) == mE){
-									addPoint =  (max > 0 && isPaint[max - 1][ry] == index) || ((isPaint[max][ry + 1] == index));
-									if(addPoint){
-										isPaint[max][ry] = index;
-										countFind++;
-									}
-								}
-							}*/
-						}
-					}
-				}
-			}
-		}
-		
-		
-		return countFind;
-	}
-	
-	
-	/**Вспомогательная, отладочная функция, рисования клеток поля
-	 * @param g 
-	 */
-	/*private void paintCells(Graphics2D g) {
-		int r = transforms.toScrin(1);
-		for (int x = 0; x < Configurations.getWidth(); x++) {
-			for (int y = 0; y < Configurations.getHeight(); y++) {
-				final var pos = Point.create(x, y);
-				if(!pos.valid()) continue;
-				if(x % 10 == 0)
-					g.setColor(Color.RED);
-				else if(y % 10 == 0)
-					g.setColor(Color.YELLOW);
-				else
-					g.setColor(Color.BLACK);
-				int cx = transforms.toScrinX(pos);
-				int cy = transforms.toScrinY(pos);
-				g.drawRect(cx-r/2, cy-r/2,r, r);
-			}
-		}
-	}/**/
 	
 	/**Пересчитывает относительные размеры мира в пикселях.*/
 	public synchronized void recalculate() {
@@ -606,9 +534,6 @@ public class WorldView extends javax.swing.JPanel {
 		transforms.recalculate();
 		
 		updateScrin();
-		//Обновляем солнышки и минералы
-		lastUpdateSuns--;
-		lastUpdateMinerals--;
 		
 		if(oActiv)
 			Configurations.world.start();
@@ -791,12 +716,4 @@ public class WorldView extends javax.swing.JPanel {
 	private final ColorRec [] colors = new ColorRec[3];
 	/**Преобразователь из одних координат в другие*/
 	private final Transforms transforms = new Transforms();
-	/**Шаг последнего обновления солнц*/
-	private long lastUpdateSuns = 10000;
-	/**Шаг последнего обновления минералов*/
-	private long lastUpdateMinerals = 10000;
-	/**Массив, показывающий, отрисовали мы уже эту клетку поля или нет?*/
-	private int[][] isPaint = new int[0][0];
-	/**Массив непосредственного рисования на экране*/
-	private List<SunMinPair> paintEmitters = new ArrayList<>();
 }
