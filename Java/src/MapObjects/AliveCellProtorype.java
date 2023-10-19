@@ -264,7 +264,7 @@ public abstract class AliveCellProtorype extends CellObject{
     protected Poison.TYPE poisonType = Poison.TYPE.UNEQUIPPED;
     /**Сила устойчивости к яду*/
     protected int poisonPower = 0;
-    /**Плавучесть. Меняется от -100 до 10 Где -100 - тонуть каждый ход, 100 - всплывать каждый ход, 1 - тонуть каждые 100 ходов*/
+    /**Плавучесть. Меняется от -100 до 100 Где -100 - тонуть каждый ход, 100 - всплывать каждый ход, 1 - тонуть каждые 100 ходов*/
     protected int buoyancy = 0;
     /**Специальный флаг, показывает, что бот на этом ходу спит*/
     protected boolean isSleep = false;

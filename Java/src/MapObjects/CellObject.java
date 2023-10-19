@@ -1,7 +1,5 @@
 package MapObjects;
 
-import Calculations.Streams.StreamAbstract;
-import java.awt.Color;
 import java.awt.Graphics;
 
 import MapObjects.Poison.TYPE;
@@ -17,9 +15,9 @@ import GUI.Legend;
  *
  */
 public abstract class CellObject {
-	/**Статус*/
+	/**Статус, тип объекта.*/
 	public enum LV_STATUS {
-		LV_ALIVE, LV_ORGANIC, LV_POISON, LV_WALL, GHOST;
+		LV_ALIVE, LV_ORGANIC, LV_POISON, LV_WALL,LV_CONNECTIVE_TISSUE, GHOST;
 		/**Имя типа объекта*/
 		private String name;
 		/**Все возможные состояния*/
@@ -37,7 +35,7 @@ public abstract class CellObject {
 
     /**Состояние объекта*/
     protected LV_STATUS alive;
-	/**Статус*/
+	/**Расшриенный статус объекта, показывает отношение между текущим объектом и другим*/
 	public enum OBJECT {
 		/**Крайняя стена*/
 		WALL(1),
@@ -96,6 +94,9 @@ public abstract class CellObject {
 	
     /**Позиция объекта*/
 	private Point pos = Point.create(0, 0);
+	/**Импульс объекта. Клеток/ход*/
+	private Point.PointD impuls = new Point.PointD(0, 0);
+	
     //Счётчик, показывает ходил объект в этот ход или нет
 	protected long stepCount = -1;
     /**Возраст объекта*/
@@ -111,7 +112,7 @@ public abstract class CellObject {
      */
     public CellObject(JSON cell) {
     	setPos(Point.create(cell.getJ("pos")));
-    	this.alive = LV_STATUS.values()[(int)cell.get("alive")];
+    	this.alive = LV_STATUS.valueOf(cell.get("alive"));
     	stepCount = cell.getL("stepCount");
     	years = cell.getL("years");
 	}
@@ -136,15 +137,10 @@ public abstract class CellObject {
 			//Пущай походит
 			step();
 			//А теперь воздействия окружающей среды.
-			//Почему так?
-			//Потому что иначе клетка за ход сможет переместиться слишком далеко
-			//Если уж так надо - пускай перемещается после хода
-			//Так у неё будет больше "защитный" барьер, который не даёт парралельным потокам
-			//Испоганить клетку
 			
 			//Воздействие всех потоков на объект
 			for(final var gz : Configurations.streams)
-				gz.action(this);
+				gz.push(this);
 			switch (alive) {
 				case LV_ALIVE -> {
 					final var acp = ((AliveCellProtorype)this);
@@ -152,11 +148,8 @@ public abstract class CellObject {
 					acp.addMineral((long) acp.mineralAround());
 					//Всплытие/погружение
 					if (acp.getBuoyancy() != 0) {
-						if (acp.getBuoyancy() < 0 && getAge() % (acp.getBuoyancy() + 101) == 0) {
-							moveD(DIRECTION.DOWN);
-						} else if (acp.getBuoyancy() > 0 && getAge() % (101 - acp.getBuoyancy()) == 0) {
-							moveD(DIRECTION.UP);
-						}
+						if(acp.getBuoyancy() < 0) move(DIRECTION.DOWN, 1d/(acp.getBuoyancy() + 101d));
+						else move(DIRECTION.UP, (101 - acp.getBuoyancy()));
 					}
 				}
 				case LV_ORGANIC, LV_POISON, LV_WALL -> {}
@@ -164,10 +157,13 @@ public abstract class CellObject {
 			}
 			//Воздействие граввитации
 			final var g = Configurations.gravitation[alive.ordinal()];
-			if(g.isStep(this)){
-				var d = g.getDirection(pos);
-				if(d != null)
-					this.moveD(d);
+			move(g.getDirection(pos), g.push());
+			if(Math.abs(impuls.x) > 1 || Math.abs(impuls.y) > 1){
+				final var d = impuls.direction();
+				if(moveD(d)){
+					impuls.x -= d.addX;
+					impuls.y -= d.addY;
+				}
 			}
 		}catch (CellObjectRemoveException e) {
 			//Мы умерли и уже удалили себя с поля. Помечаем себя призраком и уходим
@@ -202,7 +198,7 @@ public abstract class CellObject {
 	public JSON toJSON() {
 		JSON make = new JSON();
 		make.add("pos", getPos().toJSON());
-		make.add("alive",getAlive().ordinal());
+		make.add("alive",getAlive());
 		make.add("stepCount",getStepCount());
 		make.add("years",years);
 		return toJSON(make);
@@ -242,6 +238,17 @@ public abstract class CellObject {
 	    } else {
 	        return obj;
 	    }
+	}
+	/**
+	 * Толкает объект в обсолютном направлении.Это значит, что объекту будет дан импульс в каком-то одном направлении
+	 * А вот сможет бот туда сходить или нет - вопрос уже куда серьёзнее
+	 * @param direction направление, в котором следует двигаться
+	 * @param power сила с которой клетка должна будет сдвинуться в эту сторону. В Клетках/ход
+	 */
+	public void move(DIRECTION direction, double power){
+		if(direction == null) return;
+		impuls.x += direction.addX * power;
+		impuls.y += direction.addY * power;
 	}
 	/**
 	 * Перемещает бота в абсолютном направлении

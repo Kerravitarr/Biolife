@@ -9,7 +9,6 @@ import Calculations.Point;
 import Calculations.Trajectories.Trajectory;
 import GUI.AllColors;
 import GUI.WorldView;
-import MapObjects.CellObject;
 import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
@@ -166,42 +165,29 @@ public class StreamEllipse extends StreamAbstract {
 		this.a2 = a2;
 		a = a2 / 2d;
 		aa = a * a;
+		updateMatrix();
 	}
 	private void setB2(int b2){
 		this.b2 = b2;
 		b = b2 / 2d;
 		bb = b * b;
+		updateMatrix();
 	}
 	
 	@Override
-	public void action(CellObject cell) {
-		final var pos = cell.getPos();
+	public Action action(Point pos) {
 		final var d = position.distance(pos);
-		if(Math.pow(d.x, 2) / (aa) + Math.pow(d.y, 2) / (bb) > 1) return; //Это не к нам
+		if(Math.pow(d.x, 2) / (aa) + Math.pow(d.y, 2) / (bb) > 1 || d.direction() == null) return null; //Это не к нам
+		final var dir = shadow.maxPower > 0 ? d.direction() : d.direction().inversion();
 		
 		if (a2 == b2) {
 			//У нас круг!
-			final var F = shadow.power(d.getHypotenuse() / a);
-			if(cell.getAge() % Math.abs(F) == 0){
-				final var dir = d.direction();
-				if(dir == null) return;
-				if(F > 0)	cell.moveD(dir);
-				else		cell.moveD(dir.inversion());
-			}
+			return new Action(dir, d.getHypotenuse() / a);
 		} else {
 			final var teta = Math.atan2(d.y,d.x);
-			final var F = shadow.power(d.getHypotenuse() / Math.hypot(a * Math.cos(teta), b * Math.sin(teta)));
-			
-			if(cell.getAge() % Math.abs(F) == 0){
-				final var dir = d.direction();
-				if(dir == null) return;
-				if(F > 0)	cell.moveD(dir);
-				else		cell.moveD(dir.inversion());
-			}
+			return new Action(dir, d.getHypotenuse() / Math.hypot(a * Math.cos(teta), b * Math.sin(teta)));
 		}
 	}
-	@Override
-	protected void move() {}
 	
 	@Override
 	public JSON toJSON(){

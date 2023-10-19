@@ -4,10 +4,8 @@
  */
 package Utils;
 
-import Calculations.GenerateClassException;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -67,9 +65,9 @@ public class Reflector {
 						}
 					}while((clP = clP.getSuperclass()) != oldclP && clP != null);
                 } catch (java.lang.ExceptionInInitializerError | NoClassDefFoundError e) {
-					Logger.getLogger(Reflector.class.getName()).log(Level.SEVERE, "Не смогли загрзуть класс [" + classFile + "], хотя нашли его, что очень странно", e);
+					System.err.println( "Не смогли загрзуть класс [" + classFile + "], хотя нашли его, что очень странно. Официальная причина: " + e.getLocalizedMessage());
                 } catch (ClassNotFoundException e) {
-					Logger.getLogger(Reflector.class.getName()).log(Level.SEVERE, "Не смогли найти класс [" + classFile + "], что очень странно", e);
+					System.err.println( "Не смогли найти класс [" + classFile + "], что очень странно");
                 }
             }
         }
@@ -77,33 +75,5 @@ public class Reflector {
     }
 	public static <T> List<Class<? extends T>> getClassesByClasses(final Class<T> who){
 		return getClassesByClasses(who,"",Thread.currentThread().getContextClassLoader());
-	}
-	
-	/** 
-	 * Создаёт реальный класс на основе JSON файла. 
-	 * <br>
-	 * Главное условие создание - в JSON файле должен быть параметр "_className" - название класса, который ищем
-	 * <br>
-	 * А сам создаваемый объект обязан иметь конструктор JSON long
-	 * @param <T>
-	 * @param who класс, который надо создать
-	 * @param json объект, описывающий солнце
-	 * @param version версия файла json в котором объект сохранён
-	 * @return готовый, построенный объект на основе запроса
-	 * 
-	 * @throws Calculations.GenerateClassException ошибка, которая может легко возникнуть при создании класса
-	 */
-	public static <T> T generate(final Class<T> who, JSON json, long version) throws GenerateClassException{
-		String className = json.get("_className");
-		try{
-			final var ac = Class.forName(className).asSubclass(who);
-			var constructor = ac.getDeclaredConstructor(JSON.class, long.class);
-			return constructor.newInstance(json,version);
-		} catch (ClassNotFoundException ex)		{throw new GenerateClassException(ex,className);}
-		catch (NoSuchMethodException ex)		{throw new GenerateClassException(ex);}
-		catch (InstantiationException ex)		{throw new GenerateClassException(ex);}
-		catch (IllegalAccessException ex)		{throw new GenerateClassException(ex);} 
-		catch (IllegalArgumentException ex)		{throw new GenerateClassException(ex);}
-		catch (InvocationTargetException ex)	{throw new GenerateClassException(ex);}
 	}
 }

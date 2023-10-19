@@ -7,15 +7,11 @@ package Calculations.Streams;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Trajectories.Trajectory;
-import Utils.ParamObject;
 import GUI.AllColors;
 import GUI.WorldView;
-import MapObjects.CellObject;
 import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Круглый поток, представляющий собой циклическое движение
@@ -104,26 +100,22 @@ public class StreamSwirl extends StreamAbstract {
 
 	private void setR(double r_){
 		r = r_;
+		updateMatrix();
 	}
 	
 	@Override
-	public void action(CellObject cell) {
-		final var pos = cell.getPos();
+	public Action action(Point pos) {
 		final var d = position.distance(pos);
-		if(d.getHypotenuse() > r) return; //Это не к нам
+		if(d.getHypotenuse() > r) return null; //Это не к нам
+		
 		
 		//У нас круг!
-		final var F = shadow.power(d.getHypotenuse() / r);
-		if(cell.getAge() % Math.abs(F) == 0){
-			//Вычисляем нормаль
-			final var perpendicular = F < 0 ? Point.Vector.create(-d.y, d.x) : Point.Vector.create(d.y, -d.x);
-			final var dir = perpendicular.direction();
-			if(dir != null)
-				cell.moveD(perpendicular.direction());
-		}
+		//Вычисляем нормаль
+		final var perpendicular = shadow.maxPower < 0 ? Point.Vector.create(-d.y, d.x) : Point.Vector.create(d.y, -d.x);
+		final var dir = perpendicular.direction();
+		if(dir == null) return null;
+		else return new Action(dir, d.getHypotenuse() / r);
 	}
-	@Override
-	protected void move() {}
 	
 	@Override
 	public JSON toJSON(){

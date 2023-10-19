@@ -349,6 +349,7 @@ public class Settings extends javax.swing.JPanel {
 			if(!tr.getClass().equals(Trajectory.class)){
 				streams.add(new SettingsSlider<>(Settings.class,"trajectory.speed", 0l,tr.getSpeed(),1000l,0l,tr.getSpeed(),null, e -> {
 					tr.setSpeed(e);
+					stream.updateMatrix();
 				}));
 			}
 		}

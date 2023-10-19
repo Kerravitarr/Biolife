@@ -10,7 +10,6 @@ import Calculations.Trajectories.Trajectory;
 import Calculations.Point.DIRECTION;
 import GUI.AllColors;
 import GUI.WorldView;
-import MapObjects.CellObject;
 import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
@@ -31,13 +30,13 @@ public class StreamHorizontal extends StreamAbstract {
 			@Override public Integer getDefault() {return Configurations.getWidth()/2;}
 			@Override public Integer getSliderMaximum() {return Configurations.getWidth();}
 			@Override public Integer get(StreamHorizontal who) {return who.width;}
-			@Override public void setValue(StreamHorizontal who, Integer value) {who.width = value;}
+			@Override public void setValue(StreamHorizontal who, Integer value) {who.width = value;who.updateMatrix();}
 		});
 		builder.addParam(new ClassBuilder.NumberParamAdapter<Integer,StreamHorizontal>("height",0,0,0,0,null){
 			@Override public Integer getDefault() {return Configurations.getHeight()/2;}
 			@Override public Integer getSliderMaximum() {return Configurations.getHeight();}
 			@Override public Integer get(StreamHorizontal who) {return who.height;}
-			@Override public void setValue(StreamHorizontal who, Integer value) {who.height = value;}
+			@Override public void setValue(StreamHorizontal who, Integer value) {who.height = value;who.updateMatrix();}
 		});
 		builder.addConstructor(new ClassBuilder.Constructor<StreamHorizontal>(){
 			{
@@ -111,20 +110,12 @@ public class StreamHorizontal extends StreamAbstract {
 	}
 
 	@Override
-	public void action(CellObject cell) {
-		final var pos = cell.getPos();
+	public Action action(Point pos) {
 		final var d = position.distance(pos);
 		final double absdy = Math.abs(d.y);
-		if(Math.abs(d.x) > width / 2 || absdy > height / 2) return;
-		//Сила затягивания к центральной оси потка
-		var F = shadow.power(absdy / (height / 2));
-		if(F > 0 && cell.getAge() % F == 0)
-			cell.moveD(DIRECTION.RIGHT); // Поехали по направлению!
-		else if(F < 0 && cell.getAge() % -F == 0)
-			cell.moveD(DIRECTION.LEFT); // Поехали по направлению!
+		if(Math.abs(d.x) > width / 2 || absdy > height / 2) return null;
+		return new Action(shadow.maxPower > 0 ? DIRECTION.RIGHT : DIRECTION.LEFT, absdy / (height / 2));
 	}
-	@Override
-	protected void move() {}
 	
 	@Override
 	public JSON toJSON(){

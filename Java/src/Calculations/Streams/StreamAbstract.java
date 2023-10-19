@@ -3,7 +3,6 @@ package Calculations.Streams;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Trajectories.Trajectory;
-import Utils.ParamObject;
 import static Calculations.Configurations.WORLD_TYPE.CIRCLE;
 import static Calculations.Configurations.WORLD_TYPE.FIELD_R;
 import static Calculations.Configurations.WORLD_TYPE.LINE_H;
@@ -14,7 +13,7 @@ import MapObjects.CellObject;
 import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
-import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -32,6 +31,26 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 	private String name;
 	/**Построитель для любых потомков текущего класса*/
 	private final static ClassBuilder.StaticBuilder<StreamAbstract> BUILDER = new ClassBuilder.StaticBuilder<>();
+	
+	/**Матрица энергии потока*/
+	private Action[][] Energy = new Action[0][0];
+	/**"Нулевой" массив. В данном случае он реально нулевой - тут одни null*/
+	private Action[] NullE = new Action[0];
+	/**Нулевая активность*/
+	private final Action nullAction = new Action(null, 0);
+	/**Флаг необходимости пересчитать матрицу потока*/
+	private boolean isNeedRecalculateEnergy = true;
+	
+	protected class Action{
+		private final Point.DIRECTION _d;
+		private final double _dist;
+		/**
+		 * Указывает как именно следует сдвинуться клетке
+		 * @param d направление движения
+		 * @param dist удалённость от центра потока
+		 */
+		public Action(Point.DIRECTION d, double dist){_d = d; _dist=dist;}
+	}
 	
 	
 	//Отдельные переменные только для отрисовки!
@@ -71,21 +90,55 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 		move = Trajectory.generation(j.getJ("move"),v);
 	}
 
-	/**Этот метод будет вызываться каждый раз, когда изменится местоположение объекта*/
-	protected abstract void move();
-
 	@Override
 	public boolean step(long step) {
 		if(move != null && move.isStep(step)){
 			position = move.nextPosition();
-			move();
+			updateMatrix();
 		}
-		return false;
+		return isNeedRecalculateEnergy;
+	}
+	/**Пересчитывает всю сеть потока*/
+	public void recalculation(){
+		isNeedRecalculateEnergy = false;
+		for (int x = 0; x < Configurations.getWidth(); x++) {
+			System.arraycopy(NullE	, 0, Energy[x], 0, NullE.length);
+		}
 	}
 	/**Обрабатывает сдувание клетки в определённую сторону потоком
 	 * @param cell клетка, на которую поток воздействует
 	 */
-	public abstract void action(CellObject cell);
+	public void push(CellObject cell){
+		final var where = cell.getPos();
+		if(Energy[where.getX()][where.getY()] == null){
+			final var a = action(where);
+			Energy[where.getX()][where.getY()] = a != null ? a : nullAction;
+		}
+		final var dist = Energy[where.getX()][where.getY()];
+		if(dist != nullAction){
+			cell.move(dist._d, 1d / shadow.power(dist._dist));
+		}
+	}
+	/**Возвращает значение параметра отображения звездны - выделяется она на экране или нет
+	 * @return Если тут true, то излучатель будет подмигивать прозрачностью
+	 */
+	/**Обрабатывает сдувание клетки в определённую сторону потоком
+	 * @param cell клетка, на которую поток воздействует
+	 * @return расстояние от центра в процетнах [0,1]. При return = 1 вернёт минимальное значение мощности, при return = 0, то есть в центре, вернёт max
+	 */
+	protected abstract Action action(Point cell);
+	/**Показывает, что нужно обновить матрицу энергии ребёка*/
+	public synchronized void updateMatrix() {
+		if(Energy.length != Configurations.getWidth() || Energy[0].length != Configurations.getHeight()){
+			Energy = new Action[Configurations.getWidth()][Configurations.getHeight()];
+			NullE = new Action[Configurations.getHeight()];
+			for (int x = 0; x < Configurations.getWidth(); x++) {
+				System.arraycopy(NullE	, 0, Energy[x], 0, NullE.length);
+			}
+		}
+		isNeedRecalculateEnergy = true;
+	}
+	
 	/**Возвращает значение параметра отображения звездны - выделяется она на экране или нет
 	 * @return Если тут true, то излучатель будет подмигивать прозрачностью
 	 */
@@ -100,6 +153,7 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 	public final void set(Trajectory trajectory){
 		move = trajectory;
 		position = move.start();
+		updateMatrix();
 	}
 	
 	/**Превращает текущий объект в объект его описания

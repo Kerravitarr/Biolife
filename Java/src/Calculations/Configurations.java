@@ -41,6 +41,7 @@ import MapObjects.CellObject;
 import java.awt.Toolkit;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -75,7 +76,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	/**Минералы нашего мира*/
 	public static EmitterSet<MineralAbstract> minerals = new EmitterSet<>();
 	/**Потоки воды, которые заставлют клетки двигаться*/
-	public static List<StreamAbstract> streams = null;
+	public static List<StreamAbstract> streams = new ArrayList<>();
 	/**Эволюционное дерево мира*/
 	public static EvolutionTree tree = null;
 	
@@ -424,9 +425,13 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 								Point.create(0, 0), Point.create(width, 0), Point.create(width, height), Point.create(0, height), Point.create(0, 0),
 								Point.create(width*1/3, height*1/3), Point.create(width*2/3, height*1/3), Point.create(width*2/3, height*2/3), Point.create(width*1/3, height*2/3), Point.create(width*1/3, height*1/3)
 						);
-				minerals.add(new MineralEllipse(30,atten,T1, size, false,"1"));
-				streams.add(new StreamEllipse(T1, (int) (size + 30 * 2 / atten),new StreamAttenuation.PowerFunctionStreamAttenuation(3, 10,4),"1"));
-				streams.add(new StreamSwirl(T1,  (int) (size + 30 * 2 / atten ), new StreamAttenuation.PowerFunctionStreamAttenuation(-3, -10,4),"1"));
+				minerals.add(new MineralEllipse(30,atten,T1.clone(), size, false,"1"));
+				streams.add(new StreamEllipse(T1.clone(), (int) (size + 30 * 2 / atten),new StreamAttenuation.PowerFunctionStreamAttenuation(3, 10,4),"1"));
+				streams.add(new StreamSwirl(T1.clone(),  (int) (size + 30 * 2 / atten ), new StreamAttenuation.PowerFunctionStreamAttenuation(-3, -10,4),"1"));
+				streams.add(new StreamHorizontal( 
+						new TrajectoryPolyLine(100,false,Point.create(width-1, height/2),Point.create(width/2, height/2),Point.create(1, height/2)),
+						width/10,height, -3,"Вал"));
+
 			}
 			default -> throw new AssertionError();
 		}
@@ -450,6 +455,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		gravitation = new Gravitation[CellObject.LV_STATUS.length];
 		for(var i : CellObject.LV_STATUS.values){
 			gravitation[i.ordinal()] = (gravitations != null && gravitations.containsKey(i)) ? gravitations.get(i) : Gravitation.NONE;
+			gravitation[i.ordinal()].updateMatrix();
 		}
 		//А теперь дерево эволюции
 		tree = new EvolutionTree();
@@ -469,6 +475,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		suns.recalculation();
 		minerals.updateMatrix();
 		minerals.recalculation();
+		streams.forEach(s -> {s.updateMatrix(); s.recalculation();});
+		Arrays.stream(gravitation).forEach(s -> {if(s == null) return;s.updateMatrix(); s.recalculation();});
 	}
 	/** * Возвращает размер мира по умолчанию для текущего разрешения экрана
 	 * Понятное дело, что если экрана нет - то вернёт он лишь null.Впрочем, без экрана вызывать эту функцию в принципе не следует!

@@ -17,7 +17,7 @@ import java.util.List;
  * болванка для таректории по которой могут двигаться объекты карты
  * @author Kerravitarr
  */
-public class Trajectory{
+public class Trajectory implements Cloneable{
 	/**Интерфейс, показывает, что объект содержит траекторию у себя и может меняться от времени*/
 	public interface HasTrajectory{
 		/**Возвращает текущую траекторию
@@ -148,6 +148,18 @@ public class Trajectory{
 		j.add("pos", pos.toJSON());
 		return j;
 	}
+	
+	/**
+	 * Так как в траектории есть не мало динамических переменных, чтобы одну траекторию можно было
+	 * применить к нескольким объектм и существует возможность клонирования траектории
+	 * @return 
+	 */
+	@Override
+	public Trajectory clone(){
+		var s = serialization(this);
+		return generation(s,Configurations.VERSION);
+	}
+			
 	/** * Регистрирует наследника как одного из возможных дочерних классов.То есть мы можем создать траекторию такого типа
 	 * @param <T> класс наследника текущего класса
 	 * @param trajectory фабрика по созданию наследников

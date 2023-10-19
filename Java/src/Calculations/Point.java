@@ -22,10 +22,10 @@ public final class Point{
 	private static Point[][] points;
 	/**Тип мира, для которого были созданы точки выше. Отвечает за параметр валидности*/
 	private static Configurations.WORLD_TYPE type;
-	private final static int VECTOR_MIN_X = -5;
-	private final static int VECTOR_MAX_X = 5;
-	private final static int VECTOR_MIN_Y = -5;
-	private final static int VECTOR_MAX_Y = 5;
+	private final static int VECTOR_MIN_X = -10;
+	private final static int VECTOR_MAX_X = 10;
+	private final static int VECTOR_MIN_Y = -10;
+	private final static int VECTOR_MAX_Y = 10;
 	/**Базовые вектора мира, которые будут использоваться чаще всего*/
 	private final static Vector[][] vectors = new Vector[VECTOR_MAX_X - VECTOR_MIN_X][VECTOR_MAX_Y-VECTOR_MIN_Y];
 	static{
@@ -260,11 +260,76 @@ public final class Point{
 			return hash;
 		}
 	}
-	
+	/**Тоже точка, но с плавающими координатами*/
+	public static class PointD{
+		/**Координата по Х*/
+		public double x;
+		/**Координата по Y*/
+		public double y;
+		public PointD(double x, double y){
+			this.x = x;
+			this.y = y;
+		}
+		/**Возвращает направление этого вектора
+		 * @return направление. Но так как направления может не быть, если это
+		 *			таже самая точка, то возвращается null
+		 */
+		public DIRECTION direction(){
+			DIRECTION d = null;
+            if((x != 0 || y != 0)){
+				if(x < 0){
+					if (y == 0) {
+						d = Point.DIRECTION.LEFT;
+					} else if (y < 0) {
+						final var tan = y/x;
+						if(tan < 0.41421356)
+							d = Point.DIRECTION.LEFT;
+						else if(tan > 2.41421356)
+							d = Point.DIRECTION.UP;
+						else 
+							d = Point.DIRECTION.UP_L;
+					} else {
+						final var tan = y/-x;
+						if(tan < 0.41421356)
+							d = Point.DIRECTION.LEFT;
+						else if(tan > 2.41421356)
+							d = Point.DIRECTION.DOWN;
+						else 
+							d = Point.DIRECTION.DOWN_L;
+					}
+				} else if (x == 0) {
+					if(y < 0) d = Point.DIRECTION.UP;
+					else if(y == 0) d = null;
+					else d = Point.DIRECTION.DOWN;
+				} else { //x > 0
+					if (y == 0) {
+						d = Point.DIRECTION.RIGHT;
+					} else if(y < 0) {
+						final var tan = -y/x;
+						if(tan < 0.41421356) //Тангенс 22,5 градуса - примерно 0.41421356. Это-же даёт -0/+1
+							d = Point.DIRECTION.RIGHT;
+						else if(tan > 2.41421356) //Тангенс 65,5 градусов - 2.41421356 Это-же даёт -1/+0
+							d = Point.DIRECTION.UP;
+						else  //Это-же даёт -1/+1
+							d = Point.DIRECTION.UP_R;
+					} else { //y > 0
+						final var tan = y/x;
+						if(tan < 0.41421356)
+							d = Point.DIRECTION.RIGHT;
+						else if(tan > 2.41421356)
+							d = Point.DIRECTION.DOWN;
+						else 
+							d = Point.DIRECTION.DOWN_R;
+					}
+				}
+            }
+			return d;
+		}
+	}
 	/**Координата по Х*/
-	private final int x;
+	public final int x;
 	/**Координата по Y*/
-	private final int y;
+	public final int y;
 	/**Валидность точки*/
 	private final boolean isValid;
 	

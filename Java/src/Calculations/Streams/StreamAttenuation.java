@@ -238,7 +238,7 @@ public abstract class StreamAttenuation {
 	 */
 	public int power(double dist){
 		assert 0 <= dist && dist <= 1 : "Проблемка - вышли за границу диапазона: " + dist;
-		return (int) (maxPower - dp * transform(dist));
+		return (int) Math.abs(maxPower - dp * transform(dist));
 	}
 	/**Возвращает реальную мощность в указанных пределах
 	 * @param min минимальное значение энергии потока. При dist = 1

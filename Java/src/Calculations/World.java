@@ -27,6 +27,7 @@ import Utils.JSON;
 import Utils.SaveAndLoad;
 import Utils.Utils;
 import java.awt.Dimension;
+import java.util.Arrays;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -278,6 +279,8 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	private void preStep(){
 		Configurations.suns.step(step);
 		Configurations.minerals.step(step);
+		Configurations.streams.forEach( s -> {if(s.step(step)) s.recalculation();});
+		Arrays.stream(Configurations.gravitation).forEach(g -> g.recalculation());
 		
 		isFirst = Configurations.rnd.nextBoolean();
 	}
@@ -320,7 +323,6 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	}
 	/**Операции, которые должны быть выполнены после шага*/
 	private void postStep(){
-		Configurations.streams.forEach( s -> s.step(step));
 		Configurations.tree.step();
 
 		pps.interapt();

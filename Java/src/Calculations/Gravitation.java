@@ -4,7 +4,6 @@
  */
 package Calculations;
 
-import MapObjects.CellObject;
 import Utils.JSON;
 import java.awt.Dimension;
 /**
@@ -28,6 +27,13 @@ public class Gravitation {
 	private Point target;
 	/**Размер мира, под который заточена эта гравитация. Для движения на центр мира*/
 	private final Dimension ws = new Dimension();
+	
+	/**Матрица направлений гравитации*/
+	private Point.DIRECTION[][] Energy = new Point.DIRECTION[0][0];
+	/**"Нулевой" массив. Причём тут он реально нулевой - везде null*/
+	private Point.DIRECTION[] NullE = new Point.DIRECTION[0];
+	/**Флаг необходимости пересчитать матрицу*/
+	private boolean isNeedRecalculateEnergy = true;
 	
 	/**Возможное направление действия гравитации*/
 	public static enum Direction{
@@ -71,13 +77,11 @@ public class Gravitation {
 	 * @param target точка, к которой стремятся все клетки
 	 */
 	public Gravitation(int power, Point target){
+		this(Direction.TO_POINT, target, power);
 		if(target == null)
 			throw new IllegalArgumentException("Не задана точка притяжения!");
 		if(power < 1)
 			throw new IllegalArgumentException("Сила гравитации не может быть меньше 1!");
-		direction = Direction.TO_POINT;
-		this.target=target;
-		this.value = power;
 	}
 	/**Сoздаёт гравитацию, направленную в определённую сторону
 	 * @param power cила гравитации
@@ -86,28 +90,27 @@ public class Gravitation {
 	 * @param dir направление, куда будет стремиться объект
 	 */
 	public Gravitation(int power, Direction dir){
-		direction = dir;
+		this(dir, null, power);
 		if(power < 1)
 			throw new IllegalArgumentException("Сила гравитации не может быть меньше 1!");
 		else if(dir == Direction.TO_POINT)
 			throw new IllegalArgumentException("Не задана точка притяжения!");
 		else if(dir == Direction.NONE)
 			throw new IllegalArgumentException("Задана сила притяжения!");
-		this.target=null;
-		this.value = power;
 	}
 	
 	public Gravitation(JSON j, long v){
-		direction = Direction.valueOf(j.get("direction"));
-		value = j.get("value");
-		if(j.containsKey("target"))
-			target = Point.create(j.getJ("target"));
+		this( Direction.valueOf(j.get("direction")), j.containsKey("target") ? Point.create(j.getJ("target")) : null, j.get("value"));
 	}
 	/**Сoздаёт гравитацию, которая ни на что не действует*/
 	public Gravitation(){
-		direction = Direction.NONE;
-		this.target=null;
-		this.value = 0;
+		this(Direction.NONE, null, 0);
+	}
+	private Gravitation(Direction d, Point t, int v){
+		direction = d;
+		this.target = t;
+		this.value = v;
+		updateMatrix();
 	}
 	/**Возвращает силу потока
 	 * @return сила потока
@@ -121,18 +124,42 @@ public class Gravitation {
 	 * @return точка на карте или null. 
 	 */
 	public Point getPoint(){return direction == Direction.TO_POINT ? target : null;}
-	/**Возвращает необходимость движения под действием гравитации
+	/**Возвращает силу движения под действием гравитации
 	 * @param o кто спрашивает
-	 * @return true, если нужно куда-то сдвинуться
+	 * @return сила движения, в клетках/ход
 	 */
-	public boolean isStep(CellObject o) {
-		return value != 0 && (o.getAge() % value) == 0;
+	public double push() {
+		return value == 0 ? 0 : 1d / value;
+	}
+	/**Пересчитывает всю сеть излучателеу*/
+	public void recalculation(){
+		isNeedRecalculateEnergy = false;
+		for (int x = 0; x < Configurations.getWidth(); x++) {
+			System.arraycopy(NullE	, 0, Energy[x], 0, NullE.length);
+		}
+	}
+	/**Показывает, что нужно обновить матрицу энергии*/
+	public synchronized void updateMatrix() {
+		if(Energy.length != Configurations.getWidth() || Energy[0].length != Configurations.getHeight()){
+			Energy = new Point.DIRECTION[Configurations.getWidth()][Configurations.getHeight()];
+			NullE = new Point.DIRECTION[Configurations.getHeight()];
+			for (int x = 0; x < Configurations.getWidth(); x++) {
+				System.arraycopy(NullE	, 0, Energy[x], 0, NullE.length);
+			}
+		}
+		isNeedRecalculateEnergy = true;
 	}
 	/**Указывает куда именно двигаться клетке
-	 * @param pos откуда
+	 * @param where откуда
 	 * @return направление, куда. Может быть null, если ни куда не нужно
 	 */
-	public Point.DIRECTION getDirection(Point pos) {
+	public Point.DIRECTION getDirection(Point where) {
+		if(Energy[where.getX()][where.getY()] == null){
+			Energy[where.getX()][where.getY()] = calculation(where);
+		}
+		return Energy[where.getX()][where.getY()];
+	}
+	private Point.DIRECTION calculation(Point where){
 		switch (direction) {
 			case UP -> {	return Point.DIRECTION.UP;}
 			case UP_R -> {	return Point.DIRECTION.UP_R;}
@@ -148,11 +175,12 @@ public class Gravitation {
 					ws.height = Configurations.confoguration.MAP_CELLS.height;
 					target = Point.create(Configurations.confoguration.MAP_CELLS.width / 2, Configurations.confoguration.MAP_CELLS.height / 2);
 				}
-				return pos.distance(target).direction();
+				return where.distance(target).direction();
 			}
 			case TO_POINT -> {
-				return pos.distance(target).direction();
+				return where.distance(target).direction();
 			}
+			case NONE -> {return null;}
 			default -> throw new AssertionError(direction.name());
 		}
 	}
