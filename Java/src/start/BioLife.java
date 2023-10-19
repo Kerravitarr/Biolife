@@ -22,6 +22,17 @@ public class BioLife{
 	 * @throws Calculations.GenerateClassException
 	 */
 	public static void main(String[] args) throws IOException, GenerateClassException {
+		final var OS = System.getProperty("os.name").toLowerCase();
+		if(OS.contains("win")){
+			//Винда, долбанная, имеет консоль по умолчанию не настроенную на UTF-8. Сколько я с этим намучился!!!
+			try {
+				System.setOut(new java.io.PrintStream(new java.io.FileOutputStream(java.io.FileDescriptor.out), true, "UTF-8"));
+				System.setErr(new java.io.PrintStream(new java.io.FileOutputStream(java.io.FileDescriptor.err), true, "UTF-8"));
+			} catch (java.io.UnsupportedEncodingException e) {
+				System.out.println("App not support encoding UTF-8");
+			}
+		}
+		
 		final var _opts = new Utils.CMDOptions(args);
 		_opts.add(new Utils.CMDOptions.Option('V',"Не запускать GUI, приложение останется в консольном варианте"));
 		_opts.add(new Utils.CMDOptions.Option('W',100,700,10000,1d,"Ширина мира для запуска без GUI"));
