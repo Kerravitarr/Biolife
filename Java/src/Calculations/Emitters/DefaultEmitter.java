@@ -58,10 +58,13 @@ public abstract class DefaultEmitter implements Trajectory.HasTrajectory{
 		}
 		return isNeedRecalculateEnergy;
 	}
+	/**Пересчитывает всю сеть излучателеу*/
 	public void recalculation(){
-		isNeedRecalculateEnergy = false;
-		for (int x = 0; x < Configurations.getWidth(); x++) {
-			System.arraycopy(NullE	, 0, Energy[x], 0, NullE.length);
+		if(isNeedRecalculateEnergy){
+			isNeedRecalculateEnergy = false;
+			for (int x = 0; x < Configurations.getWidth(); x++) {
+				System.arraycopy(NullE	, 0, Energy[x], 0, NullE.length);
+			}
 		}
 	}
 	/**Возвращает количество излучения в этой точке
@@ -141,4 +144,49 @@ public abstract class DefaultEmitter implements Trajectory.HasTrajectory{
 		j.add("position", position.toJSON());
 		return j;
 	}
+	
+	/**Рисует объект на экране
+	 * @param g холст, на котором надо начертить солнышко
+	 * @param transform преобразователь размеров мировых в размеры экранные
+	 */
+	public void paint(java.awt.Graphics2D g, GUI.WorldView.Transforms transform){		
+		//Мы нарусем не один излучатель, а сразу все 4!
+		//i = 0 Главный
+		//i = 1 Его-же справа (слева)
+		//i = 2 Его-же сверху(снизу)
+		//i = 3 И его правую (левую) тень сверху (снизу)
+
+		for (int i = 0; i < 4; i++) {
+			if(i > 0){
+				switch (Configurations.confoguration.world_type) {
+					case LINE_H -> {if(i == 2 || i == 3) continue;}
+					case LINE_V -> {if(i == 1 || i == 3) continue;}
+					case FIELD_R -> {}
+					case CIRCLE,RECTANGLE -> {continue;}
+					default -> throw new AssertionError();
+				}
+			}
+			final var posX = switch(i){
+				case 0,2 -> position.getX();
+				case 1,3 -> position.getX() + (position.getX() > Configurations.confoguration.MAP_CELLS.width/2 ?  - Configurations.confoguration.MAP_CELLS.width: Configurations.confoguration.MAP_CELLS.width);
+				default -> throw new AssertionError();
+			};
+			final var posY = switch(i){
+				case 0,1 -> position.getY();
+				case 2,3 -> position.getY() + (position.getY() > Configurations.confoguration.MAP_CELLS.height/2 ?  -Configurations.confoguration.MAP_CELLS.height : Configurations.confoguration.MAP_CELLS.height);
+				default -> throw new AssertionError();
+			};
+			paint(g,transform, posX, posY);
+		}
+	}
+	/**
+	 * Функция непосредственного рисования объекта в указанных координатах.
+	 * Объект должен отрисовать себя так, будто она находится где ему сказанно
+	 * @param g холст, на котором надо начертить себя
+	 * @param transform преобразователь размеров мировых в размеры экранные
+	 * @param posX текущаяя координата
+	 * @param posY текущаяя координата
+	 */
+	protected abstract void paint(java.awt.Graphics2D g, GUI.WorldView.Transforms transform, int posX, int posY);
+	
 }

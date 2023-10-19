@@ -153,6 +153,7 @@ public class WorldView extends javax.swing.JPanel {
 		initComponents();
 		setVisible(Point.create(0, 0), Point.create(Configurations.getWidth()-1, Configurations.getHeight()-1));
 		recalculate();
+		setBackground(null);
 	}
 
 	/** This method is called from within the constructor to
@@ -316,169 +317,10 @@ public class WorldView extends javax.swing.JPanel {
 		repaint();
 	}
 	
-public class AdditiveComposite implements Composite {
-    private final Color chromaKey;
-
-    public AdditiveComposite(final Color chromaKey) {
-        this.chromaKey = Objects.requireNonNull(chromaKey);
-    }
-
-    public CompositeContext createContext(ColorModel srcColorModel,
-            ColorModel dstColorModel, RenderingHints hints) {
-        return new AdditiveCompositeContext(chromaKey);
-    }
-}
-
-	public class AdditiveCompositeContext implements CompositeContext {
-    private final Color chromaKey;
-
-    public AdditiveCompositeContext(final Color chromaKey) {
-        this.chromaKey = Objects.requireNonNull(chromaKey);
-    }
-
-    public void compose(Raster src, Raster dstIn, WritableRaster dstOut) {
-        int r = chromaKey.getRed(), g = chromaKey.getGreen(), b = chromaKey.getBlue();
-        int[] pxSrc = new int[src.getNumBands()];
-        int[] pxDst = new int[dstIn.getNumBands()];
-        int chans = Math.min(src.getNumBands(), dstIn.getNumBands());
-
-        for (int x = 0; x < dstIn.getWidth(); x++) {
-            for (int y = 0; y < dstIn.getHeight(); y++) {
-                pxSrc = src.getPixel(x, y, pxSrc);
-                pxDst = dstIn.getPixel(x, y, pxDst);
-
-                int alpha = pxSrc.length > 3? alpha = pxSrc[3] : 255;
-
-                if (pxDst[0] == r && pxDst[1] == g && pxDst[2] == b) {
-                    pxDst[0] = 0; pxDst[1] = 0; pxDst[2] = 0;
-                }
-
-                for (int i = 0; i < 3 && i < chans; i++) {
-                    pxDst[i] = Math.min(255, (pxSrc[i] * alpha / 255) + (pxDst[i]));
-                    dstOut.setPixel(x, y, pxDst);
-                }
-            }
-        }
-    }
-
-    @Override public void dispose() { }
-}
-	
-	int frame = 0;
-	long lstMs = 0;
 	/**Закрашивает картину, согласно текущему раскладу
 	 * @param g полотно, которое красим
 	 */
 	private void paintField(Graphics2D g) {
-		final var ms = System.currentTimeMillis();
-		if(ms > lstMs){
-			lstMs = ms + 1000;
-			frame++;
-		}
-		final var step = 10;		
-		final var rule = switch ((frame / step) % 4) {
-			case 0 -> AlphaComposite.SRC_OVER;
-			case 1 -> AlphaComposite.SRC_IN;
-			case 2 -> AlphaComposite.SRC_ATOP;
-			case 3 -> AlphaComposite.XOR;
-			default -> -1;
-		};
-		g.setComposite(AlphaComposite.getInstance( rule, 0.9f ));
-        g.setComposite(new AdditiveComposite(getBackground()));
-		if(frame % step == 0)
-			System.out.println((frame++ / step));
-		
-		var mx = getWidth();
-		var my = getHeight();
-		final var wh = Math.min(mx, my) / 6;
-		final var x0 = wh / 4;
-		final var y0 = wh / 4;
-		mx -= wh / 4;
-		my -= wh / 4;
-		
-		final var sx = new int[1];
-		final var sy = new int[1];
-		
-		final var index = new int[1];
-		final var dr = new Object(){
-			final int countSq = 5;
-			
-			public void drawS(){
-				g.setColor(Color.BLACK);
-				g.drawString("i" + (index[0]),sx[0] + wh/4, sy[0] + wh/2);
-			}
-			public void drawSM(int sunAlfa, int minAlfa, int i1, int i2){
-				g.setColor(AllColors.toDark(AllColors.SUN, sunAlfa));
-				draw(i1);
-				g.setColor(AllColors.toDark(AllColors.MINERALS, minAlfa));
-				draw(i2);
-			}
-			public void drawMS(int minAlfa, int sunAlfa, int i1, int i2){
-				g.setColor(AllColors.toDark(AllColors.MINERALS, minAlfa));
-				draw(i1);
-				g.setColor(AllColors.toDark(AllColors.SUN, sunAlfa));
-				draw(i2);
-			}
-			public void draw(int minAlfa, int sunAlfa){
-				g.setColor(Utils.DeprecatedMetods.blend(AllColors.toDark(AllColors.MINERALS, minAlfa), AllColors.toDark(AllColors.SUN, sunAlfa)));
-				draw(0);
-			}
-			private void draw(int index){
-				final var realWH = wh / 4;
-				switch (index) {
-					case 0 -> g.fillRect(sx[0] + realWH, sy[0] + realWH, realWH*2, realWH*2);
-					case 1 -> g.fillRect(sx[0], sy[0], realWH, realWH);
-					case 2 -> g.fillRect(sx[0] + realWH, sy[0], realWH, realWH);
-					case 3 -> g.fillRect(sx[0] + realWH*2, sy[0], realWH, realWH);
-					case 4 -> g.fillRect(sx[0] + realWH*3, sy[0], realWH, realWH);
-					
-					case 5 -> g.fillRect(sx[0], sy[0] +  + realWH*3, realWH, realWH);
-					case 6 -> g.fillRect(sx[0] + realWH, sy[0] +  + realWH*3, realWH, realWH);
-					case 7 -> g.fillRect(sx[0] + realWH*2, sy[0] +  + realWH*3, realWH, realWH);
-					case 8 -> g.fillRect(sx[0] + realWH*3, sy[0] +  + realWH*3, realWH, realWH);
-				}
-			}
-			public void test(int c1, int c2){
-				draw(c1,c2);
-				drawSM(c1,c2, 1,2);
-				drawSM(c2,c1, 3,4);
-				drawMS(c1,c2, 5,6);
-				drawMS(c2,c1, 7,8);
-				drawS();
-				/*switch (index[0] % 5) {
-					case 0 -> drawSM(c1,c2);
-					case 2 -> drawMS(c1,c2);
-					case 4 -> draw(c1,c2);
-				}*/
-			}
-		};
-		
-		for (sx[0] = x0; sx[0] < mx; sx[0] += wh * 2) {
-			for (sy[0] = y0; sy[0] < my; sy[0] += wh * 2, index[0]++) {
-				g.setColor(Color.WHITE);
-				g.fillRect(sx[0], sy[0], wh, wh);
-				switch (index[0]) {
-					case 0 -> dr.test(255,255);
-					case 1 -> dr.test(254,254);
-					case 2 -> dr.test(128,128);
-					case 3 -> dr.test(50,50);
-					case 4 -> dr.test(10,10);
-					case 5 -> dr.test(1,1);
-					case 6 -> dr.test(128,64);
-					case 7 -> dr.test(128,32);
-					case 8 -> dr.test(128,1);
-					case 9 -> dr.test(254,1);
-					default -> {
-						g.setColor(Color.red);
-						g.fillRect(sx[0], sy[0], wh, wh);
-					}
-				}
-			}
-		}
-		
-		if(true)
-			return;
-		
 		//Рисуем игровое поле
 		switch (Configurations.confoguration.world_type) {
 			case LINE_H,LINE_V, RECTANGLE,FIELD_R ->{
@@ -487,21 +329,23 @@ public class AdditiveComposite implements Composite {
 			}
 			default -> 	throw new AssertionError();
 		}
+		final var oldC = g.getComposite();
+		g.setComposite(AlphaComposite.getInstance( AlphaComposite.SRC_OVER, 0.6f ));
 		
 		//А теперь, поверх воды, рисуем излучатели
-		Utils.DeprecatedMetods.paintEmitters(g,transforms);
-		//А теперь, поверх воды, рисуем солнышки
-		//Configurations.suns.forEach(s -> s.paint(g,getTransform()));
-		//И минералки
-		//Configurations.minerals.forEach(s -> s.paint(g,getTransform()));
+		//Utils.DeprecatedMetods.paintEmitters(g,transforms);
+		//А теперь, поверх воды, рисуем минеральки
+		Configurations.minerals.paint(g,getTransform());
+		//И сонышки
+		Configurations.suns.paint(g,getTransform());
 		//И и шлефанём всё это потоками
-		//Configurations.streams.forEach(s -> s.paint(g,getTransform()));
+		Configurations.streams.forEach(s -> s.paint(g,getTransform()));
 			//А теперь, ещё выше, рисуем все траектории
 			//Configurations.suns.forEach(s -> s.getTrajectory().paint(g,getTransform()));
 			//Configurations.minerals.forEach(s -> s.getTrajectory().paint(g,getTransform()));
 			//Configurations.streams.forEach(s -> s.getTrajectory().paint(g,getTransform()));
 
-		
+		g.setComposite(oldC);
 		//Рисуем всё остальное
 		switch (Configurations.confoguration.world_type) {
 			case LINE_H ->{
@@ -520,7 +364,11 @@ public class AdditiveComposite implements Composite {
 				colors[0].paint(g);
 				colors[2].paint(g);
 			}
-			case FIELD_R-> {}
+			case FIELD_R-> {
+				//Замаза
+				colors[0].paint(g);
+				colors[2].paint(g);
+			}
 			default -> 	throw new AssertionError();
 		}
 		//Вспомогательное построение
@@ -619,14 +467,26 @@ public class AdditiveComposite implements Composite {
 				//Поле, вода
 				final int xw[] = new int[4];
 				final int yw[] = new int[4];
+				//Верхний прямоугольник
+				final int xu[] = new int[4];
+				final int yu[] = new int[4];
+				//Нижний блок
+				final int xd[] = new int[8];
+				final int yd[] = new int[8];
 				
-				xw[0] = xw[3] = transforms.toScrinX(0);
-				xw[1] = xw[2] = transforms.toScrinX(Configurations.getWidth()-1);
+				xu[0] = xu[3] = xd[0] = xd[7] = 0;
+				xd[1] = xd[2] = xw[0] = xw[3] = transforms.toScrinX(0);
+				xd[3] = xd[4] = xw[1] = xw[2] = transforms.toScrinX(Configurations.getWidth()-1);
+				xd[5] = xd[6] = xu[1] = xu[2] = getWidth();
 				
-				yw[0] = yw[1] = transforms.toScrinY(0);
-				yw[2] = yw[3] = transforms.toScrinY(Configurations.getHeight()-1);
+				yu[0] = yu[1] = 0;
+				yd[0] = yd[0] = yd[1] = yd[4] = yd[5] = yu[2] = yu[3] = yw[0] = yw[1] = transforms.toScrinY(0);
+				yd[2] = yd[3] = yw[2] = yw[3] = transforms.toScrinY(Configurations.getHeight()-1);
+				yd[6] = yd[7] = getHeight();
 				
+				colors[0] = new ColorRec(xu,yu, AllColors.WATER_OCEAN);
 				colors[1] = new ColorRec(xw,yw, AllColors.WATER_OCEAN);
+				colors[2] = new ColorRec(xd,yd, AllColors.WATER_OCEAN);
 				
 			}
 			default -> 	throw new AssertionError();

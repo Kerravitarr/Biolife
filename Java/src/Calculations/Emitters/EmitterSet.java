@@ -106,4 +106,12 @@ public class EmitterSet<T extends DefaultEmitter> {
 	 *		Самое главное, что его можно запомнить и сравнить, для проверки :)
 	 */
 	public long getLustUpdate(){return lastUpdate;}
+	
+	/**Рисует набор на экране
+	 * @param g холст, на котором надо начертить солнышко
+	 * @param transform преобразователь размеров мировых в размеры экранные
+	 */
+	public void paint(java.awt.Graphics2D g, GUI.WorldView.Transforms transform){	
+		_emitters.forEach(s -> s.paint(g,transform));
+	}
 }

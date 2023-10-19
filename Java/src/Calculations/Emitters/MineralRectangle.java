@@ -7,8 +7,13 @@ package Calculations.Emitters;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Trajectories.Trajectory;
+import GUI.AllColors;
 import Utils.ClassBuilder;
 import Utils.JSON;
+import java.awt.Color;
+import java.awt.GradientPaint;
+import java.awt.Polygon;
+import java.awt.geom.Point2D;
 
 /**
  *Самое обычное прямоугольное залежо минералов.
@@ -131,5 +136,81 @@ public class MineralRectangle extends MineralAbstract {
 		j.add("width", width);
 		j.add("height", height);
 		return j;
+	}
+	
+	
+	@Override
+	public void paint(java.awt.Graphics2D g, GUI.WorldView.Transforms transform, int posX, int posY) {
+		
+		final var x0 = transform.toScrinX(posX - width/2);
+		final var y0 = transform.toScrinY(posY - height/2);
+		
+		final var w = transform.toScrin(width);
+		final var h = transform.toScrin(height);
+		
+		final var x1 = x0 + w;
+		final var y1 = y0 + h;
+		//Сила излучения, как далеко оно распространяется. В пк
+		final var s = Math.max(1, transform.toScrin((int)Math.round(getPower() / getAttenuation())));
+		//Цвета
+		final var colors = new Color[] { AllColors.MINERALS, AllColors.MINERALS_DARK };
+		
+		final var yRL = new int[]{y0 - s, y0, y1, y1 + s};
+		final var xUD = new int[]{x0 - s, x1 + s, x1, x0};
+		
+		//Рисуем внешнее излучение
+		//<
+		g.setPaint(new GradientPaint(
+			new Point2D.Double(x0, y0), colors[0],
+			new Point2D.Double(x0 - s, y0), colors[1]));
+		g.fill(new Polygon(new int[]{x0 - s, x0, x0, x0 - s}, yRL, 4));
+		//>
+		g.setPaint(new GradientPaint(
+			new Point2D.Double(x1, y0), colors[0],
+			new Point2D.Double(x1 + s, y0), colors[1]));
+		g.fill(new Polygon(new int[]{x1 + s, x1, x1, x1 + s}, yRL, 4));
+		//‾
+		g.setPaint(new GradientPaint(
+			new Point2D.Double(x0, y0), colors[0],
+			new Point2D.Double(x0, y0 - s), colors[1]));
+		g.fill(new Polygon(xUD, new int[]{y0 - s, y0 - s, y0, y0}, 4));
+		//_
+		g.setPaint(new GradientPaint(
+			new Point2D.Double(x0, y1), colors[0],
+			new Point2D.Double(x0, y1 + s), colors[1]));
+		g.fill(new Polygon(xUD, new int[]{y1 + s, y1 + s, y1, y1}, 4));
+		
+		//Рисуем внутренне излучение
+		if(getIsLine()){
+			final var ws = Math.min(s, h/2);
+			final var ylRL = new int[]{y0 - ws, y0, y1, y1 + ws};
+			final var hs = Math.min(s, w/2);
+			final var xlUD = new int[]{x0,x1,x1-hs, x0+hs};
+			//<
+			g.setPaint(new GradientPaint(
+				new Point2D.Double(x0, y0), colors[0],
+				new Point2D.Double(x0 + s, y0), colors[1]));
+			g.fill(new Polygon(new int[]{x0, x0 + ws, x0 + ws, x0}, ylRL, 4));	
+			//>
+			g.setPaint(new GradientPaint(
+				new Point2D.Double(x1, y0), colors[0],
+				new Point2D.Double(x1 - s, y0), colors[1]));
+			g.fill(new Polygon(new int[]{x1, x1 - ws, x1 - ws, x1}, ylRL, 4));	
+			//‾
+			g.setPaint(new GradientPaint(
+				new Point2D.Double(x0, y0), colors[0],
+				new Point2D.Double(x0, y0 + s), colors[1]));
+			g.fill(new Polygon(xlUD, new int[]{y0, y0, y0 + hs, y0 + hs}, 4));
+			//_
+			g.setPaint(new GradientPaint(
+				new Point2D.Double(x0, y1), colors[0],
+				new Point2D.Double(x0, y1 - s), colors[1]));
+			g.fill(new Polygon(xlUD, new int[]{y1, y1, y1 - hs, y1 - hs}, 4));
+			
+			
+		} else {
+			g.setColor(colors[0]);
+			g.fillRect(x0, y0,w, h);
+		}
 	}
 }

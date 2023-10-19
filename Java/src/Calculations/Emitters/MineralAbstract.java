@@ -1,5 +1,6 @@
 package Calculations.Emitters;
 
+import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Trajectories.Trajectory;
 import Utils.ClassBuilder;
@@ -94,4 +95,19 @@ public abstract class MineralAbstract extends DefaultEmitter{
 	 * @return список из которого можно можно создать всех деток
 	 */
 	public static List<ClassBuilder> getChildrens(){return BUILDER.getChildrens();}
+	
+	
+	/**Рисует объект на экране
+	 * @param g холст, на котором надо начертить солнышко
+	 * @param transform преобразователь размеров мировых в размеры экранные
+	 */
+	@Override
+	public void paint(java.awt.Graphics2D g, GUI.WorldView.Transforms transform){	
+		if(attenuation == 0d){
+			g.setColor(GUI.AllColors.MINERALS);
+			g.fillRect(transform.toScrinX(0), transform.toScrinY(0),transform.toScrin(Configurations.getWidth()), transform.toScrin(Configurations.getHeight()));
+		} else {
+			super.paint(g, transform);
+		}
+	}
 }
