@@ -34,7 +34,7 @@ public class DNA {
 		mind = new int[this.size];
 		Arrays.fill(mind, CommandList.BLOCK_1);
 		pc = 0;
-		interrupts = new int[(OBJECT.size()-1)];
+		interrupts = new int[OBJECT.lenght];
 		for (int i = 0; i < interrupts.length; i++)
 			interrupts[i] = i;
 	}
@@ -66,11 +66,11 @@ public class DNA {
 	 * @param cell наш владелец, кто вызвал прерывание
 	 * @param num номер прерывания
 	 */
-	protected void interrupt(AliveCell cell, int num) {
+	protected void interrupt(AliveCell cell, OBJECT num) {
 		if(activInterrupt) return; //Прерывание не может быть вложенным
 		activInterrupt = true;
 		final var stackInstr = pc; // Кладём в стек PC
-		pc = interrupts[num] % size;
+		pc = interrupts[num.ordinal()] % size;
 		for (int cyc = 0; cyc < 15; cyc++)
 			if(get().execute(cell)) break; // Выполняем программу прерывания
 		pc = stackInstr; // Возвращаем из стека PC

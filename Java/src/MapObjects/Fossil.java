@@ -46,10 +46,11 @@ public class Fossil extends CellObject {
 	
 	/**
 	 * Неподвижный объект
+	 * Он всегда ходит, хоть и не меняет своего положения
 	 */
 	@Override
 	public boolean move(DIRECTION direction) {
-		return false;
+		return true;
 	}
 
 	@Override

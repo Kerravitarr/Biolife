@@ -46,7 +46,7 @@ public class Eat extends CommandDoInterupted {
 	protected void eat(AliveCell cell,DIRECTION direction) {
 		cell.addHealth(-HP_COST); // бот теряет на этом 1 энергию
 		var see = cell.see(direction);
-		switch (see) {
+		switch (see.groupLeader) {
 			case ORGANIC ->  {
 				final var point = nextPoint(cell,direction);
 				final var target = (Organic) Configurations.world.get(point);
@@ -66,7 +66,7 @@ public class Eat extends CommandDoInterupted {
 				else
 					target.addHealth(-maxEat);
 			}
-			case ENEMY, FRIEND -> {
+			case ALIVE -> {
 				//--------- дошли до сюда, значит впереди живой бот -------------------
 				final Point point = nextPoint(cell,direction);
 				final AliveCell target = (AliveCell) Configurations.world.get(point);
@@ -148,8 +148,8 @@ public class Eat extends CommandDoInterupted {
 				else
 					target.addHealth(-maxF);
 			}
-			case CLEAN, NOT_POISON, POISON, WALL -> cell.getDna().interrupt(cell, see.nextCMD);
-			case BOT -> throw new UnsupportedOperationException("Unimplemented case: " + see);
+			case CLEAN, BANE, WALL -> cell.getDna().interrupt(cell, see);
+			default -> throw new UnsupportedOperationException("Unimplemented case: " + see);
 		}
 	}
 	

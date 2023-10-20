@@ -100,7 +100,7 @@ public class Poison extends CellObject {
 	 * @return true, если яд был истрачен и false, если по каким-то причинам яд не потратился
 	 */
 	public static boolean createPoison(Point pos, TYPE type, long stepCount, double energy, int stream) {
-		switch (Configurations.world.test(pos)) {
+		switch (test(pos)) {
 			case WALL: return false; //Ну что мы можем сделать со стеной? О_О
 			case CLEAN:
 	            Configurations.world.add(new Poison(type,stepCount,pos,energy, stream));//Сделали новую каплю
@@ -119,7 +119,7 @@ public class Poison extends CellObject {
 			case ORGANIC:
 				Configurations.world.get(pos).toxinDamage(type,(int) (energy));
 			return true;	//Органику потравили, да и всё
-			case BOT:{
+			case ALIVE:{
 				AliveCell cell = (AliveCell) Configurations.world.get(pos);
 				if(cell.toxinDamage(type,(int) (energy))) {	//Умерли, надо превратить живого в мёртвого
 					try {cell.bot2Organic();} catch (CellObjectRemoveException e) {}	//Создаём органику
@@ -129,7 +129,7 @@ public class Poison extends CellObject {
 					organic.toxinDamage(type,(int) (energy - organic.getHealth())); //И отравляем её. Умерли то от яда!
 				}
 			}return true;	//Потравили, да и всё
-			case POISON:{
+			case BANE:{
 				var cell = (Poison) Configurations.world.get(pos);
 				if(cell.toxinDamage(type,(int) (energy))) {
 					energy = Math.abs(cell.getHealth());	//Сколько тут осталось?
@@ -138,27 +138,27 @@ public class Poison extends CellObject {
 			            Configurations.world.add(new Poison(type,stepCount,pos,energy, stream));//Сделали новую каплю
 				} // А иначе мы не создаём просто нашу копию, нас-же переварили
 			}return true;	//Потравили, да и всё
-			case ENEMY:
-			case NOT_POISON:
-			case FRIEND: throw new IllegalArgumentException("Unexpected value: " + Configurations.world.test(pos));
+			default: throw new IllegalArgumentException("Unexpected value: " + test(pos));
 		}
-		//Это вместо default. Зато позволяет не писать злополучное слово и лучше видеть подскзаки по коду!
-		throw new IllegalArgumentException("Unexpected value: " + Configurations.world.test(pos));
 	}
 	
 	private int getTimeToNextDouble() {
 		return (int) Math.round(getAge() + getStream() * (2 - energy / MAX_TOXIC));
 	}
 
+	@Override
 	public boolean move(DIRECTION direction) {
 		var pos = getPos().next(direction);
-		switch (Configurations.world.test(pos)) {
+		switch (see(pos)) {
 			case WALL :
 			case CLEAN : 
 				return super.move(direction);
 			case OWALL:{
-				if(getType() != TYPE.PINK)
-					return false;	//Кроме розового яда - все остальные для стен непрохдимы
+				if(getType() != TYPE.PINK){
+					//Кроме розового яда - все остальные для стен непрохдимы
+					Configurations.world.get(getPos().next(direction)).move(direction,1);
+					return true;
+				}
 				var cell = (Fossil) Configurations.world.get(pos);
 				if(cell.toxinDamage(getType(),(int) (getHealth()))) {
 					energy = Math.abs(cell.getHealth());	//Сколько теперь у нас энергии
@@ -172,8 +172,8 @@ public class Poison extends CellObject {
 				}
 			}case ORGANIC :
 				Configurations.world.get(pos).toxinDamage(getType(),(int) (getHealth()));
-			return false;
-			case BOT :{
+				destroy();	//Отдали всего себя органике
+			case ALIVE :{
 				AliveCell cell = (AliveCell) Configurations.world.get(pos);
 				if(cell.toxinDamage(getType(),(int) getHealth())) {
 					try {cell.bot2Organic();} catch (CellObjectRemoveException e) {}	//Создаём органику
@@ -187,7 +187,8 @@ public class Poison extends CellObject {
 					destroy();
 				}
 			}
-			case POISON :{
+			case POISON:
+			case NOT_POISON :{
 				Poison cell = (Poison) Configurations.world.get(pos);
 				if(cell.toxinDamage(getType(),(int) getHealth())) {
 					energy = Math.abs(cell.getHealth());	//Сколько тут осталось?
@@ -200,13 +201,11 @@ public class Poison extends CellObject {
 					destroy();	//Упс, мы не смогли :/
 				}
 			}return true;
-			case ENEMY:
-			case NOT_POISON:
-			case FRIEND: throw new IllegalArgumentException("Unexpected value: " + Configurations.world.test(pos));
+			default: throw new IllegalArgumentException("Unexpected value: " + see(pos));
 		}
-		throw new IllegalArgumentException("Unexpected value: " + Configurations.world.test(getPos().next(direction)));
 	}
 	
+	@Override
 	public boolean toxinDamage(TYPE type, int damag) {
 		if (this.getType() == type) {
 			addHealth(damag);

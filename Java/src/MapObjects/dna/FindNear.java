@@ -7,6 +7,7 @@ import MapObjects.Poison;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
+import static MapObjects.CellObject.OBJECT.ALIVE;
 
 /**
  * Крутится вокруг бота, выискивая свою цель
@@ -19,7 +20,7 @@ public class FindNear extends CommandExplore {
 	
 	@Override
 	protected int explore(AliveCell cell) {
-		return search(cell,OBJECT.get(param(cell,0, OBJECT.size() - 1)));
+		return search(cell,OBJECT.values[param(cell,0, OBJECT.lenght - 1)]);
 	}
 
 	protected int search(AliveCell cell, OBJECT type) {
@@ -49,22 +50,13 @@ public class FindNear extends CommandExplore {
 	 * @return true, если ожидания совпали с реальностью
 	 */
 	public static boolean test(AliveCell cell, Point point, OBJECT type) {
-		var wtype = Configurations.world.test(point);
+		var wtype = cell.see(point);
 		switch (wtype) {
-			case BOT -> {	//Конфигурация мира не умеет отличать друзей от врагов
-				return switch (type) {
-					case BOT -> true;
-					case FRIEND -> CellObject.isRelative(cell, Configurations.world.get(point));
-					case ENEMY -> !CellObject.isRelative(cell, Configurations.world.get(point));
-					case CLEAN, NOT_POISON, ORGANIC, OWALL, POISON, WALL -> false;
-				};
+			case FRIEND, ENEMY -> {
+				return type == OBJECT.ALIVE || wtype == type;
 			}
-			case POISON -> {	//Конфигурация мира не умеет отличать яды от лекарств
-				return switch (type) {
-					case NOT_POISON->	((Poison) Configurations.world.get(point)).getType() == cell.getPosionType();
-					case POISON->		((Poison) Configurations.world.get(point)).getType() != cell.getPosionType();
-					case BOT, CLEAN, FRIEND, ORGANIC, OWALL, ENEMY, WALL -> false;
-				};
+			case POISON,NOT_POISON -> {
+				return type == OBJECT.BANE || wtype == type;
 			}
 			default -> {return wtype == type;}
 		}
@@ -72,9 +64,10 @@ public class FindNear extends CommandExplore {
 
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		return OBJECT.get(param(cell,0, OBJECT.size() - 1)).toString();
+		return OBJECT.values[param(dna,0, OBJECT.lenght - 1)].toString();
 	}
 	
+	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
 		return numBranch == 0 ? "👎" : "👌";
 	};

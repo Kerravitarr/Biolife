@@ -17,7 +17,7 @@ public class TurnTo extends CommandDo {
 	public TurnTo() {super(1);};
 	@Override
 	protected void doing(AliveCell cell) {
-		cell.direction = search(cell,OBJECT.get(param(cell,0, OBJECT.size() - 1)));
+		cell.direction = search(cell,OBJECT.values[param(cell,0, OBJECT.lenght - 1)]);
 	}
 	
 	/**
@@ -54,11 +54,12 @@ public class TurnTo extends CommandDo {
 
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		return OBJECT.get(param(cell,0, OBJECT.size() - 1)).toString();
+		return OBJECT.values[param(dna,0, OBJECT.lenght - 1)].toString();
 	}
 	
+	@Override
 	public String value(AliveCell cell, DNA dna) {
-		var d = search(cell,OBJECT.get(param(dna,0, OBJECT.size() - 1)));
+		var d = search(cell,OBJECT.values[param(dna,0, OBJECT.lenght - 1)]);
        return valueFormat.format(isFullMod() ? d.toSString() : d.toString());
 	}
 }

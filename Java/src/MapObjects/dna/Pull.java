@@ -20,14 +20,10 @@ import Calculations.Point.DIRECTION;
 public class Pull extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
-	/**Абсолютные координаты или относительные*/
-	private final boolean isAbolute;
 	
 	/**Толкает объект относительно МСК*/
 	public Pull(boolean isA) {
 		super(isA, 1);
-		isAbolute = isA;
-		setInterrupt(isA, WALL, OWALL, CLEAN);
 	}
 	@Override
 	protected void doing(AliveCell cell) {
@@ -40,39 +36,25 @@ public class Pull extends CommandDoInterupted {
 	 */
 	protected void pull(AliveCell cell,DIRECTION direction) {
 		var see = cell.see(direction);
-		switch (see) {
-			case NOT_POISON, POISON -> {
-				cell.addHealth(-HP_COST); // Но немного потратились на это
+		cell.addHealth(-HP_COST); // Но немного потратились на это
+		switch (see.groupLeader) {
+			case BANE, ORGANIC, ALIVE -> {
 				Point point = nextPoint(cell,direction);
 				CellObject target = Configurations.world.get(point);
 				try {
-					target.moveD(direction); // Вот мы и толкнули
+					target.move(direction,1); // Вот мы и толкнули
 				}catch (CellObjectRemoveException e) {
 					// А она возьми да умри. Вот ржака!
 				}
 			}
-			case ORGANIC, ENEMY, FRIEND -> {
-				cell.addHealth(-HP_COST); // Но немного потратились на это
-				Point point = nextPoint(cell,direction);
-				CellObject target = Configurations.world.get(point);
-				boolean targetStep = true;
-				try {
-					targetStep = target.moveD(direction);
-				}catch (CellObjectRemoveException e) {
-					// А она возьми да умри. Вот ржака!
-				}
-				if(!targetStep)
-					cell.moveD(direction.inversion()); //Мы не смогли толкнуть цель, поэтому отлетаем сами
+			case WALL, OWALL  -> {
+				//Мы не можем толкнуть в стену... Но всё относительно!
+				cell.move(direction.inversion(),1);	
 			}
-			case WALL, OWALL -> {
-				if(cell.moveD(direction.inversion())) {	//Мы не можем толкнуть в стену... Но всё относительно!
-					return;
-				} else {
-					cell.getDna().interrupt(cell, see.nextCMD);	// Мы прям заперты - проблема
-				}
+			case CLEAN ->{
+				//Пустота. Просто так потратили энергию
 			}
-			case CLEAN -> cell.getDna().interrupt(cell, see.nextCMD);
-			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
+			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
 

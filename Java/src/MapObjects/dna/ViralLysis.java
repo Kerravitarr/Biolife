@@ -6,6 +6,7 @@ import MapObjects.Poison;
 import Utils.MyMessageFormat;
 import Calculations.Configurations;
 import Calculations.Point;
+import MapObjects.CellObject;
 
 /**
  * Отпочкование от клетки дочерних клеток вирусов
@@ -42,7 +43,7 @@ public class ViralLysis extends CommandDo {
 		var dnaPerrent = cell.getDna();
 		dnaChild.update(0, true, dnaPerrent.subDNA(-pref, false, length_DNA));
 		dnaChild.next(PC);
-		if (Configurations.world.test(n).isPosion) {
+		if (cell.see(n).groupLeader == CellObject.OBJECT.BANE) {
 			Poison posion = (Poison) Configurations.world.get(n);
 			posion.remove_NE(); //Не беспокойтесь. Всё нормально. Мы временно
 			AliveCell newbot = new AliveCell(cell,n, HP, dnaChild);

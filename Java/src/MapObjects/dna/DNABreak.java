@@ -1,15 +1,12 @@
 package MapObjects.dna;
 
-import static MapObjects.CellObject.OBJECT.NOT_POISON;
 
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import MapObjects.CellObject;
 import static MapObjects.CellObject.OBJECT.CLEAN;
-import static MapObjects.CellObject.OBJECT.FRIEND;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
 import static MapObjects.CellObject.OBJECT.OWALL;
-import static MapObjects.CellObject.OBJECT.POISON;
 import static MapObjects.CellObject.OBJECT.WALL;
 import static MapObjects.dna.CommandDNA.nextPoint;
 import static MapObjects.dna.CommandDNA.param;
@@ -60,8 +57,8 @@ public class DNABreak extends CommandDo {
 	@Override
 	protected void doing(AliveCell cell) {
 		CellObject.OBJECT see = cell.see(cell.direction);
-		switch (see) {
-			case ENEMY, FRIEND -> {
+		switch (see.groupLeader) {
+			case ALIVE -> {
 				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				if(isOne){
@@ -93,8 +90,8 @@ public class DNABreak extends CommandDo {
 					cell.destroy();
 				}
 			}
-			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
-			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
+			case BANE, ORGANIC, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see);
+			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
 	
@@ -184,8 +181,8 @@ public class DNABreak extends CommandDo {
 	@Override
 	public int getInterrupt(AliveCell cell, DNA dna){
 		var see = cell.see(cell.direction);
-		if (see == CLEAN || see == NOT_POISON || see == ORGANIC || see == POISON || see == WALL || see == OWALL)
-			return see.nextCMD;
+		if (see == CLEAN || see.groupLeader == CellObject.OBJECT.BANE || see == ORGANIC || see == WALL || see == OWALL)
+			return see.ordinal();
 		else
 			return -1;
 	}

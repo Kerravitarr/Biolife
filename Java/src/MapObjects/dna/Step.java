@@ -1,10 +1,5 @@
 package MapObjects.dna;
 
-import static MapObjects.CellObject.OBJECT.ENEMY;
-import static MapObjects.CellObject.OBJECT.FRIEND;
-import static MapObjects.CellObject.OBJECT.ORGANIC;
-import static MapObjects.CellObject.OBJECT.WALL;
-import static MapObjects.CellObject.OBJECT.OWALL;
 
 import MapObjects.AliveCell;
 import Calculations.Point.DIRECTION;
@@ -20,7 +15,6 @@ public class Step extends CommandDoInterupted {
 
 	public Step(boolean isA) {
 		super(isA, 1);
-		setInterrupt(isA, WALL,ORGANIC,FRIEND,ENEMY,OWALL);
 	}
 
 	@Override
@@ -29,10 +23,8 @@ public class Step extends CommandDoInterupted {
 	}
 	
 	protected void step(AliveCell cell,DIRECTION dir) {
-		if (cell.move(dir))
-			cell.addHealth(-HP_COST); // бот теряет на этом 1 энергию
-		else
-			cell.getDna().interrupt(cell,cell.see(dir).nextCMD);
+		cell.move(dir,1);
+		cell.addHealth(-HP_COST); // бот теряет на этом энергию
 	}
 
 	@Override

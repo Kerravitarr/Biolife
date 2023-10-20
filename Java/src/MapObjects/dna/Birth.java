@@ -49,14 +49,14 @@ public class Birth extends CommandDo {
 		//Энергия на копирование
 		cell.addHealth(-dna.size*HP_FOR_KADON);
         boolean isBirth;
-		dna.next(nextCmd); // Чтобы у потомка выполнилась следующая команда	
-        if(Configurations.world.test(pos).isPosion) {
+		dna.next(nextCmd); // Чтобы у потомка выполнилась следующая команда
+        if(cell.see(pos).groupLeader == OBJECT.BANE) {
 			Poison posion = (Poison) Configurations.world.get(pos);
 			posion.remove_NE(); //Не беспокойтесь. Всё нормально. Мы временно
             AliveCell newbot = new AliveCell(cell,pos);
 			Configurations.world.add(newbot);
 			if(Poison.createPoison(pos, posion.getType(), posion.getStepCount(), posion.getHealth(), posion.getStream())) { //А теперь на созданную клетку воздействуем ядом
-				isBirth = Configurations.world.test(pos) == OBJECT.BOT; //Удачное деление - это когда у нас бот на выходе
+				isBirth = cell.see(pos).groupLeader == OBJECT.ALIVE; //Удачное деление - это когда у нас бот на выходе
 			} else {
 						//Как это не получилось провзаимодействовать с клеткой?!
 				throw new RuntimeException("Не сработала функция создания ребёнка вот сюда: " + pos);

@@ -40,7 +40,7 @@ public abstract class CommandDo extends CommandDNA {
 	public int getInterrupt(AliveCell cell,Point.DIRECTION direction,CellObject.OBJECT ... targets){
 		var see = cell.see(direction);
 		for (CellObject.OBJECT target : targets) {
-			if (see == target) return see.nextCMD;
+			if (see == target || see.groupLeader == target) return see.ordinal();
 		}
 		return -1;
 	}

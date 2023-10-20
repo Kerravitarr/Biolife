@@ -1,7 +1,5 @@
 package MapObjects.dna;
 
-import static MapObjects.CellObject.OBJECT.ENEMY;
-import static MapObjects.CellObject.OBJECT.FRIEND;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
 import static MapObjects.CellObject.OBJECT.OWALL;
 import static MapObjects.CellObject.OBJECT.WALL;
@@ -10,6 +8,7 @@ import MapObjects.AliveCell;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
+import MapObjects.CellObject;
 
 /**
  * Клонируется и присасывается к потомку
@@ -17,13 +16,10 @@ import Calculations.Point.DIRECTION;
  *
  */
 public class Clone extends CommandDoInterupted {
-	/**Абсолютные координаты или относительные*/
-	private final boolean isAbolute;
 
 	public Clone(boolean isA) {
 		super(isA, 2);
-		isAbolute = isA;
-		setInterrupt(isA, ENEMY, FRIEND, ORGANIC, WALL, OWALL);
+		setInterrupt(isA, CellObject.OBJECT.ALIVE, ORGANIC, WALL, OWALL);
 	};
 	@Override
 	protected void doing(AliveCell cell) {
@@ -37,19 +33,19 @@ public class Clone extends CommandDoInterupted {
 	protected void clone(AliveCell cell,DIRECTION direction) {	
 		var childCMD = 1 + 1 + param(cell,1); // Откуда будет выполняться команда ребёнка	
 		var see = cell.see(direction);
-		switch (see) {
+		switch (see.groupLeader) {
 			case CLEAN -> {
 				Point point = nextPoint(cell,direction);
 				Birth.birth(cell,point,childCMD);
 				cell.setComrades((AliveCell) Configurations.world.get(point));
 			}
-			case NOT_POISON, POISON -> {
+			case BANE -> {
 				Point point = nextPoint(cell,direction);
 				if(Birth.birth(cell,point,childCMD))
 					cell.setComrades((AliveCell) Configurations.world.get(point));
 			}
-			case ENEMY, FRIEND, ORGANIC, WALL, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
-			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
+			case ALIVE, ORGANIC, WALL, OWALL -> cell.getDna().interrupt(cell, see);
+			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
 	@Override

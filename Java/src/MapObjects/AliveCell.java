@@ -227,17 +227,18 @@ public class AliveCell extends AliveCellProtorype {
         int friendCount = getCountComrades() + 1;
         int maxToxic = poisonPower;
         AliveCell delCell = null;
-        for (final var cell : getComrades()) {
-			if(cell == null) continue;
-            allHp += cell.getHealth();
-            allMin += cell.getMineral();
-            allDNA_wall += cell.DNA_wall;
-            if (cell.poisonType == poisonType) {
-                maxToxic = Math.max(maxToxic, cell.poisonPower);
-            }
-            if (!cell.aliveStatus(LV_STATUS.LV_ALIVE)) {
-                delCell = cell;
-            }
+        for (final var comrad : getComrades()) {
+			if(comrad instanceof AliveCell cell){
+				allHp += cell.getHealth();
+				allMin += cell.getMineral();
+				allDNA_wall += cell.DNA_wall;
+				if (cell.poisonType == poisonType) {
+					maxToxic = Math.max(maxToxic, cell.poisonPower);
+				}
+				if (!cell.aliveStatus(LV_STATUS.LV_ALIVE)) {
+					delCell = cell;
+				}
+			}
         }
         if (delCell != null) {
 			removeComrades(delCell);
@@ -253,24 +254,25 @@ public class AliveCell extends AliveCellProtorype {
         setHealth(allHp);
         setMineral(allMin);
         DNA_wall = allDNA_wall;
-        for (var cell : getComrades()) {
-			if(cell == null) continue;
-			if (allHp > cell.getHealth()) {
-				cell.color(ACTION.RECEIVE, allHp - cell.getHealth());
-			} else {
-				cell.color(ACTION.GIVE, cell.getHealth() - allHp);
+        for (var comrad : getComrades()) {
+			if(comrad instanceof AliveCell cell){
+				if (allHp > cell.getHealth()) {
+					cell.color(ACTION.RECEIVE, allHp - cell.getHealth());
+				} else {
+					cell.color(ACTION.GIVE, cell.getHealth() - allHp);
+				}
+				if (allMin > cell.getMineral()) {
+					cell.color(ACTION.RECEIVE, allMin - cell.getMineral());
+				} else {
+					cell.color(ACTION.GIVE, cell.getMineral() - allMin);
+				}
+				cell.setHealth(allHp);
+				cell.setMineral(allMin);
+				cell.DNA_wall = allDNA_wall;
+				if (cell.poisonType == poisonType) {
+					cell.poisonPower += cell.poisonPower < maxToxic ? 1 : 0;
+				}
 			}
-			if (allMin > cell.getMineral()) {
-				cell.color(ACTION.RECEIVE, allMin - cell.getMineral());
-			} else {
-				cell.color(ACTION.GIVE, cell.getMineral() - allMin);
-			}
-            cell.setHealth(allHp);
-            cell.setMineral(allMin);
-            cell.DNA_wall = allDNA_wall;
-            if (cell.poisonType == poisonType) {
-                cell.poisonPower += cell.poisonPower < maxToxic ? 1 : 0;
-            }
         }
     }
 
@@ -285,7 +287,10 @@ public class AliveCell extends AliveCellProtorype {
 			for (int i = 0; i < comrads.length; i++) {
 				final var cell = comrads[i];
 				if(cell != null){
-					cell.removeComrades(this);
+					if(cell instanceof AliveCell ac)
+						ac.removeComrades(this);
+					else
+						assert false : "" + cell;
 					comrads[i] = null;
 				}
 			}
@@ -305,35 +310,58 @@ public class AliveCell extends AliveCellProtorype {
             return super.move(direction);
         } else {
             //Многоклеточный. Тут логика куда интереснее!
-			
-			//TODO
-			//Концепция!
-			//Пускай, если расстояние от бота больше, чем 1 клетка,
-			//То он создаст объект-прослойку. Которая будет имитировать эту самую связь
-			//Для друзей бота эта прослойка будет проходимой
-			//А для всех остальных - она будет ботом
-			//При этом!
-			//Эта прослойка может стягивать к себе все окружающие клетки, обеспечивая
-			//Тем самым элластичность!
             OBJECT see = super.see(direction);
-            if (see.isEmptyPlase) {
-                //Туда двинуться можно, уже хорошо.
-                Point point = getPos().next(direction);
+			switch (see.groupLeader) {
+				case BANE, CLEAN -> {
+					//Туда двинуться можно, уже хорошо.
+					final var oldP = getPos();
+					Point point = oldP.next(direction);
+					final var move = new Point[25];
+					int moveL = 0;
+					int cL = 0;
 
-                /**
-                 * Правило! Мы можем двигаться в любую сторону, если от нас до
-                 * любого из наших друзей будет ровно 1 клетка
-                 */
-                for (final var cell : getComrades()) {
-					if(cell == null) continue;
-					final var del = point.distance(cell.getPos());
-                    if (Math.abs(del.x) > 1 || Math.abs(del.y) > 1)
-                        return false;
-                }
-                //Все условия проверены, можно выдвигаться!
-                 return super.move(direction);
-            }
-            return false;
+					/**
+					 * Правило! Мы можем двигаться в любую сторону, если от нас до
+					 * любого из наших друзей будет не больше 2х клеток
+					 */
+					for (final var cell : getComrades()) {
+						if (cell == null) continue;
+						final var del = point.distance(cell.getPos());
+						final var adx = Math.abs(del.x);
+						final var ady = Math.abs(del.y);
+						if (adx > 2 || ady > 2) {
+							move[moveL++] = cell.getPos();
+						} else if ((adx == 2 || ady == 2)) {
+							if(cell instanceof ConnectiveTissue){
+								//Увы, от связи мы не можем так далеко отходить. А вот от других клеток - можем!
+								move[moveL++] = cell.getPos();
+							}else if(moveL == 0){
+								//А вот эти клетки надо запомнить, нам с ними связи строить!
+								move[cL++] = cell.getPos();
+							}
+						} 
+					}
+					if(moveL > 0){
+						//Не пускают связи - надо их подтянуть
+						for(moveL--;moveL > 0 ; moveL--){
+							final var pos = move[moveL];
+							Configurations.world.get(pos).move(pos.distance(oldP).direction(),1);
+						}
+						return true;
+					} else {
+						//Все условия проверены, можно выдвигаться!
+						if(super.move(direction)){
+							//Мы сдвинулись
+							if(cL > 0)
+								Configurations.world.add(new ConnectiveTissue(oldP, this,move)); //При необходимости заменяем себя
+							return true;
+						} else {
+							return false;
+						}
+					}
+				}
+				default -> {return super.move(direction);}
+			}
         }
     }
 
@@ -449,28 +477,6 @@ public class AliveCell extends AliveCellProtorype {
         } catch (CellObjectRemoveException e) {
             Configurations.world.add(new Fossil(this)); //Мы просто заменяем себя
             throw e;
-        }
-    }
-
-    /**
-     * Подглядывает за бота в абсолютном направлении
-     *
-     * @param direction направление, DIRECTION
-     * @return параметры OBJECT
-     */
-    @Override
-    public OBJECT see(DIRECTION direction) {
-        OBJECT see = super.see(direction);
-        if (see == OBJECT.POISON) {
-            Point point = getPos().next(direction);
-            Poison cell = (Poison) Configurations.world.get(point);
-            if (cell.getType() == getPosionType()) {
-                return OBJECT.NOT_POISON;
-            } else {
-                return OBJECT.POISON;
-            }
-        } else {
-            return see;
         }
     }
 
@@ -616,27 +622,22 @@ public class AliveCell extends AliveCellProtorype {
         return make;
     }
 	
+	public Color getPaintColor(Legend legend){
+		return switch (legend.getMode()) {
+			case MINERALS -> legend.MPtToColor(getMineral());
+			case GENER -> legend.generationToColor(getGeneration());
+			case YEAR -> legend.AgeToColor(getAge());
+			case HP -> legend.HPtToColor(getHealth());
+			case PHEN -> phenotype;
+			case DOING -> color_DO;
+			case EVO_TREE -> evolutionNode.getColor();
+			default -> throw new AssertionError("Режим " + legend.getMode() + " для нас стал полной неожиданостью");
+		};
+	}
+	
 	@Override
 	public void paint(Graphics g, Legend legend, int cx, int cy, int r){
-		switch (legend.getMode()) {
-			case MINERALS -> g.setColor(legend.MPtToColor(getMineral()));
-			case GENER -> g.setColor(legend.generationToColor(getGeneration()));
-			case YEAR -> g.setColor(legend.AgeToColor(getAge()));
-			case HP -> g.setColor(legend.HPtToColor(getHealth()));
-			case PHEN -> g.setColor(new Color(phenotype.getRed(), phenotype.getGreen(), phenotype.getBlue()));
-			case DOING -> g.setColor(color_DO);
-			case POISON -> {
-				var rg = (int) Utils.betwin(0, getPosionPower() / Poison.MAX_TOXIC, 1.0) * 255;
-				switch (getPosionType()) {
-					case BLACK -> g.setColor(new Color(255-rg, 255-rg, 255-rg));
-					case PINK -> g.setColor(new Color(rg, rg / 2, rg / 2));
-					case YELLOW -> g.setColor(new Color(rg, rg, 0));
-					default -> g.setColor(Color.BLACK);
-				}
-			}
-			case EVO_TREE -> g.setColor(evolutionNode.getColor());
-			default -> throw new AssertionError();
-		}
+		g.setColor(getPaintColor(legend));
 		//Клетка
 		if (getCountComrades() == 0) {
 			Utils.fillCircle(g, cx, cy, r);
@@ -644,7 +645,7 @@ public class AliveCell extends AliveCellProtorype {
 			Utils.fillSquare(g, cx, cy, r);
 		} else {
 			Utils.fillCircle(g, cx, cy, r);
-			int[][] points = new int[Point.DIRECTION.size()][2];
+			final var points = new int[Point.DIRECTION.size() * 2][2];
 			var values = getComrades();
 			try {
 				//Друзья
@@ -655,6 +656,10 @@ public class AliveCell extends AliveCellProtorype {
 						continue;
 					}
 					final var v = getPos().distance(i.getPos());
+					if(Math.abs(v.x) == 2 || Math.abs(v.y) == 2) { //Слишком далёкая клетка
+						points[index][0] = Integer.MAX_VALUE;
+						continue;
+					}
 					int rxf = cx + v.x * r;
 					int ryf = cy + v.y * r;
 					final var lx = Math.abs(rxf - cx);

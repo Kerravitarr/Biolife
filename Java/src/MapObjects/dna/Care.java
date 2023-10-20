@@ -38,8 +38,8 @@ public class Care extends CommandDoInterupted {
 	 */
 	protected void care(AliveCell cell,DIRECTION direction) {
 		var see = cell.see(direction);
-		switch (see) {
-			case ENEMY, FRIEND -> {
+		switch (see.groupLeader) {
+			case ALIVE -> {
 				Point point = nextPoint(cell,direction);
 				AliveCell target = (AliveCell) Configurations.world.get(point);
 				var hlt0 = cell.getHealth();         // определим количество энергии и минералов
@@ -61,8 +61,8 @@ public class Care extends CommandDoInterupted {
 					target.color(AliveCell.ACTION.RECEIVE,min);
 				}
 			}
-			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
-			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
+			case BANE, ORGANIC, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see);
+			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
 	@Override

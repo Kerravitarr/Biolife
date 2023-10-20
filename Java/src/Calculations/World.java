@@ -329,28 +329,6 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		step++;
 	}
 	
-	/**
-	 * Возвращает тип клетки по указанным координатам
-	 * @param point координаты, которые надо протестировать
-	 * @return объект OBJECT. ВАЖНОЕ ЗАМЕЧАНИЕ!!!!
-	 * 			Вместо OBJECT.FRIEND и OBJECT.ENEMY возвращается OBJECT.BOT
-	 * 			Вместо OBJECT.NOT_POISON возвращается OBJECT.POISON
-	 */
-	public OBJECT test(Point point) {
-		if(!point.valid())
-			return OBJECT.WALL;
-		CellObject cell = get(point);
-		if(cell == null || cell.aliveStatus(LV_STATUS.GHOST))
-			return OBJECT.CLEAN;
-		else if(cell.aliveStatus(LV_STATUS.LV_ORGANIC))
-			return OBJECT.ORGANIC;
-		else if(cell.aliveStatus(LV_STATUS.LV_POISON))
-			return OBJECT.POISON;
-		else if(cell.aliveStatus(LV_STATUS.LV_WALL))
-			return OBJECT.OWALL;
-		else
-			return OBJECT.BOT;
-	}
 	/**Получить объект в определённом месте поля
 	 * @param point откуда брать объект?
 	 * @return объект, который там находится. Или null, если там ни чего нет
@@ -400,11 +378,13 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 			//Если на месте, куда хочет cell, что-то есть
 			var d = Point.direction(target, cell.getPos());
 			clean(cell);
-			if(cellSwap.move(d)){
+			cellSwap.move(d);
+			if(cellSwap.getPos().equals(cell.getPos())){
 				//Если объект смог занять нашу позицию. 
 				clean(cellSwap);
 				add(cell);
-				if(cell.move(d.inversion())){
+				cell.move(d.inversion());
+				if(cell.getPos().equals(target)){
 					//Тогда мы занимаем позицию объекта и выходим
 					add(cellSwap);
 				} else {

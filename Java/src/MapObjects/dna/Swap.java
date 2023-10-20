@@ -1,8 +1,6 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import static MapObjects.CellObject.OBJECT.ENEMY;
-import static MapObjects.CellObject.OBJECT.FRIEND;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
 import static MapObjects.CellObject.OBJECT.OWALL;
 import static MapObjects.CellObject.OBJECT.WALL;
@@ -27,15 +25,15 @@ public class Swap extends CommandDoInterupted {
 	protected void doing(AliveCell cell) {
 		var dir = param(cell, 0, isAbolute);
 		var obj = cell.see(dir);
-		switch (obj) {
-			case WALL,OWALL -> 	cell.getDna().interrupt(cell, obj.nextCMD);
-			case CLEAN,POISON,NOT_POISON -> {
+		switch (obj.groupLeader) {
+			case WALL,OWALL -> 	cell.getDna().interrupt(cell, obj);
+			case CLEAN,BANE -> {
 				if (cell.move(dir))
 					cell.addHealth(-HP_COST); // бот теряет на этом энергию
 				else
-					cell.getDna().interrupt(cell, obj.nextCMD);
+					cell.getDna().interrupt(cell, obj);
 			}
-			case ORGANIC,FRIEND,ENEMY,BOT -> {
+			case ORGANIC,ALIVE -> {
 				cell.addHealth(-HP_COST); // бот теряет на этом энергию
 				Configurations.world.swap(cell, cell.getPos().next(dir));
 			}

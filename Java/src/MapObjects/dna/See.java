@@ -10,14 +10,11 @@ import MapObjects.CellObject.OBJECT;
  */
 public class See extends CommandExplore {
 
-	/**Абсолютные координаты или относительные*/
-	private final boolean isAbolute;
-
-	public See(boolean isA) {super(isA, 1,OBJECT.size()-1);isAbolute = isA;}
+	public See(boolean isA) {super(isA, 1,OBJECT.lenght-1);}
 
 	@Override
 	protected int explore(AliveCell cell) {
-		return cell.see(param(cell, 0, isAbolute)).nextCMD;
+		return cell.see(param(cell, 0, isAbolute)).ordinal();
 		
 	}
 
@@ -28,9 +25,10 @@ public class See extends CommandExplore {
 	}
 	
 
+	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
-		for(var o : OBJECT.myEnumValues) {
-			if(o.nextCMD == numBranch)
+		for(var o : OBJECT.values) {
+			if(o.ordinal() == numBranch)
 				return o.toString();
 		}
 		return super.getBranch(cell, numBranch, dna);

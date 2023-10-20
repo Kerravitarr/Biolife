@@ -56,8 +56,7 @@ public class HowMuch extends CommandExplore {
 	protected int explore(AliveCell cell) {
 		int param = MAX_VALUE == null ? param(cell, 0) : param(cell, 0, MAX_VALUE);
 		if(isTarget) {
-			OBJECT see = cell.see(cell.direction);
-			if (see.isBot) {
+			if (cell.see(cell.direction).groupLeader == OBJECT.ALIVE) {
 				Point point = nextPoint(cell,cell.direction);
 				if(PARAM_I == null)
 					return PARAM_D.getParam((AliveCell) Configurations.world.get(point)) >= param ? 0 : 1;

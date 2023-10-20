@@ -10,6 +10,7 @@ import static MapObjects.CellObject.OBJECT.OWALL;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
+import MapObjects.CellObject;
 
 /**
  * Безвозмездно отдаёт четверть от своего ХП соседу
@@ -27,7 +28,7 @@ public class Give extends CommandDoInterupted {
 	protected Give(boolean isA) {
 		super(isA, 1);
 		isAbolute = isA;
-		setInterrupt(isA, NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL);
+		setInterrupt(isA, CellObject.OBJECT.BANE, ORGANIC,  WALL, CLEAN, OWALL);
 	}
 
 	@Override
@@ -41,8 +42,8 @@ public class Give extends CommandDoInterupted {
 	 */
 	protected void give(AliveCell cell,DIRECTION direction) {
 		var see = cell.see(direction);
-		switch (see) {
-			case ENEMY, FRIEND -> {
+		switch (see.groupLeader) {
+			case ALIVE -> {
 				Point point = nextPoint(cell,direction);
 				AliveCell target = (AliveCell) Configurations.world.get(point);
 				var hlt0 = cell.getHealth();  // бот отдает четверть своей энергии
@@ -61,8 +62,8 @@ public class Give extends CommandDoInterupted {
 					target.setMineral(target.getMineral() + min);
 				}
 			}
-			case NOT_POISON, ORGANIC, POISON, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see.nextCMD);
-			case BOT -> throw new IllegalArgumentException("Unexpected value: " + see);
+			case BANE, ORGANIC, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see);
+			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
 

@@ -295,7 +295,7 @@ public abstract class AliveCellProtorype extends CellObject{
     
     //===============Параметры братства, многоклеточность=======
     /**Список всех наших друзей*/
-	private final AliveCell[] _friends = new AliveCell[DIRECTION.size()];
+	private final CellObject[] _friends = new CellObject[DIRECTION.size() * 2];
 	/**Число этих самых "друзей"*/
 	private int countFriends = 0;
   
@@ -398,37 +398,60 @@ public abstract class AliveCellProtorype extends CellObject{
 		this.buoyancy = Utils.betwin(-100, buoyancy, 100);
 	}
 	/**Функция получения семьи. Тех клеток, с кем текущая в тестных отношениях
-	 * @return список из клеток, коих ровно DIRECTION.size(). Может быть пропущенно сколько-то ячеек...
+	 * Каждая ячейка это или AliveCell или ConnectveTissue
+	 * @return список из клеток, коих ровно DIRECTION.size() * 2. Может быть пропущенно сколько-то ячеек...
 	 */
-	public AliveCell[] getComrades() {
+	public CellObject[] getComrades() {
 		return _friends;
+	}
+	
+	/**Сохраняет нам специфический наполнитель для нашей многоклеточной семьи
+	 * @param friend 
+	 */
+    public void setComrades(ConnectiveTissue friend) {
+		if(_setComrades(friend))
+			friend.setCell((AliveCell) this);
 	}
 	/**Сохраняет нам нового члена многоклеточной семьи
 	 * @param friend 
 	 */
     public void setComrades(AliveCell friend) {
+		if(_setComrades(friend))
+			friend.setComrades((AliveCell) this);
+    }
+    private boolean _setComrades(CellObject friend) {
 		assert friend != null : "Забыли друга!!!";
 		assert friend.getPos().distance(this.getPos()).getHypotenuse() < 2 : "Куда-то далековато друг забрался, не находите?" + Arrays.toString(_friends) + ". Этот явно лишний: " + friend;
         int emptyIndex = -1;
 		for (int i = 0; i < _friends.length; i++) {
 			final var _friend = _friends[i];
 			if(_friend == friend){
-				return;
+				return false;
 			} else if(_friend == null){
 				emptyIndex = i;
-			} else if(_friend.getPos().equals(friend.getPos())){
-				assert false;
+			} else {
+				assert !_friend.getPos().equals(friend.getPos()) : "У нас точки совпали, а объекты - нет... Магия!";
 			}
 		}
-		assert countFriends < Point.DIRECTION.size() : "Многовато у нас друзей, не находите? " + Arrays.toString(_friends) + ". Этот явно лишний: " + friend;
+		assert countFriends < Point.DIRECTION.size()*2 : "Многовато у нас друзей, не находите? " + Arrays.toString(_friends) + ". Этот явно лишний: " + friend;
 		_friends[emptyIndex] = friend;
 		countFriends++;
-		friend.setComrades((AliveCell) this);
+		return true;
     }
+	
+	/**Удаляет этого из наших товарищей
+	 * @param remove кого надо удалить
+	 */
+	public void removeComrades(ConnectiveTissue remove){
+		_removeComrades(remove);
+	}
 	/**Удаляет этого из наших товарищей
 	 * @param remove кого надо удалить
 	 */
 	public void removeComrades(AliveCell remove){
+		_removeComrades(remove);
+	}
+	private void _removeComrades(CellObject remove){
 		assert countFriends > 0 : "Ожидается, что у нас всё ещё есть друзья";
 		countFriends--;
 		for (int i = 0; i < _friends.length; i++) {

@@ -10,6 +10,7 @@ import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
 import Calculations.Configurations;
+import Calculations.Point;
 import Calculations.Point.DIRECTION;
 import GUI.Legend;
 
@@ -89,8 +90,8 @@ public class Organic extends CellObject {
 	@Override
 	public boolean move(DIRECTION direction) {
 		var pos = getPos().next(direction);
-		switch (Configurations.world.test(pos)) {
-			case WALL, CLEAN, OWALL, BOT, POISON, ENEMY, NOT_POISON, FRIEND -> {
+		switch (see(pos)) {
+			case WALL, CLEAN, OWALL, ALIVE, BANE -> {
 				return super.move(direction);
 			}
 			case ORGANIC -> {
@@ -104,17 +105,19 @@ public class Organic extends CellObject {
 					org.addHealth(getHealth());
 					if(poison != Poison.TYPE.UNEQUIPPED)
 						org.toxinDamage(poison, (int) poisonCount);
-					destroy(); //Мы слепились со следующей и всё, пошли отсюда
+					destroy(); //Мы слепились со следующей и всё, пошли отсюда. Тут будет исключение
 					return false;
 				} else if(org.getHealth() < getHealth()){
-					Configurations.world.swap(this, pos);
+					Configurations.world.swap(this, pos); //Мы поменялись с кусочком, упав ниже
 					return true;
 				} else {
-					return false;
+					//Отдаём свой импульс этой органике, пущай теперь и выпутывается!
+					Configurations.world.get(getPos().next(direction)).move(direction,1);
+					return true;
 				}
 			}
+			default -> throw new IllegalArgumentException("Unexpected value: " + see(direction));
 		}
-		throw new IllegalArgumentException("Unexpected value: " + Configurations.world.test(getPos().next(direction)));
 	}
 
 	@Override

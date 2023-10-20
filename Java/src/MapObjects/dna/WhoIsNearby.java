@@ -2,7 +2,6 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
-import Calculations.Point;
 import Calculations.Point.DIRECTION;
 /**
  * Ищет первый попавшийся объект
@@ -14,7 +13,7 @@ public class WhoIsNearby extends CommandExplore {
 	/**
 	 * Ищет первый попавшийся объект
 	 */
-	public WhoIsNearby() {super(OBJECT.size() - 2);}
+	public WhoIsNearby() {super(OBJECT.lenght - 2);}
 	
 	@Override
 	protected int explore(AliveCell cell) {
@@ -33,19 +32,19 @@ public class WhoIsNearby extends CommandExplore {
 					return ret;
 			}
 		}
-		return OBJECT.size() - 2;
+		return OBJECT.lenght - 2;
 	}
 	
 	private int see(AliveCell cell, int dirNum) {
 		var dir = relatively(cell, DIRECTION.toEnum(dirNum));
 		var see = cell.see(dir);
 		if (see != OBJECT.CLEAN && see != OBJECT.WALL) {
-			var ret = see.nextCMD;
-			if (ret > OBJECT.CLEAN.nextCMD && ret > OBJECT.WALL.nextCMD)
+			var ret = see.ordinal();
+			if (ret > OBJECT.CLEAN.ordinal() && ret > OBJECT.WALL.ordinal())
 				ret -= 2;
-			else if (ret > OBJECT.CLEAN.nextCMD)
+			else if (ret > OBJECT.CLEAN.ordinal())
 				ret--;
-			else if (ret > OBJECT.WALL.nextCMD)
+			else if (ret > OBJECT.WALL.ordinal())
 				ret--;
 			return ret;
 		} else {
@@ -54,9 +53,9 @@ public class WhoIsNearby extends CommandExplore {
 	}
 	
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
-		for(var o : OBJECT.myEnumValues) {
-			if(o == OBJECT.CLEAN || o == OBJECT.WALL)
-			if(o.nextCMD == numBranch)
+		for(var o : OBJECT.values) {
+			if(o == OBJECT.CLEAN || o == OBJECT.WALL) continue;
+			if(o.ordinal() == numBranch)
 				return o.toString();
 		}
 		return "∅";

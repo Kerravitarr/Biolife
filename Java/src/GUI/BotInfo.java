@@ -259,7 +259,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 	/**Клетка-затычка для симулирования дальнейших шагов*/
 	private class TextAL extends AliveCell{
 		DNA interDNA = null;
-		private final AliveCell[] friends;
+		private final CellObject[] friends;
 		private TextAL(AliveCell cell) {
 			super(cell);
 			friends = cell.getComrades();
@@ -287,7 +287,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 			else return interDNA;
 		}
 		@Override
-		public AliveCell[] getComrades(){return friends;}
+		public CellObject[] getComrades(){return friends;}
 	}
 	
 	/**
@@ -470,7 +470,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 			DNA dna = aliveCell.getDna();
 			model.setSize(dna.interrupts.length);
 			for(int i = 0 ; i < dna.interrupts.length ; i++)
-				model.add(i,OBJECT.get(i) + " - " + String.valueOf(dna.interrupts[i]));
+				model.add(i,OBJECT.values[i] + " - " + String.valueOf(dna.interrupts[i]));
 			list_inter.setModel(model);
 		}
 		updateVisibleParams();
@@ -616,10 +616,10 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 			if(inter != -1){
 				DefaultListModel<String> modelinterrapt = new DefaultListModel<> ();
 				modelinterrapt.setSize(dna.interrupts.length);
-				modelinterrapt.add(0,OBJECT.get(inter) + " - " + String.valueOf(dna.interrupts[inter]));
+				modelinterrapt.add(0,OBJECT.values[inter] + " - " + String.valueOf(dna.interrupts[inter]));
 				for(int i = 0 ; i < dna.interrupts.length - 1; i++) {
 					if(i == inter) continue;
-					modelinterrapt.add(i + (i < inter ? 1 : 0),OBJECT.get(i) + " - " + String.valueOf(dna.interrupts[i]));
+					modelinterrapt.add(i + (i < inter ? 1 : 0),OBJECT.values[i] + " - " + String.valueOf(dna.interrupts[i]));
 				}
 				list_inter.setModel(modelinterrapt);
 				list_inter.setSelectedIndex(0);

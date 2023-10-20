@@ -4,6 +4,7 @@ import MapObjects.AliveCell;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
+import MapObjects.CellObject;
 
 /**
  * Абстрактный класс, он является основой для любого гена ДНК
@@ -175,7 +176,16 @@ public abstract class CommandDNA {
 	protected static int param(DNA dna, int index, double maxVal) {
 		return (int) Math.round(maxVal * param(dna,index) / CommandList.COUNT_COMAND);
 	}
-
+	/**
+	 * Проверяет на пустоту клетку поля
+	 * @param cell
+	 * @param point
+	 * @return 
+	 */
+	private static boolean isEmpty(AliveCell cell, Point point){
+		final var see = cell.see(point);
+		return see == CellObject.OBJECT.CLEAN || see.groupLeader == CellObject.OBJECT.BANE;
+	}
 	/**
 	 * Ищет пустое направление вокруг клетки
 	 * @param cell - клетка
@@ -185,16 +195,16 @@ public abstract class CommandDNA {
 		for (int i = 0; i < DIRECTION.size()/2+1; i++) {
 	    	if(i == 0 || i == 4) {
 		        Point point = nextPoint(cell,relatively(cell,DIRECTION.toEnum(i)));
-		        if (Configurations.world.test(point).isEmptyPlase)
+		        if (isEmpty(cell,point))
 		            return point;
 	    	} else {
 	    		int dir = cell.getAge() % 2 == 0 ? i : -i; //Хоть какой-то фактр рандомности появления потомка
 	    		Point point = nextPoint(cell,relatively(cell,DIRECTION.toEnum(dir)));
-		        if (Configurations.world.test(point).isEmptyPlase)
+		        if (isEmpty(cell,point))
 		            return point;
 		        dir = -dir;
 	    		point = nextPoint(cell,relatively(cell,DIRECTION.toEnum(dir)));
-		        if (Configurations.world.test(point).isEmptyPlase)
+		        if (isEmpty(cell,point))
 		            return point;
 	    	}
 	    }

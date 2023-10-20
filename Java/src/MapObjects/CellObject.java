@@ -37,50 +37,52 @@ public abstract class CellObject {
     protected LV_STATUS alive;
 	/**Расшриенный статус объекта, показывает отношение между текущим объектом и другим*/
 	public enum OBJECT {
-		/**Крайняя стена*/
-		WALL(1),
-		/**Пустота*/
-		CLEAN(0,true,false,false),
+		/**Пустая клетка*/
+		CLEAN,
+		/**Стена, ограничивающая мир*/
+		WALL,
 		/**Органика*/
-		ORGANIC(2),
-		/**Друг или враг*/
-		FRIEND(3,false,false,true),ENEMY(4,false,false,true),
-		/**Яд или не яд для этой клетки*/
-		POISON(5,true,true,false),NOT_POISON(6,true,true,false),
-		/**Оканемевшая клетка*/
-		OWALL(7,false,false,false),
+		ORGANIC,
 		/**Какой-то бот*/
-		BOT(8,false,false,true);
-		public static final OBJECT[] myEnumValues = OBJECT.values();
-		/**На сколько нужно сдвинуть счётчик команда дополнительно, типо развилка. Это-же - номер прерывания*/
-		public final int nextCMD;
-		/**Является это место пустым*/
-		public final boolean isEmptyPlase;
-		/**Является это место ядовитым*/
-		public final boolean isPosion;
-		/**Является это место ботом*/
-		public final boolean isBot;
+		ALIVE,
+		/**Друг или враг*/
+		FRIEND(ALIVE),ENEMY(ALIVE),
+		/**Родня связь*/		
+		CONNECTION(ALIVE), /**Чей-то заполнитель*/ FILLING(ALIVE),
+		/**Яд*/
+		BANE,
+		/**Яд или не яд для этой клетки*/
+		POISON(BANE),NOT_POISON(BANE),
+		/**Оканемевшая клетка*/
+		OWALL,
+		;
+		/**Все возможные объекты*/
+		public static final OBJECT[] values = OBJECT.values();
+		/**Количество этих объектов*/
+		public static int lenght = values.length;
 		/**Читабельное имя объекта*/
 		public final String name;
+		/**Лидер группы. Например, для группы FRIEND и ENEMY лидер - ALIVE. Для всех остальных лидер - сам объект*/
+		public final OBJECT groupLeader;
 		
-		OBJECT(int nextCMD) {this(nextCMD,false,false,false);}
-		OBJECT(int nextCMD, boolean isEmptyPlase, boolean isPosion, boolean isBot) {
-			this.nextCMD=nextCMD;
-			this.isEmptyPlase=isEmptyPlase;
-			this.isPosion=isPosion;
-			this.isBot=isBot;
-			name = Configurations.getProperty(getClass(), super.name());
-		}
-		public static int size() {return myEnumValues.length;}
-		public static OBJECT get(int index) {
-			for (OBJECT object : myEnumValues) {
-				if(object.nextCMD == index)
-					return object;
-			}
-			return null;
-		}
-		public String toString() {
-			return name;
+		OBJECT(){this(null);}
+		OBJECT(OBJECT leader) {name = Configurations.getProperty(getClass(), super.name());groupLeader = leader != null ? leader : this;}
+		@Override
+		public String toString() { return name;}
+		/**
+		 * Преобразует объект в его проекцию
+		 * @param o что за объект
+		 * @return его тип
+		 */
+		private static OBJECT transform(LV_STATUS o){
+			return switch (o) {
+				case LV_ALIVE -> ALIVE;
+				case LV_ORGANIC -> ORGANIC;
+				case LV_POISON -> BANE;
+				case LV_WALL -> WALL;
+				case LV_CONNECTIVE_TISSUE -> ALIVE;
+				default -> throw new AssertionError("Мы не ожидали тут встретить объект типа " + o);
+			};
 		}
 	};
 	
@@ -222,22 +224,79 @@ public abstract class CellObject {
 	public void addHealth(double h) {
 		setHealth(getHealth() + h);
 	}
+	
 	/**
 	 * Подглядывает за бота в абсолютном направлении
+	 * 
+	 * Только для живой клетки не возвращает ALIVE, а возвращает ENEMY или FRIEND
+	 * Только для жиовй клетки не возвращает BANE, а возвращает POISON или NOT_POISON
+	 * Только для яда возвращает не BANE, а возвращает POISON или NOT_POISON
+	 * Для всех остальных ENEMY, FRIEND, POISON и NOT_POISON недоступны
+	 * 
+	 * 
 	 * @param direction направление, DIRECTION
 	 * @return параметры OBJECT
 	 */
-	protected OBJECT see(DIRECTION direction) {
-	    Point point = getPos().next(direction);
-	    OBJECT obj = Configurations.world.test(point);
-	    if (obj.isBot) {
-	    	if (isRelative(this, Configurations.world.get(point)))
-		        return OBJECT.FRIEND;
-		    else
-		        return OBJECT.ENEMY;
-	    } else {
-	        return obj;
-	    }
+	public OBJECT see(DIRECTION direction) {
+		return see(getPos().next(direction));
+	}
+	/**
+	 * Подглядывает за бота в абсолютном направлении
+	 * 
+	 * Только для живой клетки не возвращает ALIVE, а возвращает ENEMY или FRIEND
+	 * Только для жиовй клетки не возвращает BANE, а возвращает POISON или NOT_POISON
+	 * Только для яда возвращает не BANE, а возвращает POISON или NOT_POISON
+	 * Для всех остальных ENEMY, FRIEND, POISON и NOT_POISON недоступны
+	 * 
+	 * 
+	 * @param point в какой точке карты
+	 * @return параметры OBJECT
+	 */
+	public OBJECT see(Point point) {
+		if(!point.valid())
+			return OBJECT.WALL;
+		final var o = Configurations.world.get(point);
+		if(o == null)
+			return OBJECT.CLEAN;
+		switch (o.alive) {
+			case LV_WALL,LV_ORGANIC,LV_CONNECTIVE_TISSUE -> {return OBJECT.transform(o.alive);}
+			case LV_ALIVE -> {
+				if(alive == LV_STATUS.LV_ALIVE){
+					if(this.isRelative(o)) return OBJECT.FRIEND;
+					else return OBJECT.ENEMY;
+				} else {
+					return OBJECT.transform(o.alive);
+				}
+			}
+			case LV_POISON ->{
+				switch (alive) {
+					case LV_POISON -> {
+						if(this.isRelative(o)) return OBJECT.NOT_POISON;
+						else return OBJECT.POISON;
+					}
+					case LV_ALIVE -> {
+						if(((AliveCell) this).poisonType == ((Poison)o).getType()) return OBJECT.NOT_POISON;
+						else return OBJECT.POISON;
+					}
+					default -> { return OBJECT.transform(o.alive);}
+				}
+			}
+			default -> throw new UnsupportedOperationException("Unimplemented case: " + o.alive);
+		}
+	}
+	/**
+	 * Подглядывает за объект в абсолютном направлении
+	 * ENEMY, FRIEND, POISON и NOT_POISON недоступны
+	 * 
+	 * @param point в какой точке карты
+	 * @return параметры OBJECT
+	 */
+	protected static OBJECT test(Point point) {
+		if(!point.valid())
+			return OBJECT.WALL;
+		final var o = Configurations.world.get(point);
+		if(o == null) return OBJECT.CLEAN;
+		else return OBJECT.transform(o.alive);
 	}
 	/**
 	 * Толкает объект в обсолютном направлении.Это значит, что объекту будет дан импульс в каком-то одном направлении
@@ -258,16 +317,24 @@ public abstract class CellObject {
 	 * @throws CellObjectRemoveException если объект во времядвижения того. Умер
 	 */
 	public boolean move(DIRECTION direction) {
-		switch (see(direction)) {
-			case FRIEND, ENEMY, ORGANIC, WALL, OWALL -> {
-				return false;
+		switch (see(direction).groupLeader) {
+			case WALL, OWALL -> {
+				//Там стена. Её мы сдвинуть не можем. Так что она просто отталикивает нас обратно
+				move(direction.inversion(),1);
+				return true;
+			}
+			case ALIVE, ORGANIC-> {
+				//Там что-то есть. Мы не смогли походить, значит передали импульс дальше
+				Point point = getPos().next(direction);
+				Configurations.world.get(point).move(direction,1);
+				return true;
 			}
 			case CLEAN -> {
 				Point point = getPos().next(direction);
 				Configurations.world.move(this,point);
 				return true;
 			}
-			case POISON, NOT_POISON -> {
+			case BANE -> {
 				Point point = getPos().next(direction);
 				Poison poison = (Poison) Configurations.world.get(point);
 				if(Poison.createPoison(getPos(), poison.getType(), stepCount, poison.getHealth(), poison.getStream())) {
@@ -285,9 +352,8 @@ public abstract class CellObject {
 					return false;
 				}
 			}
-			case BOT -> throw new UnsupportedOperationException("Unimplemented case: " + see(direction));
+			default -> throw new UnsupportedOperationException("Unimplemented case: " + see(direction));
 		}
-		throw new IllegalArgumentException("Unexpected value: " + see(direction));
 	}
 	/**
 	 * Перемещает бота в направлении, если не получится прямо в этом направлении - перемещает
@@ -295,7 +361,7 @@ public abstract class CellObject {
 	 * @param direction
 	 * @return true, если движение удалось
 	 */
-	public boolean moveD(DIRECTION direction) {
+	protected boolean moveD(DIRECTION direction) {
 		if (move(direction))
 			return true;
 
@@ -336,8 +402,9 @@ public abstract class CellObject {
 
 	/**
 	 * Убирает бота с карты и проводит все необходимые процедуры при этом
+	 * @throws CellObjectRemoveException выкидывает для удаления всего и вся вертикально по всему стеку вызова
 	 */
-	public void destroy() {
+	public void destroy() throws CellObjectRemoveException{
 		Configurations.world.clean(this);
 		alive = LV_STATUS.GHOST;
 		throw new CellObjectRemoveException();
