@@ -295,7 +295,7 @@ public abstract class AliveCellProtorype extends CellObject{
     
     //===============Параметры братства, многоклеточность=======
     /**Список всех наших друзей*/
-	private final CellObject[] _friends = new CellObject[DIRECTION.size() * 2];
+	private final CellObject[] _friends = new CellObject[DIRECTION.size()];
 	/**Число этих самых "друзей"*/
 	private int countFriends = 0;
   
@@ -421,7 +421,7 @@ public abstract class AliveCellProtorype extends CellObject{
     }
     private boolean _setComrades(CellObject friend) {
 		assert friend != null : "Забыли друга!!!";
-		assert friend.getPos().distance(this.getPos()).getHypotenuse() < 2 : "Куда-то далековато друг забрался, не находите?" + Arrays.toString(_friends) + ". Этот явно лишний: " + friend;
+		assert friend.getPos().distance(this.getPos()).getHypotenuse() < 2 : "Куда-то далековато друг забрался, не находите?\n" + Arrays.toString(_friends) + ".\nЭтот явно лишний: " + friend + " из за дистанции " + friend.getPos().distance(this.getPos());
         int emptyIndex = -1;
 		for (int i = 0; i < _friends.length; i++) {
 			final var _friend = _friends[i];
@@ -433,7 +433,7 @@ public abstract class AliveCellProtorype extends CellObject{
 				assert !_friend.getPos().equals(friend.getPos()) : "У нас точки совпали, а объекты - нет... Магия!";
 			}
 		}
-		assert countFriends < Point.DIRECTION.size()*2 : "Многовато у нас друзей, не находите? " + Arrays.toString(_friends) + ". Этот явно лишний: " + friend;
+		assert countFriends < Point.DIRECTION.size() : "Многовато у нас друзей, не находите? " + Arrays.toString(_friends) + ". Этот явно лишний: " + friend;
 		_friends[emptyIndex] = friend;
 		countFriends++;
 		return true;

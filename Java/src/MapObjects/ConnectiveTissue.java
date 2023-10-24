@@ -49,8 +49,25 @@ public class ConnectiveTissue extends CellObject {
 	/**Функция получения семьи. Тех клеток, с кем текущая в тестных отношениях
 	 * @return список из клеток, коих ровно DIRECTION.size(). Может быть пропущенно сколько-то ячеек...
 	 */
-	private AliveCell[] getCells() {
+	public AliveCell[] getCells() {
 		return _friends;
+	}
+	/**Возвращает количество связей у этой... Связи
+	 * @return 
+	 */
+	public int size(){return countFriends;}
+	/**
+	 * Проверяет наличие клетки среди связей
+	 * @param ac клетка, связь с которой мы ищем
+	 * @return true, если такая связь есть
+	 */
+	public boolean contains(AliveCell ac){
+		for (AliveCell _friend : _friends) {
+			if(_friend == ac){
+				return true;
+			}
+		}
+		return false;
 	}
 	/**Сохраняет нам нового члена многоклеточной семьи
 	 * @param friend 
@@ -84,13 +101,22 @@ public class ConnectiveTissue extends CellObject {
 		for (int i = 0; i < _friends.length; i++) {
 			final var _friend = _friends[i];
 			if(_friend == remove){
+				remove.removeComrades(this);
 				_friends[i] = null;
-				if(countFriends < 2) destroy();
+				if(countFriends < 2) remove_NE(); //Нас тоже больше не будет. Мы тоже удаляемся
 				return;
 			}
 		}
 		assert false : "Недостижимая часть кода. Не нашли " + remove + " среди " + Arrays.toString(_friends);
 	}
+	
+    @Override
+    public void destroy() {
+		for (AliveCell _friend : _friends) {
+			if(_friend != null) _friend.removeComrades(this);
+		}
+        super.destroy();
+    }
 
 	@Override
 	void step() {
@@ -111,17 +137,73 @@ public class ConnectiveTissue extends CellObject {
 			for (int j = i + 1; j < _friends.length; j++) {
 				final var f2 = _friends[j];
 				if(f2 == null) continue;
-				if(f1.getPos().x == f2.getPos().x || f2.getPos().y == this.getPos().y) continue; //Они на одной прямой - не интересуют
+				if(Math.abs(f1.getPos().x - f2.getPos().x) <= 1 && Math.abs(f1.getPos().y - f2.getPos().y) <= 1 ){
+					//Это две клетки, которые стоят рядом! Они больше не наши
+ 					if(countFriends == 2){
+						 destroy();
+					} else {
+						removeCell(f1);
+						removeCell(f2);
+					}
+					j = _friends.length;
+					continue;
+				}
+				if(f1.getPos().x == f2.getPos().x || f1.getPos().y == f2.getPos().y) continue;//Они на одной прямой. не наш случай
 				final var f2x = f2.getPos().x == this.getPos().x;
 				final var f2y = f2.getPos().y == this.getPos().y;
 				final var isR2 = !f2x && !f2y;
 				if(isR1 == isR2) continue; //Обе угловые и обе не угловые нас не интересуют!
 				//И так. Теперь мы точно знаем, что у нас две клетки не на одной прямой и они разного типа... Надо проверить возможность создания связи
-				
-				
+				final Point p1, p2;
+				if(Math.abs(f1.getPos().x - f2.getPos().x) == 2){
+					//У нас одна из точек на горизонтальной прямой
+					final var x = (f1.getPos().x + f2.getPos().x) / 2;
+					p1 = Point.create(x,f1.getPos().y);
+					p2 = Point.create(x,f2.getPos().y);
+				} else {
+					//У нас одна из точек на вертикальной прямой
+					final var y = (f1.getPos().y + f2.getPos().y) / 2;
+					p1 = Point.create(f1.getPos().x,y);
+					p2 = Point.create(f2.getPos().x,y);
+				}
+				final var p = p1.equals(this.getPos()) ? p2 : p1;
+				final var o = Configurations.world.get(p);
+				if(o == null){
+					//Создаём дублирующую связь
+					Configurations.world.add(new ConnectiveTissue(p, f1,new Point[]{f2.getPos()}));
+				} else if(o instanceof ConnectiveTissue ct){
+					//Добавляем связь, если такой там нет
+					if(Arrays.stream(ct._friends).filter(f -> f == f1 || f == f2).findFirst().orElse(null) != null){
+						//Один из двух товарищей уже связан с этой связью, значит можно через неё прокинуть ещё одну связь
+						ct.setCell(f1);
+						ct.setCell(f2);
+					}
+				}
 			}
 		}
-		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+	}
+	
+    @Override
+    public boolean move(Point.DIRECTION direction) {
+		final var target = getPos().next(direction);
+		//Если у нас до какой-то из клеток будет больше 2 клеток - то мы не можем походить
+		boolean isNot = Arrays.stream(_friends).filter(f -> f != null && (Math.abs(f.getPos().x - target.x) > 1 || Math.abs(f.getPos().y - target.y) > 1)).findFirst().orElse(null) != null;
+		if(isNot){
+			//Делимся импульсом со всеми дочерними клетками
+			final var dx = getImpuls().x / countFriends;
+			final var dy = getImpuls().y / countFriends;
+
+			for (AliveCell _friend : _friends) {
+				if(_friend != null){
+					_friend.getImpuls().x += dx;
+					_friend.getImpuls().y += dy;
+				}
+			}
+			getImpuls().x = getImpuls().y = 0;
+			return false;
+		} else {
+			return super.move(direction);
+		}
 	}
 
 	@Override
@@ -156,7 +238,7 @@ public class ConnectiveTissue extends CellObject {
 
 	
 	private static Color blend(int size, Color... c) {
-		final float ratio = 255f / ((float) size);
+		final float ratio = 1f / (size * 255f);
 
 		float a = 0;
 		float r = 0;

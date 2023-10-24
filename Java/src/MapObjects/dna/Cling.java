@@ -23,7 +23,7 @@ public class Cling extends CommandDoInterupted {
 	/**Присасывается к чему-то относительно МСК*/
 	public Cling(boolean isA) {
 		super(isA, 1);
-		setInterrupt(isA, ORGANIC, CLEAN, CellObject.OBJECT.BANE, WALL);
+		setInterrupt(isA, ORGANIC, CLEAN, CellObject.OBJECT.BANE, WALL, CellObject.OBJECT.CONNECTION, CellObject.OBJECT.FILLING);
 	}
 	@Override
 	protected void doing(AliveCell cell) {
@@ -37,15 +37,15 @@ public class Cling extends CommandDoInterupted {
 	protected void cling(AliveCell cell,DIRECTION direction) {	
 		cell.addHealth(-HP_COST); // бот теряет на этом 1 энергию
 		var see = cell.see(direction);
-		switch (see.groupLeader) {
-			case ALIVE -> {
+		switch (see) {
+			case FRIEND,ENEMY -> {
 				//--------- дошли до сюда, значит впереди живой бот -------------------
 				Point point = nextPoint(cell,direction);
 				var target = (AliveCell) Configurations.world.get(point);
 				if(target.getMucosa() == 0)	//Если клетка в слизи, то к ней не присосаться 
 					cell.setComrades(target);
 			}
-			case ORGANIC, CLEAN, BANE, WALL, OWALL -> cell.getDna().interrupt(cell, see);
+			case ORGANIC, CLEAN, POISON,NOT_POISON, WALL, OWALL,CONNECTION,FILLING -> cell.getDna().interrupt(cell, see);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}

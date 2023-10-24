@@ -427,7 +427,9 @@ public final class Point{
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof Point p) {
+		if(this == obj)
+			return true;
+		else if (obj instanceof Point p) {
 			return (this.x == p.x) && (this.y == p.y);
 		} else {
 			return super.equals(obj);

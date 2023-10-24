@@ -154,8 +154,8 @@ public abstract class CellObject {
 						else move(DIRECTION.UP, (101 - acp.getBuoyancy()));
 					}
 				}
-				case LV_ORGANIC, LV_POISON, LV_WALL -> {}
-				default -> throw new AssertionError("Мы не ожидали тут встретить объект типа " + alive);
+				case LV_ORGANIC, LV_POISON, LV_WALL, LV_CONNECTIVE_TISSUE -> {}
+				default -> throw new AssertionError("Мы не ожидали тут встретить объект типа '" + alive + "'");
 			}
 			//Воздействие граввитации
 			final var g = Configurations.gravitation[alive.ordinal()];
@@ -192,6 +192,13 @@ public abstract class CellObject {
 	 */
 	public final Point getPos() {
 		return pos;
+	}
+	/**
+	 * Возвращает имупульс объекта
+	 * @return
+	 */
+	public final Point.PointD getImpuls() {
+		return impuls;
 	}
 	/**
 	 * Серелизует объект
@@ -245,6 +252,7 @@ public abstract class CellObject {
 	 * 
 	 * Только для живой клетки не возвращает ALIVE, а возвращает ENEMY или FRIEND
 	 * Только для жиовй клетки не возвращает BANE, а возвращает POISON или NOT_POISON
+	 * Только для жиовй клетки не возвращает LV_CONNECTIVE_TISSUE, а возвращает CONNECTION или FILLING
 	 * Только для яда возвращает не BANE, а возвращает POISON или NOT_POISON
 	 * Для всех остальных ENEMY, FRIEND, POISON и NOT_POISON недоступны
 	 * 
@@ -259,11 +267,19 @@ public abstract class CellObject {
 		if(o == null)
 			return OBJECT.CLEAN;
 		switch (o.alive) {
-			case LV_WALL,LV_ORGANIC,LV_CONNECTIVE_TISSUE -> {return OBJECT.transform(o.alive);}
+			case LV_WALL,LV_ORGANIC -> {return OBJECT.transform(o.alive);}
 			case LV_ALIVE -> {
 				if(alive == LV_STATUS.LV_ALIVE){
 					if(this.isRelative(o)) return OBJECT.FRIEND;
 					else return OBJECT.ENEMY;
+				} else {
+					return OBJECT.transform(o.alive);
+				}
+			}
+			case LV_CONNECTIVE_TISSUE -> {
+				if(alive == LV_STATUS.LV_ALIVE){
+					if(this.isRelative(o)) return OBJECT.CONNECTION;
+					else return OBJECT.FILLING;
 				} else {
 					return OBJECT.transform(o.alive);
 				}
@@ -319,15 +335,10 @@ public abstract class CellObject {
 	public boolean move(DIRECTION direction) {
 		switch (see(direction).groupLeader) {
 			case WALL, OWALL -> {
-				//Там стена. Её мы сдвинуть не можем. Так что она просто отталикивает нас обратно
-				move(direction.inversion(),1);
-				return true;
+				return false;
 			}
 			case ALIVE, ORGANIC-> {
-				//Там что-то есть. Мы не смогли походить, значит передали импульс дальше
-				Point point = getPos().next(direction);
-				Configurations.world.get(point).move(direction,1);
-				return true;
+				return false;
 			}
 			case CLEAN -> {
 				Point point = getPos().next(direction);
@@ -361,25 +372,54 @@ public abstract class CellObject {
 	 * @param direction
 	 * @return true, если движение удалось
 	 */
-	protected boolean moveD(DIRECTION direction) {
+	private boolean moveD(DIRECTION direction) {
 		if (move(direction))
 			return true;
+		final var next = direction.next();
+		final var prev = direction.prev();
 
 		if (getAge() % 2 == 0) {
-			if (move(direction.next()))
+			if (move(next))
 				return true;
-			if (move(direction.prev()))
+			if (move(prev))
 				return true;
 		} else {
-			if (move(direction.prev()))
+			if (move(prev))
 				return true;
-			if (move(direction.next()))
+			if (move(next))
 				return true;
 		}
-
-		return false;
+		//Там что-то есть. Мы не смогли походить, значит передали импульс дальше
+		final var o1 = see(direction);
+		final var o2 = see(next);
+		final var o3 = see(prev);
+		final var c = ((isConditionForMove(o1) ? 1 : 0) + (isConditionForMove(o2) ? 1 : 0) + (isConditionForMove(o3) ? 1 : 0));
+		if(c == 0) return false;
+		//Там кто-то есть. Ему и отдадим импульс
+		final var p = 1d/c;
+		moveD(o1,direction,p);
+		moveD(o2,next,p);
+		moveD(o3,prev,p);		
+		return true;
 	}
-	
+	/**Проверяет, можно-ли туда отдать импульс?
+	 * @param o
+	 * @return 
+	 */
+	private boolean isConditionForMove(OBJECT o){
+		return o == OBJECT.WALL || o == OBJECT.OWALL || o.groupLeader == OBJECT.ALIVE || o == OBJECT.ORGANIC;
+	}
+	/**Непосредственно отдаёт импульс
+	 * @param o
+	 * @param d
+	 * @param p 
+	 */
+	private void moveD(OBJECT o,DIRECTION d, double p){
+		switch (o) {
+			case WALL, OWALL -> move(d.inversion(),p);
+			case ALIVE, ORGANIC-> Configurations.world.get(getPos().next(d)).move(d,p);
+		}
+	}
 	/**
 	 * Родственные-ли боты?
 	 * Определеяет родственников по фенотипу, по тому как они выглядят
@@ -437,7 +477,7 @@ public abstract class CellObject {
 	
 	@Override
 	public String toString() {
-		return "Cell " + Integer.toHexString(hashCode()) + " in " + pos + " type " + getAlive();
+		return "Cell " + Integer.toHexString(hashCode()) + " in " + pos + " type " + getAlive() + " class " + this.getClass().getSimpleName();
 	}
 	/**
 	 * Что с нами сделал токсин.

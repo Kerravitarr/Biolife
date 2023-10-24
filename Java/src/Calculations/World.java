@@ -376,15 +376,16 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 			move(cell,target);
 		} else {
 			//Если на месте, куда хочет cell, что-то есть
-			var d = Point.direction(target, cell.getPos());
+			final var from = cell.getPos();
+			var d = Point.direction(target, from);
 			clean(cell);
 			cellSwap.move(d);
-			if(cellSwap.getPos().equals(cell.getPos())){
+			if(cellSwap.getPos().equals(from) && get(target) == null){
 				//Если объект смог занять нашу позицию. 
 				clean(cellSwap);
 				add(cell);
 				cell.move(d.inversion());
-				if(cell.getPos().equals(target)){
+				if(cell.getPos().equals(target) && get(from) == null){
 					//Тогда мы занимаем позицию объекта и выходим
 					add(cellSwap);
 				} else {
