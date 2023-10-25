@@ -31,6 +31,7 @@ public class Buoyancy extends CommandDo {
 		return Integer.toString(param(cell, 0,200) - 100);
 	};
 	
+	@Override
 	public String value(AliveCell cell) {
 		var par = param(cell, 0, 100);
 		return valueFormat.format(Math.abs(HP_COST * par / 10), (isUp ? '+' : '-'), DEL * par);

@@ -7,8 +7,8 @@ package MapObjects;
 import Calculations.Configurations;
 import Calculations.Point;
 import GUI.Legend;
+import MapObjects.AliveCellProtorype.ACTION;
 import Utils.JSON;
-import Utils.Utils;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;
@@ -23,11 +23,13 @@ import java.util.Arrays;
  * как-бы забивая его для обоих клеток разом
  * @author Kerravitarr
  */
-public class ConnectiveTissue extends CellObject {
+public class ConnectiveTissue extends CellObject implements AliveCellProtorype.AliveCellI{
 	/**Список тех, кого мы увязываем крестом*/
-	private final AliveCell[] _friends = new AliveCell[Point.DIRECTION.size()];
+	private final CellObject[] _friends = new CellObject[Point.DIRECTION.size()];
 	/**Число этих самых "друзей"*/
 	private int countFriends = 0;
+	/**Число клеток среди наших друзей*/
+	private int countAliveCell = 0;
 	
 	/**
 	 * Создаёт соединительную ткань
@@ -37,19 +39,65 @@ public class ConnectiveTissue extends CellObject {
 	 */
 	public ConnectiveTissue(Point where, AliveCell perrent, Point [] comrades) {
 		super(perrent.getStepCount(), LV_STATUS.LV_CONNECTIVE_TISSUE);
+		init(where,comrades);
+		setCell(perrent);
+	}
+	/**
+	 * Создаёт соединительную ткань
+	 * @param where место, где она будет создана
+	 * @param perrent кто её создатель? 
+	 * @param comrades где находятся все подельники текущей клетки
+	 */
+	public ConnectiveTissue(Point where, AliveCell perrent, CellObject [] comrades) {
+		super(perrent.getStepCount(), LV_STATUS.LV_CONNECTIVE_TISSUE);
         setPos(where);
-		for (final var cell : comrades) {
-			if (cell == null) break;
-			setCell((AliveCell) Configurations.world.get(cell));
+		for (final var o : comrades) {
+			if (o == null) break;
+			if(o instanceof AliveCell ac)
+				setCell(ac);
+			else if(o instanceof ConnectiveTissue ct)
+				setCell(ct);
+			else
+				assert false : "А тут у нас не известный объект..." + o;
 		}
 		assert countFriends > 0 : "Почему-то у нас маловато друзей оказалось... " + comrades[0];
 		setCell(perrent);
+	}
+	/**
+	 * Создаёт соединительную ткань
+	 * @param where место, где она будет создана
+	 * @param perrent кто её создатель? 
+	 * @param comrades где находятся все подельники текущей клетки
+	 */
+	public ConnectiveTissue(Point where, ConnectiveTissue perrent, Point [] comrades) {
+		super(perrent.getStepCount(), LV_STATUS.LV_CONNECTIVE_TISSUE);
+		init(where,comrades);
+		setCell(perrent);
+	}
+	/**
+	 * Инициализирует связь
+	 * @param where где эта связь будет находиться, её позиция
+	 * @param comrades все связи этой связи
+	 */
+	private void init(Point where, Point [] comrades){
+        setPos(where);
+		for (final var cell : comrades) {
+			if (cell == null) break;
+			final var o = Configurations.world.get(cell);
+			if(o instanceof AliveCell ac)
+				setCell(ac);
+			else if(o instanceof ConnectiveTissue ct)
+				setCell(ct);
+			else
+				assert false : "А тут у нас не известный объект..." + o;
+		}
+		assert countFriends > 0 : "Почему-то у нас маловато друзей оказалось... " + comrades[0];
 	}
 	
 	/**Функция получения семьи. Тех клеток, с кем текущая в тестных отношениях
 	 * @return список из клеток, коих ровно DIRECTION.size(). Может быть пропущенно сколько-то ячеек...
 	 */
-	public AliveCell[] getCells() {
+	public CellObject[] getCells() {
 		return _friends;
 	}
 	/**Возвращает количество связей у этой... Связи
@@ -62,7 +110,7 @@ public class ConnectiveTissue extends CellObject {
 	 * @return true, если такая связь есть
 	 */
 	public boolean contains(AliveCell ac){
-		for (AliveCell _friend : _friends) {
+		for (final var _friend : _friends) {
 			if(_friend == ac){
 				return true;
 			}
@@ -72,62 +120,107 @@ public class ConnectiveTissue extends CellObject {
 	/**Сохраняет нам нового члена многоклеточной семьи
 	 * @param friend 
 	 */
+    public void setCell(ConnectiveTissue friend) {
+		if(_setCell(friend)){
+			friend.setCell(this);
+		}
+	}
+	
+	/**Сохраняет нам нового члена многоклеточной семьи
+	 * @param friend 
+	 */
     public void setCell(AliveCell friend) {
+		if(_setCell(friend)){
+			friend.setComrades(this);
+			countAliveCell++;
+		}
+	}
+	/**Сохраняет нам нового члена многоклеточной семьи
+	 * @param friend 
+	 */
+    private boolean _setCell(CellObject friend) {
 		assert friend != null : "Забыли друга!!!";
-		assert friend.getPos().distance(this.getPos()).getHypotenuse() != 2 : "Слишком близко. " + Arrays.toString(_friends) + ". Этот явно лишний: " + friend + " для меня " + this;
+		assert friend != this : "Вам не кажется это странным?";
+		assert friend.getPos().distance(this.getPos()).getHypotenuse() != 2 : "Слишком близко. " + 
+				Arrays.toString(_friends) + ". Этот явно лишний: " + friend + " для меня " + this;
         int emptyIndex = -1;
 		for (int i = 0; i < _friends.length; i++) {
 			final var _friend = _friends[i];
 			if(_friend == friend){
-				return;
+				return false;
 			} else if(_friend == null){
 				emptyIndex = i;
-			} else if(_friend.getPos().equals(friend.getPos())){
-				assert false;
+			} else {
+				if(_friend.getPos().equals(friend.getPos()))
+				assert !_friend.getPos().equals(friend.getPos()) : "У нас точки совпали, а объекты - нет... Магия!. Объекты: " + _friend + " и " + friend;
 			}
 		}
 		assert countFriends < Point.DIRECTION.size() : "Многовато у нас друзей, не находите? " + Arrays.toString(_friends) + ". Этот явно лишний: " + friend;
 		_friends[emptyIndex] = friend;
 		countFriends++;
-		friend.setComrades(this);
+		return true;
     }
 	/**Удаляет этого из наших товарищей
 	 * @param remove кого надо удалить
 	 * @throws CellObjectRemoveException выкидывает, если связь больше ни кого не связывает
 	 */
+	public void removeCell(ConnectiveTissue remove) throws CellObjectRemoveException{
+		if(_removeCell(remove))
+			remove.removeCell(this);
+	}
+		
+	/**Удаляет этого из наших товарищей
+	 * @param remove кого надо удалить
+	 * @throws CellObjectRemoveException выкидывает, если связь больше ни кого не связывает
+	 */
 	public void removeCell(AliveCell remove) throws CellObjectRemoveException{
-		assert countFriends > 0 : "Ожидается, что у нас всё ещё есть друзья";
-		countFriends--;
+		if(_removeCell(remove)){
+			remove.removeComrades(this);
+			countAliveCell--;
+		}
+	}
+	/**Удаляет этого из наших товарищей
+	 * @param remove кого надо удалить
+	 * @throws CellObjectRemoveException выкидывает, если связь больше ни кого не связывает
+	 */
+	private boolean _removeCell(CellObject remove) throws CellObjectRemoveException{
 		for (int i = 0; i < _friends.length; i++) {
 			final var _friend = _friends[i];
 			if(_friend == remove){
-				remove.removeComrades(this);
 				_friends[i] = null;
-				if(countFriends < 2) remove_NE(); //Нас тоже больше не будет. Мы тоже удаляемся
-				return;
+				assert countFriends > 0 : "Ожидается, что у нас всё ещё есть друзья";
+				countFriends--;
+				return true;
 			}
 		}
-		assert false : "Недостижимая часть кода. Не нашли " + remove + " среди " + Arrays.toString(_friends);
+		return false;
+		//assert false : "Недостижимая часть кода. Не нашли " + remove + " среди " + Arrays.toString(_friends);
 	}
 	
     @Override
     public void destroy() {
-		for (AliveCell _friend : _friends) {
-			if(_friend != null) _friend.removeComrades(this);
+		for (final var _friend : _friends) {
+			if (_friend instanceof AliveCell ac) {
+				removeCell(ac);
+			} else if(_friend instanceof ConnectiveTissue ct) {
+				removeCell(ct);
+			}
 		}
         super.destroy();
     }
 
 	@Override
 	void step() {
+		if(countFriends < 2 || countAliveCell < 2) destroy(); //Если у нас нет связей, то мы удаляемся
+		if(Math.abs(getImpuls().x) > 500 || Math.abs(getImpuls().y) > 500) destroy(); //От перенапряжения связь тоже может лопнуть
 		
 		//
 		//  R-O-R
-		//  |\|/|
+		//  |х|х|
 		//  O-X-O
-		//  |/|\|
+		//  |х|х|
 		//  R-O-R
-		// Нас интересуют только связи между клеткой O и клеткой R в противположном углу
+		// 
 		for (int i = 0; i < _friends.length - 1; i++) {
 			final var f1 = _friends[i];
 			if(f1 == null) continue;
@@ -137,69 +230,129 @@ public class ConnectiveTissue extends CellObject {
 			for (int j = i + 1; j < _friends.length; j++) {
 				final var f2 = _friends[j];
 				if(f2 == null) continue;
-				if(Math.abs(f1.getPos().x - f2.getPos().x) <= 1 && Math.abs(f1.getPos().y - f2.getPos().y) <= 1 ){
-					//Это две клетки, которые стоят рядом! Они больше не наши
- 					if(countFriends == 2){
-						 destroy();
-					} else {
-						removeCell(f1);
-						removeCell(f2);
+				if(f1.getPos().distance(f2.getPos()).getHypotenuse() < 2 && f1 instanceof AliveCell ac1 && f2 instanceof AliveCell ac2){
+					//Это две клетки, которые стоят рядом!
+					//Если между ними есть связи, то это больше не наши клиенты
+					if(Arrays.stream(ac1.getComrades()).filter( comrad -> comrad != null && comrad == f2).findFirst().orElse(null) != null){
+						removeCell(ac1);
+						removeCell(ac2);
+						j = _friends.length;
+						continue;
 					}
-					j = _friends.length;
-					continue;
 				}
-				if(f1.getPos().x == f2.getPos().x || f1.getPos().y == f2.getPos().y) continue;//Они на одной прямой. не наш случай
 				final var f2x = f2.getPos().x == this.getPos().x;
 				final var f2y = f2.getPos().y == this.getPos().y;
 				final var isR2 = !f2x && !f2y;
-				if(isR1 == isR2) continue; //Обе угловые и обе не угловые нас не интересуют!
-				//И так. Теперь мы точно знаем, что у нас две клетки не на одной прямой и они разного типа... Надо проверить возможность создания связи
-				final Point p1, p2;
-				if(Math.abs(f1.getPos().x - f2.getPos().x) == 2){
-					//У нас одна из точек на горизонтальной прямой
-					final var x = (f1.getPos().x + f2.getPos().x) / 2;
-					p1 = Point.create(x,f1.getPos().y);
-					p2 = Point.create(x,f2.getPos().y);
-				} else {
-					//У нас одна из точек на вертикальной прямой
-					final var y = (f1.getPos().y + f2.getPos().y) / 2;
-					p1 = Point.create(f1.getPos().x,y);
-					p2 = Point.create(f2.getPos().x,y);
+				final Point pointNewConnect;
+				if(isR1 && isR2){
+					//Они обе угловые. Между ними образуется новая связь
+					if(f1.getPos().x == f2.getPos().x || f1.getPos().y == f2.getPos().y)
+						pointNewConnect = f1.getPos().next(f1.getPos().distance(f2.getPos()).direction());
+					else
+						continue; //Правда, если они накрест - то не станем-же мы добавлять себя себе
+				} else if(!isR1 && !isR2){ //Это две промежуточные
+					if(f1.getPos().x != f2.getPos().x && f1.getPos().y != f2.getPos().y){
+						//Это две соседние клетки. Между ними надо создать связь
+						if(f1 instanceof AliveCell ac) {
+							if(f2 instanceof AliveCell ac2) ac.setComrades(ac2);
+							else ac.setComrades((ConnectiveTissue) f2);
+						} else {
+							if(f2 instanceof AliveCell ac2) ((ConnectiveTissue) f1).setCell(ac2);
+							else ((ConnectiveTissue) f1).setCell((ConnectiveTissue) f2);
+						}
+					}
+					continue; //А больше нас и не интересуют такие клетки
+				} else if(f1.getPos().x == f2.getPos().x || f1.getPos().y == f2.getPos().y) { //Они типов разных, но стоят на одной прямой. Значит они соседние.
+					//Между ними надо создать связь
+					if(f1 instanceof AliveCell ac) {
+						if(f2 instanceof AliveCell ac2) ac.setComrades(ac2);
+						else ac.setComrades((ConnectiveTissue) f2);
+					} else {
+						if(f2 instanceof AliveCell ac2) ((ConnectiveTissue) f1).setCell(ac2);
+						else ((ConnectiveTissue) f1).setCell((ConnectiveTissue) f2);
+					}
+					continue; //Они типов разных, но стоят на одной прямой
+				} else {//А вот тут интереснее - они разных типов и они не на одной прямой
+					if(isR1){
+						//У нас f1 - угловой, а значит f2 находится прям за нами
+						pointNewConnect = f1.getPos().next(this.getPos().direction(f2.getPos()));
+					} else {
+						pointNewConnect = f2.getPos().next(this.getPos().direction(f1.getPos()));
+					}
 				}
-				final var p = p1.equals(this.getPos()) ? p2 : p1;
-				final var o = Configurations.world.get(p);
+				final var o = Configurations.world.get(pointNewConnect);
 				if(o == null){
 					//Создаём дублирующую связь
-					Configurations.world.add(new ConnectiveTissue(p, f1,new Point[]{f2.getPos()}));
+					if(f1 instanceof AliveCell ac) Configurations.world.add(new ConnectiveTissue(pointNewConnect, ac,new Point[]{f2.getPos(), this.getPos()}));
+					else Configurations.world.add(new ConnectiveTissue(pointNewConnect, (ConnectiveTissue) f1,new Point[]{f2.getPos(), this.getPos()}));
 				} else if(o instanceof ConnectiveTissue ct){
 					//Добавляем связь, если такой там нет
 					if(Arrays.stream(ct._friends).filter(f -> f == f1 || f == f2).findFirst().orElse(null) != null){
 						//Один из двух товарищей уже связан с этой связью, значит можно через неё прокинуть ещё одну связь
-						ct.setCell(f1);
-						ct.setCell(f2);
+						if(f1 instanceof AliveCell ac) ct.setCell(ac);
+						else ct.setCell((ConnectiveTissue) f1);
+						if(f2 instanceof AliveCell ac) ct.setCell(ac);
+						else ct.setCell((ConnectiveTissue) f2);
+						ct.setCell(this);
 					}
 				}
 			}
 		}
+		if(countFriends < 2 || countAliveCell < 2) destroy(); //Если у нас нет связей, то мы удаляемся
+		
+		//Тогда делимся всем, что имеем со всеми
+		double allHp = getHealth() / countAliveCell;
+        long allMin = getMineral() / countAliveCell;
+        for (var comrad : _friends) {
+			if(comrad instanceof AliveCell cell){
+				if (allHp > cell.getHealth()) {
+					cell.color(ACTION.RECEIVE, allHp - cell.getHealth());
+				} else {
+					cell.color(ACTION.GIVE, cell.getHealth() - allHp);
+				}
+				if (allMin > cell.getMineral()) {
+					cell.color(ACTION.RECEIVE, allMin - cell.getMineral());
+				} else {
+					cell.color(ACTION.GIVE, cell.getMineral() - allMin);
+				}
+				cell.setHealth(allHp);
+				cell.setMineral(allMin);
+			}
+        }
 	}
 	
     @Override
     public boolean move(Point.DIRECTION direction) {
+		if(countFriends < 2 || countAliveCell < 2) return false;
 		final var target = getPos().next(direction);
 		//Если у нас до какой-то из клеток будет больше 2 клеток - то мы не можем походить
 		boolean isNot = Arrays.stream(_friends).filter(f -> f != null && (Math.abs(f.getPos().x - target.x) > 1 || Math.abs(f.getPos().y - target.y) > 1)).findFirst().orElse(null) != null;
 		if(isNot){
-			//Делимся импульсом со всеми дочерними клетками
-			final var dx = getImpuls().x / countFriends;
-			final var dy = getImpuls().y / countFriends;
-
-			for (AliveCell _friend : _friends) {
-				if(_friend != null){
-					_friend.getImpuls().x += dx;
-					_friend.getImpuls().y += dy;
+			//Перераспределяем импульс
+			var px = getImpuls().x;
+			var py = getImpuls().y;
+			var m = 1d;
+			for (final var _friend : _friends) {
+				if(_friend == null) continue;
+				if(_friend instanceof AliveCell){
+					px += _friend.getImpuls().x * _friend.getHealth();
+					py += _friend.getImpuls().y * _friend.getHealth();
+					m += _friend.getHealth();
+				} else if(_friend instanceof ConnectiveTissue){
+					px += _friend.getImpuls().x;
+					py += _friend.getImpuls().y;
+					m += 1;
 				}
 			}
-			getImpuls().x = getImpuls().y = 0;
+			px /= m;
+			py /= m;
+
+			for (final var _friend : _friends) {
+				if(_friend != null){
+					_friend.setImpuls(px, py);
+				}
+			}
+			setImpuls(px, py);
 			return false;
 		} else {
 			return super.move(direction);
@@ -212,10 +365,33 @@ public class ConnectiveTissue extends CellObject {
 	}
 
 	@Override
-	public double getHealth() {
-		return Arrays.stream(_friends).mapToDouble(f -> f == null ? 0 : f.getHealth()).sum();
+	public double getHealth() {return Arrays.stream(_friends).mapToDouble(f -> (f == null || f instanceof ConnectiveTissue) ? 0 : f.getHealth()).sum();}
+	@Override
+	public long getMineral() {return Arrays.stream(_friends).mapToLong(f -> (f == null || f instanceof ConnectiveTissue) ? 0 : ((AliveCell)f).getMineral()).sum();}
+	@Override
+	public int getMucosa() {return Arrays.stream(_friends).mapToInt(f -> (f == null || f instanceof ConnectiveTissue) ? 0 : ((AliveCell)f).getMucosa()).sum();}
+	@Override
+	public void addHealth(double h){
+		if(countAliveCell > 0){
+			final var addh = h / countAliveCell;
+			for(final var f : _friends)
+				if(f != null && f instanceof AliveCell ac){
+					if(h < 0 && -h > ac.getHealth())
+						try{ac.bot2Organic();} catch (CellObjectRemoveException e) {}//Увы, клетка того. Умирает
+					else
+						ac.addHealth(addh);
+				}
+		}
 	}
-
+	@Override
+	public void addMineral(long m){
+		if(countAliveCell > 0 && m > countAliveCell){
+			final var addM = (long)(m / countAliveCell);
+			for(final var f : _friends)
+				if(f != null && f instanceof AliveCell ac)
+					ac.addMineral(addM);
+		}
+	}
 	@Override
 	void setHealth(double h) {
 		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
@@ -233,7 +409,16 @@ public class ConnectiveTissue extends CellObject {
 
 	@Override
 	public boolean toxinDamage(Poison.TYPE type, int damag) {
-		throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+		var isDamag = false;
+		if(countAliveCell > 0){
+			final var d = damag / countAliveCell;
+			for(final var f : _friends)
+				if(f != null && f instanceof AliveCell ac){
+					if(isDamag |= ac.toxinDamage(type, d))
+						try {ac.bot2Organic();} catch (CellObjectRemoveException e) {} //Увы, даже такую каплю не смогли выдержать
+				}
+		}
+		return isDamag;
 	}
 
 	
@@ -258,9 +443,9 @@ public class ConnectiveTissue extends CellObject {
 	public void paint(Graphics g, Legend legend, int cx, int cy, int r) {
 		final var colors = new Color[_friends.length];
 		int cz = 0;
-		for (AliveCell f : _friends) {
-			if(f != null){
-				colors[cz++] = f.getPaintColor(legend);
+		for (final var f : _friends) {
+			if(f instanceof AliveCell ac){
+				colors[cz++] = ac.getPaintColor(legend);
 			}
 		}
 		//Цвет как средний по всем клеткам

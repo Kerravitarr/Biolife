@@ -10,6 +10,7 @@ import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
 import MapObjects.CellObject;
+import MapObjects.ConnectiveTissue;
 
 /**
  * Присасывается, объединясь, с ближайшей клеткой
@@ -23,7 +24,7 @@ public class Cling extends CommandDoInterupted {
 	/**Присасывается к чему-то относительно МСК*/
 	public Cling(boolean isA) {
 		super(isA, 1);
-		setInterrupt(isA, ORGANIC, CLEAN, CellObject.OBJECT.BANE, WALL, CellObject.OBJECT.CONNECTION, CellObject.OBJECT.FILLING);
+		setInterrupt(isA, ORGANIC, CLEAN, CellObject.OBJECT.BANE, WALL, CellObject.OBJECT.CONNECTION);
 	}
 	@Override
 	protected void doing(AliveCell cell) {
@@ -45,7 +46,13 @@ public class Cling extends CommandDoInterupted {
 				if(target.getMucosa() == 0)	//Если клетка в слизи, то к ней не присосаться 
 					cell.setComrades(target);
 			}
-			case ORGANIC, CLEAN, POISON,NOT_POISON, WALL, OWALL,CONNECTION,FILLING -> cell.getDna().interrupt(cell, see);
+			case FILLING -> {
+				Point point = nextPoint(cell,direction);
+				var target = (ConnectiveTissue) Configurations.world.get(point);
+				if(target.getMucosa() == 0)	//Если клетка в слизи, то к ней не присосаться 
+					cell.setComrades(target);
+			}
+			case ORGANIC, CLEAN, POISON,NOT_POISON, WALL, OWALL, CONNECTION -> cell.getDna().interrupt(cell, see);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}

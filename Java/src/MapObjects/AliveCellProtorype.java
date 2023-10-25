@@ -2,9 +2,7 @@ package MapObjects;
 
 import java.awt.Color;
 import java.text.MessageFormat;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import MapObjects.AliveCellProtorype.Specialization;
 import MapObjects.dna.DNA;
@@ -22,6 +20,18 @@ import java.util.Arrays;
  *
  */
 public abstract class AliveCellProtorype extends CellObject{
+	public interface AliveCellI{
+		/**@return Возваращет сколько ХП у объекта */
+		public double getHealth();
+		/**@return Возваращет сколько минералов у объекта */
+		public long getMineral();
+		/**@param h Сколько добавить энергии объекту*/
+		public void addHealth(double h);
+		/** @param mineral новый кусочек минералов (отрицательный, если отнимаем)*/
+		public void addMineral(long mineral);
+		/**@return количество слизи. Если слизь есть - это затрудняет присасывание к клетке*/
+		public int getMucosa();
+	}
 
 	//КОНСТАНТЫ
 	/**Размер мозга изначальный*/
@@ -421,6 +431,7 @@ public abstract class AliveCellProtorype extends CellObject{
     }
     private boolean _setComrades(CellObject friend) {
 		assert friend != null : "Забыли друга!!!";
+		assert friend != this : "Вам не кажется это странным?";
 		assert friend.getPos().distance(this.getPos()).getHypotenuse() < 2 : "Куда-то далековато друг забрался, не находите?\n" + Arrays.toString(_friends) + ".\nЭтот явно лишний: " + friend + " из за дистанции " + friend.getPos().distance(this.getPos());
         int emptyIndex = -1;
 		for (int i = 0; i < _friends.length; i++) {
@@ -430,7 +441,8 @@ public abstract class AliveCellProtorype extends CellObject{
 			} else if(_friend == null){
 				emptyIndex = i;
 			} else {
-				assert !_friend.getPos().equals(friend.getPos()) : "У нас точки совпали, а объекты - нет... Магия!";
+				if(_friend.getPos().equals(friend.getPos()))
+				assert !_friend.getPos().equals(friend.getPos()) : "У нас точки совпали, а объекты - нет... Магия!. Объекты: " + _friend + " и " + friend;
 			}
 		}
 		assert countFriends < Point.DIRECTION.size() : "Многовато у нас друзей, не находите? " + Arrays.toString(_friends) + ". Этот явно лишний: " + friend;
@@ -443,25 +455,28 @@ public abstract class AliveCellProtorype extends CellObject{
 	 * @param remove кого надо удалить
 	 */
 	public void removeComrades(ConnectiveTissue remove){
-		_removeComrades(remove);
+		if(_removeComrades(remove))
+			remove.removeCell((AliveCell) this);
 	}
 	/**Удаляет этого из наших товарищей
 	 * @param remove кого надо удалить
 	 */
 	public void removeComrades(AliveCell remove){
-		_removeComrades(remove);
+		if(_removeComrades(remove))
+			remove.removeComrades((AliveCell) this);
 	}
-	private void _removeComrades(CellObject remove){
-		assert countFriends > 0 : "Ожидается, что у нас всё ещё есть друзья";
-		countFriends--;
+	private boolean _removeComrades(CellObject remove){
 		for (int i = 0; i < _friends.length; i++) {
 			final var _friend = _friends[i];
 			if(_friend == remove){
 				_friends[i] = null;
-				return;
+				assert countFriends > 0 : "Ожидается, что у нас всё ещё есть друзья";
+				countFriends--;
+				return true;
 			}
 		}
-		assert false : "Недостижимая часть кода. Не нашли " + remove + " среди " + Arrays.toString(_friends);
+		return false;
+		//assert false : "Недостижимая часть кода. Не нашли " + remove + " среди " + Arrays.toString(_friends);
 	}
 	/**Возвращает сколько у нас друзей
 	 * @return число друзей

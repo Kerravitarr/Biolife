@@ -45,11 +45,11 @@ public class Give extends CommandDoInterupted {
 		switch (see.groupLeader) {
 			case ALIVE -> {
 				Point point = nextPoint(cell,direction);
-				AliveCell target = (AliveCell) Configurations.world.get(point);
+				final var target = (AliveCell.AliveCellI) Configurations.world.get(point);
 				var hlt0 = cell.getHealth();  // бот отдает четверть своей энергии
 				var hlt = hlt0 / 4;
 				cell.color(AliveCell.ACTION.GIVE,hlt);
-				target.color(AliveCell.ACTION.RECEIVE,hlt);
+				if(target instanceof AliveCell ac) ac.color(AliveCell.ACTION.RECEIVE,hlt);
 				cell.addHealth(-hlt);
 				target.addHealth(hlt);
 
@@ -57,9 +57,9 @@ public class Give extends CommandDoInterupted {
 				if (min0 > 3) {                 // только если их у него не меньше 4
 					long min = min0 / 4;
 					cell.color(AliveCell.ACTION.GIVE,min);
-					target.color(AliveCell.ACTION.RECEIVE,min);
-					cell.setMineral(min0 - min);
-					target.setMineral(target.getMineral() + min);
+					if(target instanceof AliveCell ac) ac.color(AliveCell.ACTION.RECEIVE,min);
+					cell.addMineral(- min);
+					target.addMineral(min);
 				}
 			}
 			case BANE, ORGANIC, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see);

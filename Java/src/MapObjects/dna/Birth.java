@@ -58,7 +58,7 @@ public class Birth extends CommandDo {
 			if(Poison.createPoison(pos, posion.getType(), posion.getStepCount(), posion.getHealth(), posion.getStream())) { //А теперь на созданную клетку воздействуем ядом
 				isBirth = cell.see(pos).groupLeader == OBJECT.ALIVE; //Удачное деление - это когда у нас бот на выходе
 			} else {
-						//Как это не получилось провзаимодействовать с клеткой?!
+				//Как это не получилось провзаимодействовать с клеткой?!
 				throw new RuntimeException("Не сработала функция создания ребёнка вот сюда: " + pos);
 			}
         } else {

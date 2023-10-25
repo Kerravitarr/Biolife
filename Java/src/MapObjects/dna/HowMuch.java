@@ -56,7 +56,8 @@ public class HowMuch extends CommandExplore {
 	protected int explore(AliveCell cell) {
 		int param = MAX_VALUE == null ? param(cell, 0) : param(cell, 0, MAX_VALUE);
 		if(isTarget) {
-			if (cell.see(cell.direction).groupLeader == OBJECT.ALIVE) {
+			final var see = cell.see(cell.direction);
+			if (see == OBJECT.FRIEND || see == OBJECT.ENEMY) {
 				Point point = nextPoint(cell,cell.direction);
 				if(PARAM_I == null)
 					return PARAM_D.getParam((AliveCell) Configurations.world.get(point)) >= param ? 0 : 1;

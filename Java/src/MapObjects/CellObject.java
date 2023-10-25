@@ -117,6 +117,9 @@ public abstract class CellObject {
     	this.alive = LV_STATUS.valueOf(cell.get("alive"));
     	stepCount = cell.getL("stepCount");
     	years = cell.getL("years");
+		if(cell.containsKey("impuls")){
+			impuls = new Point.PointD(cell.getJ("impuls"));
+		}
 	}
 
 	/**
@@ -151,7 +154,7 @@ public abstract class CellObject {
 					//Всплытие/погружение
 					if (acp.getBuoyancy() != 0) {
 						if(acp.getBuoyancy() < 0) move(DIRECTION.DOWN, 1d/(acp.getBuoyancy() + 101d));
-						else move(DIRECTION.UP, (101 - acp.getBuoyancy()));
+						else move(DIRECTION.UP, 1d/(101 - acp.getBuoyancy()));
 					}
 				}
 				case LV_ORGANIC, LV_POISON, LV_WALL, LV_CONNECTIVE_TISSUE -> {}
@@ -163,8 +166,7 @@ public abstract class CellObject {
 			if(Math.abs(impuls.x) > 1 || Math.abs(impuls.y) > 1){
 				final var d = impuls.direction();
 				if(moveD(d)){
-					impuls.x -= d.addX;
-					impuls.y -= d.addY;
+					addImpuls(-d.addX, -d.addY);
 				}
 			}
 		}catch (CellObjectRemoveException e) {
@@ -200,6 +202,40 @@ public abstract class CellObject {
 	public final Point.PointD getImpuls() {
 		return impuls;
 	}
+	
+	/**
+	 * Сохраняет импульс для клетки
+	 * @param impuls новое значение импульса
+	 */
+	protected final void setImpuls(Point.PointD impuls){
+		setImpuls(impuls.x,impuls.y);
+	}
+	/**
+	 * Сохраняет импульс для клетки
+	 * @param dx значение по х
+	 * @param dy значение по y
+	 */
+	protected final void setImpuls(double dx, double dy){
+		final var nx = Math.abs(dx);
+		final var ny = Math.abs(dy);
+		if(!(1e-306 <= nx && nx <= 10_000_000) && nx != 0 || !(1e-306 <= ny && ny <= 10_000_000) && ny != 0)
+			impuls.x = impuls.x;
+		impuls.x = dx;
+		impuls.y = dy;
+	}
+	/**
+	 * Добавляет к текущему импульсу новые значения
+	 * @param dx добавка по х
+	 * @param dy добавка по y
+	 */
+	protected final void addImpuls(double dx, double dy){
+		final var nx = Math.abs(impuls.x + dx);
+		final var ny = Math.abs(impuls.y + dy);
+		if(!(1e-306 <= nx && nx <= 10_000_000) && nx != 0 || !(1e-306 <= ny && ny <= 10_000_000) && ny != 0)
+			impuls.x = impuls.x;
+		impuls.x += dx;
+		impuls.y += dy;
+	}
 	/**
 	 * Серелизует объект
 	 * @return
@@ -210,6 +246,7 @@ public abstract class CellObject {
 		make.add("alive",getAlive());
 		make.add("stepCount",getStepCount());
 		make.add("years",years);
+		make.add("impuls",impuls.toJSON());
 		return toJSON(make);
 	}
 	public abstract JSON toJSON(JSON make);

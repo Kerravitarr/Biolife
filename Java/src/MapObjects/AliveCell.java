@@ -23,7 +23,7 @@ import java.awt.Graphics2D;
 import java.awt.Stroke;
 import java.util.Arrays;
 
-public class AliveCell extends AliveCellProtorype {
+public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.AliveCellI{
 
     /**
      * Создание клетки без рода и племени - Адмама
@@ -80,6 +80,7 @@ public class AliveCell extends AliveCellProtorype {
         evolutionNode = cell.evolutionNode;
         setHealth(cell.getHealth());
         setMineral(cell.getMineral());
+		setImpuls(getImpuls());
         DNA_wall = cell.DNA_wall;
         poisonType = cell.getPosionType();
         poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
@@ -117,6 +118,8 @@ public class AliveCell extends AliveCellProtorype {
 		setMineralTank(cell.getMineralTank()/ 2);
 		cell.setMineralTank(cell.getMineralTank() / 2);
 		hp_by_div = cell.hp_by_div;					//ХП для деления остаётся тем-же
+		setImpuls(cell.getImpuls().divide(2));	//Импульс передаётся
+		cell.setImpuls(getImpuls());
 
         specialization = new Specialization(cell);
         direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size() - 1));   // направление, куда повернут новорожденный, генерируется случайно
@@ -140,6 +143,7 @@ public class AliveCell extends AliveCellProtorype {
     public AliveCell(AliveCell cell, Point newPos, double HP, DNA ndna) {
         super(cell.getStepCount(), LV_STATUS.LV_ALIVE);
         setPos(newPos);
+		final var scale = HP / cell.getHealth();	//Во сколько раз вирус меньше нас. Число [0,1]
 
         setHealth(HP);
         cell.addHealth(-HP);
@@ -151,6 +155,8 @@ public class AliveCell extends AliveCellProtorype {
         poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
         mucosa = (cell.mucosa = (int) (cell.mucosa / 2.1)); //Делится слизистой оболочкой
 		hp_by_div = cell.hp_by_div;					//ХП для деления остаётся тем-же
+		setImpuls(cell.getImpuls().multiply(scale));	//Импульс передаётся пропорционально массе
+		cell.setImpuls(cell.getImpuls().multiply(1d - scale));
 
         specialization = new Specialization(cell);
         direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size() - 1));   // направление, куда повернут новорожденный, генерируется случайно
@@ -225,9 +231,8 @@ public class AliveCell extends AliveCellProtorype {
         double allHp = getHealth();
         long allMin = getMineral();
         int allDNA_wall = DNA_wall;
-        int friendCount = getCountComrades() + 1;
+        int friendCount = 1;
         int maxToxic = poisonPower;
-        AliveCell delCell = null;
         for (final var comrad : getComrades()) {
 			if(comrad instanceof AliveCell cell){
 				allHp += cell.getHealth();
@@ -236,13 +241,8 @@ public class AliveCell extends AliveCellProtorype {
 				if (cell.poisonType == poisonType) {
 					maxToxic = Math.max(maxToxic, cell.poisonPower);
 				}
-				if (!cell.aliveStatus(LV_STATUS.LV_ALIVE)) {
-					delCell = cell;
-				}
+				friendCount++;
 			}
-        }
-        if (delCell != null) {
-			removeComrades(delCell);
         }
         allHp /= friendCount;
         allMin /= friendCount;
@@ -289,9 +289,9 @@ public class AliveCell extends AliveCellProtorype {
 				final var cell = comrads[i];
 				if(cell != null){
 					if(cell instanceof AliveCell ac)
-						ac.removeComrades(this);
+						removeComrades(ac);
 					else if(cell instanceof ConnectiveTissue ct)
-						ct.removeCell(this);
+						removeComrades(ct);
 					else
 						assert false : "" + cell;
 					comrads[i] = null;
@@ -315,15 +315,15 @@ public class AliveCell extends AliveCellProtorype {
             //Многоклеточный. Тут логика куда интереснее!
             OBJECT see = super.see(direction);
 			switch (see) {
-				case POISON,NOT_POISON, CLEAN -> {
+				case POISON,NOT_POISON, CLEAN, CONNECTION -> {
 					//Туда двинуться можно, уже хорошо.
-					final var oldP = getPos(); //Текущая точка клетки
-					Point point = oldP.next(direction); //Точка, где окажется клетка по итогу хода
-					final var move = new Point[DIRECTION.size() * 2];
-					final var removeCt = new ConnectiveTissue[DIRECTION.size()];
-					int moveL = 0;
-					int cL = 0;
-					int rc = 0;
+					final var world = Configurations.world;
+			
+					final var from = getPos();			//Текущая точка клетки
+					Point to = from.next(direction); //Точка, где окажется клетка по итогу хода
+					final var points = new CellObject[DIRECTION.size()];
+					var count = 0;
+					var err = 0;
 
 					//Основное правило:
 					//Если от нас до клетки будет 1 клетка, то ни чего не делаем
@@ -331,74 +331,80 @@ public class AliveCell extends AliveCellProtorype {
 					//Если у нас нет ни одной дружеской живой клетки - не можем походить.
 					for (final var cell : getComrades()) {
 						if (cell == null) continue;
-						final var del = point.distance(cell.getPos());
-						final var adx = Math.abs(del.x);
-						final var ady = Math.abs(del.y);
-						if (adx > 1 || ady > 1) {
-							//Больше двух клеток - это уже слишком далеко
-							move[moveL++] = cell.getPos();
-						} else if ((adx == 2 || ady == 2)) { //Если хоть с кем ни будь 2 клетки - надо смотреть
-							if(cell instanceof ConnectiveTissue ct){
-								final var isFind = new boolean[1];
-								//Отошли от связи далеко. Надо проверить, нет-ли какой ещё связи, чтобы эту можно было оборвать
-								Arrays.stream(ct.getCells()).filter( cellByConnect -> cellByConnect != null && (Math.abs(oldP.x - cellByConnect.getPos().x) + Math.abs(oldP.y - cellByConnect.getPos().y) == 3)).forEach(filter-> {
-									//Только для точек, находящихся от нас в точке Г - две клетки по одной оси и одна клетка по другой
-									Arrays.stream(getComrades()).filter(comrad -> comrad != null && comrad != ct && comrad instanceof ConnectiveTissue && ((ConnectiveTissue)comrad).contains(filter)).forEach( c -> {
-										//Только для связей нашей клеки не равных обрабатываемой связи ct, которая тоже образует линию с клеткой через Г.
-										//Эта вторая связь как раз будет нашим спасением - коротким путём от клетки Г до нашего будущего положения.
-										isFind[0] = true;
-									});
-								});
-								if(isFind[0] && false){
-									removeCt[rc++] = ct;
-								} else {
-									move[moveL++] = cell.getPos();
+						final var del = to.distance(cell.getPos());
+						if(cell instanceof AliveCell){
+							if(del.getHypotenuse() > 1 && err == 0) //Если между нам станет больше 1 клетки, то мы должны будем эту связь оборвать и передать её соединительной ткани
+								points[count++] = cell;
+						} else {
+							final var connect = (ConnectiveTissue) cell;
+							if(del.getHypotenuse() > 1) {
+								//Если от нас до соеденительной ткани стало больше 1 клетки, то нам нужно проверить:
+								//1. Можем ли мы переключиться на другую связь. И, если да, то эту связь надо оборвать.
+								//	Другими словами. Если у этой связи есть такая связь
+								//	Которая будет до нашего будущего положения не дальше 1 клетки
+								//	И которая имеет текущую связь с нами
+								final var isOk = Arrays.stream(connect.getCells()).filter(conn -> conn != null && to.distance(conn.getPos()).getHypotenuse() == 1 && (Arrays.stream(getComrades()).filter(comrad -> comrad == conn).findFirst().orElse(null) != null)).findFirst().orElse(null) != null;
+								if(isOk && err == 0){
+									points[count++] = cell; //Эту связь оборвать. Её связасть с нашей соединительной тканью
+								} else if(!isOk){
+									points[err++] = cell; //Эта связь нам не даёт сдвинуться. надо её запомнить!
 								}
-							}else if(moveL == 0){
-								//От этой клетки у нас 2 клетки поля.
-								//Её мы запоминаем, потому что после шага на нашем месте появится соединительная ткань и она будет стрелять до той клетки
-								move[cL++] = cell.getPos();
 							}
 						}
 					}
-					if(moveL > 0){
-						//Не пускают связи - надо их подтянуть
-						final var p = 1d / (moveL + 1);
-						while(moveL > 0 ){
-							final var pos = move[--moveL];
-							Configurations.world.get(pos).move(pos.distance(oldP).direction(),p);
+					if(err == 0){
+						//Шикарно. Ошибок нет - можем двигаться!
+						//Удаляем длинные связи, чтобы нам стать свободными
+						for(var i = 0 ; i < count ; i++) {
+							final var rem = points[i];
+							if(rem instanceof AliveCell ac) removeComrades(ac);
+							else removeComrades((ConnectiveTissue) rem);
 						}
-						final var d = point.distance(oldP);
-						getImpuls().x += d.x * p;
-						getImpuls().y += d.y * p;
-						return false;
+						if(see == OBJECT.CONNECTION){
+							//Мы собой заменим связь. надо запомнить какие у неё были связи
+							final var pointsConn = new CellObject[DIRECTION.size()];
+							var connL = 0;
+							final var ct = (ConnectiveTissue)world.get(getPos().next(direction));
+							for(final var cell : ct.getCells()){
+								if(cell != null && cell != this) pointsConn[connL++] = cell;
+							}
+							if(connL > 0){
+								//Мы собой заменяем связь и двигаемся на её место
+								ct.remove_NE();
+								//Двигаемся
+								super.move(direction);
+								//Создаём связь
+								if(count > 0)
+									world.add(new ConnectiveTissue(from,this,points));
+								while(connL > 0){
+									final var o = pointsConn[--connL];
+									if(o instanceof AliveCell ac) setComrades(ac);
+									else setComrades((ConnectiveTissue)o);
+								}
+								//Профит!
+								return true;
+							} else {
+								//У связи нет ни кого кроме нас. Просто убираем её и всё
+								ct.remove_NE();
+							}
+						}
+						//Двигаемся
+						super.move(direction);
+						//Создаём связь
+						if(count > 0)
+							world.add(new ConnectiveTissue(from,this,points));
+						//Профит!
+						return true;
 					} else {
-						//Все условия проверены, можно выдвигаться!
-						if(super.move(direction)){
-							//Мы сдвинулись
-							while(rc > 0)
-								removeCt[--rc].removeCell(this);
-							if(cL > 0)
-								Configurations.world.add(new ConnectiveTissue(oldP, this,move)); //При необходимости заменяем себя
-							return true;
-						} else {
-							return false;
+						//Не пускают связи - надо их подтянуть
+						final var p = 1d / (err + 1);
+						while(err > 0 ){
+							final var o = points[--err];
+							o.move(o.getPos().distance(from).direction(),p);
 						}
+						return false;
 					}
 				}
-				/*case CONNECTION->{
-					//Основное правило:
-					//Если это наша связь, то мы можем занять её место.
-					//На наше место встаёт соединительная ткань
-					
-					//Это наша связь!
-					//Её мы просто удаляем и ходим на освободившееся место
-					final var ct = (ConnectiveTissue) Configurations.world.get(getPos().next(direction));
-					if(ct.size() == 2)
-						ct.remove_NE();
-					else
-						return false;
-				}*/
 				default -> {return super.move(direction);}
 			}
         }
@@ -686,7 +692,7 @@ public class AliveCell extends AliveCellProtorype {
 			Utils.fillSquare(g, cx, cy, r);
 		} else {
 			Utils.fillCircle(g, cx, cy, r);
-			final var points = new int[Point.DIRECTION.size() * 2][2];
+			final var points = new int[Point.DIRECTION.size()][2];
 			var values = getComrades();
 			try {
 				//Друзья

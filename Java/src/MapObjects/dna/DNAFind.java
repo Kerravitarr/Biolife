@@ -22,7 +22,8 @@ public class DNAFind extends CommandExplore {
 	protected int explore(AliveCell cell) {
 		int cmdFind = param(cell,0); // Какой ген мы ищем
 		if(isTarget) {
-			if (cell.see(cell.direction).groupLeader == OBJECT.ALIVE) {
+			final var see = cell.see(cell.direction);
+			if (see == OBJECT.FRIEND || see == OBJECT.ENEMY) {
 				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				return DNABreak.findPos(bot.getDna(), cmdFind) == -1 ? 0 : 1;

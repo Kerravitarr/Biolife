@@ -30,6 +30,7 @@ public class Organic extends CellObject {
 	public Organic(AliveCell cell) {
 		super(cell.getStepCount(), LV_STATUS.LV_ORGANIC);
 		setPos(cell.getPos());
+		setImpuls(cell.getImpuls().x, cell.getImpuls().y);
 		energy = Math.abs(cell.getHealth()) + cell.getFoodTank() + (cell.getMineral() + cell.getMineralTank()) * 10; //Превращается в органику всё, что только может
 	    nextDouble = getTimeToNextDouble();
 	}
@@ -102,7 +103,11 @@ public class Organic extends CellObject {
 				final var hpMax =  Math.max(getHealth(), org.getHealth());
 				//100_000_000 - если больше сделать, то 0.1 уже не помещается в double и органика становится бесконечной
 				if(hpMin * yMax >= hpMax * yMin && hpMax < 100_000_000){ //Маленькие кусочки слипаются
-					org.addHealth(getHealth());
+					final var mass = org.energy + energy;
+					final var px = (org.getImpuls().x * org.getHealth() + getImpuls().x*getHealth()) / mass;
+					final var py = (org.getImpuls().y * org.getHealth() + getImpuls().y*getHealth()) / mass;
+					org.setImpuls(px, py);
+					org.setHealth(mass);
 					if(poison != Poison.TYPE.UNEQUIPPED)
 						org.toxinDamage(poison, (int) poisonCount);
 					destroy(); //Мы слепились со следующей и всё, пошли отсюда. Тут будет исключение

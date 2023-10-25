@@ -16,6 +16,7 @@ import MapObjects.Poison;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
+import MapObjects.ConnectiveTissue;
 
 /**
  * Кушает клетку, которую выбирает своей жертвой
@@ -46,7 +47,7 @@ public class Eat extends CommandDoInterupted {
 	protected void eat(AliveCell cell,DIRECTION direction) {
 		cell.addHealth(-HP_COST); // бот теряет на этом 1 энергию
 		var see = cell.see(direction);
-		switch (see.groupLeader) {
+		switch (see) {
 			case ORGANIC ->  {
 				final var point = nextPoint(cell,direction);
 				final var target = (Organic) Configurations.world.get(point);
@@ -66,10 +67,10 @@ public class Eat extends CommandDoInterupted {
 				else
 					target.addHealth(-maxEat);
 			}
-			case ALIVE -> {
+			case ENEMY,FRIEND -> {
 				//--------- дошли до сюда, значит впереди живой бот -------------------
-				final Point point = nextPoint(cell,direction);
-				final AliveCell target = (AliveCell) Configurations.world.get(point);
+				final var point = nextPoint(cell,direction);
+				final var target = (AliveCell) Configurations.world.get(point);
 				
 				var ourMP = cell.getMineral();  // определим количество минералов у нас
 				var tarMP = target.getMineral();  // определим количество минералов у потенциального обеда
@@ -137,6 +138,27 @@ public class Eat extends CommandDoInterupted {
 					}
 				}
 			}
+			case CONNECTION, FILLING -> {
+				//Будем кусать заполнитель. Заполнитель нам ответить ни чем не может и это хорошо. Однако сам заполнитель не такой и вкусный!
+				final var point = nextPoint(cell,direction);
+				final var target = (ConnectiveTissue) Configurations.world.get(point);
+				final var tarHP = Math.max(0, target.getHealth() - (target.size() * AliveCell.HP_PER_STEP * 2));  // определим размер обеда
+				if (tarHP == 0) {
+					//Связь вообще не вкусаная
+					target.remove_NE();
+					return;
+				}
+				final var maxEat = ((AliveCell.MAX_HP - cell.getHealth()) + TankFood.leftover(cell));	//Сколько в нас места
+				final var f = cell.specMaxVal(cell.getHealth(), ASSASSINATION);
+				final var hp = Math.min(maxEat, tarHP);
+				cell.addHealth(hp);
+				cell.color(AliveCell.ACTION.EAT_ORG,hp);
+				target.addHealth(-hp);
+				if(f > tarHP) {
+					//Мы слишком сильные, мы перекусываем связь
+					target.remove_NE();
+				}
+			}
 			case OWALL -> {
 				//Кусь за стену
 				Point point = nextPoint(cell,direction);
@@ -148,7 +170,7 @@ public class Eat extends CommandDoInterupted {
 				else
 					target.addHealth(-maxF);
 			}
-			case CLEAN, BANE, WALL -> cell.getDna().interrupt(cell, see);
+			case CLEAN, POISON, NOT_POISON, WALL -> cell.getDna().interrupt(cell, see);
 			default -> throw new UnsupportedOperationException("Unimplemented case: " + see);
 		}
 	}

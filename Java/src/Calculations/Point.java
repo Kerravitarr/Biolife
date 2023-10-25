@@ -34,6 +34,7 @@ public final class Point{
 		for (int x = 0; x < maxX; x++) {
 			for (int y = 0; y < maxY; y++) {
 				vectors[x][y] = new Vector(VECTOR_MIN_X + x,VECTOR_MIN_Y + y);
+				vectors[x][y].getHypotenuse();
 			}
 		}
 	}
@@ -266,6 +267,9 @@ public final class Point{
 		public double x;
 		/**Координата по Y*/
 		public double y;
+		public PointD(JSON j){
+			this(j.get("x"),j.get("y"));
+		}
 		public PointD(double x, double y){
 			this.x = x;
 			this.y = y;
@@ -324,6 +328,35 @@ public final class Point{
 				}
             }
 			return d;
+		}
+		/**
+		 * Укорачивает вектор на коэфициент
+		 * @param div во сколько раз укоротить
+		 * @return новая точка с укороченным значением
+		 */
+		public PointD divide(double div){
+			return new PointD(x / div, y / div);
+		}
+		/**
+		 * Удлиняет вектор на коэфициент
+		 * @param mul во сколько раз удленить
+		 * @return новая точка с изменённым значением
+		 */
+		public PointD multiply(double mul){
+			return new PointD(x * mul, y * mul);
+		}
+		@Override
+		public String toString() {
+			return "(P (" + x + "; " + y + "))";
+		}
+		/**Упаковывает точку в JSON
+		 * @return 
+		 */
+		public JSON toJSON() {
+			JSON make = new JSON();
+			make.add("x", x);
+			make.add("y", y);
+			return make;
 		}
 	}
 	/**Координата по Х*/
@@ -541,10 +574,8 @@ public final class Point{
 	 */
 	public static DIRECTION direction(Point f, Point s){
 		var v = distance(f, s);
-		for(var d : DIRECTION.values)
-			if(d.addX == v.x && v.y == d.addY)
-				return d;
-		throw new IllegalArgumentException("Расстояние между точками должно быть ровно 1 клетка!");
+		assert 0.5 <= v.getHypotenuse() && v.getHypotenuse() <= 2.5 : "Расстояние между точками должно быть ровно 1 клетка! А между " + f + " и " + s + " " + v.getHypotenuse();
+		return v.direction();
 	}
 	
 	private static boolean valid(int x, int y){

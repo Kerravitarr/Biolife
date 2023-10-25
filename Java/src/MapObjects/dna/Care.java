@@ -18,12 +18,9 @@ import Calculations.Point.DIRECTION;
  *
  */
 public class Care extends CommandDoInterupted {
-	/**Абсолютные координаты или относительные*/
-	private final boolean isAbolute;
 	
 	public Care(boolean isA) {
 		super(1);
-		isAbolute = isA;
 		setInterrupt(isA, NOT_POISON, ORGANIC, POISON, WALL, CLEAN);
 	}
 	
@@ -41,24 +38,24 @@ public class Care extends CommandDoInterupted {
 		switch (see.groupLeader) {
 			case ALIVE -> {
 				Point point = nextPoint(cell,direction);
-				AliveCell target = (AliveCell) Configurations.world.get(point);
+				final var target = (AliveCell.AliveCellI) Configurations.world.get(point);
 				var hlt0 = cell.getHealth();         // определим количество энергии и минералов
-				var hlt1 = target.getHealth();  // у бота и его соседа
+				var hlt1 = target.getHealth();		// у бота и его соседа
 				var min0 = cell.getMineral();
 				var min1 = target.getMineral();
 				if (hlt0 > hlt1) {              // если у бота больше энергии, чем у соседа
 					double hlt = (hlt0 - hlt1) / 2;   // то распределяем энергию поровну
 					cell.color(AliveCell.ACTION.GIVE,hlt);
 					cell.addHealth(-hlt);
-					target.color(AliveCell.ACTION.RECEIVE,hlt);
+					if(target instanceof AliveCell ac) ac.color(AliveCell.ACTION.RECEIVE,hlt);
 					target.addHealth(hlt);
 				}
 				if (min0 > min1) {              // если у бота больше минералов, чем у соседа
 					long min = (min0 - min1) / 2;   // то распределяем их поровну
 					cell.color(AliveCell.ACTION.GIVE,min);
-					cell.setMineral(min0 - min);
-					target.setMineral(min1 + min);
-					target.color(AliveCell.ACTION.RECEIVE,min);
+					cell.addMineral(- min);
+					target.addMineral(+ min);
+					if(target instanceof AliveCell ac) ac.color(AliveCell.ACTION.RECEIVE,min);
 				}
 			}
 			case BANE, ORGANIC, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see);

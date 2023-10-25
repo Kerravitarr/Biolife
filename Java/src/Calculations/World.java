@@ -368,25 +368,27 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	/**
 	 * Меняет текущее местоположение клетки и желаемую цель местами
 	 * @param cell клетка
-	 * @param target с какой позицией она хочет обменяться местами
+	 * @param to в какую точку она хочет сходить
 	 */
-	public void swap(CellObject cell,Point target) {
-		var cellSwap = get(target);
+	public void swap(CellObject cell,Point to) {
+		if(cell instanceof AliveCell ac && ac.getCountComrades() != 0) return; //Многоклеточная не сможет просочиться
+		var cellSwap = get(to);
 		if(cellSwap == null){
-			move(cell,target);
+			move(cell,to);
 		} else {
+			if(cellSwap instanceof AliveCell ac && ac.getCountComrades() != 0) return; //Через многоклеточные нельзя просочиться
 			//Если на месте, куда хочет cell, что-то есть
 			final var from = cell.getPos();
-			var d = Point.direction(target, from);
+			var d = Point.direction(to, from);
 			clean(cell);
 			cellSwap.move(d);
-			if(cellSwap.getPos().equals(from) && get(target) == null){
-				//Если объект смог занять нашу позицию. 
+			if(cellSwap.getPos().equals(from)){
+				//Если объект смог занять нашу позицию и освободить ту позицию, которая нужна нам
 				clean(cellSwap);
 				add(cell);
 				cell.move(d.inversion());
-				if(cell.getPos().equals(target) && get(from) == null){
-					//Тогда мы занимаем позицию объекта и выходим
+				if(cell.getPos().equals(to)){
+					//И мы заняли эту позицию, освободив прошлую точку. Отлично!
 					add(cellSwap);
 				} else {
 					//Если мы не смогли занять позцию объекта...

@@ -120,13 +120,19 @@ public class Poison extends CellObject {
 				Configurations.world.get(pos).toxinDamage(type,(int) (energy));
 			return true;	//Органику потравили, да и всё
 			case ALIVE:{
-				AliveCell cell = (AliveCell) Configurations.world.get(pos);
-				if(cell.toxinDamage(type,(int) (energy))) {	//Умерли, надо превратить живого в мёртвого
-					try {cell.bot2Organic();} catch (CellObjectRemoveException e) {}	//Создаём органику
-					var organic = (Organic)Configurations.world.get(pos);
-					if(type == cell.getPosionType())	//Родной яд действует слабже
-						energy /= 2;
-					organic.toxinDamage(type,(int) (energy - organic.getHealth())); //И отравляем её. Умерли то от яда!
+				final var cellO = Configurations.world.get(pos);
+				if(cellO.toxinDamage(type,(int) (energy))) {	//Умерли, надо превратить живого в мёртвого
+					if(cellO instanceof AliveCell cell){
+						try {cell.bot2Organic();} catch (CellObjectRemoveException e) {}	//Создаём органику
+						var organic = (Organic)Configurations.world.get(pos);
+						if(type == cell.getPosionType())	//Родной яд действует слабже
+							energy /= 2;
+						organic.toxinDamage(type,(int) (energy - organic.getHealth())); //И отравляем её. Умерли то от яда!
+					} else {
+						final var cell = (ConnectiveTissue) cellO;
+						cell.remove_NE(); //Растворили связь
+						Configurations.world.add(new Poison(type,stepCount,pos,energy / 2, stream));//Сделали новую каплю
+					}
 				}
 			}return true;	//Потравили, да и всё
 			case BANE:{

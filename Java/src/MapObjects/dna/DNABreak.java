@@ -57,8 +57,8 @@ public class DNABreak extends CommandDo {
 	@Override
 	protected void doing(AliveCell cell) {
 		CellObject.OBJECT see = cell.see(cell.direction);
-		switch (see.groupLeader) {
-			case ALIVE -> {
+		switch (see) {
+			case FRIEND,ENEMY -> {
 				Point point = nextPoint(cell,cell.direction);
 				AliveCell bot = (AliveCell) Configurations.world.get(point);
 				if(isOne){
@@ -90,7 +90,7 @@ public class DNABreak extends CommandDo {
 					cell.destroy();
 				}
 			}
-			case BANE, ORGANIC, WALL, CLEAN, OWALL -> cell.getDna().interrupt(cell, see);
+			case POISON,NOT_POISON, ORGANIC, WALL, CLEAN, OWALL,CONNECTION,FILLING -> cell.getDna().interrupt(cell, see);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);
 		}
 	}
@@ -181,7 +181,7 @@ public class DNABreak extends CommandDo {
 	@Override
 	public int getInterrupt(AliveCell cell, DNA dna){
 		var see = cell.see(cell.direction);
-		if (see == CLEAN || see.groupLeader == CellObject.OBJECT.BANE || see == ORGANIC || see == WALL || see == OWALL)
+		if (see == CLEAN || see.groupLeader == CellObject.OBJECT.BANE || see == ORGANIC || see == WALL || see == OWALL || see == CellObject.OBJECT.CONNECTION || see == CellObject.OBJECT.FILLING)
 			return see.ordinal();
 		else
 			return -1;
