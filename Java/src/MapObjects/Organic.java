@@ -12,11 +12,10 @@ import java.awt.Stroke;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
+import GUI.AllColors;
 import GUI.Legend;
 
 public class Organic extends CellObject {
-	/**Цвет орагиники*/
-    private static Color ORGANIC_COLOR = new Color(139,69,19,200);
     /**Сколько в ораганизме остальсь еды*/
     private double energy;
     /**Каким ядом данная органика заражена*/
@@ -116,9 +115,7 @@ public class Organic extends CellObject {
 					Configurations.world.swap(this, pos); //Мы поменялись с кусочком, упав ниже
 					return true;
 				} else {
-					//Отдаём свой импульс этой органике, пущай теперь и выпутывается!
-					Configurations.world.get(getPos().next(direction)).move(direction,1);
-					return true;
+					return false;
 				}
 			}
 			default -> throw new IllegalArgumentException("Unexpected value: " + see(direction));
@@ -186,42 +183,19 @@ public class Organic extends CellObject {
 	}
 	
 	
-	/** * Не смог я в этот раз уйти от рисования...Очень жаль :(
-		Эта функция должна отобразить объект на холсте согласно установленному режиму
-	 * @param g где рисуем
-	 * @param legend легенда, по которой рисуем
-	 * @param cx координата ЦЕНТРА на холсте, где клетка находится
-	 * @param cy координата ЦЕНТРА на холсте, где клетка находится
-	 * @param r размер в пк квадрата, которым клетка окружена
-	 */
 	@Override
-	public void paint(Graphics g, Legend legend, int cx, int cy, int r){
-		Color color_DO;
-		switch (legend.getMode()) {
-			case POISON -> {
-				var rg = (int) Utils.betwin(0, getHealth() / Poison.MAX_TOXIC, 1.0) * 255;
-				switch (getPoison()) {
-					case BLACK -> color_DO = new Color(255-rg,255- rg,255- rg);
-					case PINK -> color_DO = new Color(rg, rg / 2, rg / 2);
-					case YELLOW -> color_DO = new Color(rg, rg, 0);
-					case UNEQUIPPED ->  color_DO = ORGANIC_COLOR;
-					default ->  throw new IllegalArgumentException("Unexpected value: " + getPoison());
-				}
-
-			}
-			case HP -> color_DO = legend.HPtToColor(getHealth());
-			case YEAR -> color_DO = legend.AgeToColor(getAge());
-			default -> color_DO = ORGANIC_COLOR;
-		}
-		g.setColor(color_DO);
-
-		if (g instanceof Graphics2D g2d) {
-			Stroke old = g2d.getStroke();
-			g2d.setStroke(new BasicStroke(r/3));
-			Utils.drawCircle(g, cx, cy, r * 2 / 3);
-			g2d.setStroke(old);
-		} else {
-			Utils.fillCircle(g,cx,cy,r);
-		}
+	public Color getPaintColor(Legend legend){
+		return switch (legend.getMode()) {
+			case HP -> legend.HPtToColor(getHealth());
+			case YEAR -> legend.AgeToColor(getAge());
+			default -> AllColors.ORGANIC;
+		};
+	}
+	@Override
+	public void paint(Graphics2D g, int cx, int cy, int r){
+		Stroke old = g.getStroke();
+		g.setStroke(new BasicStroke(r/3));
+		Utils.drawCircle(g, cx, cy, r * 2 / 3);
+		g.setStroke(old);
 	}
 }

@@ -279,17 +279,60 @@ public class WorldView extends javax.swing.JPanel {
 		
 		if(!settings.isEdit()){
 			int r = transforms.toScrin(1);
-			for (int x = 0; x < Configurations.getWidth(); x++) {
-				for (int y = 0; y < Configurations.getHeight(); y++) {
-					if(isAll || (visible[0].getX() <= x && x <= visible[1].getX()
-							&& visible[0].getY() <= y && y <= visible[1].getY())){
-						final var pos = Point.create(x, y);
-						//if(!pos.valid()) continue;					
-						final var cell = Configurations.world.get(pos);
-						if(cell != null){
-							int cx = transforms.toScrinX(cell.getPos());
-							int cy = transforms.toScrinY(cell.getPos());
-							cell.paint(g, legend, cx, cy, r);
+			if(r > 2){
+				//Если у нас радиус больше 2пк, то тут можно рисовать что угодно - от кругов до детальной проработки
+				for (int x = 0; x < Configurations.getWidth(); x++) {
+					for (int y = 0; y < Configurations.getHeight(); y++) {
+						if(isAll || (visible[0].getX() <= x && x <= visible[1].getX()
+								&& visible[0].getY() <= y && y <= visible[1].getY())){
+							final var pos = Point.create(x, y);
+							if(!pos.valid()) continue;					
+							final var cell = Configurations.world.get(pos);
+							if(cell != null){
+								int cx = transforms.toScrinX(cell.getPos());
+								int cy = transforms.toScrinY(cell.getPos());
+								if(legend.getMode() == Legend.MODE.PROGRAMMER)
+									g.setColor(legend.ProgrammerMove(cell));
+								else
+									g.setColor(cell.getPaintColor(legend));
+								cell.paint(g, cx, cy, r);
+							}
+						}
+					}
+				}
+			} else {
+				//А если меньше, то рисовать мы будем самыми общими чертами
+				final var dr = transforms.toDScrin(1);
+				if(dr <= 0) return;
+				final var step =  r >= 1 ? 2 : (int)Math.round(2d/dr);
+				final var nr = transforms.toScrin(step);
+				final var ritangleColor = new Color[step * step];
+				
+				for (int x = 0; x < Configurations.getWidth(); x+=step) {
+					for (int y = 0; y < Configurations.getHeight(); y+=step) {
+						if(isAll || (visible[0].getX() <= (x+step) && x <= visible[1].getX()
+								&& visible[0].getY() <= (y+step) && y <= visible[1].getY())){
+							var lendhtC = 0;
+							for(var dx = 0 ; dx < step; dx++){
+								for(var dy = 0 ; dy < step; dy++){
+									final var pos = Point.create(x+dx, y+dy);
+									if(!pos.valid()) break;					
+									final var cell = Configurations.world.get(pos);
+									if(cell != null){
+										if(legend.getMode() == Legend.MODE.PROGRAMMER)
+											ritangleColor[lendhtC++] = legend.ProgrammerMove(cell);
+										else
+											ritangleColor[lendhtC++] = cell.getPaintColor(legend);
+									}
+								}
+							}
+							if(lendhtC > 0){
+								g.setColor(AllColors.blend(lendhtC, ritangleColor));
+								final var pos = Point.create(x, y);
+								int cx = transforms.toScrinX(pos);
+								int cy = transforms.toScrinY(pos);
+								g.fillRect(cx, cy, nr, nr);
+							}
 						}
 					}
 				}

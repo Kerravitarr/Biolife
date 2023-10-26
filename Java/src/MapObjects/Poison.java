@@ -1,7 +1,6 @@
 package MapObjects;
 
 import java.awt.Color;
-import java.awt.Graphics;
 
 import Utils.JSON;
 import Utils.Utils;
@@ -9,6 +8,7 @@ import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
 import GUI.Legend;
+import java.awt.Graphics2D;
 
 public class Poison extends CellObject {
 	/**Максимальная токсичность яда*/
@@ -27,8 +27,8 @@ public class Poison extends CellObject {
 		/**Безвредный для здоровья, но вызывает мутацию в клетке*/
 		BLACK();
 		public static TYPE[] vals = values();
-		
-		private String name;
+		/**Локализованное имя яда*/
+		private final String name;
 
 		TYPE() {name = Configurations.getProperty(getClass(), super.name());}
 
@@ -180,16 +180,20 @@ public class Poison extends CellObject {
 				Configurations.world.get(pos).toxinDamage(getType(),(int) (getHealth()));
 				destroy();	//Отдали всего себя органике
 			case ALIVE :{
-				AliveCell cell = (AliveCell) Configurations.world.get(pos);
-				if(cell.toxinDamage(getType(),(int) getHealth())) {
-					try {cell.bot2Organic();} catch (CellObjectRemoveException e) {}	//Создаём органику
-					var organic = (Organic)Configurations.world.get(pos);
-					var energy = getHealth();
-					if(getType() == cell.getPosionType())	//Родной яд действует слабже
-						energy /= 2;
-					organic.toxinDamage(getType(),(int) (energy - organic.getHealth())); //И отравляем её. Умерли то от яда!
-					destroy();	//А мы что? Мы всё, теперь там ядовитая плоть
-				} else { // Покушали нами
+				final var cellO = Configurations.world.get(pos);
+				if(cellO.toxinDamage(type,(int) (energy))) {	//Умерли, надо превратить живого в мёртвого
+					if(cellO instanceof AliveCell cell){
+						try {cell.bot2Organic();} catch (CellObjectRemoveException e) {}	//Создаём органику
+						var organic = (Organic)Configurations.world.get(pos);
+						if(type == cell.getPosionType())	//Родной яд действует слабже
+							energy /= 2;
+						organic.toxinDamage(type,(int) (energy - organic.getHealth())); //И отравляем её. Умерли то от яда!
+						destroy();	//А мы что? Мы всё, теперь там ядовитая плоть
+					} else {
+						cellO.remove_NE(); //Растворили связь
+						return super.move(direction); //А теперь двигаемся на освободившуюся клетку
+					}
+				} else {// Покушали нами
 					destroy();
 				}
 			}
@@ -258,8 +262,9 @@ public class Poison extends CellObject {
 		return stream;
 	}
 
+	
 	@Override
-	public void paint(Graphics g, Legend legend, int cx, int cy, int r){
+	public Color getPaintColor(Legend legend){
 		Color color_DO;
 		switch (legend.getMode()) {
 			case HP -> color_DO = legend.HPtToColor(getHealth()/Poison.MAX_TOXIC);
@@ -272,17 +277,11 @@ public class Poison extends CellObject {
 					default -> throw new IllegalArgumentException("Unexpected value: " + getType());
 				}
 			}
-			case POISON -> {
-				var rg = (int) Utils.betwin(0, getHealth() / Poison.MAX_TOXIC, 1.0) * 255;
-				switch (getType()) {
-					case BLACK -> color_DO = new Color(255-rg,255- rg,255- rg);
-					case PINK -> color_DO = new Color(rg, rg / 2, rg / 2);
-					case YELLOW -> color_DO = new Color(rg, rg, 0);
-					default -> throw new IllegalArgumentException("Unexpected value: " + getType());
-				}
-			}
 		}
-		g.setColor(color_DO);
+		return color_DO;
+	}
+	@Override
+	public void paint(Graphics2D g, int cx, int cy, int r){
 		Utils.drawCircle(g,cx,cy,(int) Math.round(r*radius));
 	}
 

@@ -44,13 +44,13 @@ public class Cling extends CommandDoInterupted {
 				Point point = nextPoint(cell,direction);
 				var target = (AliveCell) Configurations.world.get(point);
 				if(target.getMucosa() == 0)	//Если клетка в слизи, то к ней не присосаться 
-					cell.setComrades(target);
+					cell.setConnect(target);
 			}
 			case FILLING -> {
 				Point point = nextPoint(cell,direction);
 				var target = (ConnectiveTissue) Configurations.world.get(point);
 				if(target.getMucosa() == 0)	//Если клетка в слизи, то к ней не присосаться 
-					cell.setComrades(target);
+					cell.setConnect(target);
 			}
 			case ORGANIC, CLEAN, POISON,NOT_POISON, WALL, OWALL, CONNECTION -> cell.getDna().interrupt(cell, see);
 			default -> throw new IllegalArgumentException("Unexpected value: " + see);

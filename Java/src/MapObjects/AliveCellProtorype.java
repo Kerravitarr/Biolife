@@ -19,7 +19,7 @@ import java.util.Arrays;
  * @author Kerravitarr
  *
  */
-public abstract class AliveCellProtorype extends CellObject{
+public abstract class AliveCellProtorype extends CellObject {
 	public interface AliveCellI{
 		/**@return Возваращет сколько ХП у объекта */
 		public double getHealth();
@@ -31,6 +31,11 @@ public abstract class AliveCellProtorype extends CellObject{
 		public void addMineral(long mineral);
 		/**@return количество слизи. Если слизь есть - это затрудняет присасывание к клетке*/
 		public int getMucosa();
+		/**Сохраняет связь между текущим объектом и другой живой клеткой
+		 * @param other новая связь
+		 * @return true, если связь установлена
+		 */
+		public boolean setConnect(AliveCellI other);
 	}
 
 	//КОНСТАНТЫ
@@ -290,8 +295,8 @@ public abstract class AliveCellProtorype extends CellObject{
     protected int mucosa = 0;
 	/**Количество энергии для деления*/
 	protected int hp_by_div = 999;
-    /**Цвет бота зависит от того, что он делает*/
-	public Color color_DO;
+    /**Цвет бота зависит от того, что он делает. Но при рождении все белые*/
+	public Color color_DO = new Color(255, 255, 255);
     
     //=================ЭВОЛЮЦИОНИРУЮЩИЕ ПАРАМЕТРЫ============
     /**Поколение (мутационное). Другими словами - как далеко клетка ушла от изначальной*/
@@ -415,20 +420,27 @@ public abstract class AliveCellProtorype extends CellObject{
 		return _friends;
 	}
 	
-	/**Сохраняет нам специфический наполнитель для нашей многоклеточной семьи
-	 * @param friend 
-	 */
-    public void setComrades(ConnectiveTissue friend) {
-		if(_setComrades(friend))
-			friend.setCell((AliveCell) this);
+    public boolean setConnect(AliveCellI other) {
+		if(other instanceof AliveCell friend){
+			if(_setComrades(friend)){
+				friend.setConnect((AliveCell) this);
+				return true;
+			} else {
+				return false;
+			}
+		} else if(other instanceof ConnectiveTissue friend){
+			if(_setComrades(friend)){
+				friend.setConnect((AliveCell) this);
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			assert !(other instanceof AliveCellI): "Недостижимая часть кода, когда пришёл " + other;
+			return false;
+		}
 	}
-	/**Сохраняет нам нового члена многоклеточной семьи
-	 * @param friend 
-	 */
-    public void setComrades(AliveCell friend) {
-		if(_setComrades(friend))
-			friend.setComrades((AliveCell) this);
-    }
+	
     private boolean _setComrades(CellObject friend) {
 		assert friend != null : "Забыли друга!!!";
 		assert friend != this : "Вам не кажется это странным?";

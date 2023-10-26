@@ -8,6 +8,8 @@ import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
 import GUI.Legend;
+import java.awt.Color;
+import java.awt.Graphics2D;
 
 /**
  * Описывает некий объект на карте
@@ -165,8 +167,12 @@ public abstract class CellObject {
 			move(g.getDirection(pos), g.push());
 			if(Math.abs(impuls.x) > 1 || Math.abs(impuls.y) > 1){
 				final var d = impuls.direction();
-				if(moveD(d)){
-					addImpuls(-d.addX, -d.addY);
+				final var p = (Math.abs(impuls.x) < 70 && Math.abs(impuls.y) < 70) ? 1 : impuls.getHypotenuse() / 2;
+				if(moveD(d, p)){
+					addImpuls(-d.addX * p, -d.addY * p);
+					if(Configurations.confoguration.VISCOSITY != 0){
+						addImpuls(-Math.min(impuls.x, Configurations.confoguration.VISCOSITY), -Math.min(impuls.y, Configurations.confoguration.VISCOSITY));
+					}
 				}
 			}
 		}catch (CellObjectRemoveException e) {
@@ -216,10 +222,6 @@ public abstract class CellObject {
 	 * @param dy значение по y
 	 */
 	protected final void setImpuls(double dx, double dy){
-		final var nx = Math.abs(dx);
-		final var ny = Math.abs(dy);
-		if(!(1e-306 <= nx && nx <= 10_000_000) && nx != 0 || !(1e-306 <= ny && ny <= 10_000_000) && ny != 0)
-			impuls.x = impuls.x;
 		impuls.x = dx;
 		impuls.y = dy;
 	}
@@ -229,10 +231,6 @@ public abstract class CellObject {
 	 * @param dy добавка по y
 	 */
 	protected final void addImpuls(double dx, double dy){
-		final var nx = Math.abs(impuls.x + dx);
-		final var ny = Math.abs(impuls.y + dy);
-		if(!(1e-306 <= nx && nx <= 10_000_000) && nx != 0 || !(1e-306 <= ny && ny <= 10_000_000) && ny != 0)
-			impuls.x = impuls.x;
 		impuls.x += dx;
 		impuls.y += dy;
 	}
@@ -406,10 +404,11 @@ public abstract class CellObject {
 	/**
 	 * Перемещает бота в направлении, если не получится прямо в этом направлении - перемещает
 	 * 		 в подобном направелнии. Например вниз, а затем вниз-право и вниз лево
-	 * @param direction
+	 * @param direction направление, в котором хотим походить
+	 * @param power приблизительная сила хождения в ту сторону
 	 * @return true, если движение удалось
 	 */
-	private boolean moveD(DIRECTION direction) {
+	private boolean moveD(DIRECTION direction, double power) {
 		if (move(direction))
 			return true;
 		final var next = direction.next();
@@ -433,7 +432,7 @@ public abstract class CellObject {
 		final var c = ((isConditionForMove(o1) ? 1 : 0) + (isConditionForMove(o2) ? 1 : 0) + (isConditionForMove(o3) ? 1 : 0));
 		if(c == 0) return false;
 		//Там кто-то есть. Ему и отдадим импульс
-		final var p = 1d/c;
+		final var p = power/c;
 		moveD(o1,direction,p);
 		moveD(o2,next,p);
 		moveD(o3,prev,p);		
@@ -452,7 +451,7 @@ public abstract class CellObject {
 	 * @param p 
 	 */
 	private void moveD(OBJECT o,DIRECTION d, double p){
-		switch (o) {
+		switch (o.groupLeader) {
 			case WALL, OWALL -> move(d.inversion(),p);
 			case ALIVE, ORGANIC-> Configurations.world.get(getPos().next(d)).move(d,p);
 		}
@@ -533,13 +532,19 @@ public abstract class CellObject {
 	public LV_STATUS getAlive() {
 		return alive;
 	}
+	
+	/**
+	 * Для рисования при слишком маленьком масштабе - функция возврата цвета на основе легенды
+	 * @param legend легенда мира
+	 * @return текущий цвет объекта
+	 */
+	public abstract Color getPaintColor(Legend legend);
 	/** * Не смог я в этот раз уйти от рисования...Очень жаль :(
  Эта функция должна отобразить объект на холсте согласно установленному режиму
 	 * @param g где рисуем
-	 * @param legend легенда, по которой рисуем
 	 * @param cx координата ЦЕНТРА на холсте, где клетка находится
 	 * @param cy координата ЦЕНТРА на холсте, где клетка находится
 	 * @param r размер в пк квадрата, которым клетка окружена
 	 */
-	public abstract void paint(Graphics g, Legend legend, int cx, int cy, int r);
+	public abstract void paint(Graphics2D g, int cx, int cy, int r);
 }

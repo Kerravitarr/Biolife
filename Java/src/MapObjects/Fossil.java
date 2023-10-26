@@ -5,9 +5,11 @@ import java.awt.Graphics;
 
 import Utils.JSON;
 import Calculations.Point.DIRECTION;
+import GUI.AllColors;
 import GUI.Legend;
 import static GUI.Legend.MODE.HP;
 import static GUI.Legend.MODE.YEAR;
+import java.awt.Graphics2D;
 
 /**
  * Ороговевшая клетка. Она превратилась в стену и теперь защищает других от себя
@@ -15,8 +17,6 @@ import static GUI.Legend.MODE.YEAR;
  *
  */
 public class Fossil extends CellObject {
-	/**Цвет стены*/
-    private static final Color COLOR_DEFAULT = Color.BLACK;
 	/**Сколько у нас энергии*/
 	private double energy = 0;
 	/**Стены не бессмертны, напротив, эроизия разлагает их*/
@@ -83,16 +83,17 @@ public class Fossil extends CellObject {
 		return cell0 instanceof Fossil;
 	}
 	
+	
 	@Override
-	public void paint(Graphics g, Legend legend, int cx, int cy, int r) {
-		Color color_DO;
-		switch (legend.getMode()) {
-			case HP -> color_DO = legend.HPtToColor(getHealth());
-			case YEAR -> color_DO = legend.AgeToColor(((double) getAge()) / MAX_AGE);
-			default -> color_DO = COLOR_DEFAULT;
-		}
-		g.setColor(color_DO);
-
+	public Color getPaintColor(Legend legend){
+		return switch (legend.getMode()) {
+			case HP -> legend.HPtToColor(getHealth());
+			case YEAR -> legend.AgeToColor(((double) getAge()) / MAX_AGE);
+			default -> AllColors.FOSSIL;
+		};
+	}
+	@Override
+	public void paint(Graphics2D g, int cx, int cy, int r) {
 		g.fillRect(cx - r / 2, cy - r / 6, r, r / 3);
 		g.fillRect(cx - r / 6, cy - r / 2, r / 3, r);
 	}

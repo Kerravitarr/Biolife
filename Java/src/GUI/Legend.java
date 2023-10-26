@@ -77,7 +77,7 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	private final int _BORDER = 50;
 
 	/**Режимы работы легенды*/
-	public enum MODE {DOING,HP,YEAR,PHEN, GENER, MINERALS, POISON, EVO_TREE}
+	public enum MODE {DOING,HP,YEAR,PHEN, GENER, MINERALS, EVO_TREE, PROGRAMMER}
 	/**Интервал значений и цвет значений для подписей внизу экрана*/
 	private class Value{
 		/**0-1, где находится значение*/
@@ -93,7 +93,7 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 	/**Класс, определяющий результирующий цвет на основе цветового круга и прогресса на этом кругу*/
 	private static class ColorGradient{
 		/**Список всех уже посчитанных цветов*/
-		private Map<Integer, Color> colors = new HashMap<>();
+		private final Color[] colors = new Color[125];
 		/**Создаёт круговой градиент
 		 * @param from от какого цвета
 		 * @param to к какому цвету
@@ -113,17 +113,17 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 				params[0] = ((hsbto[0] - hsbfrom[0]) + (isROYGBVR ? 0 : +1)) / 100f;
 			for (int i = 1; i < params.length; i++)
 				params[i] = (hsbto[i] - hsbfrom[i]) / 100f;
-			for (int i = 0; i < 151; i++) {
-				colors.put(i, getHSBColor(hsbfrom[0] + params[0] * i, hsbfrom[1] + params[1] * i, hsbfrom[2] + params[2] * i, hsbfrom[3] + params[3] * i));
+			for (int i = 0; i < colors.length; i++) {
+				colors[i] = getHSBColor(hsbfrom[0] + params[0] * i, hsbfrom[1] + params[1] * i, hsbfrom[2] + params[2] * i, hsbfrom[3] + params[3] * i);
 			}
 		}
 		/**Возвращает один из цветов прогресса
-		 * @param progress
+		 * @param progress прогресс по шклае [0,1]. Может быть чуть больше 1, пока, до 1.5... Но лучше не заходить :)
 		 * @return 
 		 */
 		public Color cyrcleGradient(double progress){
-			final var p = Utils.betwin(0,(int) Math.round(progress*100),151);
-			return colors.get(p);
+			final var p = Utils.betwin(0,(int) Math.round(progress*100),colors.length - 1);
+			return colors[p];
 		}
 		private Color getHSBColor(float h, float s, float b, float a){
 			while(h > 1)h -= 1f;
@@ -157,8 +157,10 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 		panel.add(makeRB("Generation",MODE.GENER));
 		panel.add(makeRB("Phenotype",MODE.PHEN));
 		panel.add(makeRB("Mp",MODE.MINERALS));
-		//panel.add(makeRB("Poison",Graph.MODE.POISON));
 		panel.add(makeRB("EvoTree",MODE.EVO_TREE));
+		
+		
+		//panel.add(makeRB("Programmer",MODE.PROGRAMMER));
 		
 
 		graph = new Graph();
@@ -280,15 +282,15 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 					mGen = nGen;
 				}
 			}
-			case POISON -> {
-				values = new Value[countColumns];
-				for (int i = 0; i < values.length; i++) {
-					var rg = (int) (255.0 * i / values.length);
-					values[i] = new Value(1.0 * (i + 1) / values.length, 1.0 / values.length, (i * Poison.MAX_TOXIC / values.length) + "", new Color(rg, rg, rg));
-				}
-			}
 			case EVO_TREE -> {
 				values = new Value[0];
+			}
+			case PROGRAMMER -> {
+				values = new Value[countColumns + 1];
+				var w = 1.0 / values.length;
+				for (int i = 0; i < values.length; i++) {
+					values[i] = new Value(1.0 * (i + 1) / values.length, w, Integer.toString((int) (i * 100 / countColumns)),AgeColors.cyrcleGradient(((double) i) / countColumns));
+				}
 			}
 		}
 		if (updateSrin) {
@@ -321,6 +323,9 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 		jrbuton.addActionListener(e->action(e,mode));
 		jrbuton.setFont(Configurations.defaultFont);
 		jrbuton.setFocusable(false);
+		if(mode == MODE.PROGRAMMER){
+			action(new ActionEvent(jrbuton,0,""),mode);
+		}
 		return jrbuton;
 	}
 	
@@ -375,6 +380,14 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 			return MPColors.cyrcleGradient(mp/maxMP);
 		else
 			return MPColors.cyrcleGradient(1);
+	}
+	/**
+	 * Возвращает цвет только для программистского мода
+	 * @param o объект
+	 * @return цвет, в зависимости от желания разработчика
+	 */
+	public Color ProgrammerMove(CellObject o){
+		return AgeColors.cyrcleGradient(o.getImpuls().getHypotenuse() / 100);
 	}
 	
 }

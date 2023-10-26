@@ -46,6 +46,11 @@ public class AllColors {
 	/**Цвет линии траектории.*/
 	public static final Color TRAJECTORY_LINE =  new Color(0, 255, 0, 255);
 	
+	/**Цвет ороговевшей стены*/
+    public static final Color FOSSIL = Color.BLACK;
+	/**Цвет орагиники*/
+    public static Color ORGANIC = new Color(139,69,19,200);
+	
 	
 	/**Преобразует цвет в его более прозрачный вариант
 	 * @param from какой цвет
@@ -55,4 +60,31 @@ public class AllColors {
 	public static Color toDark(Color from, int alfa){
 		return new Color(from.getRed(), from.getGreen(), from.getBlue(), Utils.betwin(0, alfa, 255));
 	}
+	
+	/**
+	 * Смешивает цвета в равной пропорции
+	 * @param size количество цветов
+	 * @param c массив цветов, может быть заполнен лишь частично
+	 * @return итоговый цвет
+	 */
+	public static Color blend(int size, Color... c) {
+		if(size == 1) return c[0];
+		
+		final float ratio = 1f / (size * 255f);
+
+		float a = 0;
+		float r = 0;
+		float g = 0;
+		float b = 0;
+
+		for (int i = 0; i < size; i++) {
+			a += c[i].getAlpha() * ratio;
+			r += c[i].getRed() * ratio;
+			g += c[i].getGreen() * ratio;
+			b += c[i].getBlue() * ratio;
+		}
+
+		return new Color(r, g, b, a);
+	}
+	
 }

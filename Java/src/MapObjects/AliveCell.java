@@ -66,8 +66,6 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
         specialization = new Specialization(cell.getJ("Specialization"), version);
 		if(tree != null) 
 			evolutionNode = tree.getNode(this, cell.get("GenerationTree"));
-
-        color_DO = new Color(255, 255, 255);
     }
 
     /**
@@ -118,8 +116,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
 		setMineralTank(cell.getMineralTank()/ 2);
 		cell.setMineralTank(cell.getMineralTank() / 2);
 		hp_by_div = cell.hp_by_div;					//ХП для деления остаётся тем-же
-		setImpuls(cell.getImpuls().divide(2));	//Импульс передаётся
-		cell.setImpuls(getImpuls());
+		setImpuls(cell.getImpuls());	//Импульс передаётся
 
         specialization = new Specialization(cell);
         direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size() - 1));   // направление, куда повернут новорожденный, генерируется случайно
@@ -143,7 +140,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
     public AliveCell(AliveCell cell, Point newPos, double HP, DNA ndna) {
         super(cell.getStepCount(), LV_STATUS.LV_ALIVE);
         setPos(newPos);
-		final var scale = HP / cell.getHealth();	//Во сколько раз вирус меньше нас. Число [0,1]
+		//final var scale = HP / cell.getHealth();	//Во сколько раз вирус меньше нас. Число [0,1]
 
         setHealth(HP);
         cell.addHealth(-HP);
@@ -155,8 +152,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
         poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
         mucosa = (cell.mucosa = (int) (cell.mucosa / 2.1)); //Делится слизистой оболочкой
 		hp_by_div = cell.hp_by_div;					//ХП для деления остаётся тем-же
-		setImpuls(cell.getImpuls().multiply(scale));	//Импульс передаётся пропорционально массе
-		cell.setImpuls(cell.getImpuls().multiply(1d - scale));
+		setImpuls(cell.getImpuls());	//Импульс передаётся
 
         specialization = new Specialization(cell);
         direction = DIRECTION.toEnum(Utils.random(0, DIRECTION.size() - 1));   // направление, куда повернут новорожденный, генерируется случайно
@@ -378,8 +374,8 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
 									world.add(new ConnectiveTissue(from,this,points));
 								while(connL > 0){
 									final var o = pointsConn[--connL];
-									if(o instanceof AliveCell ac) setComrades(ac);
-									else setComrades((ConnectiveTissue)o);
+									if(o instanceof AliveCell ac) setConnect(ac);
+									else setConnect((ConnectiveTissue)o);
 								}
 								//Профит!
 								return true;
@@ -683,8 +679,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
 	}
 	
 	@Override
-	public void paint(Graphics g, Legend legend, int cx, int cy, int r){
-		g.setColor(getPaintColor(legend));
+	public void paint(Graphics2D g, int cx, int cy, int r){
 		//Клетка
 		if (getCountComrades() == 0) {
 			Utils.fillCircle(g, cx, cy, r);
@@ -722,17 +717,15 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
 				}
 				//Приходится рисовать в два этапа, иначе получается ужас страшный.
 				//Этап первый - основные связи
-
-				Graphics2D g2 = (Graphics2D) g;
-				Stroke oldStr = g2.getStroke();
-				g2.setStroke(new BasicStroke(r / 2));
+				Stroke oldStr = g.getStroke();
+				g.setStroke(new BasicStroke(r / 2));
 				for (final int[] point : points) {
 					if(point[0] == Integer.MAX_VALUE) continue;
 					int delx = point[0] - cx;
 					int dely = point[1] - cy;
 					g.drawLine(cx, cy, cx + delx / 3, cy + dely / 3);
 				}
-				g2.setStroke(oldStr);
+				g.setStroke(oldStr);
 				g.setColor(Color.BLACK);
 				//Этап второй, всё тоже самое, но теперь лишь тонкие линии
 				for (final int[] point : points) {
