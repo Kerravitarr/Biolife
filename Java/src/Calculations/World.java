@@ -19,6 +19,7 @@ import static MapObjects.CellObject.LV_STATUS.LV_ORGANIC;
 import static MapObjects.CellObject.LV_STATUS.LV_POISON;
 import static MapObjects.CellObject.LV_STATUS.LV_WALL;
 import MapObjects.CellObject.OBJECT;
+import MapObjects.ConnectiveTissue;
 import MapObjects.Fossil;
 import MapObjects.Organic;
 import MapObjects.Poison;
@@ -148,6 +149,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 					case LV_ORGANIC -> add(new Organic(cell, version));
 					case LV_POISON -> add(new Poison(cell, version));
 					case LV_WALL -> add(new Fossil(cell, version));
+					case LV_CONNECTIVE_TISSUE -> add(new ConnectiveTissue(cell, version));
 					default -> System.err.println("Ошибка загрузки строки: \n" + cell);
 				}
 				_all_live_cell[t.ordinal()]++;
@@ -164,18 +166,17 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 			if (cell.getAJ("friends").isEmpty()) continue; // У нас нет друзей
 			Point pos = Point.create(cell.getJ("pos"));
 			CellObject realCell = get(pos);
-			if (realCell == null || !(realCell instanceof AliveCell))
-				continue;
-			List<JSON> mindL = cell.getAJ("friends");
-			AliveCell new_name = (AliveCell) realCell;
-			for (JSON pointFriend : mindL) {
-				final var posFriend = Point.create(pointFriend);
-				if (get(posFriend) instanceof AliveCell aliveCell) {
-					new_name.setComrades(aliveCell);
-				} else {
-					Logger.getLogger(World.class.getName()).log(Level.WARNING, cell.toString());
+			if(realCell instanceof AliveCell.AliveCellI ac){
+				List<JSON> mindL = cell.getAJ("friends");
+				for (JSON pointFriend : mindL) {
+					final var posFriend = Point.create(pointFriend);
+					if (get(posFriend) instanceof AliveCell.AliveCellI aliveCell) {
+						ac.setConnect(aliveCell);
+					} else {
+						Logger.getLogger(World.class.getName()).log(Level.WARNING, cell.toString());
+					}
 				}
-			}
+			} 
 		}
 		Configurations.tree.updatre();
 	}
