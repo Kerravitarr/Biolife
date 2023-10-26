@@ -98,8 +98,8 @@ public class Settings extends javax.swing.JPanel {
 		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.countSave", 1, dc.COUNT_SAVE, 10,1, Configurations.confoguration.COUNT_SAVE,null, e -> Configurations.confoguration.COUNT_SAVE = e));
 		configuationsNorm.add(new JPopupMenu.Separator());
 		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.mutagenicity",
-				0, dc.AGGRESSIVE_ENVIRONMENT, 100,
-				0, Configurations.confoguration.AGGRESSIVE_ENVIRONMENT, 100, e -> Configurations.confoguration.AGGRESSIVE_ENVIRONMENT = e));
+				0d, dc.AGGRESSIVE_ENVIRONMENT, 100d,
+				0d, Configurations.confoguration.AGGRESSIVE_ENVIRONMENT, 100d, e -> Configurations.confoguration.AGGRESSIVE_ENVIRONMENT = e));
 		configuationsNorm.add( new SettingsSlider<>(Settings.class,"configuations.timeLifeOrg", 0, dc.TIK_TO_EXIT, 100, 0, Configurations.confoguration.TIK_TO_EXIT,null, e -> Configurations.confoguration.TIK_TO_EXIT = e));
 		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.dirtiness",
 				0, (int)(dc.DIRTY_WATER * 100), 1000,

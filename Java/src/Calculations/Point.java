@@ -345,9 +345,14 @@ public final class Point{
 		public PointD multiply(double mul){
 			return new PointD(x * mul, y * mul);
 		}
+		/**Возвращает гипотинузу вектора
+		 * @return агипотенуза вектора в клетках мира*/
+		public double getHypotenuse(){
+			return Math.hypot(x, y);
+		}
 		@Override
 		public String toString() {
-			return "(P (" + x + "; " + y + "))";
+			return "V⃗ (" + x + "; " + y + "). |V⃗|="+getHypotenuse();
 		}
 		/**Упаковывает точку в JSON
 		 * @return 

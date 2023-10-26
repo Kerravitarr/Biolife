@@ -91,7 +91,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	/**Дата последнего сохранения*/
 	public long lastSaveCount;
 	/**Степень мутагенности воды [0,100]*/
-	public int AGGRESSIVE_ENVIRONMENT;
+	public double AGGRESSIVE_ENVIRONMENT;
+	/**Вязкость воды. На сколько, дополнительно, снижается импульс объекта после каждого хода. Предпочтительно [0,1)*/
+	public double VISCOSITY;
 	/**Как часто органика теряет своё ХП. Если 1 - на каждый ход. Если 2 - каждые 2 хода и т.д.*/
 	public int TIK_TO_EXIT;
 	/**Степень загрязнённости воды. На сколько падает уровень освещения за каждую клетку от источника света*/
@@ -173,9 +175,10 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		 switch (type) {
 			case LINE_H,LINE_V -> DIRTY_WATER =  30d / (height * 0.33);
 			case RECTANGLE -> DIRTY_WATER =  30d / (Math.min(height, width) * 0.5); //Чтобы освещалась половина мира
-			case FIELD_R -> DIRTY_WATER = 0; //Чтобы освещался весь мир
+			case FIELD_R -> DIRTY_WATER = 30d / (Math.min(height, width) * 0.2); //Чтобы освещалась пятая часть мира
 			default -> throw new AssertionError();
 		}
+		VISCOSITY = 0.1;
 		
 		
 		SAVE_PERIOD = 100_000;
@@ -195,6 +198,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		AGGRESSIVE_ENVIRONMENT = sourse.AGGRESSIVE_ENVIRONMENT;
 		TIK_TO_EXIT = sourse.TIK_TO_EXIT;
 		DIRTY_WATER = sourse.DIRTY_WATER;
+		VISCOSITY = sourse.VISCOSITY;
 		SAVE_PERIOD = sourse.SAVE_PERIOD;
 		COUNT_SAVE = sourse.COUNT_SAVE;
 		lastSaveCount = sourse.lastSaveCount;
@@ -252,6 +256,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
 			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
 			DIRTY_WATER = configWorld.get("DIRTY_WATER");
+			VISCOSITY = configWorld.get("VISCOSITY");
 			for(final var j : configWorld.getAJ("SUNS")){
 				try {
 					suns.add(SunAbstract.generation(j, version));
@@ -288,6 +293,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		JSON configWorld = new JSON();
 		configWorld.add("MAP_CELLS", new int[] {MAP_CELLS.width,MAP_CELLS.height});
 		configWorld.add("AGGRESSIVE_ENVIRONMENT", AGGRESSIVE_ENVIRONMENT);
+		configWorld.add("VISCOSITY", VISCOSITY);
 		configWorld.add("TIK_TO_EXIT", TIK_TO_EXIT);
 		configWorld.add("DIRTY_WATER", DIRTY_WATER);
 		configWorld.add("WORLD_TYPE", world_type);
@@ -416,21 +422,29 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			}
 			case FIELD_R -> {
 				buildMap(new Configurations(type, width, height), null);
-				//Солнце тут будет одно, причём, всегда - день
-				suns.add(new SunEllipse(20, new Trajectory(Point.create(width/2, height/2)), 10, true,"Солнце"));
+				//В мире будет два вала - один идёт сверху вниз, другой справа-налево и обратно
+				//В этих потоках будет спрятано солнышко
+				final var ht = new TrajectoryPolyLine(100,false,Point.create(width/2, height/2),Point.create(1, height/2),Point.create(width-1, height/2));
+				streams.add(new StreamHorizontal( ht.clone(),width/10,height, -3,"Вал"));
+				suns.add(new SunRectangle(20,ht.clone(),width/10,height, false,"Длинное"));
+				
 				//Четыре нычки минералов двигающихся внутри потоков
 				final var atten = 30d / (Math.min(height, width) * 0.2);
 				final var size = Math.min(height, width) / 10;
-				final var T1 = new TrajectoryPolyLine(1000,false,
+				final var T1 = new TrajectoryPolyLine(100,false,
+								 Point.create(width*1/3, height*1/3), Point.create(width*1/3, height*2/3), Point.create(width*2/3, height*2/3), Point.create(width*2/3, height*1/3),Point.create(width*1/3, height*1/3),
+									Point.create(0, height), Point.create(0, 0),Point.create(width, height), Point.create(width, 0), Point.create(0, 0)
+						);
+				final var T2 = new TrajectoryPolyLine(150,false,
 								Point.create(0, 0), Point.create(width, 0), Point.create(width, height), Point.create(0, height), Point.create(0, 0),
 								Point.create(width*1/3, height*1/3), Point.create(width*2/3, height*1/3), Point.create(width*2/3, height*2/3), Point.create(width*1/3, height*2/3), Point.create(width*1/3, height*1/3)
 						);
 				minerals.add(new MineralEllipse(30,atten,T1.clone(), size, false,"1"));
 				streams.add(new StreamEllipse(T1.clone(), (int) (size + 30 * 2 / atten),new StreamAttenuation.PowerFunctionStreamAttenuation(3, 10,4),"1"));
 				streams.add(new StreamSwirl(T1.clone(),  (int) (size + 30 * 2 / atten ), new StreamAttenuation.PowerFunctionStreamAttenuation(-3, -10,4),"1"));
-				streams.add(new StreamHorizontal( 
-						new TrajectoryPolyLine(100,false,Point.create(width-1, height/2),Point.create(width/2, height/2),Point.create(1, height/2)),
-						width/10,height, -3,"Вал"));
+				minerals.add(new MineralEllipse(30,atten,T2.clone(), size, false,"2"));
+				streams.add(new StreamEllipse(T2.clone(), (int) (size + 30 * 2 / atten),new StreamAttenuation.PowerFunctionStreamAttenuation(3, 10,4),"2"));
+				streams.add(new StreamSwirl(T2.clone(),  (int) (size + 30 * 2 / atten ), new StreamAttenuation.PowerFunctionStreamAttenuation(-3, -10,4),"2"));
 
 			}
 			default -> throw new AssertionError();
@@ -486,11 +500,12 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public static Configurations getDefaultConfiguration(WORLD_TYPE type){
 		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
 		final var ret =  switch (type) {
-			case LINE_H,RECTANGLE -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight() * 0.9) / PIXEL_PER_CELL));
-			case LINE_V,FIELD_R -> new Configurations(type,(int) (sSize.getWidth() / PIXEL_PER_CELL), (int) ((sSize.getHeight()) / PIXEL_PER_CELL));
+			case LINE_H,RECTANGLE -> new Point.PointD(1.0,0.9);
+			case LINE_V -> new Point.PointD(1.0,1.0);
+			case FIELD_R -> new Point.PointD(1.0,1.1);
 			default ->throw new AssertionError();
 		};
-		return ret;
+		return new Configurations(type,(int) ((sSize.getWidth() * ret.x) / PIXEL_PER_CELL), (int) ((sSize.getHeight() * ret.y) / PIXEL_PER_CELL));
 	}
 	
 	/**Возвращает количество солнечной энергии в данной точке пространства
