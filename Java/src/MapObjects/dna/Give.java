@@ -3,8 +3,6 @@ package MapObjects.dna;
 import MapObjects.AliveCell;
 import static MapObjects.CellObject.OBJECT.CLEAN;
 import static MapObjects.CellObject.OBJECT.ORGANIC;
-import static MapObjects.CellObject.OBJECT.POISON;
-import static MapObjects.CellObject.OBJECT.NOT_POISON;
 import static MapObjects.CellObject.OBJECT.WALL;
 import static MapObjects.CellObject.OBJECT.OWALL;
 import Calculations.Configurations;
@@ -19,16 +17,11 @@ import MapObjects.CellObject;
  *
  */
 public class Give extends CommandDoInterupted {
-	
-	/**Абсолютные координаты или относительные*/
-	private final boolean isAbolute;
 
 	public Give() {this(true);};
 
 	protected Give(boolean isA) {
-		super(isA, 1);
-		isAbolute = isA;
-		setInterrupt(isA, CellObject.OBJECT.BANE, ORGANIC,  WALL, CLEAN, OWALL);
+		super(isA, CellObject.OBJECT.BANE, ORGANIC,  WALL, CLEAN, OWALL);
 	}
 
 	@Override

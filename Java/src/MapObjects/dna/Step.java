@@ -9,7 +9,7 @@ import Calculations.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class Step extends CommandDoInterupted {
+public class Step extends CommandDo {
 	/**Цена энергии на ход*/
 	protected final int HP_COST = 1;
 
@@ -29,7 +29,6 @@ public class Step extends CommandDoInterupted {
 
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		var dir = param(dna, cell, numParam, isAbolute);
-		return isFullMod() ? dir.toString() : dir.toSString();
+		return getDirectionParam(cell,numParam,dna);
 	}
 }

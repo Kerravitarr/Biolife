@@ -81,14 +81,6 @@ public class HowMuch extends CommandExplore {
 	
 	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
-		if(isTarget) {
-			return switch (numBranch) {
-				case 0 -> "≥П";
-				case 1 -> "<П";
-				default -> "∅";
-			};
-		} else {
-			return branchMoreeLees(cell,numBranch,dna);
-		}
+		return isTarget ? branchMoreeLeesEmpty(cell,numBranch,dna) : branchMoreeLees(cell,numBranch,dna);
 	};
 }

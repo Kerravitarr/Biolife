@@ -18,8 +18,7 @@ import MapObjects.CellObject;
 public class Clone extends CommandDoInterupted {
 
 	public Clone(boolean isA) {
-		super(isA, 2);
-		setInterrupt(isA, CellObject.OBJECT.ALIVE, ORGANIC, WALL, OWALL);
+		super(isA, 2,1,CellObject.OBJECT.ALIVE, ORGANIC, WALL, OWALL);
 	};
 	@Override
 	protected void doing(AliveCell cell) {

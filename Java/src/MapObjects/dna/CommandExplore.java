@@ -48,6 +48,7 @@ public abstract class CommandExplore extends CommandDNA {
 	 * Для всех команд открытия разрешено так делать. А знаете почему? Потому что команды открытия не меняют внутренее состояние!
 	 * Команда действие может сдвинуть клетку или заставить её что ни будь сделать, а это лишь изучит окружающий мир
 	 */
+	@Override
 	public String value(AliveCell cell, DNA dna) {
 		var ofset = explore(cell);
         return valueFormat.format(ofset,(dna.get(1 + getCountParams() + ofset, false)) % dna.size);

@@ -23,8 +23,7 @@ public class Cling extends CommandDoInterupted {
 	
 	/**Присасывается к чему-то относительно МСК*/
 	public Cling(boolean isA) {
-		super(isA, 1);
-		setInterrupt(isA, ORGANIC, CLEAN, CellObject.OBJECT.BANE, WALL, CellObject.OBJECT.CONNECTION);
+		super(isA, ORGANIC, CLEAN, CellObject.OBJECT.BANE, WALL, CellObject.OBJECT.CONNECTION);
 	}
 	@Override
 	protected void doing(AliveCell cell) {

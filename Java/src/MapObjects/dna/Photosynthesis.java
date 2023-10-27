@@ -29,6 +29,7 @@ public class Photosynthesis extends CommandDo {
 		cell.addHealth(-HP_COST);
 	}
 	
+	@Override
 	protected String value(AliveCell cell) {
         double hlt = cell.sunAround();
 		if (hlt > 0)

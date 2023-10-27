@@ -17,7 +17,7 @@ import Calculations.Point.DIRECTION;
  * @author Kerravitarr
  *
  */
-public class Pull extends CommandDoInterupted {
+public class Pull extends CommandDo {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 2;
 	

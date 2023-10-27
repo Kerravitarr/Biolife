@@ -5,6 +5,9 @@ import Calculations.Configurations;
 
 /**
  * Проверяет, мы выше или ниже высоты из параметра
+ * Странная форма. Возможно нужно создать или группу подобных генов или вообще убрать их
+ * Ибо в реальности высота определяется давлением. А у нас давления нет. Зато есть круглые миры!
+ * Можно сделать удалённость от центра гравитации, хоть какая-то высота. Правда тогда если гравитации нет - будет 0 всегда
  * @author Kerravitarr
  *
  */
@@ -21,6 +24,7 @@ public class HowHigh extends CommandExplore {
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
 		return String.valueOf(param(cell, 0, Configurations.getHeight()));
 	}
+	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna) {
 		return branchMoreeLees(cell, numBranch, dna);
 	}

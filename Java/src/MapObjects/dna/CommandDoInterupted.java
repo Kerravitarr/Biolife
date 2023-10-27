@@ -1,7 +1,11 @@
 package MapObjects.dna;
 
+import Calculations.Point;
 import MapObjects.AliveCell;
+import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
+import static MapObjects.dna.CommandDNA.param;
+import static MapObjects.dna.CommandDNA.relatively;
 
 /**
  * Абстрактный класс для всех команд действий c прерываниями
@@ -11,39 +15,72 @@ import MapObjects.CellObject.OBJECT;
 public abstract class CommandDoInterupted extends CommandDo {
 	private OBJECT[] objectInter = null;
 	private boolean isAbsolute;
+	/**Номер параметра, откуда брать прерывание. Если по этому параметру встретится прерывание - то мы его исполним*/
 	private int numParam;
-
-	protected CommandDoInterupted() {this(0);};
-	protected CommandDoInterupted(int countParams) {super(countParams); isInterrupt = true;}	
-	protected CommandDoInterupted(boolean isAbsolute,int countParams) {super(isAbsolute,countParams); isInterrupt = true;}	
+	/**
+	 * Создаёт команду ДНК с прерыванием. У команды только 1 параметр и прерывание относится именно к нему
+	 * @param isAbsolute абсолютная команда или относительная?
+	 * @param objects прерывания, которые мы будем обрабатывать
+	 */
+	protected CommandDoInterupted(boolean isAbsolute, OBJECT... objects) {
+		this(isAbsolute,1,0,objects);
+	}	
+	/**
+	 * Создаёт команду ДНК с прерыванием
+	 * @param isAbsolute абсолютная команда или относительная?
+	 * @param countParams количество параметров у команды
+	 * @param paramNumber индекс параметра, на который мы поглядим и если там увидим один из объектов objects, то вызовем прерывание
+	 * @param objects прерывания, которые мы будем обрабатывать
+	 */
+	protected CommandDoInterupted(boolean isAbsolute, int countParams,int paramNumber, OBJECT... objects) {
+		super(isAbsolute, countParams);
+		numParam = paramNumber;
+		objectInter = objects;
+		isInterrupt = true;
+	}
 
 	@Override
-	public final int getInterrupt(AliveCell cell, DNA dna) {
+	public int getInterrupt(AliveCell cell, DNA dna) {
 		if(isAbsolute) return getInterruptA(cell, dna, numParam,objectInter);
 		else return getInterruptR(cell, dna, numParam,objectInter);
 	}
+	
 	/**
-	 * Сохраняет параметры перерырвания
-	 * @param numParam номер параметра, откуда брать направление
-	 * @param isAbsolute абсолютно смотрим или относительно
-	 * @param objects цели, которые вызовут прерывание
+	 * Условная затычка прерываниям
+	 * @param cell - клетка, по которой сработало прерывание
+	 * @param direction - направление на поглядеть
+	 * @param targets - объекты, которые мы выискиваем
+	 * @return 
 	 */
-	protected void setInterrupt(int numParam, boolean isAbsolute, OBJECT... objects) {
-		this.numParam = numParam;
-		this.isAbsolute = isAbsolute;
-		objectInter = objects;
+	private int getInterrupt(AliveCell cell,Point.DIRECTION direction,CellObject.OBJECT ... targets){
+		var see = cell.see(direction);
+		for (CellObject.OBJECT target : targets) {
+			if (see == target || see.groupLeader == target) return see.ordinal();
+		}
+		return -1;
 	}
 	/**
-	 * Сохраняет параметры перерырвания, в которых параметр указывающий направление - нулевой
-	 * @param isAbsolute абсолютно смотрим или относительно
-	 * @param objects цели, которые вызовут прерывание
+	 * Условная затычка прерываниям. Ищет по абсолютному направлению
+	 * @param cell - клетка, по которой сработало прерывание
+	 * @param dna - её ДНК
+	 * @param paramNum - номер параметра, в котором записано направление
+	 * @param targets - объекты, которые мы выискиваем
+	 * @return 
 	 */
-	protected void setInterrupt(boolean isAbsolute, OBJECT... objects) {setInterrupt(0,isAbsolute,objects);}
+	private int getInterruptA(AliveCell cell,DNA dna,int paramNum,CellObject.OBJECT ... targets){
+		return getInterrupt(cell,Point.DIRECTION.toEnum(param(dna,paramNum, Point.DIRECTION.size())),targets);
+	}
 	/**
-	 * Сохраняет параметры перерырвания, в которых параметр указывающий направление - нулевой
-	 * @param isAbsolute абсолютно смотрим или относительно
+	 * Условная затычка прерываниям. Ищет по относительному направлению
+	 * @param cell - клетка, по которой сработало прерывание
+	 * @param dna - её ДНК
+	 * @param paramNum - номер параметра, в котором записано направление
+	 * @param targets - объекты, которые мы выискиваем
+	 * @return 
 	 */
-	protected void setInterrupt(boolean isAbsolute) {setInterrupt(0,isAbsolute,objectInter);}
+	private int getInterruptR(AliveCell cell,DNA dna,int paramNum,CellObject.OBJECT ... targets){
+		return getInterrupt(cell,relatively(cell,param(dna,paramNum, Point.DIRECTION.size())),targets);
+	}
 }
 
 

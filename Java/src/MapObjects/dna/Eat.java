@@ -26,13 +26,9 @@ import MapObjects.ConnectiveTissue;
 public class Eat extends CommandDoInterupted {
 	/**Цена энергии на ход*/
 	private final int HP_COST = 4;
-	/**Абсолютные координаты или относительные*/
-	private final boolean isAbolute;
 
 	public Eat(boolean isA) {
-		super(isA,1);
-		isAbolute = isA;
-		setInterrupt(isA, CLEAN, NOT_POISON, POISON, WALL, OWALL);
+		super(isA,CLEAN, NOT_POISON, POISON, WALL, OWALL);
 	}
 	
 	@Override

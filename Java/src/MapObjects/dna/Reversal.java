@@ -18,5 +18,6 @@ public class Reversal extends CommandDo {
 	}
 	
 	/**Эта команда не занимает времени*/
+	@Override
 	public boolean isDoing() {return false;};
 }

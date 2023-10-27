@@ -2,7 +2,6 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.Poison;
-import MapObjects.CellObject.OBJECT;
 /**
  * @author Kerravitarr
  *
@@ -16,6 +15,7 @@ public class WhatMyPosion extends CommandExplore {
 		return cell.getPosionType().ordinal();
 	}
 	
+	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
 		return Poison.TYPE.vals[numBranch].toString();
 	}

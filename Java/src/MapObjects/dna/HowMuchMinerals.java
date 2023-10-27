@@ -1,7 +1,6 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import Calculations.Configurations;
 /**
  * Проверяет, можем ли мы добывать минералы хоть сколько да ни будь
  * @author Kerravitarr
@@ -20,6 +19,7 @@ public class HowMuchMinerals extends CommandExplore {
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
 		return String.valueOf(param(dna, 0));
 	}
+	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
 		return branchMoreeLees(cell,numBranch,dna);
 	};

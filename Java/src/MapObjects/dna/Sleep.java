@@ -3,7 +3,7 @@ package MapObjects.dna;
 import MapObjects.AliveCell;
 
 /**
- * Заставляет клетку заснуть. Сон - тратить всего 1 энергию на ход
+ * Заставляет клетку заснуть. Сон - тратит очень мало энергии на сон
  * @author Kerravitarr
  *
  */

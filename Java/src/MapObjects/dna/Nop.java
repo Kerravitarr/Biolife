@@ -1,7 +1,6 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import Utils.MyMessageFormat;
 
 /**
  * Пустая инструкция, ни чего не делающая

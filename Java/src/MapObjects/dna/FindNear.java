@@ -15,27 +15,32 @@ import static MapObjects.CellObject.OBJECT.ALIVE;
  *
  */
 public class FindNear extends CommandExplore {
+	final int COUNT_FIND = OBJECT.lenght - 1; //Кроме
 
 	public FindNear() {super(1,2);}
 	
 	@Override
 	protected int explore(AliveCell cell) {
-		return search(cell,OBJECT.values[param(cell,0, OBJECT.lenght - 1)]);
+		return search(cell,OBJECT.values[param(cell,0, COUNT_FIND)]);
 	}
-
+	/**
+	 * Непосредственно ищет то, что нужно
+	 * @param cell кто ищет
+	 * @param type что ищет
+	 * @return 0, если такого объекта нет рядом и 1, если такой объект есть
+	 */
 	protected int search(AliveCell cell, OBJECT type) {
 		for (int i = 0; i < DIRECTION.size()/2+1; i++) {
 			if(i == 0 || i == 4) {
-				Point point = nextPoint(cell,relatively(cell,DIRECTION.toEnum(i)));
+				final var point = nextPoint(cell,relatively(cell,DIRECTION.toEnum(i)));
 				if (test(cell,point,type))
 					return 1;
 			} else {
-				int dir = cell.getAge() % 2 == 0 ? i : -i; //Хоть какой-то фактр рандомности появления потомка
-				Point point = nextPoint(cell,relatively(cell,DIRECTION.toEnum(dir)));
-				if (test(cell,point,type))
+				final var point1 = nextPoint(cell,relatively(cell,DIRECTION.toEnum(i)));
+				if (test(cell,point1,type))
 					return 1;
-				point = nextPoint(cell,relatively(cell,DIRECTION.toEnum(-dir)));
-				if (test(cell,point,type))
+				final var point2 = nextPoint(cell,relatively(cell,DIRECTION.toEnum(-i)));
+				if (test(cell,point2,type))
 					return 1;
 			}
 		}
@@ -51,20 +56,12 @@ public class FindNear extends CommandExplore {
 	 */
 	public static boolean test(AliveCell cell, Point point, OBJECT type) {
 		var wtype = cell.see(point);
-		switch (wtype) {
-			case FRIEND, ENEMY -> {
-				return type == OBJECT.ALIVE || wtype == type;
-			}
-			case POISON,NOT_POISON -> {
-				return type == OBJECT.BANE || wtype == type;
-			}
-			default -> {return wtype == type;}
-		}
+		return wtype == type || wtype.groupLeader == type;
 	}
 
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		return OBJECT.values[param(dna,0, OBJECT.lenght - 1)].toString();
+		return OBJECT.values[param(dna,0, COUNT_FIND)].toString();
 	}
 	
 	@Override

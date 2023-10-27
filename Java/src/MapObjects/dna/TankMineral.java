@@ -5,7 +5,7 @@ import MapObjects.AliveCellProtorype;
 import Utils.MyMessageFormat;
 
 /**
- * Запасти немного минералов в... камни в почках
+ * Запасти немного минералов в виде... камней в почках
  * @author Kerravitarr
  *
  */

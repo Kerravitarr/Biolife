@@ -17,8 +17,7 @@ public class Swap extends CommandDoInterupted {
 	protected final int HP_COST = 2;
 
 	public Swap(boolean isA) {
-		super(isA, 1);
-		setInterrupt(isA, WALL,OWALL);
+		super(isA, WALL,OWALL);
 	}
 
 	@Override
@@ -42,7 +41,6 @@ public class Swap extends CommandDoInterupted {
 	
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		var dir = param(dna, cell, numParam, isAbolute);
-		return isFullMod() ? dir.toString() : dir.toSString();
+		return getDirectionParam(cell,numParam,dna);
 	}
 }

@@ -31,6 +31,7 @@ public class Loop extends CommandDNA {
 			npc += dna.size;
 		return paramFormat.format(val,npc);
 	};
+	@Override
 	public String value(AliveCell cell, DNA dna) {
 		var npc = (dna.getPC() + 2 - param(dna, 0)) % dna.size;
 		if (npc < 0)

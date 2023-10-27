@@ -87,8 +87,10 @@ public abstract class CommandDNA {
 	 * @return true, если это полное действие - то есть действие, которое будет последним
 	 */
 	public boolean execute(AliveCell cell) {
-		/**Указывает какую ветвь выполнять функции*/
-		int next = perform(cell) + 1 + getCountParams();
+		//Указывает какую ветвь выполнять функции
+		final var PCadd = perform(cell);
+		assert getCountBranch() == 0 || PCadd <= getCountBranch() : "У нас доступно только " + getCountBranch() + " ветвей, тогда как мы решили вызвать ветвь " + PCadd + ". Мы - " + this;
+		int next = PCadd + 1 + getCountParams();
 		if(getCountBranch() != 0)
 			next += cell.getDna().get(next,false);
 		cell.getDna().next(next);
@@ -321,7 +323,7 @@ public abstract class CommandDNA {
 	/**
 	 * Стандартный ответ, если ветвей 2 и они показывают больше или меньше параметра
 	 * @param cell клетка
-	 * @param numBranch номер параметра
+	 * @param numBranch номер параметра [0,1]
 	 * @param dna ДНК клетки
 	 * @return текст с подписью, где первая ветвь - равен или больше параметра, а вторая ветвь - меньше параметра
 	 *			V >= П ? 0 : 1;
@@ -334,39 +336,36 @@ public abstract class CommandDNA {
 		};
 	}
 	/**
-	 * Переводит значение в абсолютное направление
-	 * @param value - значение параметра
-	 * @return Текстовое описание направления
+	 * Стандартный ответ, если ветвей 3 и они показывают больше или меньше параметра или просто нет такого объекта
+	 * @param cell клетка
+	 * @param numBranch номер параметра [0,1,2]
+	 * @param dna ДНК клетки
+	 * @return текст с подписью, где первая ветвь - равен или больше параметра, а вторая ветвь - меньше параметра
 	 */
-	protected String absoluteDirection(int value) {
-		if (isFullMod())
-			return DIRECTION.toEnum(value).toSString();
-		else
-			return DIRECTION.toEnum(value).toString();
-	};
+	protected String branchMoreeLeesEmpty(AliveCell cell, int numBranch, DNA dna) {
+		return switch (numBranch) {
+			case 0 -> parametrMoreOrEqual;
+			case 1 -> parametrLess;
+			case 2 -> "∅";
+			default -> getBranch(cell,numBranch,dna);
+		};
+	}
 	/**
-	 * Переводит значение в абсолютное направление
-	 * @param dna - "локальная" копия ДНК, в которой и хранится параметр
-	 * @param value - значение параметра
-	 * @return Текстовое описание направления
+	 * Возвращает строковое значение параметра клетки, интерпретируемого как направление
+	 * Уже учитывает - команда относительная или абсолютная
+	 * @param cell клетка, чьё направление
+	 * @param numParam номер параметра
+	 * @param dna ДНК этой клетки для получения параметра
+	 * @return строка с описанием направления
 	 */
-	protected String absoluteDirection(DNA dna, int value) {
-		return absoluteDirection(param(dna,0, DIRECTION.size()));
-	};
-
+	protected String getDirectionParam(AliveCell cell, int numParam, DNA dna){
+		var dir = param(dna, cell, numParam, isAbolute);
+		return isFullMod() ? dir.toString() : dir.toSString();
+	}
 	/**
-	 * Переводит значение в относительное направление
-	 * @param cell - клетка. Ну направление-же относительное, поэтомуо относительно того, куда глядит клетка
-	 * @param value - значение параметра
-	 * @return Текстовое описание направления
+	 * Сохраняет способ отображения параметров - кратко или полно
+	 * @param isFullMod 
 	 */
-	protected String relativeDirection(AliveCell cell, int value) {
-		if (isFullMod())
-			return cell.direction.next(value).name();
-		else
-			return cell.direction.next(value).toString();
-	};
-
 	public static void setFullMod(boolean isFullMod) {
 		CommandDNA.isFullMod = isFullMod;
 	}

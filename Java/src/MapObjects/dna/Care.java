@@ -20,8 +20,7 @@ import Calculations.Point.DIRECTION;
 public class Care extends CommandDoInterupted {
 	
 	public Care(boolean isA) {
-		super(1);
-		setInterrupt(isA, NOT_POISON, ORGANIC, POISON, WALL, CLEAN);
+		super(isA, NOT_POISON, ORGANIC, POISON, WALL, CLEAN);
 	}
 	
 	@Override

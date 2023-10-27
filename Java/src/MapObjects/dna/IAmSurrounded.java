@@ -16,6 +16,7 @@ public class IAmSurrounded extends CommandExplore {
 		return findEmptyDirection(cell) == null ? 0 : 1;
 	}
 	
+	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
 		return numBranch == 0 ? "◯" : "◉";
 	};

@@ -17,6 +17,6 @@ public class IAmMulticellular extends CommandExplore {
 	
 	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
-		return numBranch == 0 ? "I" : "░";
+		return numBranch == 0 ? "·" : "░";
 	};
 }

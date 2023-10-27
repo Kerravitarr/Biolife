@@ -7,7 +7,7 @@ import Utils.MyMessageFormat;
 import Calculations.Point.DIRECTION;
 
 /**
- * Повернуться в определеённую сторону
+ * Повернуться в сторону к определённому объекту
  * @author Kerravitarr
  *
  */
