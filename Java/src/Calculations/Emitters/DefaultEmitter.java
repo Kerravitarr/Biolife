@@ -35,6 +35,7 @@ public abstract class DefaultEmitter implements Trajectory.HasTrajectory{
 		isLine = j.get("isLine");
 		move = Trajectory.generation(j.getJ("move"),v);
 		position = Point.create(j.getJ("position"));
+		updateMatrix();
 	}
 
 	/**Создаёт изулучатель
@@ -48,6 +49,7 @@ public abstract class DefaultEmitter implements Trajectory.HasTrajectory{
 		power = p;
 		this.name = n;
 		this.isLine = isLine;
+		updateMatrix();
 	}
 
 	@Override

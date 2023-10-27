@@ -55,7 +55,9 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 	
 	//Отдельные переменные только для отрисовки!
 	/**Номер кадра для рисования*/
-	protected int frame = Integer.MAX_VALUE / 2;
+	protected static int frame = Integer.MAX_VALUE / 2;
+	/**Время последнего обновления счётчика кадров*/
+	private static long lastUpdate = 0;
 	/**Флаг выбора излучателя для "мигания"*/
 	private boolean isSelected = false;
 	/**Флаг, показывающий, в текущем кадре звезда должна выглядеть как выбранная или нет*/
@@ -74,6 +76,7 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 		set(move);
 		shadow = s;
 		this.name = name;
+		updateMatrix();
 	}
 	/**Создание универсальной формы без снижения мощности потока
 	 * @param move форма движения
@@ -88,6 +91,7 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 		shadow = StreamAttenuation.generation(j.get("shadow"),v);
 		name = j.get("name");
 		move = Trajectory.generation(j.getJ("move"),v);
+		updateMatrix();
 	}
 
 	@Override
@@ -163,7 +167,7 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 		final var j = new JSON();
 		j.add("position",position.toJSON());
 		j.add("name",name);
-		j.add("shadow",shadow.toJSON());
+		j.add("shadow",StreamAttenuation.serialization(shadow));
 		j.add("move", Trajectory.serialization(move));
 		return j;
 	}
@@ -205,7 +209,11 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 	 * @param transform преобразователь размеров мировых в размеры экранные
 	 */
 	public void paint(Graphics2D g, WorldView.Transforms transform){
-		frame++;
+		final var cms = System.currentTimeMillis();
+		if(cms > lastUpdate){
+			lastUpdate = cms;
+			frame++;
+		}
 		//Мигалка выбора
 		if(isSelected){
 			final var mc = System.currentTimeMillis();

@@ -140,7 +140,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		List<JSON> cells = json.getAJ("Cells");
 		for (JSON cell : cells) {
 			try {
-				var t = LV_STATUS.values[cell.getI("alive")];
+				final var t = version < 8 ? LV_STATUS.values[cell.getI("alive")] : LV_STATUS.valueOf(cell.get("alive"));
 				switch (t) {
 					case LV_ALIVE -> {
 						//if(loadOneCell(cell,31,31))

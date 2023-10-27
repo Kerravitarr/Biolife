@@ -267,7 +267,7 @@ public abstract class StreamAttenuation {
 	/**Превращает текущий объект в объект его описания
 	 * @return объект описания. По нему можно гарантированно восстановить исходник
 	 */
-	public JSON toJSON(){
+	protected JSON toJSON(){
 		final var j = new JSON();
 		j.add("minPower", minPower);
 		j.add("maxPower", maxPower);
