@@ -71,8 +71,12 @@ public class TrajectoryPolyLine extends Trajectory{
 			this.from = from;
 			var d = from.distance(to);
 			lenght = d.getHypotenuse();
-			dx = d.x / lenght;
-			dy = d.y / lenght;
+			if(lenght != 0){
+				dx = d.x / lenght;
+				dy = d.y / lenght;
+			} else {
+				dx = dy = 0;
+			}
 		}
 
 		private Interval(JSON j) {
