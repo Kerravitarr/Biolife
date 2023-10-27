@@ -6,10 +6,14 @@ package GUI;
 
 import Calculations.Configurations;
 import static Calculations.Configurations.WORLD_TYPE.LINE_H;
+import Calculations.Emitters.MineralAbstract;
+import Calculations.Emitters.SunAbstract;
 import Calculations.Point;
+import Calculations.Trajectories.Trajectory;
 import MapObjects.CellObject;
 import Utils.ColorRec;
 import Utils.FPScounter;
+import Utils.Variant;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -366,27 +370,31 @@ public class WorldView extends javax.swing.JPanel {
 	private void paintField(Graphics2D g) {
 		//Рисуем игровое поле
 		switch (Configurations.confoguration.world_type) {
-			case LINE_H,LINE_V, RECTANGLE,FIELD_R ->{
+			case LINE_H,LINE_V, RECTANGLE ->{
 				//Вода
 				colors[1].paint(g);
+			}
+			case FIELD_R -> {
+				//Вода
+				colors[1].paint(g);
+				//Замаза
+				colors[0].paint(g);
+				colors[2].paint(g);
 			}
 			default -> 	throw new AssertionError();
 		}
 		final var oldC = g.getComposite();
 		g.setComposite(AlphaComposite.getInstance( AlphaComposite.SRC_OVER, 0.6f ));
-		
-		//А теперь, поверх воды, рисуем излучатели
-		//Utils.DeprecatedMetods.paintEmitters(g,transforms);
-		//А теперь, поверх воды, рисуем минеральки
-		Configurations.minerals.paint(g,getTransform());
-		//И сонышки
-		Configurations.suns.paint(g,getTransform());
-		//И и шлефанём всё это потоками
-		Configurations.streams.forEach(s -> s.paint(g,getTransform()));
-			//А теперь, ещё выше, рисуем все траектории
-			//Configurations.suns.forEach(s -> s.getTrajectory().paint(g,getTransform()));
-			//Configurations.minerals.forEach(s -> s.getTrajectory().paint(g,getTransform()));
-			//Configurations.streams.forEach(s -> s.getTrajectory().paint(g,getTransform()));
+		if(select.isNull()){
+			//А теперь, поверх воды, рисуем минеральки
+			Configurations.minerals.paint(g,getTransform());
+			//И сонышки
+			Configurations.suns.paint(g,getTransform());
+			//И и шлефанём всё это потоками
+			Configurations.streams.forEach(s -> s.paint(g,getTransform()));
+		} else {
+			
+		}
 
 		g.setComposite(oldC);
 		//Рисуем всё остальное
@@ -407,11 +415,7 @@ public class WorldView extends javax.swing.JPanel {
 				colors[0].paint(g);
 				colors[2].paint(g);
 			}
-			case FIELD_R-> {
-				//Замаза
-				colors[0].paint(g);
-				colors[2].paint(g);
-			}
+			case FIELD_R-> {}
 			default -> 	throw new AssertionError();
 		}
 		//Вспомогательное построение
@@ -619,4 +623,6 @@ public class WorldView extends javax.swing.JPanel {
 	private final ColorRec [] colors = new ColorRec[3];
 	/**Преобразователь из одних координат в другие*/
 	private final Transforms transforms = new Transforms();
+	/**Тот объект на экране, что мы должны вделить при редактировании*/
+	private final Variant select = new Variant(SunAbstract.class, MineralAbstract.class,Trajectory.class);
 }

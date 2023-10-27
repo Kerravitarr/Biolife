@@ -586,6 +586,7 @@ public abstract class ClassBuilder <T>{
 		 * 
 		 */
 		public CT generation(JSON json, long version){
+			assert ((String)json.get("_serializerName")) != null : "Не нашли ключ _serializerName в " + json;
 			return OBJECTS_BY_NAME.get((String)json.get("_serializerName")).generation(json, version);
 		}
 		/**Укладывает текущий объект в объект сереализации для дальнейшего сохранения
