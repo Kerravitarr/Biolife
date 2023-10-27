@@ -422,8 +422,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			}
 			case FIELD_R -> {
 				buildMap(new Configurations(type, width, height), null);
-				//В мире будет два вала - один идёт сверху вниз, другой справа-налево и обратно
-				//В этих потоках будет спрятано солнышко
+				//В этом мире буйства воды будет множество водоворотов. Какие-то с минералами, какие-то с солнцами. Одни будут двигаться очень медленно, другие очень быстро.
+				//Какие-то будут засасываться. Какие-то будут выталкиваться. Выталкивающие вкуснее!
 				final var ht = new TrajectoryPolyLine(100,false,Point.create(width/2, height/2),Point.create(1, height/2),Point.create(width-1, height/2));
 				streams.add(new StreamHorizontal( ht.clone(),width/10,height, -3,"Вал"));
 				suns.add(new SunRectangle(20,ht.clone(),width/10,height, false,"Длинное"));
