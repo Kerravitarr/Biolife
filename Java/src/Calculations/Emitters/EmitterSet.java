@@ -110,8 +110,9 @@ public class EmitterSet<T extends DefaultEmitter> {
 	/**Рисует набор на экране
 	 * @param g холст, на котором надо начертить солнышко
 	 * @param transform преобразователь размеров мировых в размеры экранные
+	 * @param select объект, который надо выделить. Будет начерчено всё, кроме него
 	 */
-	public void paint(java.awt.Graphics2D g, GUI.WorldView.Transforms transform){	
-		_emitters.forEach(s -> s.paint(g,transform));
+	public void paint(java.awt.Graphics2D g, GUI.WorldView.Transforms transform, T select){	
+		_emitters.forEach(s -> {if(s != select) s.paint(g,transform);});
 	}
 }

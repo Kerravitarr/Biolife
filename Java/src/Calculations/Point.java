@@ -432,10 +432,6 @@ public final class Point{
 			return new Point(x, y,valid(x,y));
 	}
 
-	public static Point create(Point point) {
-		return point;
-	}
-
 	public static Point create(JSON j) {
 		return create(j.get("x"),j.get("y"));
 	}

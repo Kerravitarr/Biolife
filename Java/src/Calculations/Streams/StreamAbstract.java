@@ -13,7 +13,6 @@ import MapObjects.CellObject;
 import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -51,21 +50,6 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 		 */
 		public Action(Point.DIRECTION d, double dist){_d = d; _dist=dist;}
 	}
-	
-	
-	//Отдельные переменные только для отрисовки!
-	/**Номер кадра для рисования*/
-	protected static int frame = Integer.MAX_VALUE / 2;
-	/**Время последнего обновления счётчика кадров*/
-	private static long lastUpdate = 0;
-	/**Флаг выбора излучателя для "мигания"*/
-	private boolean isSelected = false;
-	/**Флаг, показывающий, в текущем кадре звезда должна выглядеть как выбранная или нет*/
-	private static boolean isSelectedFrame = false;
-	/**Счётчик времени для подсвечивания и высвечивания объекта*/
-	private static long nextSelected = 0;
-	/**Сколько мс должно пройти чтобы объект изменил параметр выбора*/
-	private static final long SELECT_PERIOD = 500;
 	
 	/**Создание гейзера
 	 * @param move форма движения
@@ -142,15 +126,6 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 		}
 		isNeedRecalculateEnergy = true;
 	}
-	
-	/**Возвращает значение параметра отображения звездны - выделяется она на экране или нет
-	 * @return Если тут true, то излучатель будет подмигивать прозрачностью
-	 */
-	public boolean getSelect(){return isSelected;}
-	/**Сохраняет значение параметра отображения звездны - выделяется она на экране или нет
-	 * @param isS если true, то излучатель будет подмигивать прозрачностью
-	 */
-	public void setSelect(boolean isS){isSelected = isS;}
 	@Override
 	public Trajectory getTrajectory(){return move;}
 	@Override
@@ -207,21 +182,9 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 	/**Рисует объект на экране
 	 * @param g холст, на котором надо начертить солнышко
 	 * @param transform преобразователь размеров мировых в размеры экранные
+	 * @param frame условное число, начинающееся с INT_MAX/2, позволяющее регулировать скорость анимации
 	 */
-	public void paint(Graphics2D g, WorldView.Transforms transform){
-		final var cms = System.currentTimeMillis();
-		if(cms > lastUpdate){
-			lastUpdate = cms;
-			frame++;
-		}
-		//Мигалка выбора
-		if(isSelected){
-			final var mc = System.currentTimeMillis();
-			if(nextSelected < mc){
-				nextSelected = mc + SELECT_PERIOD;
-				isSelectedFrame = !isSelectedFrame;
-			}
-		}
+	public void paint(Graphics2D g, WorldView.Transforms transform, int frame){
 		//Мы нарусем не один объек, а сразу все 4!
 		//i = 0 Главный
 		//i = 1 Его-же справа (слева)
@@ -248,8 +211,7 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 				case 2,3 -> position.getY() + (position.getY() > Configurations.confoguration.MAP_CELLS.height/2 ?  -Configurations.confoguration.MAP_CELLS.height : Configurations.confoguration.MAP_CELLS.height);
 				default -> throw new AssertionError();
 			};
-			if(!isSelected || isSelectedFrame)
-				paint(g,transform, posX, posY, frame);
+			paint(g,transform, posX, posY, frame);
 		}
 	}
 	/**
