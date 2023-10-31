@@ -9,6 +9,7 @@ import static Calculations.Configurations.WORLD_TYPE.LINE_H;
 import Calculations.Emitters.MineralAbstract;
 import Calculations.Emitters.SunAbstract;
 import Calculations.Point;
+import Calculations.Streams.StreamAbstract;
 import Calculations.Trajectories.Trajectory;
 import MapObjects.CellObject;
 import Utils.ColorRec;
@@ -49,13 +50,13 @@ public class WorldView extends javax.swing.JPanel {
 		* @param x координата в масштабах клеток
 		* @return x координата в масштабе окна, пк
 		*/
-		public int toScrinX(int x) {return (int) Math.round(toDScrinX(x));}
+		public int toScrinX(double x) {return (int) Math.round(toDScrinX(x));}
 		/**
 		* Переводит координаты мира в координаты экрана
 		* @param x координата в масштабах клеток
 		* @return x координата в масштабе окна, пк
 		*/
-		public double toDScrinX(int x) {return x*scalePxPerCell + pixelXDel;}
+		public double toDScrinX(double x) {return x*scalePxPerCell + pixelXDel;}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param point объект с координатами, из которого выбирается только Х
@@ -67,13 +68,13 @@ public class WorldView extends javax.swing.JPanel {
 		* @param y координата в масштабах клетки
 		* @return y координата в масштабе окна, пк
 		*/
-		public int toScrinY(int y) {return (int) Math.round(toDScrinY(y));}
+		public int toScrinY(double y) {return (int) Math.round(toDScrinY(y));}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param y координата в масштабах клетки
 		* @return y координата в масштабе окна, пк
 		*/
-		public double toDScrinY(int y) {return y*scalePxPerCell + pixelYDel;}
+		public double toDScrinY(double y) {return y*scalePxPerCell + pixelYDel;}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param point объект с координатами, из которого выбирается только Y
@@ -91,12 +92,12 @@ public class WorldView extends javax.swing.JPanel {
 		* @param r размер объекта в клетках мира
 		* @return радиус объекта в пикселях
 		*/
-		public int toScrin(int r) {return (int) Math.round(toDScrin(r));}
+		public int toScrin(double r) {return (int) Math.round(toDScrin(r));}
 	   /**Возвращает размеры мира в пикселях
 		* @param r размер объекта в клетках мира
 		* @return радиус объекта в пикселях
 		*/
-		public double toDScrin(int r) {return r * scalePxPerCell;}
+		public double toDScrin(double r) {return r * scalePxPerCell;}
 	   /**
 		* Переводит координаты экрана в координаты мира
 		* @param x координата на экране
@@ -279,6 +280,16 @@ public class WorldView extends javax.swing.JPanel {
 		final var legend = v.get(Legend.class);
 		final var settings = v.get(Settings.class);
 		
+		final var cms = System.currentTimeMillis();
+		if(cms > lastUpdate){
+			lastUpdate = cms + 1000/25; //25 кадров в секунду
+			frame++;
+			if(cms > lastSelected){
+				lastSelected = cms + SELECT_PERIOD;
+				isSelected = !isSelected;
+			}
+		}
+		
 		paintField(g);
 		
 		if(!settings.isEdit()){
@@ -385,15 +396,22 @@ public class WorldView extends javax.swing.JPanel {
 		}
 		final var oldC = g.getComposite();
 		g.setComposite(AlphaComposite.getInstance( AlphaComposite.SRC_OVER, 0.6f ));
-		if(select.isNull()){
-			//А теперь, поверх воды, рисуем минеральки
-			Configurations.minerals.paint(g,getTransform());
-			//И сонышки
-			Configurations.suns.paint(g,getTransform());
-			//И и шлефанём всё это потоками
-			Configurations.streams.forEach(s -> s.paint(g,getTransform()));
-		} else {
-			
+		
+		final var mineralSelect = (select.isNull() || !isSelected || !select.isContains(MineralAbstract.class)) ? null : select.get(MineralAbstract.class);
+		final var sunSelect = (select.isNull() || !isSelected || !select.isContains(SunAbstract.class)) ? null : select.get(SunAbstract.class);
+		final var streamSelect = (select.isNull() || !isSelected || !select.isContains(StreamAbstract.class)) ? null : select.get(StreamAbstract.class);
+		//А теперь, поверх воды, рисуем минеральки
+		Configurations.minerals.paint(g,getTransform(), mineralSelect);
+		//И сонышки
+		Configurations.suns.paint(g,getTransform(), sunSelect);
+		//И и шлефанём всё это потоками
+		Configurations.streams.forEach(s -> {if(s != streamSelect) s.paint(g, getTransform(), frame);});
+		//И, если нужно, нанесём траекторию
+		if (select.isContains(Trajectory.class)) {
+			Configurations.minerals.paint(g,getTransform(), mineralSelect);
+			Configurations.suns.paint(g,getTransform(), sunSelect);
+			Configurations.streams.forEach(s -> s.paint(g, getTransform(), frame));
+			select.get(Trajectory.class).paint(g, getTransform());
 		}
 
 		g.setComposite(oldC);
@@ -606,6 +624,31 @@ public class WorldView extends javax.swing.JPanel {
 	 * @return если 1, то мир без скрола. Если 2, то мир примерно в 2 раза больше, чем может увидеть пользователь
 	 */
 	public int getZoom() {return zoom;}
+	/**@return теущйий выделенный объект или null*/
+	public Object getSelect() {
+		if(select.isNull()) return null;
+		else if(select.isContains(SunAbstract.class)) return select.get(SunAbstract.class);
+		else if(select.isContains(MineralAbstract.class)) return select.get(MineralAbstract.class);
+		else if(select.isContains(Trajectory.class)) return select.get(Trajectory.class);
+		else if(select.isContains(StreamAbstract.class)) return select.get(StreamAbstract.class);
+		else throw new UnsupportedOperationException("Не ожидали того, что получили");
+	}
+	/**@param select Сохраняет выделение на этом потоке*/
+	public void setSelect(StreamAbstract select){
+		this.select.set(select);
+	}
+	/**@param select Сохраняет выделение на этом объекте*/
+	public void setSelect(SunAbstract select){
+		this.select.set(select);
+	}
+	/**@param select Сохраняет выделение на этом объекте*/
+	public void setSelect(MineralAbstract select){
+		this.select.set(select);
+	}
+	/**@param select Сохраняет выделение на этом объекте*/
+	public void setSelect(Trajectory select){
+		this.select.set(select);
+	}
 	
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -624,5 +667,15 @@ public class WorldView extends javax.swing.JPanel {
 	/**Преобразователь из одних координат в другие*/
 	private final Transforms transforms = new Transforms();
 	/**Тот объект на экране, что мы должны вделить при редактировании*/
-	private final Variant select = new Variant(SunAbstract.class, MineralAbstract.class,Trajectory.class);
+	private final Variant select = new Variant(SunAbstract.class, MineralAbstract.class,Trajectory.class, StreamAbstract.class);
+	/**Номер кадра для рисования*/
+	protected static int frame = Integer.MAX_VALUE / 2;
+	/**Время последнего обновления счётчика кадров*/
+	private static long lastUpdate = 0;
+	/**Время последнего обновления для выделения определённого объекта*/
+	private static long lastSelected = 0;
+	/**Выделяем мы сейчас объект или нет?*/
+	private static boolean isSelected = false;
+	/**Как часто надо мигать, мс*/
+	private static final long SELECT_PERIOD = 1000;
 }

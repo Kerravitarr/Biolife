@@ -33,20 +33,30 @@ public class Variant {
 		else _value = object;
 	}
 	/**
-	 * Проверяет, храниться ли в текущий момент тут значение переданного класса
+	 * Проверяет, может ли такое значение тут храниться
 	 * @param <T> тип значения
 	 * @param cl класс описывающий объект, или null, для проверки на null
-	 * @return true, если тут искомый класс
+	 * @return true, если тут можно хранить такой тип
 	 */
 	public <T> boolean isValid(Class<T> cl){
 		if(cl == null) return _value == null;
-		else return Arrays.stream(_cls).filter(c -> c.equals(cl)).findFirst().orElse(null) != null;
+		else return Arrays.stream(_cls).filter(c -> cl.isAssignableFrom(c)).findFirst().orElse(null) != null;
+	}
+	/**
+	 * Проверяет, теущий содержащийся объект соответствует переданному типу
+	 * @param <T> тип, который мы ожидаем получить
+	 * @param cl класс описывающий объект, или null, для проверки на null
+	 * @return true, если тут искомый класс
+	 */
+	public <T> boolean isContains(Class<T> cl){
+		if(cl == null) return _value == null;
+		else return _value != null && cl.isAssignableFrom(_value.getClass());
 	}
 	/**
 	 * Проверяет, на пустоту храняющееся значение
 	 * @return true, если тут искомый класс
 	 */
-	public boolean isNull(){return isValid(null);}
+	public boolean isNull(){return _value == null;}
 	/**
 	 * Возврвщает текущее значение
 	 * @param <T> тип, который нужен
@@ -55,7 +65,7 @@ public class Variant {
 	 * @throws IllegalArgumentException если данный вариантный тип не может хранить такое значение
 	 */
 	public <T> T get(Class<T> cl) throws IllegalArgumentException{
-		if(isValid(cl)) return (T) _value;
+		if(isContains(cl)) return (T) _value;
 		else throw new IllegalArgumentException("Недопустимо получить " + cl + " среди " + this);
 	}
 	@Override

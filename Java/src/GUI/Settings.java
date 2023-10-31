@@ -266,13 +266,14 @@ public class Settings extends javax.swing.JPanel {
 	private void rebuildBuildSuns(){
 		suns.removeAll();
 		suns2.removeAll();
+		final var wv = Configurations.getViewer().get(WorldView.class);
 		
 		for (int i = 0; i < Configurations.suns.size(); i++) {
 			if(i > 0)
 				suns2.add(new JPopupMenu.Separator());
 			final var sun = Configurations.suns.get(i);
 			suns2.add(new SettingsString(Settings.class,"object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
-			//suns2.add(addBlink(sun.getSelect(), e->sun.setSelect(e)));
+			suns2.add(addBlink(sun == wv.getSelect(), e->wv.setSelect(e ? sun : null)));
 			suns2.add(addNew(sun, Trajectory.getChildrens()));
 			suns2.add(addRemove(Configurations.suns,sun));
 		}
@@ -317,13 +318,14 @@ public class Settings extends javax.swing.JPanel {
 	private void rebuildBuildMinerals(){
 		minerals.removeAll();
 		minerals2.removeAll();
+		final var wv = Configurations.getViewer().get(WorldView.class);
 		
 		for (int i = 0; i < Configurations.minerals.size(); i++) {
 			if(i > 0)
 				minerals2.add(new JPopupMenu.Separator());
 			final var mineral = Configurations.minerals.get(i);
 			minerals2.add(new SettingsString(Settings.class,"object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
-			//minerals2.add(addBlink(mineral.getSelect(), e->mineral.setSelect(e)));
+			minerals2.add(addBlink(mineral == wv.getSelect(), e->wv.setSelect(e ? mineral : null)));
 			minerals2.add(addNew(mineral, Trajectory.getChildrens()));
 			minerals2.add(addRemove(Configurations.minerals,mineral));
 		}
@@ -360,13 +362,14 @@ public class Settings extends javax.swing.JPanel {
 	private void rebuildBuildStreams(){
 		streams.removeAll();
 		streams2.removeAll();
+		final var wv = Configurations.getViewer().get(WorldView.class);
 		
 		for (int i = 0; i < Configurations.streams.size(); i++) {
 			if(i > 0)
 				streams2.add(new JPopupMenu.Separator());
 			final var stream = Configurations.streams.get(i);
 			streams2.add(new SettingsString(Settings.class,"object.editname", "Залеж", stream.toString(), e -> stream.setName(e)));
-			streams2.add(addBlink(stream.getSelect(), e->stream.setSelect(e)));
+			streams2.add(addBlink(stream == wv.getSelect(),e -> wv.setSelect(e ? stream : null)));
 			streams2.add(addNew(stream, Trajectory.getChildrens()));
 			streams2.add(addRemove(Configurations.streams,stream));
 		}
