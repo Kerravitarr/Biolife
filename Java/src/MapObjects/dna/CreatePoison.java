@@ -5,6 +5,7 @@ import MapObjects.AliveCellProtorype;
 import MapObjects.Poison;
 import MapObjects.Poison.TYPE;
 import Calculations.Point.DIRECTION;
+import MapObjects.CellObject;
 
 /**
  * Создаёт капельку яда
@@ -34,6 +35,8 @@ public class CreatePoison extends CommandDo {
 		var energy = cell.specMaxVal(Math.min(Poison.MAX_TOXIC, cell.getPosionPower()), AliveCellProtorype.Specialization.TYPE.FERMENTATION);
 		cell.addHealth(-HP_FOR_POISON); 
     	Poison.createPoison(nextPoint(cell,direction), cell.getPosionType(), cell.getStepCount(), energy, stream);
+		if(cell.aliveStatus(CellObject.LV_STATUS.GHOST))
+			throw new CellObject.CellObjectRemoveException(cell); //Если мы плюнули себе на связь и она нас убила, то мы генерируем исключение тут
 	}
 
 	@Override

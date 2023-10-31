@@ -88,11 +88,12 @@ public abstract class CellObject {
 		}
 	};
 	
-	public class CellObjectRemoveException extends RuntimeException {
-		public CellObjectRemoveException(){super();}
+	public static class CellObjectRemoveException extends RuntimeException {
+		private final CellObject _sourse;
+		public CellObjectRemoveException(CellObject sourse){super();_sourse = sourse;}
 		@Override
 		public String getMessage(){
-			return "Удалили клетку " + CellObject.this;
+			return "Удалили клетку " + _sourse;
 		}
 	}
 	
@@ -390,7 +391,7 @@ public abstract class CellObject {
 					Configurations.world.move(nObj, point);	//Я точно не знаю кто тут теперь... Но пускай он ходит :)
 					if(nObj != this) { //И это не мы, значит мы - мертвы
 						alive = LV_STATUS.GHOST;
-						throw new CellObjectRemoveException();
+						throw new CellObjectRemoveException(this);
 					} else {
 						return true;
 					}
@@ -483,7 +484,7 @@ public abstract class CellObject {
 	public void destroy() throws CellObjectRemoveException{
 		Configurations.world.clean(this);
 		alive = LV_STATUS.GHOST;
-		throw new CellObjectRemoveException();
+		throw new CellObjectRemoveException(this);
 	}
 	/**
 	 * Убирает бота с карты и проводит все необходимые процедуры при этом

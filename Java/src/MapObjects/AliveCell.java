@@ -174,9 +174,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
         //Работа ДНК
         for (int cyc = 0; (cyc < 15); cyc++) {
 			var cmd = getDna().get();
-            if (cmd.execute(this)) {
-                break;
-            }
+            if (cmd.execute(this))  break;
         }
         //Трата энергии на ход
         if (isSleep) {
