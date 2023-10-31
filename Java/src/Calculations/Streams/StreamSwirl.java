@@ -127,29 +127,26 @@ public class StreamSwirl extends StreamAbstract {
 	
 	@Override
 	public void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY, int frame) {
-		final var x0 = transform.toScrinX(posX);
-		final var y0 = transform.toScrinY(posY);
+		final var x0 = transform.toDScrinX(posX);
+		final var y0 = transform.toDScrinY(posY);
 		
-		final var r0 = transform.toScrin((int)(r));
+		final var r0 = transform.toDScrin((int)(r*2)) / 2;
 		if(r0 == 0) return;
-		final var isUp = shadow.maxPower > 0;
 		g.setPaint(AllColors.STREAM);
 		//g.fill(new Ellipse2D.Double(x0, y0,w0,h0));
 		
 		//А теперь приступим к порнографии - создании подкругов для движения!
 		final var whc = Math.min(50,r0); //Каждые сколько пк будет круг
-		final var countCurc = r0 / whc; //Сколкьо будет кругов
+		final var countCurc = (int) (r0 / whc); //Сколкьо будет кругов
 		for (int curcle = 0; curcle < countCurc; curcle++) {
-			var F = shadow.power(10000,100,(curcle + 0.5d) / countCurc);
-			final var step = isUp ? (F - (frame % F)) : (frame % F);	//"номер" кадра для колонки
-			final var angle_step = Math.PI * 2 * step / Math.abs(F);
+			var F = shadow.frame(frame,(curcle + 0.5d) / countCurc);
 			final var cr = (curcle + 1) * whc;
-			final var countDel = whc / (Math.PI * cr);//На сколько частей разделим круг, чтобы длина каждой части была whc
-			for (double angle = 0; angle < Math.PI * 2; angle+=countDel * 2) {
-				final var a1 = angle_step + angle;
-				final var a2 = a1 + countDel;
-				final int x1 = (int) (x0 + cr * Math.cos(a1));
-				final int y1 = (int) (y0 + cr * Math.sin(a1));
+			final var angleLenght = whc / (Math.PI * cr);//Какая будет длина у частичек круга
+			final var al2 = angleLenght * 2;
+			for (double angle = al2 * F; angle < Math.PI * 2; angle+=al2) {
+				final var a2 = angle + angleLenght;
+				final int x1 = (int) (x0 + cr * Math.cos(angle));
+				final int y1 = (int) (y0 + cr * Math.sin(angle));
 				final int x2 = (int) (x0 + cr * Math.cos(a2));
 				final int y2 = (int) (y0 + cr * Math.sin(a2));
 				g.drawLine(x1, y1, x2, y2);

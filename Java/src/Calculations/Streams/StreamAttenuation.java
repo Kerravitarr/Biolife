@@ -240,15 +240,27 @@ public abstract class StreamAttenuation {
 		assert 0 <= dist && dist <= 1 : "Проблемка - вышли за границу диапазона: " + dist;
 		return (int) Math.abs(maxPower - dp * transform(dist));
 	}
-	/**Возвращает реальную мощность в указанных пределах
-	 * @param min минимальное значение энергии потока. При dist = 1
-	 * @param max максимальное значение энергии потока. При dist = 0
+	
+	/**Возвращает текущий прогресс кадра в виде [0,1]
+	 * Автоматически разварачивает направление движения, если мощность положительная, то есть если min и max > 0
+	 * @param frame текущий номер кадра
 	 * @param dist расстояние от центра в процетнах [0,1]
-	 * @return мощность потока [min,max]
+	 * @return итоговый прогресс кадра
 	 */
-	public int power(int min, int max, double dist){
+	public double frame(int frame, double dist){
+		return frame(frame, maxPower > 0, dist);
+	}
+	/**Возвращает текущий прогресс кадра в виде [0,1]
+	 * @param frame текущий номер кадра
+	 * @param isRevers можно передать true, тогда резульатат будет в формате [1,0]
+	 * @param dist расстояние от центра в процетнах [0,1]
+	 * @return итоговый прогресс кадра
+	 */
+	public double frame(int frame, boolean isRevers, double dist){
 		assert 0 <= dist && dist <= 1 : "Проблемка - вышли за границу диапазона: " + dist;
-		return (int) (max - (max - min) * transform(dist));
+		final var F = (int) (100 - (100 - 10) * transform(dist));
+		final double step = (isRevers ? (F - (frame % F)) : (frame % F));
+		return step / F;
 	}
 	/**Функция для ребёнка.
 	 * Должна преобразовать расстояние в процентах в силу потока

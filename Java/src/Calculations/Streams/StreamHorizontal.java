@@ -144,10 +144,9 @@ public class StreamHorizontal extends StreamAbstract {
 			final var yl0 = y0 + row * hRow;
 			final var yr0 = y0 + h - (row + 1) * hRow;
 			
-			var F = shadow.power(1000,10,(row + 0.5d) / countRow);
-			final var step = isLeft ? (F - (frame % F)) : (frame % F);	//"номер" кадра для колонки
+			var F = shadow.frame(frame,isLeft,(row + 0.5d) / countRow);
 			final var delta = w / countColumn; //Частота полосок в колонке
-			final var delta0 = x0 + delta * step / Math.abs(F);
+			final var delta0 = x0 + delta * F;
 			for (int column = 0; column < countColumn; column++) {
 				final var xc = delta0 + delta * column;
 				g.fill(new Rectangle2D.Double(xc, yl0, 2, hRow));

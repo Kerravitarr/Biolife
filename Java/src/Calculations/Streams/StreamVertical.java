@@ -136,7 +136,6 @@ public class StreamVertical extends StreamAbstract {
 		
 		final var w = transform.toScrin(width);
 		final var h = transform.toScrin(height);
-		final var isUp = shadow.maxPower > 0;
 		g.setPaint(AllColors.STREAM);
 		//g.fill(new Rectangle2D.Double(x0, y0, w, h));
 		
@@ -147,10 +146,9 @@ public class StreamVertical extends StreamAbstract {
 			final var xl0 = x0 + column * wRow;
 			final var xr0 = x0 + w - (column + 1) * wRow;
 			
-			var F = shadow.power(1000,10,(column + 0.5d) / countColumn);
-			final var step = isUp ? (F - (frame % F)) : (frame % F);	//"номер" кадра для колонки
+			var F = shadow.frame(frame,(column + 0.5d) / countColumn);
 			final var delta = h / countRow; //Частота полосок в колонке
-			final var delta0 = y0 + delta * step / Math.abs(F);
+			final var delta0 = y0 + delta * F;
 			for (int row = 0; row < countRow; row++) {
 				final var yc = delta0 + delta * row;
 				g.fill(new Rectangle2D.Double(xl0, yc, wRow, 2));

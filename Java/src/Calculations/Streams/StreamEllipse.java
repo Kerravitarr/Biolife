@@ -13,6 +13,7 @@ import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
 import java.awt.geom.Ellipse2D;
+import java.awt.geom.Rectangle2D;
 
 /**Круглый поток*/
 public class StreamEllipse extends StreamAbstract {
@@ -196,18 +197,16 @@ public class StreamEllipse extends StreamAbstract {
 		j.add("b2", b2);
 		return j;
 	}
-	
-	
+
 	/**Специальный счётчик кадров, нужен для отрисовки "движения" воды*/
 	@Override
 	public void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY, int frame) {
-		final var x0 = transform.toScrinX((int)(posX - a));
-		final var y0 = transform.toScrinY((int)(posY - b));
+		final var x0 = transform.toDScrinX(posX - a);
+		final var y0 = transform.toDScrinY(posY - b);
 		
 		final var w0 = transform.toScrin(a2);
 		final var h0 = transform.toScrin(b2);	
 		if(w0 == 0 || h0 == 0) return;
-		final var isUp = shadow.maxPower > 0;
 		g.setPaint(AllColors.STREAM);
 		//g.fill(new Ellipse2D.Double(x0, y0,w0,h0));
 		
@@ -217,11 +216,9 @@ public class StreamEllipse extends StreamAbstract {
 		final var wx = w0 / (countCurc * 2); //Ширина круга
 		final var hy = h0 / (countCurc * 2); //Высота круга
 		for (int curcle = 0; curcle < countCurc; curcle++) {
-			var F = shadow.power(1000,10,(curcle + 0.5d) / countCurc);
-			final var step = isUp ? (F - (frame % F)) : (frame % F);	//"номер" кадра для колонки
-			
-			final var dx = curcle * wx + wx * step / Math.abs(F);
-			final var dy = curcle * hy + hy * step / Math.abs(F);
+			var F = curcle + shadow.frame(frame, (curcle + 0.5d) / countCurc);			
+			final var dx = wx * F;
+			final var dy = hy * F;
 			g.draw(new Ellipse2D.Double(x0 + dx, y0 + dy, w0 - dx * 2, h0 - dy * 2));
 		}
 		g.draw(new Ellipse2D.Double(x0, y0, w0, h0));
