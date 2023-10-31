@@ -257,6 +257,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
 			DIRTY_WATER = configWorld.get("DIRTY_WATER");
 			VISCOSITY = configWorld.get("VISCOSITY");
+			SAVE_PERIOD = configWorld.getL("SAVE_PERIOD");
+			COUNT_SAVE = configWorld.get("COUNT_SAVE");
 			for(final var j : configWorld.getAJ("SUNS")){
 				try {
 					suns.add(SunAbstract.generation(j, version));
@@ -296,6 +298,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		configWorld.add("VISCOSITY", VISCOSITY);
 		configWorld.add("TIK_TO_EXIT", TIK_TO_EXIT);
 		configWorld.add("DIRTY_WATER", DIRTY_WATER);
+		configWorld.add("SAVE_PERIOD", SAVE_PERIOD);
+		configWorld.add("COUNT_SAVE", COUNT_SAVE);
 		configWorld.add("WORLD_TYPE", world_type);
 		configWorld.add("SUNS", suns.serialization(s -> SunAbstract.serialization(s)));
 		configWorld.add("MINERALS", minerals.serialization(s -> MineralAbstract.serialization(s)));
@@ -425,8 +429,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				//В этом мире буйства воды будет множество водоворотов. Какие-то с минералами, какие-то с солнцами. Одни будут двигаться очень медленно, другие очень быстро.
 				//Какие-то будут засасываться. Какие-то будут выталкиваться. Выталкивающие вкуснее!
 				final var ht = new TrajectoryPolyLine(100,false,Point.create(width/2, height/2),Point.create(1, height/2),Point.create(width-1, height/2));
-				streams.add(new StreamHorizontal( ht.clone(),width/10,height, -3,"Вал"));
-				suns.add(new SunRectangle(20,ht.clone(),width/10,height, false,"Длинное"));
+				streams.add(new StreamHorizontal( ht.clone(),width/5,height, -3,"Вал"));
+				suns.add(new SunRectangle(20,ht.clone(),width/5,height, false,"Длинное"));
 				
 				//Четыре нычки минералов двигающихся внутри потоков
 				final var atten = 30d / (Math.min(height, width) * 0.2);
