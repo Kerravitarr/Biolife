@@ -260,4 +260,97 @@ public class Utils {
 		});
 		return list;
 	}
+	/**
+	 * Вычисляет обратимый хэш для числа.
+	 * Взято с ответов - https://stackoverflow.com/a/12996028/22441496
+	 * @param x число
+	 * @return обратимый хэш этого числа
+	 */
+	public static int hashCode(int x){
+		x = ((x >>> 16) ^ x) * 0x45d9f3b;
+		x = ((x >>> 16) ^ x) * 0x45d9f3b;
+		x = (x >>> 16) ^ x;
+		return x;
+	}
+	/**
+	 * Вычисляет число из обратного хэша
+	 * Взято с ответов - https://stackoverflow.com/a/12996028/22441496
+	 * @param x хэш
+	 * @return число
+	 */
+	public static int unhashCode(int x){
+		x = ((x >>> 16) ^ x) * 0x119de1f3;
+		x = ((x >>> 16) ^ x) * 0x119de1f3;
+		x = (x >>> 16) ^ x;
+		return x;
+	}
+	/**
+	 * Метод получения псевдослучайного целого числа [min,max] из хэша base.
+	 * @param base число, из которого будет сгенерировано случайное число
+	 * @param min минимальное значение, включительно
+	 * @param max максимальное значение, включительно
+	 * @return [min,max]
+	 */
+	public static int randomHash(int base, int min, int max){
+		final int bound = max - min +1;
+        final int m = bound - 1;
+        var r = hashCode(base);
+        if ((bound & m) == 0) {//Для границы в степени двойки результат самый простой
+            r &= m;
+        } else {
+            //А вот ту придётся изворачиваться так, как ну очень не хочется!
+            for (var u = r >>> 1;
+                 u + m - (r = u % bound) < 0;
+                 u = hashCode(++base) >>> 1)
+                ;
+        }
+        return r;
+	}
+	/**
+	 * Вычисляет обратимый хэш для числа.
+	 * Взято с ответов - https://stackoverflow.com/a/12996028/22441496
+	 * @param x число
+	 * @return обратимый хэш этого числа
+	 */
+	public static long hashCode(long x){
+		x = (x ^ (x >>> 30)) * (0xbf58476d1ce4e5b9L);
+		x = (x ^ (x >>> 27)) * (0x94d049bb133111ebL);
+		x = x ^ (x >>> 31);
+		return x;
+	}
+	/**
+	 * Вычисляет число из обратного хэша
+	 * Взято с ответов - https://stackoverflow.com/a/12996028/22441496
+	 * @param x хэш
+	 * @return число
+	 */
+	public static long unhashCode(long x){
+		x = (x ^ (x >>> 31) ^ (x >>> 62)) * (0x319642b2d24d8ec3L);
+		x = (x ^ (x >>> 27) ^ (x >>> 54)) * (0x96de1b173f119089L);
+		x = x ^ (x >>> 30) ^ (x >>> 60);
+		return x;
+	}
+	/**
+	 * Метод получения псевдослучайного целого числа [min,max] из хэша base.
+	 * @param base число, из которого будет сгенерировано случайное число
+	 * @param min минимальное значение, включительно
+	 * @param max максимальное значение, включительно
+	 * @return [min,max]
+	 */
+	public static long randomHash(long base, int min, int max){
+		final int bound = max - min +1;
+        final int m = bound - 1;
+        var r = hashCode(base);
+        if ((bound & m) == 0) {//Для границы в степени двойки результат самый простой
+            r &= m;
+        } else {
+            //А вот ту придётся изворачиваться так, как ну очень не хочется!
+            for (var u = r >>> 1;
+                 u + m - (r = u % bound) < 0;
+                 u = hashCode(++base) >>> 1)
+                ;
+        }
+        return r;
+	}
+	
 }

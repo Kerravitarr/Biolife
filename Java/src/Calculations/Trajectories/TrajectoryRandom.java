@@ -10,6 +10,7 @@ import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.SplittableRandom;
 
@@ -49,9 +50,9 @@ public class TrajectoryRandom extends Trajectory{
 	/**Стартовая точка траектории. С которой мы начинаем движение*/
 	private final Point start;
 	/**Зерно генерации, чтобы все траектории от одного начала были одинаковыми*/
-	private final int seed;
+	private final long seed;
 	/**"Номер" траектории в памяти*/
-	private int number = -1;
+	private long number = -1;
 	/**Период обновления точек. Или, длина траектории*/
 	private final int lenght;
 	/**Текущие точки траектории*/
@@ -67,23 +68,23 @@ public class TrajectoryRandom extends Trajectory{
 	 * @param rightDown нижний правый ограничивающий угол
 	 * 
 	 */
-	public TrajectoryRandom(long speed, int seed, Point start, Point leftUp, Point rightDown){
+	public TrajectoryRandom(long speed, long seed, Point start, Point leftUp, Point rightDown){
 		super(speed);
 		this.seed = seed;
 		this.start = start;
 		rectangle[0] = leftUp;
 		rectangle[1] = rightDown;
 		lenght = (int)Math.ceil(Math.hypot(rectangle[0].x - rectangle[1].x, rectangle[0].y - rectangle[1].y));
-		points = new ArrayList<>(lenght);
+		points = Arrays.asList(new Point[lenght]);
 	}
 	protected TrajectoryRandom(JSON j, long version){
 		super(j,version);
-		seed = j.get("SEED");
+		seed = j.getL("SEED");
 		start = Point.create(j.getJ("START"));
 		rectangle[0] = Point.create(j.getJ("LU"));
 		rectangle[1] = Point.create(j.getJ("RD"));
 		lenght = (int)Math.ceil(Math.hypot(rectangle[0].x - rectangle[1].x, rectangle[0].y - rectangle[1].y));
-		points = new ArrayList<>(lenght);
+		points = Arrays.asList(new Point[lenght]);
 	}
 	/**
 	 * Создаёт точку траектории по её индексу
@@ -92,9 +93,8 @@ public class TrajectoryRandom extends Trajectory{
 	 */
 	private Point generate(long index){
 		if(index == 0) return start;
-		final var gen = new SplittableRandom(seed + index);
-		final var x = gen.nextInt(rectangle[0].x, rectangle[1].x+1);
-		final var y = gen.nextInt(rectangle[0].y, rectangle[1].y+1);
+		final var x = (int) Utils.Utils.randomHash(index,rectangle[0].x, rectangle[1].x+1);
+		final var y = (int) Utils.Utils.randomHash(index,rectangle[0].y, rectangle[1].y+1);
 		return Point.create(x, y);
 	}
 	@Override
@@ -103,7 +103,7 @@ public class TrajectoryRandom extends Trajectory{
 		final var p = wstep % lenght;
 		if(num != number){
 			//Нам нужно сгенерировать точки...
-			final var trajP = new Point[4]; //4 точки, которые определят всю траекторию
+			final var trajP = new Point[4]; //4 реперные точки, через которые обязана пройти траектория
 			final var pref = generate(num-1);
 			trajP[1] = generate(num); //Первая точка траектории
 			trajP[3] = generate(num+1); //Последняя точка траектории
@@ -118,10 +118,10 @@ public class TrajectoryRandom extends Trajectory{
 				trajP[2] = trajP[3].next(trajP[3].distance(trajP[1]).direction());
 			}
 			points.set(0, trajP[1]);
-			points.set(points.size() - 1, trajP[3]);
-			points.set(points.size() - 2, trajP[2]);
+			points.set(lenght - 1, trajP[3]);
+			points.set(lenght - 2, trajP[2]);
 			
-			number = (int) num;
+			number = num;
 		}
 		return points.get((int) p);
 	}
