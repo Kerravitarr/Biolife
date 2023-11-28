@@ -29,7 +29,7 @@ public class Variant {
 	 * @throws IllegalArgumentException если данный вариантный тип не может хранить такое значение
 	 */
 	public <T> void set(T object) throws IllegalArgumentException{
-		if(object != null && isValid(object.getClass())) throw new IllegalArgumentException("Недопустимо хранить " + object.getClass() + " среди " + this);
+		if(object != null && !isValid(object.getClass())) throw new IllegalArgumentException("Недопустимо хранить " + object.getClass() + " среди " + this);
 		else _value = object;
 	}
 	/**
@@ -40,7 +40,7 @@ public class Variant {
 	 */
 	public <T> boolean isValid(Class<T> cl){
 		if(cl == null) return _value == null;
-		else return Arrays.stream(_cls).filter(c -> cl.isAssignableFrom(c)).findFirst().orElse(null) != null;
+		else return Arrays.stream(_cls).filter(c -> c.isAssignableFrom(cl)).findFirst().orElse(null) != null;
 	}
 	/**
 	 * Проверяет, теущий содержащийся объект соответствует переданному типу
