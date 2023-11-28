@@ -29,6 +29,9 @@ import javax.swing.JPopupMenu;
  * @author Kerravitarr
  */
 public class Settings extends javax.swing.JPanel {
+	private static interface AddNewO <T>{
+		public void add(T o);
+	}
 
 	/** Creates new form Settings */
 	public Settings() {
@@ -274,11 +277,12 @@ public class Settings extends javax.swing.JPanel {
 			final var sun = Configurations.suns.get(i);
 			suns2.add(new SettingsString(Settings.class,"object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
 			suns2.add(addBlink(sun == wv.getSelect(), e->wv.setSelect(e ? sun : null)));
-			suns2.add(addNew(sun, Trajectory.getChildrens()));
+			suns2.add(addBlinkTrajectory(sun == wv.getSelect(), e->wv.setSelect(e ? sun.getTrajectory() : null)));
+			suns2.add(addNew(sun));
 			suns2.add(addRemove(Configurations.suns,sun));
 		}
 		suns2.add(new JPopupMenu.Separator());
-		suns2.add(addNew(Configurations.suns,SunAbstract.getChildrens()));
+		suns2.add(addNew(Configurations.suns,SunAbstract.getChildrens(), c->wv.setSelect((SunAbstract) c.build())));
 		borderClick(suns2, null);
 		borderClick(suns2, null);
 	}
@@ -326,11 +330,12 @@ public class Settings extends javax.swing.JPanel {
 			final var mineral = Configurations.minerals.get(i);
 			minerals2.add(new SettingsString(Settings.class,"object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
 			minerals2.add(addBlink(mineral == wv.getSelect(), e->wv.setSelect(e ? mineral : null)));
-			minerals2.add(addNew(mineral, Trajectory.getChildrens()));
+			minerals2.add(addBlinkTrajectory(mineral == wv.getSelect(), e->wv.setSelect(e ? mineral.getTrajectory() : null)));
+			minerals2.add(addNew(mineral));
 			minerals2.add(addRemove(Configurations.minerals,mineral));
 		}
 		minerals2.add(new JPopupMenu.Separator());
-		minerals2.add(addNew(Configurations.minerals,MineralAbstract.getChildrens()));
+		minerals2.add(addNew(Configurations.minerals,MineralAbstract.getChildrens(), c->wv.setSelect((MineralAbstract) c.build())));
 		borderClick(minerals2, null);
 		borderClick(minerals2, null);
 	}
@@ -370,11 +375,12 @@ public class Settings extends javax.swing.JPanel {
 			final var stream = Configurations.streams.get(i);
 			streams2.add(new SettingsString(Settings.class,"object.editname", "Залеж", stream.toString(), e -> stream.setName(e)));
 			streams2.add(addBlink(stream == wv.getSelect(),e -> wv.setSelect(e ? stream : null)));
-			streams2.add(addNew(stream, Trajectory.getChildrens()));
+			streams2.add(addBlinkTrajectory(stream == wv.getSelect(), e->wv.setSelect(e ? stream.getTrajectory() : null)));
+			streams2.add(addNew(stream));
 			streams2.add(addRemove(Configurations.streams,stream));
 		}
 		streams2.add(new JPopupMenu.Separator());
-		streams2.add(addNew(Configurations.streams,StreamAbstract.getChildrens()));
+		streams2.add(addNew(Configurations.streams,StreamAbstract.getChildrens(), c->wv.setSelect((StreamAbstract) c.build())));
 		
 		borderClick(streams2, null);
 		borderClick(streams2, null);
@@ -417,38 +423,54 @@ public class Settings extends javax.swing.JPanel {
 	 * @param object сам объект, траектория которого нас ну оооочень интересует
 	 * @return объект кнопки, который нужно добавить на панель
 	 */
-	private javax.swing.JButton addNew(Trajectory.HasTrajectory o, final List<ClassBuilder> constructorList){
-		final var newT = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.newTrajectory.L"));
-		newT.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.newTrajectory.T"));
-		newT.addActionListener( e -> {
-			final var make = new SettingsMake(false, constructorList);
-			make.setBounds(newT.getLocationOnScreen().x, newT.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
-			make.setVisible(true);
-			final var ret = make.get(Trajectory.class);
-			if(ret != null)
-				o.set(ret);
-			rebuildBuild();
-		});
-		return newT;
+	private javax.swing.JButton addNew(Trajectory.HasTrajectory object){
+		return addNew("object.parameter.newTrajectory",Trajectory.getChildrens(), c -> Configurations.getViewer().get(WorldView.class).setSelect((Trajectory) c.build()), ret -> object.set((Trajectory)ret));
 	}
 	
 	/**
 	 * Создаёт кнопку генерации нового объекта
 	 * @param <T>
 	 * @param list уже существующие объекты
+	 * @param constructorList список конструкторов
+	 * @param l событие, произошедшее при изменении параметров конструктора
 	 * @return объект кнопки, который нужно добавить на панель
 	 */
-	private <T> javax.swing.JButton addNew(final List<T> list, final List<ClassBuilder> constructorList){
-		final var newT = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.newObject.L"));
-		newT.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.newObject.T"));
+	private <T> javax.swing.JButton addNew(final List<T> list, final List<ClassBuilder> constructorList, SettingsMake.PropertyChangeListener l){
+		return addNew("object.parameter.newObject",constructorList, l, ret -> list.add((T)ret));
+	}
+	/**
+	 * Создаёт кнопку добавки нового объекта
+	 * @param <T> класс, который добавляем
+	 * @param text текстовый ключ для поиска локализованного перевода
+	 * @param constructorList набор конструкторов этого объекта
+	 * @param l слушатель события изменения конструктора. Для отображения на экране
+	 * @param eventAdd событие, которое возникает если объект всё-же создали
+	 * @return кнопка, на неё надо нажать и всё будет
+	 */
+	private <T> javax.swing.JButton addNew(String text, final List<ClassBuilder> constructorList, SettingsMake.PropertyChangeListener l, AddNewO<T> eventAdd){
+		final var newT = new javax.swing.JButton(Configurations.getHProperty(Settings.class, text +".L"));
+		newT.setToolTipText(Configurations.getHProperty(Settings.class, text +".T"));
 		newT.addActionListener( e -> {
+			final var wv = Configurations.getViewer().get(WorldView.class);		
 			final var make = new SettingsMake(false, constructorList);
 			make.setBounds(newT.getLocationOnScreen().x, newT.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
+			make.addConstructorPropertyChangeListener(c -> {
+				blinks.forEach(b -> b.setValue(false));
+				l.propertyChange(c);
+			});
+			make.addWindowListener(new java.awt.event.WindowAdapter() {
+				@Override
+				public void windowClosed(java.awt.event.WindowEvent e){
+					//Если у нас нет выделения - то убираем выделение. Оно могло остаться от создаваемого объекта
+					if(blinks.stream().filter( b -> b.getValue()).findFirst().orElse(null) == null)
+						wv.setSelect((Trajectory) null);
+					final var ret = make.get(Object.class);
+					if(ret != null)
+						eventAdd.add((T)ret);
+					rebuildBuild();
+				}
+			 });
 			make.setVisible(true);
-			final var ret = (T) make.get(Object.class);
-			if(ret != null)
-				list.add(ret);
-			rebuildBuild();
 		});
 		return newT;
 	}
@@ -458,19 +480,8 @@ public class Settings extends javax.swing.JPanel {
 	 * @param list уже существующие объекты
 	 * @return объект кнопки, который нужно добавить на панель
 	 */
-	private <T extends DefaultEmitter> javax.swing.JButton addNew(final EmitterSet<T> list, final List<ClassBuilder> constructorList){
-		final var newT = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.newObject.L"));
-		newT.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.newObject.T"));
-		newT.addActionListener( e -> {
-			final var make = new SettingsMake(false, constructorList);
-			make.setBounds(newT.getLocationOnScreen().x, newT.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
-			make.setVisible(true);
-			final var ret = (T) make.get(Object.class);
-			if(ret != null)
-				list.add(ret);
-			rebuildBuild();
-		});
-		return newT;
+	private <T extends DefaultEmitter> javax.swing.JButton addNew(final EmitterSet<T> list, final List<ClassBuilder> constructorList, SettingsMake.PropertyChangeListener l){
+		return addNew("object.parameter.newObject",constructorList, l, ret -> list.add((T)ret));
 	}
 	
 	/**Добавляет кнопку мигания
@@ -481,6 +492,26 @@ public class Settings extends javax.swing.JPanel {
 	private javax.swing.JPanel addBlink(boolean nowValue, SettingsBoolean.AdjustmentListener doing){
 		final var panels = new SettingsBoolean[1];
 		panels[0] = new SettingsBoolean(Settings.class,"object.blink", nowValue, e -> {
+			if(e == true){
+				for(final var i : blinks){
+					if(panels[0] != i)
+						i.setValue(false);
+				}
+			}
+			panels[0].setValue(e);
+			doing.adjustmentValueChanged(e);
+		});
+		blinks.add(panels[0]);
+		return panels[0];
+	}
+	/**Добавляет кнопку мигания для траектории
+	 * @param nowValue текущее состояние объекта
+	 * @param doing что нужно сделать при включении (выключении) мигания?
+	 * @return панель с кнопкой мигания
+	 */
+	private javax.swing.JPanel addBlinkTrajectory(boolean nowValue, SettingsBoolean.AdjustmentListener doing){
+		final var panels = new SettingsBoolean[1];
+		panels[0] = new SettingsBoolean(Settings.class,"object.blinkTrajectory", nowValue, e -> {
 			if(e == true){
 				for(final var i : blinks){
 					if(panels[0] != i)
@@ -861,5 +892,5 @@ public class Settings extends javax.swing.JPanel {
 	/**Нужна печать предупреждения при редактировании карты?*/
 	private boolean isNeedWarning = true;
 	/**Список всех подсвеченных объектов. Нужен для того, чтобы подсвечивался только один объект*/
-	private ArrayList<SettingsBoolean> blinks = new ArrayList<>();
+	private final ArrayList<SettingsBoolean> blinks = new ArrayList<>();
 }

@@ -143,16 +143,20 @@ public class TrajectoryPolyLine extends Trajectory{
 
 	@Override
 	protected Point position(long wstep) {
-		final var x = (int) (wstep / lenght);
-		var step = wstep - lenght * x;
-		for(var point : points){
-			if(step > point.lenght){
-				step -= point.lenght;
-			} else {
-				return Point.create((int)(point.from.getX() + point.dx * step), (int) (point.from.getY() + point.dy*step));
+		if(lenght == 0d){
+			return points.get(0).from;
+		} else {
+			final var x = (int) (wstep / lenght);
+			var step = wstep - lenght * x;
+			for(var point : points){
+				if(step > point.lenght){
+					step -= point.lenght;
+				} else {
+					return Point.create((int)(point.from.getX() + point.dx * step), (int) (point.from.getY() + point.dy*step));
+				}
 			}
+			throw new UnknownError("Мы сюда вообще не можем дойти...");
 		}
-		throw new UnknownError("Мы сюда вообще не можем дойти...");
 	}
 	@Override
 	public JSON toJSON(){
@@ -162,29 +166,38 @@ public class TrajectoryPolyLine extends Trajectory{
 	}
 	
 	@Override
-	public void paint(Graphics2D g, WorldView.Transforms transform) {
+	public void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
 		final var r = transform.toScrin(1);
+		final var r2 = r*2;
+		//Рисуем точки
+		g.setColor(AllColors.TRAJECTORY_POINT);
 		for(final var i : points){
 			final var x1 = transform.toScrinX(i.from);
 			final var y1 = transform.toScrinY(i.from);
-			final var x2 = transform.toScrinX((int)(i.from.getX() + i.dx*i.lenght));
-			final var y2 = transform.toScrinY((int)(i.from.getY() + i.dx*i.lenght));
-			g.setColor(AllColors.TRAJECTORY_POINT);
+			final var x2 = transform.toScrinX(i.from.getX() + i.dx*i.lenght);
+			final var y2 = transform.toScrinY(i.from.getY() + i.dy*i.lenght);
 			Utils.Utils.fillCircle(g, x1, y1, r);
 			Utils.Utils.fillCircle(g, x2, y2, r);
 		}
+		//Теперь рисуем бегающую точку
+		var nP = position(frame);
+		Utils.Utils.fillCircle(g, transform.toScrinX(nP), transform.toScrinY(nP), r2);
+		
+		//Рисуем линии
 		var fromP = position(0);
+		var fx = transform.toScrinX(fromP);
+		var fy = transform.toScrinY(fromP);
+		g.setColor(AllColors.TRAJECTORY_LINE);
 		for (int i = 1; i < lenght; i++) {
 			final var p = position(i);
-			final var d = fromP.distance(p);
-			if(Math.abs(d.x) > 1 || Math.abs(d.y) > 1) continue;
-			final var x1 = transform.toScrinX(fromP);
-			final var y1 = transform.toScrinY(fromP);
 			final var x2 = transform.toScrinX(p);
 			final var y2 = transform.toScrinY(p);
-			g.setColor(AllColors.TRAJECTORY_LINE);
-			g.drawLine(x1, y1, x2, y2);
+			if(Math.abs(fx - x2) <= r2 && Math.abs(fy - y2) <= r2)
+				g.drawLine(fx, fy, x2, y2);
+			fx = x2;
+			fy = y2;
 			fromP = p;
 		}
+		
 	}
 }

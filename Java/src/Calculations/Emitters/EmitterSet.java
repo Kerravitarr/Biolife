@@ -113,6 +113,15 @@ public class EmitterSet<T extends DefaultEmitter> {
 	 * @param select объект, который надо выделить. Будет начерчено всё, кроме него
 	 */
 	public void paint(java.awt.Graphics2D g, GUI.WorldView.Transforms transform, T select){	
-		_emitters.forEach(s -> {if(s != select) s.paint(g,transform);});
+		if(select == null){
+			_emitters.forEach(e -> e.paint(g,transform));
+		} else {
+			boolean isPrint = false;
+			for(final var e : _emitters){
+				if(e != select) e.paint(g,transform);
+				else isPrint = true;
+			}
+			if(!isPrint) select.paint(g,transform);
+		}
 	}
 }

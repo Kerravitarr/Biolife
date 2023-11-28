@@ -457,7 +457,7 @@ public abstract class ClassBuilder <T>{
 		private <T, R extends ConstructorParametr<T, ?>> T getParam_(int index, Class<T> valueType){
 			final var p =  _params.get(index);
 			if(valueType.equals(p.value.getClass()))
-				return (T)  _params.get(index).value;
+				return (T) p.value;
 			else
 				throw new ClassCastException("Невозможно привести " + p.value.getClass() + " к классу " + valueType + " для параметра №" + index);
 		}

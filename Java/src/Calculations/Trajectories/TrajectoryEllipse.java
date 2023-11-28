@@ -130,18 +130,40 @@ public class TrajectoryEllipse extends Trajectory{
 	}
 	
 	@Override
-	public void paint(Graphics2D g, WorldView.Transforms transform) {
-		int r = transform.toScrin(1);
-		int a2 = transform.toScrin((int)(a*2));
-		int b2 = transform.toScrin((int)(b*2));
-		int cx = transform.toScrinX(center);
-		int cy = transform.toScrinY(center);
-		int sx = transform.toScrinX((int)(center.getX() + a * Math.cos(angle)));
-		int sy = transform.toScrinY((int)(center.getY() + b * Math.sin(angle)));
+	public void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
+		final var dashed = new java.awt.BasicStroke(3, java.awt.BasicStroke.CAP_BUTT, java.awt.BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
+		final var os = g.getStroke();
 		g.setColor(AllColors.TRAJECTORY_POINT);
+		g.setStroke(dashed);
+		//Рисуем опорные лини
+		final var cx = transform.toScrinX(center);
+		final var cy = transform.toScrinY(center);
+		final var a2 = transform.toScrin(a*2);
+		final var b2 = transform.toScrin(b*2);
+		final var ub = cy - b2/2;
+		final var db = cy + b2/2;
+		g.drawLine(cx, ub, cx, db);
+		final var la = cx - a2/2;
+		final var ra = cx + a2/2;
+		g.drawLine(la, cy, ra, cy);
+		
+		g.setStroke(os);
+		//Теперь точка центра
+		final var r = transform.toScrin(1);
 		Utils.Utils.fillCircle(g, cx, cy, r);
-		g.drawLine(cx-a2/2, cy-b2/2, sx, sy);
+		//А теперь окружающий эллипс
 		g.setColor(AllColors.TRAJECTORY_LINE);
 		g.drawOval(cx-a2/2, cy-b2/2, a2, b2);
+		//И начальный угол
+		final var sx = transform.toScrinX(center.getX() + a * Math.cos(angle));
+		final var sy = transform.toScrinY(center.getY() + b * Math.sin(angle));
+		g.drawLine(cx, cy, sx, sy);
+		
+		//А теперь точку на этой траектории
+		g.setColor(AllColors.TRAJECTORY_POINT);
+		final var aOffset = angle + (frame % 360) * Math.PI / 180d;
+		final var px = transform.toScrinX(center.getX() + a * Math.cos(aOffset));
+		final var py = transform.toScrinY(center.getY() + b * Math.sin(aOffset));
+		Utils.Utils.fillCircle(g, px, py, r * 2);		
 	}
 }

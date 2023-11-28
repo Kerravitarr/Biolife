@@ -76,6 +76,7 @@ public class SettingsPoint extends javax.swing.JPanel {
 		Configurations.setIcon(select, "selectPoint");
 		select.addActionListener(e -> {
 			final var dialog = new javax.swing.JDialog((Frame)null, "", false);
+			dialog.setAlwaysOnTop(true);
 			dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 			final var panel = new javax.swing.JPanel();
 			final var pointLabel = new javax.swing.JLabel(Configurations.getHProperty(SettingsPoint.class, "emptySelectLabel"));
@@ -86,7 +87,7 @@ public class SettingsPoint extends javax.swing.JPanel {
 			dialog.setBounds(SettingsPoint.this.getLocationOnScreen().x, SettingsPoint.this.getLocationOnScreen().y, 200, 50);
 			final var clickListener = new java.awt.event.MouseAdapter() {
 				@Override
-				public void mouseClicked(MouseEvent e) {
+				public void mousePressed(MouseEvent e) {
 					if(e.getButton() == MouseEvent.BUTTON1){
 						setValue(transform.toWorldPoint(e));
 					}
@@ -103,9 +104,10 @@ public class SettingsPoint extends javax.swing.JPanel {
 			
 			world.addMouseListener(clickListener);
 			world.addMouseMotionListener(movedListener);
-			dialog.addComponentListener(new java.awt.event.ComponentAdapter() {
+			dialog.addWindowFocusListener(new java.awt.event.WindowAdapter() {
 				@Override
-				public void componentHidden(ComponentEvent e) {
+				public void windowLostFocus(java.awt.event.WindowEvent arg0) {
+					dialog.setVisible(false);
 					world.removeMouseMotionListener(movedListener);
 					world.removeMouseListener(clickListener);
 				}

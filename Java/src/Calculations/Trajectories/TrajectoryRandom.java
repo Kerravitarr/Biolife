@@ -5,14 +5,13 @@
 package Calculations.Trajectories;
 
 import Calculations.Point;
+import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.SplittableRandom;
 
 /**
  * Траектория движения по случайным точкам
@@ -93,8 +92,8 @@ public class TrajectoryRandom extends Trajectory{
 	 */
 	private Point generate(long index){
 		if(index == 0) return start;
-		final var x = (int) Utils.Utils.randomHash(index,rectangle[0].x, rectangle[1].x+1);
-		final var y = (int) Utils.Utils.randomHash(index,rectangle[0].y, rectangle[1].y+1);
+		final var x = (int) Utils.Utils.randomByHash(index,rectangle[0].x, rectangle[1].x);
+		final var y = (int) Utils.Utils.randomByHash(Utils.Utils.hashCode(index),rectangle[0].y, rectangle[1].y); //Тут двойное хэширование, чтобы x и y различались!
 		return Point.create(x, y);
 	}
 	@Override
@@ -127,6 +126,19 @@ public class TrajectoryRandom extends Trajectory{
 	}
 	
 	@Override
-	public void paint(Graphics2D g, WorldView.Transforms transform) {
+	public void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
+		g.setColor(AllColors.TRAJECTORY_LINE);
+		var fromP = points.get(0);
+		for (int i = 1; i < lenght; i++) {
+			final var p = points.get(i);
+			final var d = fromP.distance(p);
+			if(Math.abs(d.x) > 1 || Math.abs(d.y) > 1) continue;
+			final var x1 = transform.toScrinX(fromP);
+			final var y1 = transform.toScrinY(fromP);
+			final var x2 = transform.toScrinX(p);
+			final var y2 = transform.toScrinY(p);
+			g.drawLine(x1, y1, x2, y2);
+			fromP = p;
+		}
 	}
 }

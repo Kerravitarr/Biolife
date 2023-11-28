@@ -18,13 +18,22 @@ import java.util.List;
  * @author Kerravitarr
  */
 public class SettingsMake extends java.awt.Dialog {
+	/**Слушатель события изменения свойств*/
+	public static interface PropertyChangeListener {
+		/**
+		 * Вызывается каждый раз, когда изменяется создаваемый объект
+		 * @param evt текущий конструктор со всеми параметрами, которые были изменены
+		 */
+		public void propertyChange(ClassBuilder.Constructor evt);
+	}
 
 	/** Creates new form SettingsMake
 	 * @param modal окно модальное?
 	 * @param childList список всех возможных подтипов текущего объекта
 	 */
 	public SettingsMake(boolean modal, List<ClassBuilder> childList) {
-		super((Frame)null, Configurations.getProperty(SettingsMake.class,"title"), ModalityType.APPLICATION_MODAL);
+		super((Frame)null, Configurations.getProperty(SettingsMake.class,"title"));
+		setAlwaysOnTop(true);
 		initComponents();
 		
 		final var values = new javax.swing.DefaultComboBoxModel();
@@ -34,6 +43,25 @@ public class SettingsMake extends java.awt.Dialog {
 		selectType.setModel(values);
 		selectType.setSelectedIndex(0);
 		selectType.setEnabled(childList.size() > 1);
+	}
+	/**
+	 * Добавляет слушателя изменения объекта
+	 * @param pc слушатель изменения объекта
+	 */
+	public void addConstructorPropertyChangeListener(PropertyChangeListener pc){listeners.add(pc);pc.propertyChange((ClassBuilder.Constructor) selectConstructor.getSelectedItem());}
+	/**
+	 * Удаляет слушателя изменения объекта
+	 * @param pc слушатель изменения объекта
+	 */
+	public void removePropertyChangeListener(PropertyChangeListener pc){listeners.remove(pc);}
+	/**Создаёт событие изменения свойств для оповещения всех слушателей*/
+	public void propertyChange(){
+		if(!listeners.isEmpty()){
+			final var constructor = (ClassBuilder.Constructor) selectConstructor.getSelectedItem();
+			for(final var l : listeners){
+				l.propertyChange(constructor);
+			}
+		}
 	}
 
 	/** This method is called from within the constructor to
@@ -135,7 +163,7 @@ public class SettingsMake extends java.awt.Dialog {
     }//GEN-LAST:event_formWindowOpened
 
     private void selectConstructorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectConstructorActionPerformed
-		new Thread(()->{
+		//new Thread(()->{
 			final var type = (ClassBuilder)selectType.getSelectedItem();
 			final var constructor = (ClassBuilder.Constructor) selectConstructor.getSelectedItem();
 			paramPanel.removeAll();
@@ -145,7 +173,8 @@ public class SettingsMake extends java.awt.Dialog {
 				paramPanel.add(panel);
 			}
 			paramPanel.updateUI();
-		}).start();
+			propertyChange();
+		//}).start();
     }//GEN-LAST:event_selectConstructorActionPerformed
 
     private void canselActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_canselActionPerformed
@@ -157,11 +186,14 @@ public class SettingsMake extends java.awt.Dialog {
 		_return = constructor.build();
 		closeDialog(null);
     }//GEN-LAST:event_generateActionPerformed
-	/**Создаёт и добавляет панель с нужными параметрами
-	 * @param param 
+	/**Создаёт и добавляет панель с нужным параметром для выбранного конструктора
+	 * @param clr класс, по которому будет искаться локализованное имя параметра
+	 * @param constructorName имя конструктора, для поиска локализованного имени
+	 * @param param сам параметр, который и должен превратиться в нужную панель
 	 */
 	private javax.swing.JPanel addPanel(Class<?> clr,final String constructorName, ClassBuilder.ConstructorParametr param) {
 		final String parametrFullName;
+		//Найдём правильное имя объекта
 		if (param.name().startsWith("super.")) {
 			parametrFullName = String.format("constructor.parameter.%s", param.name().substring(6));
 			//А теперь ищем по суперклассу
@@ -181,12 +213,13 @@ public class SettingsMake extends java.awt.Dialog {
 		} else {
 			parametrFullName = String.format("constructor.%s.parameter.%s", constructorName, param.name());
 		}
-
+		//Сохраняем значение по умолчанию
 		param.setValue(param.getDefault());
+		//Ну и понеслась создавать панели!
 		if(param instanceof Utils.ClassBuilder.BooleanConstructorParam<?> np){
-			return new SettingsBoolean(clr,parametrFullName, np.getDefault(), e -> {np.setValue(e);});
+			return new SettingsBoolean(clr,parametrFullName, np.getDefault(), e -> {np.setValue(e);propertyChange();});
 		} else if(param instanceof Utils.ClassBuilder.StringConstructorParam<?> np){
-			return new SettingsString(clr,parametrFullName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);});
+			return new SettingsString(clr,parametrFullName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);propertyChange();});
 		} else if(param instanceof Utils.ClassBuilder.NumberConstructorParam<?,?> np_){
 			final var npn = (Utils.ClassBuilder.NumberConstructorParam<? extends Number,?>) np_;
 			final var def = npn.getDefault().getClass();
@@ -194,15 +227,17 @@ public class SettingsMake extends java.awt.Dialog {
 				final var np = (Utils.ClassBuilder.NumberConstructorParam<Integer,?>) npn;
 				return new SettingsSlider<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
 					np.setValue( e);
+					propertyChange();
 				});
 			} else if(def.equals(Double.class)){
 				final var np = (Utils.ClassBuilder.NumberConstructorParam<Double,?>) npn;
 				return new SettingsSlider<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
 					np.setValue( e);
+					propertyChange();
 				});
 			} 
 		} else if(param instanceof Utils.ClassBuilder.MapPointConstructorParam<?> np){
-			return new SettingsPoint(clr,parametrFullName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);});
+			return new SettingsPoint(clr,parametrFullName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);propertyChange();});
 		} else if(param instanceof Utils.ClassBuilder.MapPointVectorConstructorParam<?> np){
 			final var panel = new javax.swing.JPanel();
 			final var def = np.getDefault()[0];
@@ -217,7 +252,15 @@ public class SettingsMake extends java.awt.Dialog {
 		}
 		throw new AssertionError("Нет у нас реализации для " + String.valueOf(param));
 	}
-
+	/**
+	 * Создаёт панель для ввода ряда точек
+	 * @param clr класс, по которому будет искаться локализованное имя параметра
+	 * @param parametrName имя параметра для локализованного имени
+	 * @param panel панель, на которую надо нанести все нужные кнопки
+	 * @param np непосредственно параметр, который создаётся
+	 * @param points набор точек, которые уже задали
+	 * @param selectPoint указатель на финальный объект индекса выбранной точки у этой панели
+	 */
 	private void build(final Class<?> clr, final String parametrName, javax.swing.JPanel panel, Utils.ClassBuilder.MapPointVectorConstructorParam<?> np, List<Calculations.Point> points, int[] selectPoint) {
 		final var def = np.getDefault()[0];
 		np.setValue(points.toArray(Point[]::new));
@@ -231,6 +274,7 @@ public class SettingsMake extends java.awt.Dialog {
 				final var settings = new SettingsPoint(clr,parametrName, def,get, e -> {
 					points.set(nowIndex, e);
 					build(clr, parametrName,panel,np,points,selectPoint);
+					propertyChange();
 				});
 				settings.setAlignmentX(0);
 				panelPoint.add(settings);
@@ -264,6 +308,7 @@ public class SettingsMake extends java.awt.Dialog {
 						selectPoint[0]--;
 					}
 					build(clr, parametrName,panel,np,points,selectPoint);
+					propertyChange();
 				});
 				panelBottom.add(remBut);
 			}
@@ -277,6 +322,7 @@ public class SettingsMake extends java.awt.Dialog {
 				points.add(nowIndex+1, def);
 				selectPoint[0] = nowIndex + 1;
 				build(clr, parametrName,panel,np,points,selectPoint);
+				propertyChange();
 			});
 			panelBottom.add(addBut);
 			
@@ -311,5 +357,7 @@ public class SettingsMake extends java.awt.Dialog {
 
 	/**Непосредтсвенно объект, который мы сгенерировали*/
 	private Object _return = null;
+	/**Слушатели событий изменения объекта*/
+	private List<PropertyChangeListener> listeners = new ArrayList<>();
 
 }

@@ -189,9 +189,10 @@ public class Trajectory implements Cloneable{
 	/**Рисует объект на экране
 	 * @param g холст, на котором надо начертить солнышко
 	 * @param transform преобразователь размеров мировых в размеры экранные
+	 * @param frame условное число, начинающееся с INT_MAX/2, показывающее как объект будет двигаться по траектории
 	 */
-	public void paint(Graphics2D g, WorldView.Transforms transform) {
-		int r = transform.toScrin(1);
+	public void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
+		int r = transform.toScrin((frame & 4) == 0 ? 1 : 2);
 		int cx = transform.toScrinX(pos);
 		int cy = transform.toScrinY(pos);
 		g.setColor(AllColors.TRAJECTORY_POINT);

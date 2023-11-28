@@ -80,7 +80,7 @@ public class SunEllipse extends SunAbstract {
 
 			@Override
 			public SunEllipse build() {
-				return new SunEllipse(getParam(0,Integer.class),new Trajectory(getParam(1,Point.class)),  getParam(2,Integer.class), getParam(3,Integer.class), getParam(4,Boolean.class), getParam(5,String.class));
+				return new SunEllipse(getParam(1,Integer.class),new Trajectory(getParam(0,Point.class)),  getParam(2,Integer.class), getParam(3,Integer.class), getParam(4,Boolean.class), getParam(5,String.class));
 			}
 			@Override public String name() {return "ellipse";}
 		});
@@ -98,7 +98,7 @@ public class SunEllipse extends SunAbstract {
 
 			@Override
 			public SunEllipse build() {
-				return new SunEllipse(getParam(0,Integer.class),new Trajectory(getParam(1,Point.class)),  getParam(2,Integer.class), getParam(3,Boolean.class), getParam(4,String.class));
+				return new SunEllipse(getParam(1,Integer.class),new Trajectory(getParam(0,Point.class)),  getParam(2,Integer.class), getParam(3,Boolean.class), getParam(4,String.class));
 			}
 			@Override public String name() {return "circle";}
 		});

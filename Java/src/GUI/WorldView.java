@@ -408,10 +408,7 @@ public class WorldView extends javax.swing.JPanel {
 		Configurations.streams.forEach(s -> {if(s != streamSelect) s.paint(g, getTransform(), frame);});
 		//И, если нужно, нанесём траекторию
 		if (select.isContains(Trajectory.class)) {
-			Configurations.minerals.paint(g,getTransform(), mineralSelect);
-			Configurations.suns.paint(g,getTransform(), sunSelect);
-			Configurations.streams.forEach(s -> s.paint(g, getTransform(), frame));
-			select.get(Trajectory.class).paint(g, getTransform());
+			select.get(Trajectory.class).paint(g, getTransform(), frame);
 		}
 
 		g.setComposite(oldC);
@@ -677,5 +674,5 @@ public class WorldView extends javax.swing.JPanel {
 	/**Выделяем мы сейчас объект или нет?*/
 	private static boolean isSelected = false;
 	/**Как часто надо мигать, мс*/
-	private static final long SELECT_PERIOD = 1000;
+	private static final long SELECT_PERIOD = 500;
 }
