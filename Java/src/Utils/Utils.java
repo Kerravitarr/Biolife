@@ -286,23 +286,32 @@ public class Utils {
 	}
 	/**
 	 * Метод получения псевдослучайного целого числа [min,max] из хэша base.
+	 * Код позаимствован из jdk.internal.util.random.RandomSupport
+	 * Если min > max, то генератор вернёт просто случайное число
 	 * @param base число, из которого будет сгенерировано случайное число
 	 * @param min минимальное значение, включительно
 	 * @param max максимальное значение, включительно
 	 * @return [min,max]
 	 */
-	public static int randomHash(int base, int min, int max){
-		final int bound = max - min +1;
-        final int m = bound - 1;
+	public static int randomByHash(int base, int min, int max){		
         var r = hashCode(base);
-        if ((bound & m) == 0) {//Для границы в степени двойки результат самый простой
-            r &= m;
-        } else {
-            //А вот ту придётся изворачиваться так, как ну очень не хочется!
-            for (var u = r >>> 1;
-                 u + m - (r = u % bound) < 0;
-                 u = hashCode(++base) >>> 1)
-                ;
+		max++; //Для включения верхней границы
+        if (min < max) {
+            final var n = max - min;
+            final var m = n - 1;
+            if ((n & m) == 0) {//Для границы в степени двойки результат самый простой
+                r = (r & m) + min;
+            } else if (n > 0) {//Самый сложный случай, требующий уравновешинвания шансов представления всех чисел
+                for (var u = r >>> 1;
+                     u + m - (r = u % n) < 0;
+                     u = hashCode(++base) >>> 1)
+                    {}
+                r += min;
+            } else { //А вот этот случай я не очень понимаю. Но он есть :)
+                while (r < min || r >= max) {
+                    r = hashCode(++base);
+                }
+            }
         }
         return r;
 	}
@@ -332,23 +341,34 @@ public class Utils {
 	}
 	/**
 	 * Метод получения псевдослучайного целого числа [min,max] из хэша base.
+	 * Код позаимствован из jdk.internal.util.random.RandomSupport
+	 * Если min > max, то генератор вернёт просто случайное число
 	 * @param base число, из которого будет сгенерировано случайное число
 	 * @param min минимальное значение, включительно
 	 * @param max максимальное значение, включительно
 	 * @return [min,max]
 	 */
-	public static long randomHash(long base, int min, int max){
-		final int bound = max - min +1;
-        final int m = bound - 1;
+	public static long randomByHash(long base, long min, long max){
         var r = hashCode(base);
-        if ((bound & m) == 0) {//Для границы в степени двойки результат самый простой
-            r &= m;
-        } else {
-            //А вот ту придётся изворачиваться так, как ну очень не хочется!
-            for (var u = r >>> 1;
-                 u + m - (r = u % bound) < 0;
-                 u = hashCode(++base) >>> 1)
-                ;
+		max++; //Для включения верхней границы
+        if (min < max) {
+            final var n = max - min;
+            final var m = n - 1;
+            if ((n & m) == 0L) {
+                r = (r & m) + min;
+            } else if (n > 0L) {
+                /* Этот цикл принимает неприятную форму (но он работает): 
+				 * поскольку первый кандидат уже доступен, нам нужна конструкция с разрывом посередине, 
+				 * которая кратко, но загадочно выполняется внутри условия while цикла for без тела. */
+                for (var u = r >>> 1;            // обеспечить неотрицательный
+                     u + m - (r = u % n) < 0L;    // проверка отклонения
+                     u = hashCode(++base) >>> 1) // повторить попытку
+					{}
+                r += min;
+            } else { //длина диапазона не может быть представлена как long.
+                while (r < min || r >= max)
+                    r = hashCode(++base);
+            }
         }
         return r;
 	}
