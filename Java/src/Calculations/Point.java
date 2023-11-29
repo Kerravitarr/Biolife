@@ -239,6 +239,11 @@ public final class Point{
             }
 			return d;
 		}
+		/**@return вектор единичной длинны*/
+		public PointD normalize(){
+			if(getHypotenuse() == 0) return new PointD(0, 0);
+			else return new PointD(x/getHypotenuse(), y/getHypotenuse());
+		}
 		
 		@Override
 		public String toString() {
@@ -345,10 +350,32 @@ public final class Point{
 		public PointD multiply(double mul){
 			return new PointD(x * mul, y * mul);
 		}
+		/**
+		 * Складывает две точки
+		 * @param add дополнительный кусок
+		 * @return новая точка с изменённым значением
+		 */
+		public PointD add(PointD add){
+			return new PointD(x + add.x, y  + add.y);
+		}
+		/**
+		 * Складывает две точки
+		 * @param add дополнительный кусок
+		 * @return новая точка с изменённым значением
+		 */
+		public PointD add(Point add){
+			return new PointD(x + add.x, y  + add.y);
+		}
 		/**Возвращает гипотинузу вектора
 		 * @return агипотенуза вектора в клетках мира*/
 		public double getHypotenuse(){
 			return Math.hypot(x, y);
+		}
+		/**@return вектор единичной длинны*/
+		public PointD normalize(){
+			final var h = getHypotenuse();
+			if(h == 0) return new PointD(0, 0);
+			else return new PointD(x/h, y/h);
 		}
 		@Override
 		public String toString() {
@@ -483,8 +510,9 @@ public final class Point{
 	
 	/**
 	 * Функция нахождения расстояния между двумя точками.
-		Иными словами. Полученный вектор указывает от точки this к точке second.
-		this + return = second
+	<br>Иными словами. Полученный вектор указывает от точки this к точке second.
+	<br>this + return = second
+	<br>return = second - this
 	 * Если x больше 0, то значит вторая точка правее
 	 * Если y больше 0, то значит вторая точка ниже
 	 * @param second вторая точка
@@ -495,8 +523,9 @@ public final class Point{
 	}
 	/**
 	 * Функция нахождения расстояния между двумя точками.
-		Иными словами. Полученный вектор указывает от точки first к точке second.
-		furst + return = second
+	<br>Иными словами. Полученный вектор указывает от точки first к точке second.
+	<br>furst + return = second
+	<br>return = second - furst
 	 * Если x больше 0, то значит вторая точка правее
 	 * Если y больше 0, то значит вторая точка ниже
 	 * @param first первая точка
