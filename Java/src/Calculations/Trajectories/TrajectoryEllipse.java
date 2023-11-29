@@ -131,7 +131,7 @@ public class TrajectoryEllipse extends Trajectory{
 	
 	@Override
 	public void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
-		final var dashed = new java.awt.BasicStroke(3, java.awt.BasicStroke.CAP_BUTT, java.awt.BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
+		final var dashed = new java.awt.BasicStroke(1, java.awt.BasicStroke.CAP_BUTT, java.awt.BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
 		final var os = g.getStroke();
 		g.setColor(AllColors.TRAJECTORY_POINT);
 		g.setStroke(dashed);

@@ -494,6 +494,8 @@ public abstract class ClassBuilder <T>{
 			else if(cls.equals(String[].class)) return (T) getParam_( ClassBuilder.StringVectorConstructorParam.class,cls);
 			else if(cls.equals(Integer.class)) return (T) getParam_( ClassBuilder.NumberConstructorParam.class,cls);
 			else if(cls.equals(Integer[].class)) return (T) getParam_( ClassBuilder.NumberVectorConstructorParam.class,cls);
+			else if(cls.equals(Long.class)) return (T) getParam_( ClassBuilder.NumberConstructorParam.class,cls);
+			else if(cls.equals(Long[].class)) return (T) getParam_( ClassBuilder.NumberVectorConstructorParam.class,cls);
 			else if(cls.equals(Point.class)) return (T) getParam_( ClassBuilder.MapPointConstructorParam.class,cls);
 			else if(cls.equals(Point[].class)) return (T) getParam_( ClassBuilder.MapPointVectorConstructorParam.class,cls);
 			else if(cls.equals(Point.Vector.class)) return (T) getParam_( ClassBuilder.Abstract2ConstructorParam.class,cls);
@@ -520,6 +522,8 @@ public abstract class ClassBuilder <T>{
 			else if(cls.equals(String[].class)) return (T) getParam_( index,cls);
 			else if(cls.equals(Integer.class)) return (T) getParam_( index,cls);
 			else if(cls.equals(Integer[].class)) return (T) getParam_( index,cls);
+			else if(cls.equals(Long.class)) return (T) getParam_( index,cls);
+			else if(cls.equals(Long[].class)) return (T) getParam_( index,cls);
 			else if(cls.equals(Double.class)) return (T) getParam_( index,cls);
 			else if(cls.equals(Double[].class)) return (T) getParam_( index,cls);
 			else if(cls.equals(Point.class)) return (T) getParam_( index,cls);
