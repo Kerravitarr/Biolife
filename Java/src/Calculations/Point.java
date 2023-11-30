@@ -158,6 +158,10 @@ public final class Point{
 			}
 			return h;
 		}
+		/** @return true, если вектор имеет нулевую длинну*/
+		public boolean isZero(){
+			return x == 0 && y == 0;
+		}
 		/**Возвращает направление этого вектора
 		 * @return направление. Но так как направления может не быть, если это
 		 *			таже самая точка, то возвращается null
@@ -243,6 +247,23 @@ public final class Point{
 		public PointD normalize(){
 			if(getHypotenuse() == 0) return new PointD(0, 0);
 			else return new PointD(x/getHypotenuse(), y/getHypotenuse());
+		}
+		/**
+		 * Укорачивает вектор на коэфициент
+		 * Укорачивание целочисленное, без округления!
+		 * @param div во сколько раз укоротить
+		 * @return новая точка с укороченным значением
+		 */
+		public Vector divide(int div){
+			return Vector.create(x / div, y / div);
+		}
+		/**
+		 * Укорачивает вектор на коэфициент
+		 * @param div во сколько раз укоротить
+		 * @return новая точка с укороченным значением
+		 */
+		public PointD divide(double div){
+			return new PointD(x / div, y / div);
 		}
 		
 		@Override
@@ -478,6 +499,13 @@ public final class Point{
 	public Point add(Point point) {
 		return Point.create(x + point.x, y + point.y);
 	}
+	/**Сдвинуть точку по направлению
+	 * @param vector указатель направления
+	 * @return точка, сдвинутая от исходную на указанный вектор
+	 */
+	public Point add(Vector vector) {
+		return Point.create(x + vector.x, y + vector.y);
+	}
 	/**Вычесть из этой точки, другую
 	 * @param point к какой точке прибавляем
 	 * @return точка , являющаяся суммой этой и добавочной
@@ -510,35 +538,35 @@ public final class Point{
 	
 	/**
 	 * Функция нахождения расстояния между двумя точками.
-	<br>Иными словами. Полученный вектор указывает от точки this к точке second.
-	<br>this + return = second
-	<br>return = second - this
+	<br>Иными словами. Полученный вектор указывает от точки this к точке to.
+	<br>this + return = to
+	<br>return = to - this
 	 * Если x больше 0, то значит вторая точка правее
 	 * Если y больше 0, то значит вторая точка ниже
-	 * @param second вторая точка
+	 * @param to вторая точка
 	 * @return Расстояние между двумя точками.
 	 */
-	public Vector distance(Point second) {
-		return distance(this,second);
+	public Vector distance(Point to) {
+		return distance(this,to);
 	}
 	/**
 	 * Функция нахождения расстояния между двумя точками.
-	<br>Иными словами. Полученный вектор указывает от точки first к точке second.
-	<br>furst + return = second
-	<br>return = second - furst
+	<br>Иными словами. Полученный вектор указывает от точки from к точке to.
+	<br>from + return = to
+	<br>return = to - from
 	 * Если x больше 0, то значит вторая точка правее
 	 * Если y больше 0, то значит вторая точка ниже
-	 * @param first первая точка
-	 * @param second вторая точка
+	 * @param from первая точка
+	 * @param to вторая точка
 	 * @return Расстояние между двумя точками.
 	 */
-	public static Vector distance(Point first, Point second) {
+	public static Vector distance(Point from, Point to) {
 		final var width = Configurations.confoguration.MAP_CELLS.width;
 		final var height = Configurations.confoguration.MAP_CELLS.height;
 		switch (Configurations.confoguration.world_type) {
 			case LINE_H -> {
 				//Расстояние между двумя точками. [-width;width]
-				var del = second.x - first.x;
+				var del = to.x - from.x;
 				if(!(-width / 2 <= del && del <= width / 2)){
 					//Как только расстояние между двумя точками больше половины ширины экрана.
 					//Нам ближе будет пройти с обратной стороны
@@ -547,27 +575,27 @@ public final class Point{
 					else 
 						del += width;
 				}
-				return Vector.create(del, second.y - first.y);
+				return Vector.create(del, to.y - from.y);
 			}
 			case LINE_V -> {
-				var del = second.y - first.y;
+				var del = to.y - from.y;
 				if(!(-height / 2 <= del && del <= height / 2)){
 					if(del > 0)
 						del -= height;
 					else 
 						del += height;
 				}
-				return Vector.create(second.x - first.x, del);
+				return Vector.create(to.x - from.x, del);
 			}
 			case FIELD_R -> {
-				var dx = second.x - first.x;
+				var dx = to.x - from.x;
 				if(!(-width / 2 <= dx && dx <= width / 2)){
 					if(dx > 0)
 						dx -= width;
 					else 
 						dx += width;
 				}
-				var dy = second.y - first.y;
+				var dy = to.y - from.y;
 				if(!(-height / 2 <= dy && dy <= height / 2)){
 					if(dy > 0)
 						dy -= height;
@@ -577,7 +605,7 @@ public final class Point{
 				return Vector.create(dx, dy);
 			}
 			case RECTANGLE, CIRCLE -> {
-				return Vector.create(second.x - first.x, second.y - first.y);
+				return Vector.create(to.x - from.x, to.y - from.y);
 			}
 			default -> throw new AssertionError();
 		}

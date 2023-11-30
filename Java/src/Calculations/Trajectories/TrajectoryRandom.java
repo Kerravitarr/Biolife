@@ -10,6 +10,7 @@ import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ClassBuilder;
 import Utils.JSON;
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -76,6 +77,10 @@ public class TrajectoryRandom extends Trajectory{
 	private final List<Point> points;
 	/**Координаты верхнего левого и нижнего правого прямоугольника, внутри которого генерируются клетки*/
 	private final Point[] rectangle = new Point[2];
+	/**Ширина, расстояние по X, ограничивающего квадрата*/
+	private final int width;
+	/**Высота, расстояние по Y, ограничивающего квадрата*/
+	private final int height;
 	
 	
 	
@@ -95,7 +100,10 @@ public class TrajectoryRandom extends Trajectory{
 		this.start = start;
 		rectangle[0] = leftUp;
 		rectangle[1] = rightDown;
-		lenght = (int)Math.ceil(Math.hypot(rectangle[0].x - rectangle[1].x, rectangle[0].y - rectangle[1].y));
+		
+		width = rectangle[1].x - rectangle[0].x;
+		height = rectangle[1].y - rectangle[0].y;
+		lenght = (int)Math.ceil(Math.hypot(width, height));
 		points = Arrays.asList(new Point[lenght]);
 		position(Configurations.world.step); //Для генерации первых точек
 	}
@@ -105,70 +113,54 @@ public class TrajectoryRandom extends Trajectory{
 		start = Point.create(j.getJ("START"));
 		rectangle[0] = Point.create(j.getJ("LU"));
 		rectangle[1] = Point.create(j.getJ("RD"));
-		lenght = (int)Math.ceil(Math.hypot(rectangle[0].x - rectangle[1].x, rectangle[0].y - rectangle[1].y));
+		
+		width = rectangle[1].x - rectangle[0].x;
+		height = rectangle[1].y - rectangle[0].y;
+		lenght = (int)Math.ceil(Math.hypot(width, height));
 		points = Arrays.asList(new Point[lenght]);
 		position(Configurations.world.step); //Для генерации первых точек
 	}
+
 	/**
 	 * Создаёт траекторию постоянной длинны на основе 4х точек
 	 * @param from первая точка траектории
 	 * @param to последняя точка траектории
 	 * @param C1 вспомогательная точка, для задания направления от начала траектории
 	 * @param C4 вспомогательная точка, для задания направления ближе к концу линии
+	 * @param mass массив, в которй будут записаны новые точки
 	 */
-	private void regenerate(Point from, Point to, Point C1, Point C4){
-		final var C2 = C1; //Точка посреди лини для растяжения кривой до нужных размеров
-		final var C3 = C1; //Точка посреди лини для растяжения кривой до нужных размеров
+	private void regenerate(Point from, Point to, Point C1, Point C4, List<Point> mass){
+		final var F0 = 1;
+		final var F1 = 1;
+		final var F2 = 1 * 2;
+		final var F3 = 1 * 2 * 3;
+		final var F4 = 1 * 2 * 3 * 4;
+		final var F5 = 1 * 2 * 3 * 4 * 5;
+		
+		final var isFromEqTo = from.equals(to);
+		final var v = isFromEqTo ? C4.distance(to) : from.distance(to);
+		//Точка посреди лини для растяжения кривой до нужных размеров
+		final var center = isFromEqTo ? C4.add(v.divide(2)) : from.add(v.divide(2));
+		final double l = isFromEqTo ? lenght : (lenght - v.getHypotenuse()); //Нераспределённая длинна траектории
+		final var isUp = switch(v.direction()){case RIGHT,DOWN_R,DOWN,DOWN_L -> false; case LEFT,UP_L,UP,UP_R -> true;}; //Вверх смотрит вектор или вниз?
+		//Вектор от центра к углу ограничивающего квадрата
+		final var V2 = center.distance(isUp ? Point.create(rectangle[1].x, rectangle[0].y) : rectangle[1]);
+		
+		final Point C2 = Point.create((int) Math.round(center.x + l * V2.x / width),(int) Math.round(center.y  + l * V2.y / height));
+		final Point C3 = Point.create((int) Math.round(center.x - l * (width-V2.x) / width),(int) Math.round(center.y  - l * (height-V2.y) / height));
 		
 		for(var i = 0.0 ; i < lenght; i++){
 			final var t = i/lenght;
-			
-			
-			final var t2 = t * t;
-			final var t3 = t2 * t;
-			final var nt = 1.0 - t;
-			final var nt2 = nt * nt;
-			final var nt3 = nt2 * nt;
-			//final var x = nt3 * P0.x + 3.0 * t * nt2 * P1.x + 3.0 * t2 * nt * P2.x + t3 * P3.x;
-			//final var y = nt3 * P0.y + 3.0 * t * nt2 * P1.y + 3.0 * t2 * nt * P2.y + t3 * P3.y;
-			//points.set((int)i, Point.create((int)Math.round(x),(int)Math.round(y)));
+			final var B0 = (F5 / (F0 * F5)) * Math.pow(t, 0) * Math.pow(1 - t, 5);
+			final var B1 = (F5 / (F1 * F4)) * Math.pow(t, 1) * Math.pow(1 - t, 4);
+			final var B2 = (F5 / (F2 * F3)) * Math.pow(t, 2) * Math.pow(1 - t, 3);
+			final var B3 = (F5 / (F3 * F2)) * Math.pow(t, 3) * Math.pow(1 - t, 2);
+			final var B4 = (F5 / (F4 * F1)) * Math.pow(t, 4) * Math.pow(1 - t, 1);
+			final var B5 = (F5 / (F5 * F0)) * Math.pow(t, 5) * Math.pow(1 - t, 0);
+			final var x = B0 * from.x + B1 * C1.x + B2 * C2.x + B3 * C3.x + B4 * C4.x + B5 * to.x;
+			final var y = B0 * from.y + B1 * C1.y + B2 * C2.y + B3 * C3.y + B4 * C4.y + B5 * to.y;
+			mass.set((int)i, Point.create((int)Math.round(x),(int)Math.round(y)));
 		}
-	}
-	private List<Point> regenerate2(Point preFrom, Point from, Point to, Point postTo){
-		final var EPSILON = 1.0e-5;
-		final var C = 20.0;
-		
-		final var nextI = Point.distance(preFrom, from).normalize();
-		final var cur0 = nextI;
-		final var next0 = Point.distance(from, to).normalize();
-		final var tgR0 = cur0.add(next0).normalize();
-		
-		final var tgL1 = tgR0;
-		final var cur1 = next0;
-		final var deltaL1 = next0;
-		final var next1 = Point.distance(to, postTo).normalize();
-		final var tgR1 = cur1.add(next1).normalize();
-		final var deltaR1 = Point.distance(to, postTo);
-		final var l1 = Math.abs(tgL1.x) < EPSILON ? 0.0 : deltaL1.x / (C * tgL1.x);
-        final var l2 = Math.abs(tgR1.x) < EPSILON ? 0.0 : deltaR1.x / (C * tgR1.x);
-		
-		final var P0 = from;
-		final var P1 = tgL1.multiply(l1).add(from);
-		final var P3 = to;
-		final var P2 = new Point.PointD(to.x,to.y).add(tgR1.multiply(-l2));
-		final var ret = new ArrayList<Point>(lenght);
-		for(var i = 0.0 ; i < lenght; i++){
-			final var t = i/lenght;
-			final var t2 = t * t;
-			final var t3 = t2 * t;
-			final var nt = 1.0 - t;
-			final var nt2 = nt * nt;
-			final var nt3 = nt2 * nt;
-			final var x = nt3 * P0.x + 3.0 * t * nt2 * P1.x + 3.0 * t2 * nt * P2.x + t3 * P3.x;
-			final var y = nt3 * P0.y + 3.0 * t * nt2 * P1.y + 3.0 * t2 * nt * P2.y + t3 * P3.y;
-			ret.add((int)i, Point.create((int)Math.round(x),(int)Math.round(y)));
-		}
-		return ret;
 	}
 	/**
 	 * Создаёт точку траектории по её индексу
@@ -187,34 +179,102 @@ public class TrajectoryRandom extends Trajectory{
 		final var p = wstep % lenght;
 		if(num != number){
 			number = num;
-			var snum = num + seed; //Для участия сида в генерации
-			var psnum = snum - 1; //Предыдущий сид
-			var nsnum = snum + 1; //Следующий сид
-			var nnsnum = nsnum + 1; //После следующий сид
+			var sf = num + seed; //Сид первой точки этой траектории или последней точки предыдущей траектории
+			var se = sf + 1;//Сид последней точки этой траектории
+			var sp = sf - 1;//Сид предыдущей первой точки траектории
 			//Нам нужно сгенерировать точки...
-			var pref = generate(psnum); //Предыдущая точка траектории
-			var P1 = generate(snum); //Первая точка нашей траектории
-			var P2 = generate(nsnum); //Последняя точка нашей траектории
-			var next = generate(nnsnum); //Точка за нашей траекторией
-			//regenerateT(pref,P1,P2,next);
+			var pref = generate(sp); //Предыдущая точка траектории, нужна только для направления
+			var from = generate(sf); //Первая точка нашей траектории
+			var to = generate(se); //Последняя точка нашей траектории
+			Point C4, C1;
+			//Теперь нам нужны две вспомогательные точки:
+			if(from.equals(to)){ //Если у нас начало и конец совпали
+				final var d = Point.DIRECTION.toEnum((int) sf);
+				C4 = Point.create(to.x - d.addX,to.y + d.addY);
+			} else {
+				C4 = from;
+			}
+			if(pref.equals(from)){ //Если у нас совпадает предущая последняя точка и эта первая
+				final var d = Point.DIRECTION.toEnum((int) sp);
+				C1 = Point.create(from.x - d.addX,from.y + d.addY);
+			} else {
+				C1 = pref;
+			}
+			regenerate(from,to,C1,C4,points);
 			
 			lpoints.clear();
 			for(var i = -2; i < 2 ; i++){
-				snum = num + seed + i; //Для участия сида в генерации
-				psnum = snum - 1; //Предыдущий сид
-				nsnum = snum + 1; //Следующий сид
-				nnsnum = nsnum + 1; //После следующий сид
-				pref = generate(psnum); //Предыдущая точка траектории
-				P1 = generate(snum); //Первая точка нашей траектории
-				P2 = generate(nsnum); //Последняя точка нашей траектории
-				next = generate(nnsnum); //Точка за нашей траекторией
-				lpoints.addAll(regenerate2(pref,P1,P2,next));
+				sf = num + seed + i; //Сид первой точки этой траектории или последней точки предыдущей траектории
+				se = sf + 1;//Сид последней точки этой траектории
+				sp = sf - 1;//Сид предыдущей первой точки траектории
+				//Нам нужно сгенерировать точки...
+				pref = generate(sp); //Предыдущая точка траектории, нужна только для направления
+				from = generate(sf); //Первая точка нашей траектории
+				to = generate(se); //Последняя точка нашей траектории=
+				//Теперь нам нужны две вспомогательные точки:
+				if(from.equals(to)){ //Если у нас начало и конец совпали
+					final var d = Point.DIRECTION.toEnum((int) sf);
+					C4 = Point.create(to.x - d.addX * lenght / 2,to.y + d.addY * lenght / 2);
+				} else {
+					C4 = from;
+				}
+				if(pref.equals(from)){ //Если у нас совпадает предущая последняя точка и эта первая
+					final var d = Point.DIRECTION.toEnum((int) sp);
+					C1 = Point.create(from.x - d.addX * lenght / 2,from.y + d.addY * lenght / 2);
+				} else {
+					C1 = pref;
+				}
+				final var ret = Arrays.asList(new Point[lenght]);
+				regenerate(from,to,C1,C4,ret);
+				lpoints.addAll(ret);
 			}
 		}
 		return points.get((int) p);
 	}
 	
-	
+	private static class ColorGradient{
+		/**Список всех уже посчитанных цветов*/
+		private final Color[] colors = new Color[125];
+		/**Создаёт круговой градиент
+		 * @param from от какого цвета
+		 * @param to к какому цвету
+		 * @param isROYGBVR переход Красный-Оранжевый-Жёлтый-Зелёный-Голубой-Синий-Фиолетовый-Красный или обратный?
+		 */
+		public ColorGradient(Color from, Color to, boolean isROYGBVR){
+			final float[] hsbfrom = new float[4];
+			final float[] params = new float[4];
+			Color.RGBtoHSB(from.getRed(), from.getGreen(), from.getBlue(), hsbfrom);
+			hsbfrom[3] = from.getAlpha() / 255f;
+			final var hsbto = new float[4];
+			Color.RGBtoHSB(to.getRed(), to.getGreen(), to.getBlue(), hsbto);
+			hsbto[3] = to.getAlpha() / 255f;
+			if(hsbfrom[0] <= hsbto[0])
+				params[0] = ((hsbto[0] - hsbfrom[0]) + (isROYGBVR ? 0 : -1)) / 100f;
+			else
+				params[0] = ((hsbto[0] - hsbfrom[0]) + (isROYGBVR ? 0 : +1)) / 100f;
+			for (int i = 1; i < params.length; i++)
+				params[i] = (hsbto[i] - hsbfrom[i]) / 100f;
+			for (int i = 0; i < colors.length; i++) {
+				colors[i] = getHSBColor(hsbfrom[0] + params[0] * i, hsbfrom[1] + params[1] * i, hsbfrom[2] + params[2] * i, hsbfrom[3] + params[3] * i);
+			}
+		}
+		/**Возвращает один из цветов прогресса
+		 * @param progress прогресс по шклае [0,1]. Может быть чуть больше 1, пока, до 1.5... Но лучше не заходить :)
+		 * @return 
+		 */
+		public Color cyrcleGradient(double progress){
+			final var p = Utils.Utils.betwin(0,(int) Math.round(progress*100),colors.length - 1);
+			return colors[p];
+		}
+		private Color getHSBColor(float h, float s, float b, float a){
+			while(h > 1)h -= 1f;
+			while(h < 0)h += 1f;
+			s = Utils.Utils.betwin(0f, s, 1f);
+			b = Utils.Utils.betwin(0f, b, 1f);
+			a = Utils.Utils.betwin(0f, a, 1f);
+			return Utils.Utils.getHSBColor(h,s,b,a);
+		}
+	}
 	@Override
 	public void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
 		final var dashed = new java.awt.BasicStroke(1, java.awt.BasicStroke.CAP_BUTT, java.awt.BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
@@ -231,13 +291,16 @@ public class TrajectoryRandom extends Trajectory{
 		var fx = transform.toScrinX(fromP);
 		var fy = transform.toScrinY(fromP);
 		Utils.Utils.drawCircle(g, fx, fy, r);
-		g.setColor(AllColors.TRAJECTORY_LINE);
+		//g.setColor(AllColors.TRAJECTORY_LINE);
+		ColorGradient HPColors = new ColorGradient(new Color(215,42,89,127),new Color(68,231,26,255), false);
 		for (int i = 1; i < lpoints.size(); i++) {
 			final var p = lpoints.get(i);
 			final var x2 = transform.toScrinX(p);
 			final var y2 = transform.toScrinY(p);
-			if(Math.abs(fx - x2) <= r2 && Math.abs(fy - y2) <= r2)
+			if(Math.abs(fx - x2) <= r2 && Math.abs(fy - y2) <= r2){
+				g.setColor(HPColors.cyrcleGradient((double) i / lpoints.size() ));
 				g.drawLine(fx, fy, x2, y2);
+			}
 			fx = x2;
 			fy = y2;
 		}
