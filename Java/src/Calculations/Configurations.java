@@ -429,22 +429,62 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				buildMap(new Configurations(type, width, height), null);
 				//В этом мире буйства воды будет множество водоворотов. Какие-то с минералами, какие-то с солнцами. Одни будут двигаться очень медленно, другие очень быстро.
 				//Какие-то будут засасываться. Какие-то будут выталкиваться. Выталкивающие вкуснее!
-				final var ht = new TrajectoryPolyLine(100,false,Point.create(width/2, height/2),Point.create(1, height/2),Point.create(width-1, height/2));
+				final var ht = new TrajectoryPolyLine(100,false,Point.create(1, height/2),Point.create(width-1, height/2),Point.create(width/2, height/2));
 				streams.add(new StreamHorizontal( ht.clone(),width/5,height, -3,"Вал"));
-				suns.add(new SunRectangle(20,ht.clone(),width/5,height, false,"Длинное"));
 				
-				//Четыре нычки минералов двигающихся внутри потоков
-				final var atten = 30d / (Math.min(height, width) * 0.2);
-				final var size = Math.min(height, width) / 10;
-				final var T1 = new TrajectoryRandom(100,0,Point.create(width/2, height/2),Point.create(0, 0),Point.create(width-1, height-1));
-				final var T2 = new TrajectoryRandom(150,1,Point.create(width/2, height/2),Point.create(0, 0),Point.create(width-1, height-1));
-				minerals.add(new MineralEllipse(30,atten,T1.clone(), size, false,"1"));
-				streams.add(new StreamEllipse(T1.clone(), (int) (size + 30 * 2 / atten),new StreamAttenuation.PowerFunctionStreamAttenuation(3, 10,4),"1"));
-				streams.add(new StreamSwirl(T1.clone(),  (int) (size + 30 * 2 / atten ), new StreamAttenuation.PowerFunctionStreamAttenuation(-3, -10,4),"1"));
-				minerals.add(new MineralEllipse(30,atten,T2.clone(), size, false,"2"));
-				streams.add(new StreamEllipse(T2.clone(), (int) (size + 30 * 2 / atten),new StreamAttenuation.PowerFunctionStreamAttenuation(3, 10,4),"2"));
-				streams.add(new StreamSwirl(T2.clone(),  (int) (size + 30 * 2 / atten ), new StreamAttenuation.PowerFunctionStreamAttenuation(-3, -10,4),"2"));
-
+				
+				final var atten = Configurations.confoguration.DIRTY_WATER;
+				final var size = Math.min(height, width) / 15;
+				final var SD =  (int) (size + 30 / atten);
+				//Скорости течений будем задавать простыми числами. Это нужно, чтобы создать большую вариативность
+				//Среди потоков
+				//А вот тут функция нахождения простого числа
+				final var primeClass = new Object(){
+					final List<Integer> primes = new ArrayList<>(){{add(2);add(3);}};
+					//Текущий номер простого числа
+					int nump = 0;
+					/**Возвращает следующее простое числоа*/
+					public int getNext(){
+						nump++;
+						if(primes.size() < nump)
+							findPrimes(nump);
+						return primes.get(nump-1);
+					}
+					private void findPrimes(int number) {
+						for (var i = primes.get(primes.size() - 1) + 2; primes.size() < number; i += 2) {
+							if (isPrime(i, primes)) {
+								primes.add(i);
+							}
+						}
+					}
+					private boolean isPrime(int n, List<Integer> primes) {
+						for (var i = 0; i < primes.size(); i++) {
+							var prime = primes.get(i);
+							if (prime * prime > n) {
+								return true;
+							} else if (n % prime == 0) {
+								return false;
+							}
+						}
+						return true;
+					}
+				};
+				while(primeClass.getNext() < 100){} //Отматываем до тех пор, пока не будет число больше 100. Просто 100 - медленно
+				
+				for(var i = 0 ; i < 40 ; i++){
+					final var T = new TrajectoryRandom(primeClass.getNext(),i, i % 4 < 2 ? Point.create(0, 0) : Point.create(width/2, height/2),Point.create(0, 0),width*2, height*2);
+					final var SA = i % 4 < 2 ? new StreamAttenuation.PowerFunctionStreamAttenuation(3, 10,4) : new StreamAttenuation.PowerFunctionStreamAttenuation(-3, -10,4);
+					final var name = "№"+i;
+					if(i % 2 == 0){
+						minerals.add(new MineralEllipse(30/2,atten,T.clone(), size, false,name));
+						streams.add(new StreamEllipse(T.clone(),SD,SA,name));
+						streams.add(new StreamSwirl(T.clone(),  SD, SA,name));
+					} else {
+						suns.add(new SunEllipse(30/2,T.clone(), size, false,name));
+						streams.add(new StreamEllipse(T.clone(), SD,SA,name));
+						streams.add(new StreamSwirl(T.clone(),  SD, SA,name));
+					}
+				}
 			}
 			default -> throw new AssertionError();
 		}

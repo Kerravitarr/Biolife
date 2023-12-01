@@ -265,6 +265,13 @@ public final class Point{
 		public PointD divide(double div){
 			return new PointD(x / div, y / div);
 		}
+		/**Складывает два вектора
+		 * @param vector второй вектор
+		 * @return вектор, как сумма исходных
+		 */
+		public Vector add(Vector vector) {
+			return Vector.create(x + vector.x, y + vector.y);
+		}
 		
 		@Override
 		public String toString() {

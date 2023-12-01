@@ -255,6 +255,13 @@ public class SettingsMake extends java.awt.Dialog {
 			
 			build(clr, parametrFullName,panel,np,points,selectPoint);
 			return panel;
+		} else if(param instanceof Utils.ClassBuilder.Abstract2ConstructorParam<?> np){
+			return new SettingsPoint(clr,parametrFullName, 
+					np.get1Minimum(), np.get1Default(), np.get1Maximum(),np.get1Default(),
+					np.get2Minimum(), np.get2Default(), np.get2Maximum(),np.get2Default(),  e -> {
+				np.setValue( e);
+				propertyChange();
+			});
 		}
 		throw new AssertionError("Нет у нас реализации для " + String.valueOf(param));
 	}

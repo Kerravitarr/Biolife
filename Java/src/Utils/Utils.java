@@ -285,6 +285,26 @@ public class Utils {
 		return x;
 	}
 	/**
+	 * Метод получения псевдослучайного целого числа [0,max] из хэша base.
+	 * Код позаимствован из jdk.internal.util.random.RandomSupport
+	 * @param base число, из которого будет сгенерировано случайное число
+	 * @param max максимальное значение, включительно
+	 * @return [min,max]
+	 */
+	public static int randomByHash(int base, int max){
+		final var m = max - 1;
+        var r = hashCode(base);
+        if ((max & m) == 0) {
+            r &= m;
+        } else {
+            for (var u = r >>> 1;
+                 u + m - (r = u % max) < 0;
+                 u = hashCode(++base) >>> 1)
+				{}
+        }
+        return r;
+	}
+	/**
 	 * Метод получения псевдослучайного целого числа [min,max] из хэша base.
 	 * Код позаимствован из jdk.internal.util.random.RandomSupport
 	 * Если min > max, то генератор вернёт просто случайное число
@@ -338,6 +358,26 @@ public class Utils {
 		x = (x ^ (x >>> 27) ^ (x >>> 54)) * (0x96de1b173f119089L);
 		x = x ^ (x >>> 30) ^ (x >>> 60);
 		return x;
+	}
+	/**
+	 * Метод получения псевдослучайного целого числа [0,max] из хэша base.
+	 * Код позаимствован из jdk.internal.util.random.RandomSupport
+	 * @param base число, из которого будет сгенерировано случайное число
+	 * @param max максимальное значение, включительно
+	 * @return [min,max]
+	 */
+	public static long randomByHash(long base, long max){
+		final var m = max - 1;
+        var r = hashCode(base);
+        if ((max & m) == 0L) {
+            r &= m;
+        } else {
+            for (var u = r >>> 1;
+                 u + m - (r = u % max) < 0L;
+                 u = hashCode(++base) >>> 1)
+                {}
+        }
+        return r;
 	}
 	/**
 	 * Метод получения псевдослучайного целого числа [min,max] из хэша base.

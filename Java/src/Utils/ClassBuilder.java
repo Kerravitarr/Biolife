@@ -166,12 +166,12 @@ public abstract class ClassBuilder <T>{
 		public P getDefault();
 		/**Возвращает имя параметра. По этому имени будет искаться локализованное название параметра в файлах локали
 		 * @return название ключа имени параметра. 
-		 *	Параметр существующего объекта будет искаться по пути CHILD.parameter.name()
-		 *	Для параметра конструктора по пути CHILD.(constructor.name()).parameter.name()
-		 *	Если эта функция вернёт имя начинающееся с  "constructor.", то имя будет искаться по пути CHILD.constructor.parameter.name()
-		 *		Это специально для общих параметров у разных конструкторов
-		 *	Если эта функция вернёт имя начинающееся с  "super.", то имя будет искаться по пути PERRENT.constructor.parameter.name()
-		 *		Это специально для параметров, которые унаследованы от суперкласса
+		 *<br>Параметр существующего объекта будет искаться по пути CHILD.parameter.name()
+		 *<br>Для параметра конструктора по пути CHILD.(constructor.name()).parameter.name()
+		 *<br>Если эта функция вернёт имя начинающееся с  "constructor.", то имя будет искаться по пути CHILD.constructor.parameter.name()
+		 *<br>	Это специально для общих параметров у разных конструкторов
+		 *<br>Если эта функция вернёт имя начинающееся с  "super.", то имя будет искаться по пути PERRENT.constructor.parameter.name()
+		 *<br>	Это специально для параметров, которые унаследованы от суперкласса
 		 */
 		public String name();
 	}
@@ -370,7 +370,9 @@ public abstract class ClassBuilder <T>{
 	public static abstract class MapPointVectorConstructorParam<T> extends ConstructorParametr<Point[], T>{}
 	
 	/**Параметр типа абстрактные два значения. Х - первое значение, Y - второе*/
-	public static abstract class Abstract2ConstructorParam<T> extends ConstructorParametr<Point.Vector, T> implements Abstract2P{}
+	public static abstract class Abstract2ConstructorParam<T> extends ConstructorParametr<Point.Vector, T> implements Abstract2P{
+		@Override public Point.Vector getDefault() {return Point.Vector.create(get1Default(), get2Default());}
+	}
 	/**Параметр типа абстрактные два значения. Х - первое значение, Y - второе*/
 	public static abstract class Abstract2VectorConstructorParam<T> extends ConstructorParametr<Point.Vector[], T> implements Abstract2P{}
 	
