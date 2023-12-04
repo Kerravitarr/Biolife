@@ -284,6 +284,7 @@ public class ConnectiveTissue extends CellObject implements AliveCellProtorype.A
 						pointNewConnect = f2.getPos().next(this.getPos().direction(f1.getPos()));
 					}
 				}
+				if(!pointNewConnect.valid()) return; //Туда связи быть не может...
 				final var o = Configurations.world.get(pointNewConnect);
 				if(o == null){
 					//Создаём дублирующую связь

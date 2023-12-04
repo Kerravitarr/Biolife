@@ -206,6 +206,15 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 			case LINE_H,RECTANGLE -> adam.setPos(Point.create(Configurations.getWidth()/2, 0));
 			case LINE_V -> adam.setPos(Point.create(Configurations.getWidth()*3/4, Configurations.getHeight()/2));
 			case FIELD_R -> adam.setPos(Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2));
+			case CIRCLE -> { //Тут реально приходится попотеть!
+				for(var y = 0 ; y < Configurations.getHeight() ; y++){
+					final var point = Point.create(Configurations.getWidth()/2, y);
+					if(point.valid()){
+						adam.setPos(point);
+						break;
+					}
+				}
+			}
 			default -> throw new AssertionError();
 		}
 		add(adam);

@@ -164,11 +164,12 @@ public class Settings extends javax.swing.JPanel {
 			final var buildGrav = Configurations.gravitation[i];
 			final var defDir = switch (Configurations.confoguration.world_type) {
 				case LINE_H,LINE_V,RECTANGLE -> Gravitation.Direction.DOWN;
-				case FIELD_R -> Gravitation.Direction.CENTER;
+				case FIELD_R,CIRCLE -> Gravitation.Direction.CENTER;
 				default -> throw new AssertionError();
 			};
 			final var defPower = switch (Configurations.confoguration.world_type) {
 				case LINE_H -> 2;
+				case CIRCLE -> 20;
 				case LINE_V -> 100;
 				case RECTANGLE,FIELD_R -> 1000;
 				default -> throw new AssertionError();

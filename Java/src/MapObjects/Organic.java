@@ -101,7 +101,8 @@ public class Organic extends CellObject {
 				final var hpMin =  Math.min(getHealth(), org.getHealth());
 				final var hpMax =  Math.max(getHealth(), org.getHealth());
 				//100_000_000 - если больше сделать, то 0.1 уже не помещается в double и органика становится бесконечной
-				if(hpMin * yMax >= hpMax * yMin && hpMax < 100_000_000){ //Маленькие кусочки слипаются
+				//А 1 лям - потому что это фактически бесконечный источник энергии
+				if(hpMin * yMax >= hpMax * yMin && hpMax < 1_000_000){ //Маленькие кусочки слипаются
 					final var mass = org.energy + energy;
 					final var px = (org.getImpuls().x * org.getHealth() + getImpuls().x*getHealth()) / mass;
 					final var py = (org.getImpuls().y * org.getHealth() + getImpuls().y*getHealth()) / mass;

@@ -24,6 +24,7 @@ import java.util.ArrayList;
 
 	import java.awt.*;
 import java.awt.image.*;
+import java.util.Arrays;
 import java.util.Objects;
 /**
  *
@@ -381,7 +382,7 @@ public class WorldView extends javax.swing.JPanel {
 	private void paintField(Graphics2D g) {
 		//Рисуем игровое поле
 		switch (Configurations.confoguration.world_type) {
-			case LINE_H,LINE_V, RECTANGLE ->{
+			case LINE_H,LINE_V, RECTANGLE,CIRCLE ->{
 				//Вода
 				colors[1].paint(g);
 			}
@@ -425,7 +426,7 @@ public class WorldView extends javax.swing.JPanel {
 				colors[0].paint(g);
 				colors[2].paint(g);
 			}
-			case RECTANGLE ->{
+			case RECTANGLE,CIRCLE ->{
 				//Нижняя и верхняя части
 				colors[0].paint(g);
 				colors[2].paint(g);
@@ -548,7 +549,100 @@ public class WorldView extends javax.swing.JPanel {
 				
 				colors[0] = new ColorRec(xu,yu, AllColors.WATER_OCEAN);
 				colors[1] = new ColorRec(xw,yw, AllColors.WATER_OCEAN);
-				colors[2] = new ColorRec(xd,yd, AllColors.WATER_OCEAN);
+				colors[2] = new ColorRec(xd,yd, AllColors.WATER_OCEAN);	
+			}
+			case CIRCLE -> {
+				final var a2 = Configurations.getWidth();
+				final var b2 = Configurations.getHeight();
+				final var a = a2/2d;
+				final var b = b2/2d;
+				//Поле, вода
+				final var xw = new ArrayList<Integer>(a2 * b2);
+				final var yw = new ArrayList<Integer>(a2 * b2);
+				//Верхняя половина стола
+				final var xut = new ArrayList<Integer>(a2 * b2);
+				final var yut = new ArrayList<Integer>(a2 * b2);
+				//Нижняя половина стола
+				final var xdt = new ArrayList<Integer>(a2 * b2);
+				final var ydt = new ArrayList<Integer>(a2 * b2);
+				
+				//Прочёсываем все точки слева направо, в поисках первых (верхних) наших 
+				xut.add(0);
+				yut.add(transforms.toScrinY(b));
+				boolean isFirst = true; //Флаг, чтобы первая точка в обязательном порядке была посредине
+				for(var x = 0; x < a2; x++){
+					var y = 0;
+					for(; y < b2; y++){
+						final var point = Point.create(x, y);
+						if(point.valid()){
+							final int sx = transforms.toScrinX(x);
+							final int sy;
+							if(isFirst){
+								isFirst = false;
+								sy = transforms.toScrinY(b);
+							} else {
+								sy = transforms.toScrinY(y);
+							}
+							xw.add(sx);
+							yw.add(sy);
+							xut.add(sx);
+							yut.add(sy);
+							break;
+						}
+					}
+					if(y == b2 && x > a){ //Когда мы не встретим ни одной правильной точки и пройдём больше половины пути по X - мы в конце. Заканчиваем
+						break;
+					}
+				}
+				xut.add(xut.get(xut.size()-1));
+				yut.add(transforms.toScrinY(b));
+				xut.add(getWidth());
+				yut.add(transforms.toScrinY(b));
+				xut.add(getWidth());
+				yut.add(0);
+				xut.add(0);
+				yut.add(0);
+				//А теперь пройдём тоже самое, но в обратную сторону
+				xdt.add(getWidth());
+				ydt.add(transforms.toScrinY(b));
+				isFirst = true;
+				for(var x = a2-1; x >= 0; x--){
+					var y = b2-1;
+					for(; y >= 0; y--){
+						final var point = Point.create(x, y);
+						if(point.valid()){
+							final int sx = transforms.toScrinX(x);
+							final int sy;
+							if(isFirst){
+								isFirst = false;
+								sy = transforms.toScrinY(b);
+							} else {
+								sy = transforms.toScrinY(y);
+							}
+							xw.add(sx);
+							yw.add(sy);
+							xdt.add(sx);
+							ydt.add(sy);
+							break;
+						}
+					}
+					if(y == 0 && x < a){ //Когда мы не встретим ни одной правильной точки и пройдём больше половины пути по X - мы в самом начале. Заканчиваем
+						break;
+					}
+				}
+				xdt.add(xdt.get(xdt.size()-1));
+				ydt.add(transforms.toScrinY(b));
+				xdt.add(0);
+				ydt.add(transforms.toScrinY(b));
+				xdt.add(0);
+				ydt.add(getHeight());
+				xdt.add(getWidth());
+				ydt.add(getHeight());
+				//Вода
+				colors[1] = new ColorRec(xw.stream().mapToInt(Integer::intValue).toArray(),yw.stream().mapToInt(Integer::intValue).toArray(), AllColors.GLASS);
+				//Стол
+				colors[0] = new ColorRec(xut.stream().mapToInt(Integer::intValue).toArray(),yut.stream().mapToInt(Integer::intValue).toArray(),AllColors.OAK);
+				colors[2] = new ColorRec(xdt.stream().mapToInt(Integer::intValue).toArray(),ydt.stream().mapToInt(Integer::intValue).toArray(), AllColors.OAK);
 				
 			}
 			default -> 	throw new AssertionError();
@@ -570,7 +664,7 @@ public class WorldView extends javax.swing.JPanel {
 	public double getUborder(){
 		return switch (Configurations.confoguration.world_type) {
 			case LINE_H,RECTANGLE -> Transforms.UP_DOWN_border.getX();
-			case LINE_V,FIELD_R -> 0d;
+			case LINE_V,FIELD_R,CIRCLE -> 0d;
 			default -> throw new AssertionError();
 		};
 	}
@@ -581,7 +675,7 @@ public class WorldView extends javax.swing.JPanel {
 	public double getDborder(){
 		return switch (Configurations.confoguration.world_type) {
 			case LINE_H,RECTANGLE -> Transforms.UP_DOWN_border.getY();
-			case LINE_V,FIELD_R -> 0d;
+			case LINE_V,FIELD_R,CIRCLE -> 0d;
 			default -> throw new AssertionError();
 		};
 	}
@@ -591,7 +685,7 @@ public class WorldView extends javax.swing.JPanel {
 	 */
 	public double getLborder(){
 		return switch (Configurations.confoguration.world_type) {
-			case LINE_H,FIELD_R -> 0d;
+			case LINE_H,FIELD_R,CIRCLE -> 0d;
 			case LINE_V,RECTANGLE -> Transforms.LEFT_RIGHT_border.getX();
 			default -> throw new AssertionError();
 		};
@@ -602,7 +696,7 @@ public class WorldView extends javax.swing.JPanel {
 	 */
 	public double getRborder(){
 		return switch (Configurations.confoguration.world_type) {
-			case LINE_H,FIELD_R -> 0d;
+			case LINE_H,FIELD_R,CIRCLE -> 0d;
 			case LINE_V,RECTANGLE -> Transforms.LEFT_RIGHT_border.getY();
 			default -> throw new AssertionError();
 		};
