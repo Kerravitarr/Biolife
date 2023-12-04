@@ -25,7 +25,7 @@ public class TrajectoryEllipse extends Trajectory{
 			@Override public String serializerName() {return "Эллипс";}
 			@Override public Class printName() {return TrajectoryEllipse.class;}
 		};
-		final var speed = new ClassBuilder.NumberConstructorParamAdapter("super.speed",0,500,1000,0,null);
+		final var speed = new ClassBuilder.NumberConstructorParamAdapter("super.speed",-1000,500,1000,null,null);
 		final var center = new ClassBuilder.MapPointConstructorParam(){
 					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
 					@Override public String name() {return "constructor.center";}
@@ -79,26 +79,33 @@ public class TrajectoryEllipse extends Trajectory{
 	private final double a;
 	/**Малая ось*/
 	private final double b;
+	/**Направление*/
+	private final boolean clockwise;
 	
 	
 	/**Движение по орбите
 	 * @param speed скорость движения. Как часто солнце будет шагать. При 1 - каждый раз, при 2 - каждые 2 хода и т.д.
 	 *				с учётом, что весь круг занимает 360 шагов солнца
+	 * <br>Если скорость положительная - движение по часовой стрелке
+	 * <br>Если скорость отрицательная - движение против часовой стрелке
 	 * @param center центр, вокруг которого будем крутиться
 	 * @param startAngle начальный угол
 	 * @param a2 большая ось эллипса - лежит на оси Х
 	 * @param b2 малая ось эллипса - лежит на оси Y
 	 */
 	public TrajectoryEllipse(long speed, Point center,double startAngle, int a2, int b2){
-		super(speed);
+		super(Math.abs(speed));
 		this.center = center;
 		this.angle = startAngle;
 		this.a = a2 / 2d;
 		this.b = b2 / 2d;
+		clockwise = speed > 0;
 	}
 	/**Движдение объекта по кругу
 	 * @param speed скорость движения. Как часто солнце будет шагать. При 1 - каждый раз, при 2 - каждые 2 хода и т.д.
 	 *				с учётом, что весь круг занимает 360 шагов солнца
+	 * <br>Если скорость положительная - движение по часовой стрелке
+	 * <br>Если скорость отрицательная - движение против часовой стрелке
 	 * @param center центр, вокруг которого будем крутиться
 	 * @param startAngle начальный угол
 	 * @param d диаметр круга, по которому солнце будет летать
@@ -112,11 +119,12 @@ public class TrajectoryEllipse extends Trajectory{
 		this.angle = json.get("angle");
 		this.a = json.get("a");
 		this.b = json.get("b");
+		this.clockwise = json.get("clockwise");
 	}
 
 	@Override
 	protected Point position(long step) {
-		final var rangle = angle + step * Math.PI / 180d;
+		final var rangle = angle + (clockwise ? (step * Math.PI / 180d) : -(step * Math.PI / 180d));
 		return Point.create((int)Math.round(center.getX() + a * Math.cos(rangle)), (int)Math.round(center.getY() +  b * Math.sin(rangle)));
 	}
 	@Override
@@ -126,18 +134,21 @@ public class TrajectoryEllipse extends Trajectory{
 		j.add("center", center.toJSON());
 		j.add("a", a);
 		j.add("b", b);
+		j.add("clockwise", clockwise);
 		return j;
 	}
 	
 	@Override
-	public void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
+	protected void paint(Graphics2D g, WorldView.Transforms transform, int frame, int dx, int dy) {
 		final var dashed = new java.awt.BasicStroke(1, java.awt.BasicStroke.CAP_BUTT, java.awt.BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
 		final var os = g.getStroke();
 		g.setColor(AllColors.TRAJECTORY_POINT);
 		g.setStroke(dashed);
+		final var cxp = center.getX() + dx;
+		final var cyp = center.getY() + dy;
 		//Рисуем опорные лини
-		final var cx = transform.toScrinX(center);
-		final var cy = transform.toScrinY(center);
+		final var cx = transform.toScrinX(cxp);
+		final var cy = transform.toScrinY(cyp);
 		final var a2 = transform.toScrin(a*2);
 		final var b2 = transform.toScrin(b*2);
 		final var ub = cy - b2/2;
@@ -155,15 +166,8 @@ public class TrajectoryEllipse extends Trajectory{
 		g.setColor(AllColors.TRAJECTORY_LINE);
 		g.drawOval(cx-a2/2, cy-b2/2, a2, b2);
 		//И начальный угол
-		final var sx = transform.toScrinX(center.getX() + a * Math.cos(angle));
-		final var sy = transform.toScrinY(center.getY() + b * Math.sin(angle));
-		g.drawLine(cx, cy, sx, sy);
-		
-		//А теперь точку на этой траектории
-		g.setColor(AllColors.TRAJECTORY_POINT);
-		final var aOffset = angle + (frame % 360) * Math.PI / 180d;
-		final var px = transform.toScrinX(center.getX() + a * Math.cos(aOffset));
-		final var py = transform.toScrinY(center.getY() + b * Math.sin(aOffset));
-		Utils.Utils.fillCircle(g, px, py, r * 2);		
+		final var sx = transform.toScrinX(cxp + a * Math.cos(angle));
+		final var sy = transform.toScrinY(cyp + b * Math.sin(angle));
+		g.drawLine(cx, cy, sx, sy);	
 	}
 }

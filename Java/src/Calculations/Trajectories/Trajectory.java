@@ -186,16 +186,68 @@ public class Trajectory implements Cloneable{
 	 */
 	public static List<ClassBuilder> getChildrens(){return TRAJECTORIES.getChildrens();}
 
+	
+	/**Отрисовочный флаг. Нужен для рисования траеткории от текущей точки*/
+	private int lastFrame = 0;
+	/**Смещение текущего кадра относительно изначального*/
+	private int frameOffset = 0;
 	/**Рисует объект на экране
 	 * @param g холст, на котором надо начертить солнышко
 	 * @param transform преобразователь размеров мировых в размеры экранные
 	 * @param frame условное число, начинающееся с INT_MAX/2, показывающее как объект будет двигаться по траектории
 	 */
-	public void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
-		int r = transform.toScrin((frame & 4) == 0 ? 1 : 2);
-		int cx = transform.toScrinX(pos);
-		int cy = transform.toScrinY(pos);
-		g.setColor(AllColors.TRAJECTORY_POINT);
-		Utils.Utils.fillCircle(g, cx, cy, r);
+	public final void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
+		if(frame != lastFrame && frame != ++lastFrame){
+			frameOffset = lastFrame = frame;
+		}
+		final var npos = position(step + (frame-frameOffset)); //Текущая позиция объекта
+		final var r2 = transform.toScrin(2);
+		
+		//Для обработки возможной телепортации через границу мира мы будем рисовать ни одну траекторию, а сразу 4
+		//i = 0 Главный экран
+		//i = 1 Она-же справа (слева)
+		//i = 2 Она-же сверху(снизу)
+		//i = 3 И её правую (левую) тень сверху (снизу)
+
+		for (int i = 0; i < 4; i++) {
+			if(i > 0){
+				switch (Configurations.confoguration.world_type) {
+					case LINE_H -> {if(i == 2 || i == 3) continue;}
+					case LINE_V -> {if(i == 1 || i == 3) continue;}
+					case FIELD_R -> {}
+					case CIRCLE,RECTANGLE -> {continue;}
+					default -> throw new AssertionError();
+				}
+			}
+			final var dx = switch(i){
+				case 0,2 -> 0;
+				case 1,3 -> (npos.getX() > Configurations.confoguration.MAP_CELLS.width/2 ? - Configurations.confoguration.MAP_CELLS.width: Configurations.confoguration.MAP_CELLS.width);
+				default -> throw new AssertionError();
+			};
+			final var dy = switch(i){
+				case 0,1 -> 0;
+				case 2,3 -> (npos.getY() > Configurations.confoguration.MAP_CELLS.height/2 ? - Configurations.confoguration.MAP_CELLS.height : Configurations.confoguration.MAP_CELLS.height);
+				default -> throw new AssertionError();
+			};
+			g.setColor(AllColors.TRAJECTORY_POINT);
+			Utils.Utils.fillCircle(g, transform.toScrinX(npos.x+dx), transform.toScrinY(npos.y+dy), r2);	
+			paint(g,transform,frame, dx, dy);
+		}
+	}
+	/**Рисует объект на экране
+	 * @param g холст, на котором надо начертить солнышко
+	 * @param transform преобразователь размеров мировых в размеры экранные
+	 * @param frame условное число, начинающееся с INT_MAX/2, показывающее как объект будет двигаться по траектории
+	 * @param dx смещение по оси X всех точек траектории для отрисовки
+	 * @param dy смещение по оси Y всех точек траектории для отрисовки
+	 */
+	protected void paint(Graphics2D g, WorldView.Transforms transform, int frame, int dx, int dy) {
+		if((frame & 4) == 0){
+			int cx = transform.toScrinX(pos.x+dx);
+			int cy = transform.toScrinY(pos.y+dy);
+			int r = transform.toScrin(2);
+			g.setColor(AllColors.TRAJECTORY_LINE);
+			Utils.Utils.fillCircle(g, cx, cy, r);
+		}
 	}
 }

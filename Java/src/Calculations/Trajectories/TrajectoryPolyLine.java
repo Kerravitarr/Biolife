@@ -166,32 +166,31 @@ public class TrajectoryPolyLine extends Trajectory{
 	}
 	
 	@Override
-	public void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
+	protected void paint(Graphics2D g, WorldView.Transforms transform, int frame, int dx, int dy) {
 		final var r = transform.toScrin(1);
 		final var r2 = r*2;
 		//Рисуем точки
 		g.setColor(AllColors.TRAJECTORY_POINT);
 		for(final var i : points){
-			final var x1 = transform.toScrinX(i.from);
-			final var y1 = transform.toScrinY(i.from);
-			final var x2 = transform.toScrinX(i.from.getX() + i.dx*i.lenght);
-			final var y2 = transform.toScrinY(i.from.getY() + i.dy*i.lenght);
+			final var fx = i.from.x + dx;
+			final var fy = i.from.y + dy;
+			final var x1 = transform.toScrinX(fx);
+			final var y1 = transform.toScrinY(fy);
+			final var x2 = transform.toScrinX(fx + i.dx*i.lenght);
+			final var y2 = transform.toScrinY(fy + i.dy*i.lenght);
 			Utils.Utils.fillCircle(g, x1, y1, r);
 			Utils.Utils.fillCircle(g, x2, y2, r);
 		}
-		//Теперь рисуем бегающую точку
-		var nP = position(frame);
-		Utils.Utils.fillCircle(g, transform.toScrinX(nP), transform.toScrinY(nP), r2);
 		
 		//Рисуем линии
 		var fromP = position(0);
-		var fx = transform.toScrinX(fromP);
-		var fy = transform.toScrinY(fromP);
+		var fx = transform.toScrinX(fromP.x+dx);
+		var fy = transform.toScrinY(fromP.y+dy);
 		g.setColor(AllColors.TRAJECTORY_LINE);
 		for (int i = 1; i < lenght; i++) {
 			final var p = position(i);
-			final var x2 = transform.toScrinX(p);
-			final var y2 = transform.toScrinY(p);
+			final var x2 = transform.toScrinX(p.x+dx);
+			final var y2 = transform.toScrinY(p.y+dy);
 			if(Math.abs(fx - x2) <= r2 && Math.abs(fy - y2) <= r2)
 				g.drawLine(fx, fy, x2, y2);
 			fx = x2;

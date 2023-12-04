@@ -272,6 +272,13 @@ public final class Point{
 		public Vector add(Vector vector) {
 			return Vector.create(x + vector.x, y + vector.y);
 		}
+		/**Вычитает два вектора
+		 * @param vector второй вектор
+		 * @return вектор, как разница исходных
+		 */
+		public Vector sub(Vector vector) {
+			return Vector.create(x - vector.x, y - vector.y);
+		}
 		
 		@Override
 		public String toString() {

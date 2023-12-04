@@ -46,7 +46,7 @@ public class TrajectoryRandom extends Trajectory{
 				addParam(new ClassBuilder.NumberConstructorParamAdapter("super.speed", 0L,500L,1000L,0L,null));
 				addParam(new ClassBuilder.NumberConstructorParamAdapter("seed", 0L,0L,100L,null,null){@Override public Long getDefault() {return Utils.Utils.hashCode(System.currentTimeMillis());}});
 				addParam(new ClassBuilder.MapPointConstructorParam(){
-					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public Point getDefault() {return Point.create(15,15);}//Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
 					@Override public String name() {return "start";}
 				});
 				addParam(new ClassBuilder.MapPointConstructorParam(){
@@ -55,10 +55,10 @@ public class TrajectoryRandom extends Trajectory{
 				});
 				addParam(new ClassBuilder.Abstract2ConstructorParam(){
 					@Override public int get1Minimum(){return 1;}
-					@Override public int get1Default(){return Configurations.getWidth();}
+					@Override public int get1Default(){return 30;}//Configurations.getWidth();}
 					@Override public int get1Maximum(){return Integer.MAX_VALUE;}
 					@Override public int get2Minimum(){return 1;}
-					@Override public int get2Default(){return Configurations.getHeight();}
+					@Override public int get2Default(){return 30;}//Configurations.getHeight();}
 					@Override public int get2Maximum(){return Integer.MAX_VALUE;}
 					@Override public String name() {return "wh";}
 				});
@@ -208,7 +208,7 @@ public class TrajectoryRandom extends Trajectory{
 				final var d = Point.DIRECTION.toEnum((int) sp);
 				C1 = Point.Vector.create(from.x - d.addX,from.y + d.addY);
 			} else {
-				C1 = pref;
+				C1 = from.add(from.sub(pref));
 			}
 			regenerate(from,to,C1,C4,points);
 			/*var speed = Point.Vector.create(0, 0);
@@ -252,26 +252,26 @@ public class TrajectoryRandom extends Trajectory{
 	}
 	
 	@Override
-	public void paint(Graphics2D g, WorldView.Transforms transform, int frame) {
+	protected void paint(Graphics2D g, WorldView.Transforms transform, int frame, int dx, int dy) {
 		final var dashed = new java.awt.BasicStroke(1, java.awt.BasicStroke.CAP_BUTT, java.awt.BasicStroke.JOIN_BEVEL, 0, new float[]{9}, 0);
 		final var os = g.getStroke();
 		g.setColor(AllColors.TRAJECTORY_POINT);
 		g.setStroke(dashed);
-		g.drawRect(transform.toScrinX(leftUp.x), transform.toScrinY(leftUp.y), transform.toScrin(width), transform.toScrin(height));
+		g.drawRect(transform.toScrinX(leftUp.x+dx), transform.toScrinY(leftUp.y+dy), transform.toScrin(width), transform.toScrin(height));
 		g.setStroke(os);
 		
-		//Рисуем линии
 		final var r = transform.toScrin(1);
-		final var r2 = r*2;
+		final var r2 = r*2;		
+		//Рисуем линии
 		var fromP = points.get(0);
-		var fx = transform.toScrinX(fromP);
-		var fy = transform.toScrinY(fromP);
+		var fx = transform.toScrinX(fromP.x+dx);
+		var fy = transform.toScrinY(fromP.y+dy);
 		Utils.Utils.drawCircle(g, fx, fy, r);
 		g.setColor(AllColors.TRAJECTORY_LINE);
 		for (int i = 1; i < points.size(); i++) {
 			final var p = points.get(i);
-			final var x2 = transform.toScrinX(p);
-			final var y2 = transform.toScrinY(p);
+			final var x2 = transform.toScrinX(p.x+dx);
+			final var y2 = transform.toScrinY(p.y+dy);
 			if(Math.abs(fx - x2) <= r2 && Math.abs(fy - y2) <= r2){
 				g.drawLine(fx, fy, x2, y2);
 			}
