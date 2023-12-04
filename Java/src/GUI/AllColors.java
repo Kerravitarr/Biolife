@@ -20,8 +20,8 @@ public class AllColors {
 	public static final Color WATER_RIVER = new Color(116,204,244, 255);
 	/**Цвет водички авкариума*/
 	public static final Color WATER_AQUARIUM = new Color(116,204,244, 255);
-	/**Цвет водички реки*/
-	public static final Color WATER_OCEAN = new Color(90,188,216, 255);
+	/**Цвет водички океана*/
+	public static final Color WATER_OCEAN = new Color(70,130,180, 255);
 	/**Цвет земли, грязи, низа*/
 	public static final Color DRY = new Color(139, 69, 19, 255);
 	/**Цвет солнечного света*/
