@@ -195,7 +195,9 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 
 		for (int x = 0; x < Configurations.getWidth(); x++) {
 			for (int y = 0; y < Configurations.getHeight(); y++) {
-				CellObject cell = Configurations.world.get(Point.create(x, y));
+				final var point = Point.create(x, y);
+				if(!point.valid()) continue;
+				CellObject cell = Configurations.world.get(point);
 				if (cell != null && cell instanceof AliveCell acell){
 					summHP_ += acell.getHealth();
 					maxHP_ = Math.max(maxHP_, acell.getHealth());
