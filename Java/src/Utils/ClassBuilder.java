@@ -589,10 +589,10 @@ public abstract class ClassBuilder <T>{
 		 * @param json объект, описывающий объект подкласса CT
 		 * @param version версия файла json в котором объект сохранён
 		 * @return объект сериализации
-		 * 
+		 * @throws IllegalArgumentException, если файл JSON будет повреждён
 		 */
 		public CT generation(JSON json, long version){
-			assert ((String)json.get("_serializerName")) != null : "Не нашли ключ _serializerName в " + json;
+			if((String)json.get("_serializerName") == null) throw new IllegalArgumentException("Не нашли ключ _serializerName в " + json);
 			return OBJECTS_BY_NAME.get((String)json.get("_serializerName")).generation(json, version);
 		}
 		/**Укладывает текущий объект в объект сереализации для дальнейшего сохранения

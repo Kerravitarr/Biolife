@@ -406,7 +406,17 @@ public class WorldView extends javax.swing.JPanel {
 		//И сонышки
 		Configurations.suns.paint(g,getTransform(), sunSelect);
 		//И и шлефанём всё это потоками
-		Configurations.streams.forEach(s -> {if(s != streamSelect) s.paint(g, getTransform(), frame);});
+		if(streamSelect == null){
+			Configurations.streams.forEach(s -> s.paint(g, getTransform(), frame));
+		} else {
+			boolean isPrint = false;
+			for(final var s : Configurations.streams){
+				if(s != streamSelect) s.paint(g, getTransform(), frame);
+				else isPrint = true;
+			}
+			if(!isPrint) streamSelect.paint(g, getTransform(), frame);
+		}
+		
 		//И, если нужно, нанесём траекторию
 		if (select.isContains(Trajectory.class)) {
 			select.get(Trajectory.class).paint(g, getTransform(), frame);

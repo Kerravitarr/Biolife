@@ -92,6 +92,10 @@ public class EmitterSet<T extends DefaultEmitter> {
 	 * @return количество излучателей
 	 */
 	public int size(){return _emitters.size();}
+	/**Проверяет набор на пустоту.
+	 * @return true, если набор пуст
+	 */
+	public boolean isEmpty(){return _emitters.isEmpty();}
 	/**Преобразует излучатель в JSON объект
 	 * @param mapper функция преобразования из T в JSON
 	 * @return список всех излучателей в формате JSON

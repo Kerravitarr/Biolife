@@ -7,6 +7,7 @@ package GUI;
 import Calculations.Configurations;
 import Calculations.Point;
 import Utils.ClassBuilder;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.event.MouseEvent;
@@ -289,7 +290,7 @@ public class SettingsMake extends java.awt.Dialog {
 					build(clr, parametrName,panel,np,points,selectPoint);
 					propertyChange();
 				});
-				settings.setAlignmentX(0);
+				settings.setAlignmentY(java.awt.Component.CENTER_ALIGNMENT);
 				panelPoint.add(settings);
 			} else {
 				final var label = new javax.swing.JLabel(get.toString());
@@ -300,53 +301,54 @@ public class SettingsMake extends java.awt.Dialog {
 							build(clr, parametrName,panel,np,points,selectPoint);
 						}
 				});
-				label.setAlignmentX(0);
 				panelPoint.add(javax.swing.Box.createRigidArea(new Dimension(5,0))); //Отступ
 				panelPoint.add(label);
 			}
-			final var panelBottom = new javax.swing.JPanel();
-			panelBottom.setLayout(new javax.swing.BoxLayout(panelBottom, javax.swing.BoxLayout.X_AXIS));
-			final var butSize = new Dimension(20,15);
-			panelBottom.setSize(butSize.width*2, butSize.height);
-			if(points.size() > 1){
-				final var remBut = new javax.swing.JButton("-");
-				remBut.setPreferredSize(butSize);
-				remBut.setMinimumSize(butSize);
-				remBut.setToolTipText(Configurations.getHProperty(SettingsMake.class, "MapPointVectorConstructorParam.remove.L"));
-				remBut.setContentAreaFilled(false);
-				remBut.setMargin(new java.awt.Insets(0,3,0,3));
-				remBut.addActionListener(e -> {
-					points.remove(get);
-					if(selectPoint[0] >= nowIndex && selectPoint[0] > 0){
-						selectPoint[0]--;
-					}
-					build(clr, parametrName,panel,np,points,selectPoint);
-					propertyChange();
-				});
-				panelBottom.add(remBut);
-			}
-			final var addBut = new javax.swing.JButton("+");
-			addBut.setPreferredSize(butSize);
-			addBut.setMinimumSize(butSize);
-			addBut.setToolTipText(Configurations.getHProperty(SettingsMake.class, "MapPointVectorConstructorParam.add.L"));
-			addBut.setContentAreaFilled(false);
-			addBut.setMargin(new java.awt.Insets(0,2,0,2));
-			addBut.addActionListener(e -> {
+			panelPoint.add(javax.swing.Box.createHorizontalGlue()); //Связующее звено, чтобы следующая панелька была сбоку
+			//Кнопка удалить не нужна, если точек меньше 2х
+			final java.awt.event.ActionListener removeEvent = points.size() < 2 ? null : e -> {
+				points.remove(get);
+				if(selectPoint[0] >= nowIndex && selectPoint[0] > 0){
+					selectPoint[0]--;
+				}
+				build(clr, parametrName,panel,np,points,selectPoint);
+				propertyChange();
+			};
+			final java.awt.event.ActionListener addEvent = e -> {
 				points.add(nowIndex+1, def);
 				selectPoint[0] = nowIndex + 1;
 				build(clr, parametrName,panel,np,points,selectPoint);
 				propertyChange();
-			});
-			panelBottom.add(addBut);
-			
-			panelBottom.setAlignmentX(0);
-			panelPoint.add(javax.swing.Box.createHorizontalGlue()); //Связующее звено, чтобы точка писалась сбоку
-			panelPoint.add(panelBottom);
-			
-			panelPoint.setAlignmentX(0);
+			};
+			panelPoint.add(buildAddRemoveButton(removeEvent,addEvent));
 			panel.add(panelPoint);
 		}
 		panel.updateUI();
+	}
+	/**
+	 * Создаёт панельку с двумя кнопками - добавить и удалить
+	 * @param removeEvent событе, при нажатии кнопки удалить. Может быть null, тогда кнопки удалить не будет
+	 * @param addEvent событие для добавления точки, или что там надо добавить?
+	 * @return панелька с заявленными кнопками
+	 */
+	private javax.swing.JPanel buildAddRemoveButton(java.awt.event.ActionListener removeEvent, java.awt.event.ActionListener addEvent){
+		final var panelBottom = new javax.swing.JPanel();
+		panelBottom.setLayout(new javax.swing.BoxLayout(panelBottom, javax.swing.BoxLayout.X_AXIS));
+		if(removeEvent != null){
+			final var remBut = new javax.swing.JButton("-");
+			remBut.setToolTipText(Configurations.getHProperty(SettingsMake.class, "MapPointVectorConstructorParam.remove.L"));
+			remBut.setContentAreaFilled(false);
+			remBut.setMargin(new java.awt.Insets(0,3,0,3));
+			remBut.addActionListener(removeEvent);
+			panelBottom.add(remBut);
+		}
+		final var addBut = new javax.swing.JButton("+");
+		addBut.setToolTipText(Configurations.getHProperty(SettingsMake.class, "MapPointVectorConstructorParam.add.L"));
+		addBut.setContentAreaFilled(false);
+		addBut.setMargin(new java.awt.Insets(0,2,0,2));
+		addBut.addActionListener(addEvent);
+		panelBottom.add(addBut);
+		return panelBottom;
 	}
 	/**Возвращает построенный объект
 	 * @param <T>

@@ -16,7 +16,10 @@ import Calculations.Trajectories.Trajectory;
 import MapObjects.CellObject;
 import Utils.ClassBuilder;
 import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
+import java.awt.Toolkit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -29,10 +32,56 @@ import javax.swing.JPopupMenu;
  * @author Kerravitarr
  */
 public class Settings extends javax.swing.JPanel {
-	private static interface AddNewO <T>{
-		public void add(T o);
+	private class AddListener implements ActionListener {
+		private static interface AddNewO <T>{
+			public void add(T o);
+		}
+	
+		/**Все конструкторы. Как ни как, а мы-же всё-же слушатель кнопки Add!*/
+		private final List<ClassBuilder> _constructorsList;
+		/**Само событие, что что-то произошло!*/
+		private final AddNewO _addEvent;
+		
+		
+		public AddListener(List<ClassBuilder> cl, AddNewO add){_constructorsList = cl;_addEvent=add;}
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			final var wv = Configurations.getViewer().get(WorldView.class);
+			final var make = new SettingsMake(false, _constructorsList);
+			make.setBounds(Settings.this.getLocationOnScreen().x, Settings.this.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
+			make.addConstructorPropertyChangeListener(c -> {
+				blinks.forEach(b -> b.setValue(false));
+				final var build = c.build();
+				for(final var f : wv.getClass().getMethods()){
+					if(f.getName().equals("setSelect") && f.getParameterCount() == 1 && f.getParameterTypes()[0].isAssignableFrom(build.getClass())){
+						try {f.invoke(wv,build);} catch (Exception ex) {}
+						break;
+					}
+				}
+			});
+			make.addWindowListener(new java.awt.event.WindowAdapter() {
+				@Override
+				public void windowClosed(java.awt.event.WindowEvent e){
+					//Если у нас нет выделения - то убираем выделение. Оно могло остаться от создаваемого объекта
+					if(blinks.stream().filter( b -> b.getValue()).findFirst().orElse(null) == null)
+						wv.setSelect((Trajectory) null);
+					final var ret = make.get(Object.class);
+					if(ret != null)
+						_addEvent.add(ret);
+					rebuildBuild();
+				}
+			});
+			make.setVisible(true);
+		}
+		};
+	private interface CopyListener  {
+		/**Должне преобразовать объек в JSON*/
+		public Utils.JSON transform();
 	}
-
+	private interface InsertListener  {
+		/**Получит JSON когда пользоватль захочет вставить объект из буфера обмена*/
+		public void transform(Utils.JSON data);
+	}
 	/** Creates new form Settings */
 	public Settings() {
 		initComponents();
@@ -280,10 +329,14 @@ public class Settings extends javax.swing.JPanel {
 			suns2.add(addBlink(sun == wv.getSelect(), e->wv.setSelect(e ? sun : null)));
 			suns2.add(addBlinkTrajectory(sun == wv.getSelect(), e->wv.setSelect(e ? sun.getTrajectory() : null)));
 			suns2.add(addNew(sun));
-			suns2.add(addRemove(Configurations.suns,sun));
+			suns2.add(makeAddRemPanel(
+					new AddListener(SunAbstract.getChildrens(),ret -> Configurations.suns.add((SunAbstract)ret)),
+					()->SunAbstract.serialization(sun),j->{Configurations.suns.add(SunAbstract.generation(j, Configurations.VERSION));},e->Configurations.suns.remove(sun)));
+			//suns2.add(addRemove(Configurations.suns,sun));
 		}
-		suns2.add(new JPopupMenu.Separator());
-		suns2.add(addNew(Configurations.suns,SunAbstract.getChildrens(), c->wv.setSelect((SunAbstract) c.build())));
+		if(Configurations.suns.isEmpty()){
+			suns2.add(addNew(Configurations.suns,SunAbstract.getChildrens(), c->wv.setSelect((SunAbstract) c.build())));
+		}
 		borderClick(suns2, null);
 		borderClick(suns2, null);
 	}
@@ -387,6 +440,64 @@ public class Settings extends javax.swing.JPanel {
 		borderClick(streams2, null);
 	}
 	/**
+	 * Создаёт панель с 4мя кнопками - добавить, копировать, вставить, удалить
+	 * @return 
+	 */
+	private javax.swing.JPanel makeAddRemPanel(AddListener addListener,CopyListener copyListener,InsertListener insertListener, java.awt.event.ActionListener removeListener){
+		final var panel = new javax.swing.JPanel();
+		panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.X_AXIS));
+		panel.setAlignmentX(0);
+		{
+			final var add = new javax.swing.JButton();
+			Configurations.setIcon(add,"add");
+			add.addActionListener(e -> {addListener.actionPerformed(e);});
+			add.setToolTipText(Configurations.getHProperty(Settings.class, "object.add"));
+			add.setFocusable(false);
+			panel.add(add);
+		}
+		{
+			final var copy = new javax.swing.JButton();
+			Configurations.setIcon(copy,"clipboardCopy");
+			copy.addActionListener(e -> {
+				final var j = copyListener.transform();
+				final var stringSelection = new java.awt.datatransfer.StringSelection(j.toJSONString());
+				final var clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
+				clipboard.setContents(stringSelection, null);
+			});
+			copy.setToolTipText(Configurations.getHProperty(Settings.class, "object.copy"));
+			copy.setFocusable(false);
+			panel.add(copy);
+		}
+		{
+			final var insert = new javax.swing.JButton();
+			Configurations.setIcon(insert,"clipboardInsert");
+			insert.addActionListener(e->{
+				try{
+					final var  data = (String) java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
+					final var json = new Utils.JSON(data);
+					insertListener.transform(json);
+				} catch (Exception ex){
+					Logger.getLogger(this.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+					JOptionPane.showMessageDialog(null,	"Ошибка вставки объекта!\n" + ex.getMessage(), "BioLife", JOptionPane.ERROR_MESSAGE);
+				}
+				rebuild();
+			});
+			insert.setToolTipText(Configurations.getHProperty(Settings.class, "object.insert"));
+			insert.setFocusable(false);
+			panel.add(insert);
+		}
+		{
+			final var remove = new javax.swing.JButton();
+			Configurations.setIcon(remove,"remove");
+			remove.addActionListener(e->{removeListener.actionPerformed(e);rebuildBuild();});
+			remove.setToolTipText(Configurations.getHProperty(Settings.class, "object.remove"));
+			remove.setFocusable(false);
+			panel.add(remove);
+		}
+		return panel;
+	}
+	
+	/**
 	 * Создаёт кнопку удаления объекта
 	 * @param <T>
 	 * @param list список, из которого объект удаляется
@@ -448,7 +559,7 @@ public class Settings extends javax.swing.JPanel {
 	 * @param eventAdd событие, которое возникает если объект всё-же создали
 	 * @return кнопка, на неё надо нажать и всё будет
 	 */
-	private <T> javax.swing.JButton addNew(String text, final List<ClassBuilder> constructorList, SettingsMake.PropertyChangeListener l, AddNewO<T> eventAdd){
+	private <T> javax.swing.JButton addNew(String text, final List<ClassBuilder> constructorList, SettingsMake.PropertyChangeListener l, AddListener.AddNewO<T> eventAdd){
 		final var newT = new javax.swing.JButton(Configurations.getHProperty(Settings.class, text +".L"));
 		newT.setToolTipText(Configurations.getHProperty(Settings.class, text +".T"));
 		newT.addActionListener( e -> {
