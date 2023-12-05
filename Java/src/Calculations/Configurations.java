@@ -177,7 +177,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			case LINE_H,LINE_V -> DIRTY_WATER =  30d / (height * 0.33);
 			case RECTANGLE -> DIRTY_WATER =  30d / (Math.min(height, width) * 0.5); //Чтобы освещалась половина мира
 			case FIELD_R -> DIRTY_WATER = 30d / (Math.min(height, width) * 0.2); //Чтобы освещалась пятая часть мира
-			case CIRCLE -> DIRTY_WATER = 30d / (Math.min(height, width) * 0.125); //В два раза больше, потому что у нас солнце со всех сторон мира
+			case CIRCLE -> DIRTY_WATER = 30d / (Math.min(height, width) * 0.15); //В два раза больше, потому что у нас солнце со всех сторон мира
 			default -> throw new AssertionError();
 		}
 		VISCOSITY = 0.1;
@@ -496,7 +496,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			}
 			case CIRCLE -> {
 				//Органика падает в центр
-				buildMap(new Configurations(type, width, height), new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(20, Gravitation.Direction.CENTER));}});
+				buildMap(new Configurations(type, width, height), new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(100, Gravitation.Direction.CENTER));}});
 				//Светящяся кромка
 				suns.add(new SunEllipse(30, new Trajectory(Point.create(width/2, height/2)), width,height, 	true,"Кромка"));
 				//Путешествующая капля
@@ -761,7 +761,10 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		}
 		var icon_select = selectResource == null ? null : new ImageIcon(selectResource);
 
-		if (icon_const == null) {
+		if(icon_select == null && icon_const == null){
+			button.setText(name);
+			return;
+		} else if (icon_const == null) {
 			button.setText(name);
 		} else {
 			button.setText("");
