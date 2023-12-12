@@ -286,7 +286,7 @@ public class WorldView extends javax.swing.JPanel {
 			lastUpdate = cms + 1000/25; //25 кадров в секунду
 			frame++;
 			if(cms > lastSelected){
-				lastSelected = cms + SELECT_PERIOD;
+				lastSelected = cms + SELECT_PERIOD / 2; //Половина, потому что за период мы должны дважды переключиться
 				isSelected = !isSelected;
 			}
 		}
@@ -777,6 +777,6 @@ public class WorldView extends javax.swing.JPanel {
 	private static long lastSelected = 0;
 	/**Выделяем мы сейчас объект или нет?*/
 	private static boolean isSelected = false;
-	/**Как часто надо мигать, мс*/
-	private static final long SELECT_PERIOD = 500;
+	/**Как часто надо мигать объектами на экране. Это время периода!, мс*/
+	private static final long SELECT_PERIOD = 1000 * 40 / 60; // 40 миганий в минуту... Образование моё такое :)
 }
