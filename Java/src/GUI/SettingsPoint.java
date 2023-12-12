@@ -203,8 +203,6 @@ public class SettingsPoint extends javax.swing.JPanel {
         reset = new javax.swing.JButton();
         select = new javax.swing.JButton();
 
-        setAlignmentX(0.0F);
-        setAlignmentY(0.0F);
         setMaximumSize(new java.awt.Dimension(2147483647, 40));
         setLayout(new java.awt.BorderLayout());
 

@@ -12,6 +12,7 @@ import Utils.ClassBuilder;
 import Utils.JSON;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -27,19 +28,34 @@ public class TrajectoryPolyLine extends Trajectory{
 
 			@Override public String serializerName() {return "Полилиния";}
 			@Override public Class printName() {return TrajectoryPolyLine.class;}
-
 		};
+		builder.addParam(new ClassBuilder.BooleanParam<TrajectoryPolyLine>(){
+			@Override public Boolean get(TrajectoryPolyLine who) {return who.isJamp;}
+			@Override public void setValue(TrajectoryPolyLine who, Boolean value) {who.isJamp = value; who.rebuild();}
+			@Override public Boolean getDefault() {return false;}
+			@Override public String name() {return "isJamp";}
+		});
+		builder.addParam(new ClassBuilder.MapPointVectorParam<TrajectoryPolyLine>(){
+			@Override public Point[] get(TrajectoryPolyLine who) {return who.reference_point;}
+			@Override public void setValue(TrajectoryPolyLine who, Point[] value) {who.reference_point = value; who.rebuild();}
+			@Override public Point[] getDefault() {return new Point[]{Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2)};}
+			@Override public String name() {return "points";}
+		});
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Long,TrajectoryPolyLine>("super.speed",-1000L , 500L, 1000L, null, null){
+			@Override public Long get(TrajectoryPolyLine who) { return who.getSpeed();}
+			@Override public void setValue(TrajectoryPolyLine who, Long value) {who.setSpeed(value);}
+		});
 		builder.addConstructor(new ClassBuilder.Constructor<TrajectoryPolyLine>(){
 			{
 				addParam(new ClassBuilder.NumberConstructorParamAdapter("super.speed", 0,500,1000,0,null));
 				addParam(new ClassBuilder.BooleanConstructorParam(){
 					@Override public Object getDefault() {return false;}
-					@Override public String name() {return "isJamp";}
+					@Override public String name() {return "parameter.isJamp";}
 					
 				});
 				addParam(new ClassBuilder.MapPointVectorConstructorParam(){
 					@Override public Point[] getDefault() {return new Point[]{Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2)};}
-					@Override public String name() {return "points";}
+					@Override public String name() {return "parameter.points";}
 				});
 			}
 			@Override
@@ -50,11 +66,15 @@ public class TrajectoryPolyLine extends Trajectory{
 		});
 		Trajectory.register(builder);
 	}
+	/**Все опорные точки траектории. Те самые, по которым мы строем реальную траекторию*/
+	private Point[] reference_point;
+	/**Мы по опорным точкам как идём? С прыжками?*/
+	private boolean isJamp;
 	
 	/**Все точки траектории*/
-	private final List<Interval> points;
+	private List<Interval> points;
 	/**Суммарная длина отрезка по которому двигаемся. В клетках поля*/
-	private final double lenght;
+	private double lenght;
 	
 	/**Интервал перемещения*/
 	private class Interval{
@@ -96,8 +116,6 @@ public class TrajectoryPolyLine extends Trajectory{
 		}
 	}
 	
-	
-	
 	/** * Создаёт линейную, траекторию от точки к точке.объект смещается каждый раз на 1 клетку мира
 	 * @param speed скорость, в тиков на шаг
 	 * @param isJamp
@@ -111,36 +129,41 @@ public class TrajectoryPolyLine extends Trajectory{
 	 */
 	public TrajectoryPolyLine(long speed,boolean isJamp, Point ... points){
 		super(speed);
-		if(!isJamp){
-			this.points = new ArrayList(points.length + 1);
-			for (int i = 0; i < points.length - 1; i++) {
-				this.points.add(new Interval(points[i],points[i+1]));
-			}
-			this.points.add(new Interval(points[points.length - 1],points[0]));
-		} else if(points.length % 2 == 0) {
-			this.points = new ArrayList(points.length / 2);
-			for (int i = 0; i < points.length - 1; i+=2) {
-				this.points.add(new Interval(points[i],points[i+1]));
-			}
-		} else {
-			this.points = new ArrayList(points.length + 1);
-			for (int i = 0; i < points.length - 1; i+=2) {
-				this.points.add(new Interval(points[i],points[i+1]));
-			}
-			this.points.add(new Interval(points[points.length - 1],points[0]));
-			for (int i = 1; i < points.length - 1; i+=2) {
-				this.points.add(new Interval(points[i],points[i+1]));
-			}
-		}
-		lenght = this.points.stream().reduce(0d, (a,b) -> a+b.lenght,Double::sum);
-		
+		reference_point = points;
+		this.isJamp = isJamp;
+		rebuild();
 	}
 	protected TrajectoryPolyLine(JSON j, long version){
 		super(j,version);
-		points = j.getAJ("points").stream().map(p -> new Interval(p)).toList();
+		reference_point = j.getAJ("points").stream().map(p -> Point.create(p)).toArray(Point[]::new);
+		rebuild();
+	}
+	/**Перестраивает траекторию*/
+	private void rebuild(){
+		final var pl = reference_point.length;
+		if(!isJamp){
+			this.points = new ArrayList(pl + 1);
+			for (int i = 0; i < pl - 1; i++) {
+				this.points.add(new Interval(reference_point[i],reference_point[i+1]));
+			}
+			this.points.add(new Interval(reference_point[pl - 1],reference_point[0]));
+		} else if(pl % 2 == 0) {
+			this.points = new ArrayList(pl / 2);
+			for (int i = 0; i < pl - 1; i+=2) {
+				this.points.add(new Interval(reference_point[i],reference_point[i+1]));
+			}
+		} else {
+			this.points = new ArrayList(pl + 1);
+			for (int i = 0; i < pl - 1; i+=2) {
+				this.points.add(new Interval(reference_point[i],reference_point[i+1]));
+			}
+			this.points.add(new Interval(reference_point[pl - 1],reference_point[0]));
+			for (int i = 1; i < pl - 1; i+=2) {
+				this.points.add(new Interval(reference_point[i],reference_point[i+1]));
+			}
+		}
 		lenght = this.points.stream().reduce(0d, (a,b) -> a+b.lenght,Double::sum);
 	}
-
 	@Override
 	protected Point position(long wstep) {
 		if(lenght == 0d){
@@ -161,7 +184,7 @@ public class TrajectoryPolyLine extends Trajectory{
 	@Override
 	public JSON toJSON(){
 		final var j = super.toJSON();
-		j.add("points", points.stream().map(p -> p.toJSON()).toList());
+		j.add("points", Arrays.stream(reference_point).map(p -> p.toJSON()).toList());
 		return j;
 	}
 	

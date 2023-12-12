@@ -172,6 +172,8 @@ public abstract class ClassBuilder <T>{
 		 *<br>	Это специально для общих параметров у разных конструкторов
 		 *<br>Если эта функция вернёт имя начинающееся с  "super.", то имя будет искаться по пути PERRENT.constructor.parameter.name()
 		 *<br>	Это специально для параметров, которые унаследованы от суперкласса
+		 *<br>Если эта функция вернёт имя начинающееся с  "parameter.", то имя будет искаться по пути CHILD.parameter.name()
+		 *<br>	Это специально для параметров, которые унаследованы от суперкласса
 		 */
 		public String name();
 	}
@@ -296,7 +298,9 @@ public abstract class ClassBuilder <T>{
 		public int get2Maximum();
 	}
 	/**Параметр типа абстрактные два значения. Х - первое значение, Y - второе*/
-	public interface Abstract2Param<T> extends Abstract2P, EditParametr<Point.Vector, T>{}
+	public static abstract class Abstract2Param<T> implements Abstract2P, EditParametr<Point.Vector, T>{
+		@Override public Point.Vector getDefault() {return Point.Vector.create(get1Default(), get2Default());}
+	}
 	/**Параметр типа абстрактные два значения. Х - первое значение, Y - второе*/
 	public interface Abstract2VectorParam<T> extends Abstract2P, EditParametr<Point.Vector[], T>{}
 	

@@ -74,8 +74,6 @@ public class SettingsBoolean extends javax.swing.JPanel {
         _checkBox = new javax.swing.JCheckBox();
         _label = new javax.swing.JLabel();
 
-        setAlignmentX(0.0F);
-        setAlignmentY(0.0F);
         setMaximumSize(new java.awt.Dimension(2147483647, 40));
         setLayout(new java.awt.BorderLayout());
         add(_checkBox, java.awt.BorderLayout.CENTER);

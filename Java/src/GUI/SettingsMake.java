@@ -9,10 +9,16 @@ import Calculations.Point;
 import Utils.ClassBuilder;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.SwingUtilities;
 
 /**
  *Диалоговое окно создания объекта
@@ -73,6 +79,7 @@ public class SettingsMake extends java.awt.Dialog {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPanel3 = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
         generate = new javax.swing.JButton();
         cansel = new javax.swing.JButton();
@@ -90,6 +97,8 @@ public class SettingsMake extends java.awt.Dialog {
                 formWindowOpened(evt);
             }
         });
+
+        jPanel3.setLayout(new java.awt.BorderLayout());
 
         jPanel1.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT));
 
@@ -109,7 +118,7 @@ public class SettingsMake extends java.awt.Dialog {
         });
         jPanel1.add(cansel);
 
-        add(jPanel1, java.awt.BorderLayout.SOUTH);
+        jPanel3.add(jPanel1, java.awt.BorderLayout.SOUTH);
 
         jPanel2.setLayout(new javax.swing.BoxLayout(jPanel2, javax.swing.BoxLayout.Y_AXIS));
 
@@ -134,7 +143,9 @@ public class SettingsMake extends java.awt.Dialog {
 
         jPanel2.add(jScrollPane1);
 
-        add(jPanel2, java.awt.BorderLayout.CENTER);
+        jPanel3.add(jPanel2, java.awt.BorderLayout.CENTER);
+
+        add(jPanel3, java.awt.BorderLayout.CENTER);
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -159,10 +170,26 @@ public class SettingsMake extends java.awt.Dialog {
     }//GEN-LAST:event_selectTypeActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
-       	jPanel2.updateUI();
-		jPanel1.updateUI();
+       	
     }//GEN-LAST:event_formWindowOpened
-
+	@Override
+	public void setVisible(boolean b){
+		super.setVisible(b);
+		if(b){
+			 //Я пока не нашёл другого решения, а это через одно место...
+			 //В чём проблема - при загрузке окно может быть серым. И может быть таким слишком уж часто... Я не знаю что с этим делать, так что 
+			 //Через одно местное решение вот...
+			 final var task = new Runnable[1];
+			 task[0] = () -> {
+				 if(isVisible()){
+					 jPanel3.revalidate();
+					 jPanel3.repaint();
+					 EventQueue.invokeLater(task[0]);
+				 }
+			 }; 
+			 task[0].run();
+		}
+	}
     private void selectConstructorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectConstructorActionPerformed
 		//new Thread(()->{
 			final var type = (ClassBuilder)selectType.getSelectedItem();
@@ -173,7 +200,6 @@ public class SettingsMake extends java.awt.Dialog {
 				panel.setAlignmentX(0);
 				paramPanel.add(panel);
 			}
-			paramPanel.updateUI();
 			propertyChange();
 		//}).start();
     }//GEN-LAST:event_selectConstructorActionPerformed
@@ -209,6 +235,8 @@ public class SettingsMake extends java.awt.Dialog {
 			} while((now = now.getSuperclass()) != old && now != null);
 		} else if (param.name().startsWith("constructor.")) {
 			parametrFullName = String.format("constructor.parameter.%s", param.name().substring(12));
+		} else if (param.name().startsWith("parameter.")) {
+			parametrFullName = String.format("parameter.%s", param.name().substring(10));
 		} else if (constructorName.isEmpty()) {
 			parametrFullName = String.format("constructor.parameter.%s", param.name());
 		} else {
@@ -364,6 +392,7 @@ public class SettingsMake extends java.awt.Dialog {
     private javax.swing.JButton generate;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JPanel paramPanel;
     private javax.swing.JComboBox<ClassBuilder.Constructor> selectConstructor;

@@ -280,8 +280,6 @@ public class SettingsSlider<NumberT extends Number & Comparable<NumberT>> extend
         valueLabel = new javax.swing.JLabel();
         scroll = new javax.swing.JScrollBar();
 
-        setAlignmentX(0.0F);
-        setAlignmentY(0.0F);
         setMaximumSize(new java.awt.Dimension(2147483647, 40));
         setLayout(new java.awt.BorderLayout());
 

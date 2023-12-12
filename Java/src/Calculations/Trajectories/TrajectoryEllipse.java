@@ -25,12 +25,39 @@ public class TrajectoryEllipse extends Trajectory{
 			@Override public String serializerName() {return "Эллипс";}
 			@Override public Class printName() {return TrajectoryEllipse.class;}
 		};
+		builder.addParam(new ClassBuilder.Abstract2Param<TrajectoryEllipse>() {
+			@Override public int get1Minimum() {return 1;}
+			@Override public int get1Default() {return get1Maximum() / 2;}
+			@Override public int get1Maximum() {return Configurations.getWidth();}
+			@Override public int get2Minimum() {return 1;}
+			@Override public int get2Default() {return get2Maximum() / 2;}
+			@Override public int get2Maximum() {return Configurations.getHeight();}
+			@Override public Point.Vector get(TrajectoryEllipse who) {return Point.Vector.create((int)(who.a*2), (int)(who.b*2));}
+			@Override public void setValue(TrajectoryEllipse who, Point.Vector value) {who.a = value.x/2d; who.b = value.y/2d;}
+			@Override public String name() {return "AB";}
+		});
+		builder.addParam(new ClassBuilder.MapPointParam<TrajectoryEllipse>(){
+			@Override public Point get(TrajectoryEllipse who) {return who.center;}
+			@Override public void setValue(TrajectoryEllipse who, Point value) {who.center = value;}
+			@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+			@Override public String name() {return "center";};
+			
+		});
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Double,TrajectoryEllipse>("startAngle",0d , 0d, 360d, 0d, 360d){
+			@Override public Double get(TrajectoryEllipse who) { return who.angle;}
+			@Override public void setValue(TrajectoryEllipse who, Double value) {who.angle = value;}
+		});
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Long,TrajectoryEllipse>("super.speed",-1000L , 500L, 1000L, null, null){
+			@Override public Long get(TrajectoryEllipse who) { return who.getSpeed();}
+			@Override public void setValue(TrajectoryEllipse who, Long value) {who.setSpeed(value); who.clockwise = value > 0; }
+		});
+		
 		final var speed = new ClassBuilder.NumberConstructorParamAdapter("super.speed",-1000,500,1000,null,null);
 		final var center = new ClassBuilder.MapPointConstructorParam(){
 					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
-					@Override public String name() {return "constructor.center";}
+					@Override public String name() {return "parameter.center";}
 				};
-		final var startAngle = new ClassBuilder.NumberConstructorParamAdapter("constructor.startAngle",-360,0,360,-360,360);
+		final var startAngle = new ClassBuilder.NumberConstructorParamAdapter("parameter.startAngle",-360,0,360,-360,360);
 		builder.addConstructor(new ClassBuilder.Constructor<TrajectoryEllipse>(){
 			{
 				addParam(speed);
@@ -72,15 +99,15 @@ public class TrajectoryEllipse extends Trajectory{
 	}
 	
 	/**Центр, вокруг которого вращаемся*/
-	private final Point center;
-	/**Эксцентрическая аномалия эллипса. Угол, на который сместилось солнце от начала, Дополнительный параметр для смещения начального угла*/
+	private Point center;
+	/**Начальный угол, от которого меряется всё остальное*/
 	private double angle;
 	/**Большая ось*/
-	private final double a;
+	private double a;
 	/**Малая ось*/
-	private final double b;
+	private double b;
 	/**Направление*/
-	private final boolean clockwise;
+	private boolean clockwise;
 	
 	
 	/**Движение по орбите

@@ -39,28 +39,59 @@ public class TrajectoryRandom extends Trajectory{
 
 			@Override public String serializerName() {return "Случайность";}
 			@Override public Class printName() {return TrajectoryRandom.class;}
-
 		};
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Long,TrajectoryRandom>("super.speed",-1000L , 500L, 1000L, null, null){
+			@Override public Long get(TrajectoryRandom who) { return who.getSpeed();}
+			@Override public void setValue(TrajectoryRandom who, Long value) {who.setSpeed(value); }
+		});	
+		builder.addParam(new ClassBuilder.NumberParamAdapter<Long,TrajectoryRandom>("seed",0L,0L,100L,null,null){
+			@Override public Long get(TrajectoryRandom who) { return who.seed;}
+			@Override public void setValue(TrajectoryRandom who, Long value) {who.seed = value; who.number = -1; }
+		});
+		builder.addParam(new ClassBuilder.MapPointParam<TrajectoryRandom>(){
+			@Override public Point get(TrajectoryRandom who) { return who.start;}
+			@Override public void setValue(TrajectoryRandom who, Point value) {who.start = value; who.number = -1; }
+			@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+			@Override public String name() {return "start";}
+		});
+		builder.addParam(new ClassBuilder.MapPointParam<TrajectoryRandom>(){
+			@Override public Point get(TrajectoryRandom who) { return who.leftUp;}
+			@Override public void setValue(TrajectoryRandom who, Point value) {who.leftUp = value; who.number = -1; }
+			@Override public Point getDefault() {return Point.create(0,0);}
+			@Override public String name() {return "LU";}
+		});
+		builder.addParam(new ClassBuilder.Abstract2Param<TrajectoryRandom>() {
+			@Override public int get1Minimum(){return 1;}
+			@Override public int get1Default(){return Configurations.getWidth();}
+			@Override public int get1Maximum(){return Integer.MAX_VALUE;}
+			@Override public int get2Minimum(){return 1;}
+			@Override public int get2Default(){return Configurations.getHeight();}
+			@Override public int get2Maximum(){return Integer.MAX_VALUE;}
+			@Override public Point.Vector get(TrajectoryRandom who) {return Point.Vector.create(who.width, who.height);}
+			@Override public void setValue(TrajectoryRandom who, Point.Vector value) {who.width = value.x; who.height = value.y; who.number = -1;}
+			@Override public String name() {return "wh";}
+		});
+		
 		builder.addConstructor(new ClassBuilder.Constructor<TrajectoryRandom>(){
 			{
 				addParam(new ClassBuilder.NumberConstructorParamAdapter("super.speed", 0L,500L,1000L,0L,null));
-				addParam(new ClassBuilder.NumberConstructorParamAdapter("seed", 0L,0L,100L,null,null){@Override public Long getDefault() {return Utils.Utils.hashCode(System.currentTimeMillis());}});
+				addParam(new ClassBuilder.NumberConstructorParamAdapter("parameter.seed", 0L,0L,100L,null,null){@Override public Long getDefault() {return Utils.Utils.hashCode(System.currentTimeMillis());}});
 				addParam(new ClassBuilder.MapPointConstructorParam(){
-					@Override public Point getDefault() {return Point.create(15,15);}//Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
-					@Override public String name() {return "start";}
+					@Override public Point getDefault() {return Point.create(Configurations.getWidth()/2, Configurations.getHeight()/2);}
+					@Override public String name() {return "parameter.start";}
 				});
 				addParam(new ClassBuilder.MapPointConstructorParam(){
 					@Override public Point getDefault() {return Point.create(0, 0);}
-					@Override public String name() {return "LU";}
+					@Override public String name() {return "parameter.LU";}
 				});
 				addParam(new ClassBuilder.Abstract2ConstructorParam(){
 					@Override public int get1Minimum(){return 1;}
-					@Override public int get1Default(){return 30;}//Configurations.getWidth();}
+					@Override public int get1Default(){return Configurations.getWidth();}
 					@Override public int get1Maximum(){return Integer.MAX_VALUE;}
 					@Override public int get2Minimum(){return 1;}
-					@Override public int get2Default(){return 30;}//Configurations.getHeight();}
+					@Override public int get2Default(){return Configurations.getHeight();}
 					@Override public int get2Maximum(){return Integer.MAX_VALUE;}
-					@Override public String name() {return "wh";}
+					@Override public String name() {return "parameter.wh";}
 				});
 			}
 			@Override
@@ -72,25 +103,21 @@ public class TrajectoryRandom extends Trajectory{
 		Trajectory.register(builder);
 	}
 	/**Стартовая точка траектории. С которой мы начинаем движение*/
-	private final Point start;
+	private Point start;
 	/**Зерно генерации, чтобы все траектории от одного начала были одинаковыми*/
-	private final long seed;
+	private long seed;
 	/**"Номер" траектории в памяти*/
 	private long number = -1;
 	/**Период обновления точек. Или, длина траектории*/
-	private final int lenght;
+	private int lenght;
 	/**Текущие точки траектории*/
-	private final List<Point> points;
+	private List<Point> points;
 	/**Координаты верхнего левого угла прямоугольника, внутри которого генерируются клетки*/
-	private final Point leftUp;
+	private Point leftUp;
 	/**Ширина, расстояние по X, ограничивающего приямоугольник*/
-	private final int width;
+	private int width;
 	/**Высота, расстояние по Y, ограничивающего приямоугольник*/
-	private final int height;
-	
-	
-	
-	//private final List<Point> lpoints = new ArrayList<>();
+	private int height;
 	
 	/** * Создаёт линейную, траекторию от точки к точке.объект смещается каждый раз на 1 клетку мира
 	 * @param speed скорость, в тиков на шаг

@@ -152,7 +152,7 @@ public class Trajectory implements Cloneable{
 	/**
 	 * Так как в траектории есть не мало динамических переменных, чтобы одну траекторию можно было
 	 * применить к нескольким объектм и существует возможность клонирования траектории
-	 * @return 
+	 * @return копия текущего объекта со всеми настройками
 	 */
 	@Override
 	public Trajectory clone(){
@@ -185,6 +185,11 @@ public class Trajectory implements Cloneable{
 	 * @return список из которого можно можно создать всех деток
 	 */
 	public static List<ClassBuilder> getChildrens(){return TRAJECTORIES.getChildrens();}
+	/**
+	 * Возвращает список всех параметров объекта, которые можно покрутить в живом эфире
+	 * @return список параметров объекта
+	 */
+	public List<ClassBuilder.EditParametr> getParams(){return TRAJECTORIES.get(this.getClass()).getParams();}
 
 	
 	/**Отрисовочный флаг. Нужен для рисования траеткории от текущей точки*/

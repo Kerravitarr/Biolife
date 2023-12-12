@@ -136,8 +136,8 @@ public class StreamSwirl extends StreamAbstract {
 		//g.fill(new Ellipse2D.Double(x0, y0,w0,h0));
 		
 		//А теперь приступим к порнографии - создании подкругов для движения!
-		final var whc = Math.min(50,r0); //Каждые сколько пк будет круг
-		final var countCurc = (int) (r0 / whc); //Сколкьо будет кругов
+		final var countCurc = r0 < 50 ? 1 : (int) (r0 / 50); //Сколкьо будет кругов
+		final var whc = r0 / countCurc; //Радиус одного круга
 		for (int curcle = 0; curcle < countCurc; curcle++) {
 			var F = shadow.frame(frame,(curcle + 0.5d) / countCurc);
 			final var cr = (curcle + 1) * whc;

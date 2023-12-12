@@ -16,11 +16,13 @@ import Calculations.Trajectories.Trajectory;
 import MapObjects.CellObject;
 import Utils.ClassBuilder;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
-import java.awt.Toolkit;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -47,7 +49,7 @@ public class Settings extends javax.swing.JPanel {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			final var wv = Configurations.getViewer().get(WorldView.class);
-			final var make = new SettingsMake(false, _constructorsList);
+			final var make = openPanel(new SettingsMake(false, _constructorsList));
 			make.setBounds(Settings.this.getLocationOnScreen().x, Settings.this.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
 			make.addConstructorPropertyChangeListener(c -> {
 				blinks.forEach(b -> b.setValue(false));
@@ -82,6 +84,10 @@ public class Settings extends javax.swing.JPanel {
 		/**Получит JSON когда пользоватль захочет вставить объект из буфера обмена*/
 		public void transform(Utils.JSON data);
 	}
+	/**Интерфейс для отрабатывания события измения свойств*/
+	private interface ChangeListener {
+		public void change();
+	}
 	/** Creates new form Settings */
 	public Settings() {
 		initComponents();
@@ -107,6 +113,10 @@ public class Settings extends javax.swing.JPanel {
 			 rebuildBuild();
 		 } else {
 			 rebuildEdit();
+		 }
+		 if(makeWindow != null){
+			 makeWindow.dispose();
+			 makeWindow = null;
 		 }
 	}
 	/**Пересоздаёт все ползунки*/
@@ -194,6 +204,7 @@ public class Settings extends javax.swing.JPanel {
 			final var w = Configurations.getViewer().get(WorldView.class);
 			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
 		});
+		rebuild.setAlignmentX(CENTER_ALIGNMENT);
 		
 		size.setBackground(Color.red);
 		configuationsRebuild.add(size);
@@ -322,17 +333,24 @@ public class Settings extends javax.swing.JPanel {
 		final var wv = Configurations.getViewer().get(WorldView.class);
 		
 		for (int i = 0; i < Configurations.suns.size(); i++) {
+			final var sun = Configurations.suns.get(i);
+			final var trajectory = sun.getTrajectory();
 			if(i > 0)
 				suns2.add(new JPopupMenu.Separator());
-			final var sun = Configurations.suns.get(i);
 			suns2.add(new SettingsString(Settings.class,"object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
+			
 			suns2.add(addBlink(sun == wv.getSelect(), e->wv.setSelect(e ? sun : null)));
-			suns2.add(addBlinkTrajectory(sun == wv.getSelect(), e->wv.setSelect(e ? sun.getTrajectory() : null)));
-			suns2.add(addNew(sun));
-			suns2.add(makeAddRemPanel(
+			suns2.add(makeAddRemPanel("sun",
 					new AddListener(SunAbstract.getChildrens(),ret -> Configurations.suns.add((SunAbstract)ret)),
 					()->SunAbstract.serialization(sun),j->{Configurations.suns.add(SunAbstract.generation(j, Configurations.VERSION));},e->Configurations.suns.remove(sun)));
-			//suns2.add(addRemove(Configurations.suns,sun));
+			
+			suns2.add(addBlinkTrajectory(sun == wv.getSelect(), e->wv.setSelect(e ? trajectory : null)));
+			for(final var p : trajectory.getParams())
+				suns2.add(makePanel(trajectory,p, ()->{sun.set(trajectory);}));
+			suns2.add(makeAddRemPanel("trajectory",
+					new AddListener(Trajectory.getChildrens(),ret -> sun.set((Trajectory)ret)),
+					()->Trajectory.serialization(trajectory),j->{sun.set(Trajectory.generation(j, Configurations.VERSION));},null));
+			
 		}
 		if(Configurations.suns.isEmpty()){
 			suns2.add(addNew(Configurations.suns,SunAbstract.getChildrens(), c->wv.setSelect((SunAbstract) c.build())));
@@ -349,7 +367,9 @@ public class Settings extends javax.swing.JPanel {
 			if(i > 0)
 				minerals.add(new JPopupMenu.Separator());
 			final var mineral = Configurations.minerals.get(i);
-			minerals.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",mineral.toString())));
+			final var l = new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",mineral.toString()));
+			l.setAlignmentX(CENTER_ALIGNMENT);
+			minerals.add(l);
 			minerals.add(new SettingsSlider<>(Settings.class,"minerals.power", 1, 20, 200, 1,(int)mineral.getPower(),  null, e -> {
 				mineral.setPower(e);
 			}));
@@ -379,17 +399,28 @@ public class Settings extends javax.swing.JPanel {
 		final var wv = Configurations.getViewer().get(WorldView.class);
 		
 		for (int i = 0; i < Configurations.minerals.size(); i++) {
+			final var mineral = Configurations.minerals.get(i);
+			final var trajectory = mineral.getTrajectory();
 			if(i > 0)
 				minerals2.add(new JPopupMenu.Separator());
-			final var mineral = Configurations.minerals.get(i);
 			minerals2.add(new SettingsString(Settings.class,"object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
+			
 			minerals2.add(addBlink(mineral == wv.getSelect(), e->wv.setSelect(e ? mineral : null)));
-			minerals2.add(addBlinkTrajectory(mineral == wv.getSelect(), e->wv.setSelect(e ? mineral.getTrajectory() : null)));
-			minerals2.add(addNew(mineral));
-			minerals2.add(addRemove(Configurations.minerals,mineral));
+			minerals2.add(makeAddRemPanel("mineral",
+					new AddListener(MineralAbstract.getChildrens(),ret -> Configurations.minerals.add((MineralAbstract)ret)),
+					()->MineralAbstract.serialization(mineral),j->{Configurations.minerals.add(MineralAbstract.generation(j, Configurations.VERSION));},e->Configurations.minerals.remove(mineral)));
+			
+			minerals2.add(addBlinkTrajectory(mineral == wv.getSelect(), e->wv.setSelect(e ? trajectory : null)));
+			for(final var p : trajectory.getParams())
+				minerals2.add(makePanel(trajectory,p, ()->{mineral.set(trajectory);}));
+			minerals2.add(makeAddRemPanel("trajectory",
+					new AddListener(Trajectory.getChildrens(),ret -> mineral.set((Trajectory)ret)),
+					()->Trajectory.serialization(trajectory),j->{mineral.set(Trajectory.generation(j, Configurations.VERSION));},null));
+			
 		}
-		minerals2.add(new JPopupMenu.Separator());
-		minerals2.add(addNew(Configurations.minerals,MineralAbstract.getChildrens(), c->wv.setSelect((MineralAbstract) c.build())));
+		if(Configurations.minerals.isEmpty()){
+			minerals2.add(addNew(Configurations.minerals,MineralAbstract.getChildrens(), c->wv.setSelect((MineralAbstract) c.build())));
+		}
 		borderClick(minerals2, null);
 		borderClick(minerals2, null);
 	}
@@ -424,17 +455,27 @@ public class Settings extends javax.swing.JPanel {
 		final var wv = Configurations.getViewer().get(WorldView.class);
 		
 		for (int i = 0; i < Configurations.streams.size(); i++) {
+			final var stream = Configurations.streams.get(i);
+			final var trajectory = stream.getTrajectory();
 			if(i > 0)
 				streams2.add(new JPopupMenu.Separator());
-			final var stream = Configurations.streams.get(i);
 			streams2.add(new SettingsString(Settings.class,"object.editname", "Залеж", stream.toString(), e -> stream.setName(e)));
-			streams2.add(addBlink(stream == wv.getSelect(),e -> wv.setSelect(e ? stream : null)));
+			
+			streams2.add(addBlink(stream == wv.getSelect(),e -> wv.setSelect(e ? stream : null)));			
+			streams2.add(makeAddRemPanel("stream",
+					new AddListener(StreamAbstract.getChildrens(),ret -> Configurations.streams.add((StreamAbstract)ret)),
+					()->StreamAbstract.serialization(stream),j->{Configurations.streams.add(StreamAbstract.generation(j, Configurations.VERSION));},e->Configurations.streams.remove(stream)));
+			
 			streams2.add(addBlinkTrajectory(stream == wv.getSelect(), e->wv.setSelect(e ? stream.getTrajectory() : null)));
-			streams2.add(addNew(stream));
-			streams2.add(addRemove(Configurations.streams,stream));
+			for(final var p : trajectory.getParams())
+				streams2.add(makePanel(trajectory,p, ()->{stream.set(trajectory);}));
+			streams2.add(makeAddRemPanel("trajectory",
+					new AddListener(Trajectory.getChildrens(),ret -> stream.set((Trajectory)ret)),
+					()->Trajectory.serialization(trajectory),j->{stream.set(Trajectory.generation(j, Configurations.VERSION));},null));
 		}
-		streams2.add(new JPopupMenu.Separator());
-		streams2.add(addNew(Configurations.streams,StreamAbstract.getChildrens(), c->wv.setSelect((StreamAbstract) c.build())));
+		if(Configurations.streams.isEmpty()){
+			streams2.add(addNew(Configurations.streams,StreamAbstract.getChildrens(), c->wv.setSelect((StreamAbstract) c.build())));
+		}
 		
 		borderClick(streams2, null);
 		borderClick(streams2, null);
@@ -443,11 +484,20 @@ public class Settings extends javax.swing.JPanel {
 	 * Создаёт панель с 4мя кнопками - добавить, копировать, вставить, удалить
 	 * @return 
 	 */
-	private javax.swing.JPanel makeAddRemPanel(AddListener addListener,CopyListener copyListener,InsertListener insertListener, java.awt.event.ActionListener removeListener){
+	private javax.swing.JPanel makeAddRemPanel(String icon, AddListener addListener,CopyListener copyListener,InsertListener insertListener, java.awt.event.ActionListener removeListener){
 		final var panel = new javax.swing.JPanel();
 		panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.X_AXIS));
-		panel.setAlignmentX(0);
-		{
+		if(icon != null){
+			var name_const = "resources/"+icon+".png";
+			var constResource = Configurations.class.getClassLoader().getResource(name_const);
+			if(constResource == null) {
+				System.err.println("Не смогли загрузить фотографию " + name_const);
+			} else {
+				final var add = new javax.swing.JLabel(new javax.swing.ImageIcon(new javax.swing.ImageIcon(constResource).getImage().getScaledInstance(15, 15, java.awt.Image.SCALE_SMOOTH)));
+				panel.add(add);
+			}
+		}
+		if(addListener != null){
 			final var add = new javax.swing.JButton();
 			Configurations.setIcon(add,"add");
 			add.addActionListener(e -> {addListener.actionPerformed(e);});
@@ -455,7 +505,7 @@ public class Settings extends javax.swing.JPanel {
 			add.setFocusable(false);
 			panel.add(add);
 		}
-		{
+		if(copyListener != null){
 			final var copy = new javax.swing.JButton();
 			Configurations.setIcon(copy,"clipboardCopy");
 			copy.addActionListener(e -> {
@@ -468,7 +518,7 @@ public class Settings extends javax.swing.JPanel {
 			copy.setFocusable(false);
 			panel.add(copy);
 		}
-		{
+		if(insertListener != null){
 			final var insert = new javax.swing.JButton();
 			Configurations.setIcon(insert,"clipboardInsert");
 			insert.addActionListener(e->{
@@ -477,7 +527,7 @@ public class Settings extends javax.swing.JPanel {
 					final var json = new Utils.JSON(data);
 					insertListener.transform(json);
 				} catch (Exception ex){
-					Logger.getLogger(this.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+					Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 					JOptionPane.showMessageDialog(null,	"Ошибка вставки объекта!\n" + ex.getMessage(), "BioLife", JOptionPane.ERROR_MESSAGE);
 				}
 				rebuild();
@@ -486,7 +536,7 @@ public class Settings extends javax.swing.JPanel {
 			insert.setFocusable(false);
 			panel.add(insert);
 		}
-		{
+		if(removeListener != null){
 			final var remove = new javax.swing.JButton();
 			Configurations.setIcon(remove,"remove");
 			remove.addActionListener(e->{removeListener.actionPerformed(e);rebuildBuild();});
@@ -497,38 +547,6 @@ public class Settings extends javax.swing.JPanel {
 		return panel;
 	}
 	
-	/**
-	 * Создаёт кнопку удаления объекта
-	 * @param <T>
-	 * @param list список, из которого объект удаляется
-	 * @param object сам удаляемый объект
-	 * @return объект кнопки, который нужно добавить на панель
-	 */
-	private <T> javax.swing.JButton addRemove(final List<T> list, final T object){
-		final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.remove.L"));
-		remove.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.remove.T"));
-		remove.addActionListener( e -> {
-			list.remove(object);
-			rebuildBuild();
-		});
-		return remove;
-	}
-	/**
-	 * Создаёт кнопку удаления объекта
-	 * @param <T>
-	 * @param list список, из которого объект удаляется
-	 * @param object сам удаляемый объект
-	 * @return объект кнопки, который нужно добавить на панель
-	 */
-	private <T extends DefaultEmitter> javax.swing.JButton addRemove(final EmitterSet<T> list, final T object){
-		final var remove = new javax.swing.JButton(Configurations.getHProperty(Settings.class, "object.parameter.remove.L"));
-		remove.setToolTipText(Configurations.getHProperty(Settings.class, "object.parameter.remove.T"));
-		remove.addActionListener( e -> {
-			list.remove(object);
-			rebuildBuild();
-		});
-		return remove;
-	}
 	/**
 	 * Создаёт кнопку генерации новой траектории для объекта
 	 * @param <T>
@@ -564,7 +582,7 @@ public class Settings extends javax.swing.JPanel {
 		newT.setToolTipText(Configurations.getHProperty(Settings.class, text +".T"));
 		newT.addActionListener( e -> {
 			final var wv = Configurations.getViewer().get(WorldView.class);		
-			final var make = new SettingsMake(false, constructorList);
+			final var make = openPanel(new SettingsMake(false, constructorList));
 			make.setBounds(newT.getLocationOnScreen().x, newT.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
 			make.addConstructorPropertyChangeListener(c -> {
 				blinks.forEach(b -> b.setValue(false));
@@ -644,11 +662,38 @@ public class Settings extends javax.swing.JPanel {
 	 * @return готовая панель с нужными крутилками
 	 */
 	private <P, T> javax.swing.JPanel makePanel(T object, Utils.ClassBuilder.EditParametr<P,T> param){
-		final var clr = object.getClass();
-		final var parametrName = "parameter."+param.name();
+		return makePanel(object, param, ()->{});
+	}
+	/**Создаёт панель параметров
+	 * @param <P> возвращаемый тип параметра - Boolean, Boolean[]
+	 * @param <T> тип объекта, который строим
+	 * @param object сам объект, параметр которого выписываем
+	 * @param param параметр, который мы будем крутить
+	 * @param c слушатель события, что что-то произошло
+	 * @return готовая панель с нужными крутилками
+	 */
+	private <P, T> javax.swing.JPanel makePanel(T object, Utils.ClassBuilder.EditParametr<P,T> param, ChangeListener c){
+		var clr = object.getClass();
+		final String parametrName;
+		if (param.name().startsWith("super.")) {
+			parametrName = String.format("parameter.%s", param.name().substring(6));
+			//А теперь ищем по суперклассу
+			var now = clr;
+			Class<?> old;
+			do{
+				old = now;
+				if(Configurations.isHasPropery(now,parametrName + ".L")){
+					clr = now;
+					break;
+				}
+			} while((now = now.getSuperclass()) != old && now != null);
+		} else {
+			parametrName = "parameter." + param.name();
+		}
+		
 		if(param instanceof Utils.ClassBuilder.BooleanParam<?> np_){
 			final var np = (Utils.ClassBuilder.BooleanParam<T>) np_;
-			return new SettingsBoolean(clr,parametrName, np.get(object), e -> {np.setValue(object, e);});
+			return new SettingsBoolean(clr,parametrName, np.get(object), e -> {np.setValue(object, e);c.change();});
 		} else if(param instanceof Utils.ClassBuilder.BooleanVectorParam<?> np_){
 			final var np = (Utils.ClassBuilder.BooleanVectorParam<T>) np_;
 			final var nowVals = np.get(object);
@@ -665,7 +710,7 @@ public class Settings extends javax.swing.JPanel {
 			//return panel; Я просто не уверен, что сделал всё верно :)
 		} else if(param instanceof Utils.ClassBuilder.StringParam<?> np_){
 			final var np = (Utils.ClassBuilder.StringParam<T>) np_;
-			return new SettingsString(clr,parametrName, np.getDefault(),np.get(object), e -> {np.setValue(object, e);});
+			return new SettingsString(clr,parametrName, np.getDefault(),np.get(object), e -> {np.setValue(object, e);c.change();});
 		} else if(param instanceof Utils.ClassBuilder.StringVectorParam<?> np_){
 			throw new AssertionError(String.valueOf(param));
 		} else if(param instanceof Utils.ClassBuilder.NumberParam<? extends Number,?> np_){
@@ -674,12 +719,17 @@ public class Settings extends javax.swing.JPanel {
 			if(def.equals(Integer.class)){
 				final var np = (Utils.ClassBuilder.NumberParam<Integer,T>) npn;
 				return new SettingsSlider<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
-					np.setValue(object, e);
+					np.setValue(object, e);c.change();
+				});
+			} else if(def.equals(Long.class)){
+				final var np = (Utils.ClassBuilder.NumberParam<Long,T>) npn;
+				return new SettingsSlider<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
+					np.setValue(object, e);c.change();
 				});
 			} else if(def.equals(Double.class)){
 				final var np = (Utils.ClassBuilder.NumberParam<Double,T>) npn;
 				return new SettingsSlider<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
-					np.setValue(object, e);
+					np.setValue(object, e);c.change();
 				});
 			} else {
 				throw new IllegalArgumentException("Класс " + def + " пока не поддерживается");
@@ -687,16 +737,118 @@ public class Settings extends javax.swing.JPanel {
 		}  else if(param instanceof Utils.ClassBuilder.NumberVectorParam<? extends Number,?> np_){
 			throw new AssertionError(String.valueOf(param));
 		} else if(param instanceof Utils.ClassBuilder.MapPointParam<?> np_){
-			throw new AssertionError(String.valueOf(param));
+			final var np = (Utils.ClassBuilder.MapPointParam<T>) np_;
+			return new SettingsPoint(clr,parametrName, np.getDefault(),np.get(object), e -> {np.setValue(object, e);c.change();});
 		} else if(param instanceof Utils.ClassBuilder.MapPointVectorParam<?> np_){
-			throw new AssertionError(String.valueOf(param));
+			final var np = (Utils.ClassBuilder.MapPointVectorParam<T>) np_;
+			final var panel = new javax.swing.JPanel();
+			panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
+			final var points = new ArrayList<>(Arrays.asList(np.get(object)));
+			final var selectPoint = new int[1];
+			selectPoint[0] = 0;
+			build(clr, parametrName,panel,np,points,selectPoint,()->{
+				np.setValue(object, points.toArray(Point[]::new));
+				c.change();
+			});
+			return panel;
 		}  else if(param instanceof Utils.ClassBuilder.Abstract2Param<?> np_){
-			throw new AssertionError(String.valueOf(param));
+			final var np = (Utils.ClassBuilder.Abstract2Param<T>) np_;
+			return new SettingsPoint(clr,parametrName, 
+					np.get1Minimum(), np.get1Default(), np.get1Maximum(),np.get(object).x,
+					np.get2Minimum(), np.get2Default(), np.get2Maximum(),np.get(object).y,  e -> {np.setValue(object, e);c.change();});
 		} else if(param instanceof Utils.ClassBuilder.Abstract2VectorParam<?> np_){
 			throw new AssertionError(String.valueOf(param));
 		} else {
 			throw new AssertionError(String.valueOf(param));
 		}
+	}
+	/**
+	 * Создаёт панель для ввода ряда точек
+	 * @param clr класс, по которому будет искаться локализованное имя параметра
+	 * @param parametrName имя параметра для локализованного имени
+	 * @param panel панель, на которую надо нанести все нужные кнопки
+	 * @param np непосредственно параметр, который создаётся
+	 * @param points набор точек, которые уже задали
+	 * @param selectPoint указатель на финальный объект индекса выбранной точки у этой панели
+	 */
+	private <T> void build(final Class<?> clr, final String parametrName, javax.swing.JPanel panel, Utils.ClassBuilder.MapPointVectorParam<T> np, List<Calculations.Point> points, int[] selectPoint, ChangeListener c) {
+		final var def = np.getDefault()[0];
+		panel.removeAll();
+		for (int i = 0; i < points.size(); i++) {
+			final var nowIndex = i;
+			final var get = points.get(i);
+			final var panelPoint = new javax.swing.JPanel();
+			panelPoint.setLayout(new javax.swing.BoxLayout(panelPoint, javax.swing.BoxLayout.X_AXIS));
+			if(i == selectPoint[0]){
+				final var settings = new SettingsPoint(clr,parametrName, def,get, e -> {
+					points.set(nowIndex, e);
+					build(clr, parametrName,panel,np,points,selectPoint,c); c.change();
+				});
+				panelPoint.add(settings);
+			} else {
+				final var label = new javax.swing.JLabel(get.toString());
+				label.setToolTipText(Configurations.getHProperty(SettingsMake.class, "MapPointVectorConstructorParam.label"));
+				label.addMouseListener(new java.awt.event.MouseAdapter() {
+						@Override public void mouseClicked(MouseEvent e) {
+							selectPoint[0] = nowIndex;
+							build(clr, parametrName,panel,np,points,selectPoint,c);
+						}
+				});
+				panelPoint.add(javax.swing.Box.createRigidArea(new Dimension(5,0))); //Отступ
+				panelPoint.add(label);
+			}
+			panelPoint.add(javax.swing.Box.createHorizontalGlue()); //Связующее звено, чтобы следующая панелька была сбоку
+			//Кнопка удалить не нужна, если точек меньше 2х
+			final java.awt.event.ActionListener removeEvent = points.size() < 2 ? null : e -> {
+				points.remove(get);
+				if(selectPoint[0] >= nowIndex && selectPoint[0] > 0){
+					selectPoint[0]--;
+				}
+				build(clr, parametrName,panel,np,points,selectPoint,c);
+				c.change();
+			};
+			final java.awt.event.ActionListener addEvent = e -> {
+				points.add(nowIndex+1, def);
+				selectPoint[0] = nowIndex + 1;
+				build(clr, parametrName,panel,np,points,selectPoint,c);
+				c.change();
+			};
+			panelPoint.add(buildAddRemoveButton(removeEvent,addEvent));
+			panel.add(panelPoint);
+		}
+		panel.updateUI();
+	}
+	/**
+	 * Создаёт панельку с двумя кнопками - добавить и удалить
+	 * @param removeEvent событе, при нажатии кнопки удалить. Может быть null, тогда кнопки удалить не будет
+	 * @param addEvent событие для добавления точки, или что там надо добавить?
+	 * @return панелька с заявленными кнопками
+	 */
+	private javax.swing.JPanel buildAddRemoveButton(java.awt.event.ActionListener removeEvent, java.awt.event.ActionListener addEvent){
+		final var panelBottom = new javax.swing.JPanel();
+		panelBottom.setLayout(new javax.swing.BoxLayout(panelBottom, javax.swing.BoxLayout.X_AXIS));
+		if(removeEvent != null){
+			final var remBut = new javax.swing.JButton("-");
+			remBut.setToolTipText(Configurations.getHProperty(SettingsMake.class, "MapPointVectorConstructorParam.remove.L"));
+			remBut.setContentAreaFilled(false);
+			remBut.setMargin(new java.awt.Insets(0,3,0,3));
+			remBut.addActionListener(removeEvent);
+			panelBottom.add(remBut);
+		}
+		final var addBut = new javax.swing.JButton("+");
+		addBut.setToolTipText(Configurations.getHProperty(SettingsMake.class, "MapPointVectorConstructorParam.add.L"));
+		addBut.setContentAreaFilled(false);
+		addBut.setMargin(new java.awt.Insets(0,2,0,2));
+		addBut.addActionListener(addEvent);
+		panelBottom.add(addBut);
+		return panelBottom;
+	}
+	
+	private SettingsMake openPanel(SettingsMake sm){
+		 if(makeWindow != null){
+			 makeWindow.dispose();
+		 }
+		return makeWindow = sm;
 	}
 	
 	/** This method is called from within the constructor to
@@ -727,6 +879,9 @@ public class Settings extends javax.swing.JPanel {
         setLayout(new javax.swing.BoxLayout(this, javax.swing.BoxLayout.Y_AXIS));
 
         scroll.setHorizontalScrollBarPolicy(javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+
+        jPanel.setAlignmentX(0.0F);
+        jPanel.setAlignmentY(0.0F);
 
         tableLists.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -871,7 +1026,7 @@ public class Settings extends javax.swing.JPanel {
         jPanelLayout.setHorizontalGroup(
             jPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanelLayout.createSequentialGroup()
-                .addComponent(tableLists, javax.swing.GroupLayout.DEFAULT_SIZE, 234, Short.MAX_VALUE)
+                .addComponent(tableLists)
                 .addContainerGap())
         );
         jPanelLayout.setVerticalGroup(
@@ -1005,4 +1160,6 @@ public class Settings extends javax.swing.JPanel {
 	private boolean isNeedWarning = true;
 	/**Список всех подсвеченных объектов. Нужен для того, чтобы подсвечивался только один объект*/
 	private final ArrayList<SettingsBoolean> blinks = new ArrayList<>();
+	/**Текущее окно для создания объектов*/
+	private SettingsMake makeWindow = null;
 }

@@ -211,8 +211,8 @@ public class StreamEllipse extends StreamAbstract {
 		//g.fill(new Ellipse2D.Double(x0, y0,w0,h0));
 		
 		//А теперь приступим к порнографии - создании подэллипсов для движения!
-		final var whc = Math.min(50,Math.min(w0, h0)); //Ширина/высота круга
-		final var countCurc = Math.max(w0, h0) / whc; //Сколкьо будет кругов
+		final var D = Math.max(w0, h0);
+		final var countCurc = D < 50 ? 1 : (D / 50); //Сколкьо будет кругов
 		final var wx = w0 / (countCurc * 2); //Ширина круга
 		final var hy = h0 / (countCurc * 2); //Высота круга
 		for (int curcle = 0; curcle < countCurc; curcle++) {
