@@ -126,6 +126,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		/**Функция, вызываемая каждую секунду. Примерно*/
 		public void taskStep();
 	}
+	/**Отложенная задача*/
+	public interface DeferredTask {public void run();};
 	/**Возможные типы мира*/
 	public enum WORLD_TYPE{
 		/**Вертикальный срез бассейна. Линейный мир представляет собой бесконечную полосу, ограниченную сверху и снизу. Справа и слева мир зациклен на себя.*/
@@ -703,7 +705,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 */
 	public static String getProperty(String name) {
 		try {
-			return bundle.getString(name);
+			final var text = bundle.getString(name);
+			if(text.charAt(0) == '=') return getProperty(text.substring(1)); //Если первый символ '=', то дальше идёт ссылка на другое свойство
+			else return bundle.getString(name);
 		} catch (MissingResourceException e) {
 			var err = "Не найдено свойство " + name;
 			logger.log(Level.WARNING, err, e);
@@ -819,5 +823,18 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 					logger.log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 				}
 			}, ms, ms, TimeUnit.MILLISECONDS);
+	}
+	/**Добавить задачу на выполнение
+	 * @param task задача, которая будет вскоре выполнена
+	 * @param ms время в мс, через которое задача будет выполнена
+	 */
+	public static void addOnceTask(Runnable task, int ms){
+		TIME_OUT_POOL.schedule(() -> {
+				try {
+					task.run();
+				} catch (Exception ex) {
+					logger.log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+				}
+			}, ms, TimeUnit.MILLISECONDS);
 	}
 }
