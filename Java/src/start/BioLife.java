@@ -31,8 +31,7 @@ public class BioLife{
 			} catch (java.io.UnsupportedEncodingException e) {
 				System.out.println("App not support encoding UTF-8");
 			}
-		}
-		
+		}		
 		final var _opts = new Utils.CMDOptions(args);
 		_opts.add(new Utils.CMDOptions.Option('V',"Не запускать GUI, приложение останется в консольном варианте"));
 		_opts.add(new Utils.CMDOptions.Option('W',100,700,10000,1d,"Ширина мира для запуска без GUI"));
@@ -63,8 +62,8 @@ public class BioLife{
 		}
 		//Рефлексия нужна, чтобы отработали статические методы даже в тех классах, на которые нет пути отсюда, из этой точки старта.
 		Utils.Reflector.getClassesByClasses(BioLife.class);
-		//Создаём мир
-		final var defType = Configurations.WORLD_TYPE.CIRCLE;
+		//Создаём случайный мир
+		final var defType = Configurations.WORLD_TYPE.values[Utils.Utils.random(0, Configurations.WORLD_TYPE.length - 1)];
 		final var load = _opts.get('L').get(String.class);
 		if(!_opts.get('V').get(Boolean.class)){
 			//С графической частью
