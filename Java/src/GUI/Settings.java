@@ -186,7 +186,7 @@ public class Settings extends javax.swing.JPanel {
 			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
 		});
 	
-		final var wt = new SettingsSelect<>("configuations.WORLD_TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.confoguration.world_type, e -> {
+		final var wt = new SettingsSelect<>(Settings.class,"configuations.WORLD_TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.confoguration.world_type, e -> {
 			Configurations.world.awaitStop();
 			Configurations.rebuildMap(new Configurations(Configurations.confoguration,e,Configurations.getWidth() , Configurations.getHeight()));
 			rebuildBuild();
@@ -259,7 +259,7 @@ public class Settings extends javax.swing.JPanel {
 				}
 			});
 			//Направление гравитации
-			sliders[1] = new SettingsSelect<>("gravitation.dir", Gravitation.Direction.values, defDir, buildGrav.getDirection(),e -> {
+			sliders[1] = new SettingsSelect<>(Settings.class,"gravitation.dir", Gravitation.Direction.values, defDir, buildGrav.getDirection(),e -> {
 				final var g = Configurations.gravitation[status.ordinal()];
 				final var power = (SettingsSlider) sliders[0];
 				final var direction = (SettingsSelect<Gravitation.Direction>) sliders[1];
@@ -339,17 +339,17 @@ public class Settings extends javax.swing.JPanel {
 				suns2.add(new JPopupMenu.Separator());
 			suns2.add(new SettingsString(Settings.class,"object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
 			
-			suns2.add(addBlink(sun == wv.getSelect(), e->wv.setSelect(e ? sun : null)));
-			suns2.add(makeAddRemPanel("sun",
-					new AddListener(SunAbstract.getChildrens(),ret -> Configurations.suns.add((SunAbstract)ret)),
-					()->SunAbstract.serialization(sun),j->{Configurations.suns.add(SunAbstract.generation(j, Configurations.VERSION));},e->Configurations.suns.remove(sun)));
-			
 			suns2.add(addBlinkTrajectory(sun == wv.getSelect(), e->wv.setSelect(e ? trajectory : null)));
 			for(final var p : trajectory.getParams())
 				suns2.add(makePanel(trajectory,p, ()->{sun.set(trajectory);}));
 			suns2.add(makeAddRemPanel("trajectory",
 					new AddListener(Trajectory.getChildrens(),ret -> sun.set((Trajectory)ret)),
 					()->Trajectory.serialization(trajectory),j->{sun.set(Trajectory.generation(j, Configurations.VERSION));},null));
+			
+			suns2.add(addBlink(sun == wv.getSelect(), e->wv.setSelect(e ? sun : null)));
+			suns2.add(makeAddRemPanel("sun",
+					new AddListener(SunAbstract.getChildrens(),ret -> Configurations.suns.add((SunAbstract)ret)),
+					()->SunAbstract.serialization(sun),j->{Configurations.suns.add(SunAbstract.generation(j, Configurations.VERSION));},e->Configurations.suns.remove(sun)));
 			
 		}
 		if(Configurations.suns.isEmpty()){
@@ -405,17 +405,17 @@ public class Settings extends javax.swing.JPanel {
 				minerals2.add(new JPopupMenu.Separator());
 			minerals2.add(new SettingsString(Settings.class,"object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
 			
-			minerals2.add(addBlink(mineral == wv.getSelect(), e->wv.setSelect(e ? mineral : null)));
-			minerals2.add(makeAddRemPanel("mineral",
-					new AddListener(MineralAbstract.getChildrens(),ret -> Configurations.minerals.add((MineralAbstract)ret)),
-					()->MineralAbstract.serialization(mineral),j->{Configurations.minerals.add(MineralAbstract.generation(j, Configurations.VERSION));},e->Configurations.minerals.remove(mineral)));
-			
 			minerals2.add(addBlinkTrajectory(mineral == wv.getSelect(), e->wv.setSelect(e ? trajectory : null)));
 			for(final var p : trajectory.getParams())
 				minerals2.add(makePanel(trajectory,p, ()->{mineral.set(trajectory);}));
 			minerals2.add(makeAddRemPanel("trajectory",
 					new AddListener(Trajectory.getChildrens(),ret -> mineral.set((Trajectory)ret)),
 					()->Trajectory.serialization(trajectory),j->{mineral.set(Trajectory.generation(j, Configurations.VERSION));},null));
+			
+			minerals2.add(addBlink(mineral == wv.getSelect(), e->wv.setSelect(e ? mineral : null)));
+			minerals2.add(makeAddRemPanel("mineral",
+					new AddListener(MineralAbstract.getChildrens(),ret -> Configurations.minerals.add((MineralAbstract)ret)),
+					()->MineralAbstract.serialization(mineral),j->{Configurations.minerals.add(MineralAbstract.generation(j, Configurations.VERSION));},e->Configurations.minerals.remove(mineral)));
 			
 		}
 		if(Configurations.minerals.isEmpty()){
@@ -461,17 +461,18 @@ public class Settings extends javax.swing.JPanel {
 				streams2.add(new JPopupMenu.Separator());
 			streams2.add(new SettingsString(Settings.class,"object.editname", "Залеж", stream.toString(), e -> stream.setName(e)));
 			
-			streams2.add(addBlink(stream == wv.getSelect(),e -> wv.setSelect(e ? stream : null)));			
-			streams2.add(makeAddRemPanel("stream",
-					new AddListener(StreamAbstract.getChildrens(),ret -> Configurations.streams.add((StreamAbstract)ret)),
-					()->StreamAbstract.serialization(stream),j->{Configurations.streams.add(StreamAbstract.generation(j, Configurations.VERSION));},e->Configurations.streams.remove(stream)));
-			
 			streams2.add(addBlinkTrajectory(stream == wv.getSelect(), e->wv.setSelect(e ? stream.getTrajectory() : null)));
 			for(final var p : trajectory.getParams())
 				streams2.add(makePanel(trajectory,p, ()->{stream.set(trajectory);}));
 			streams2.add(makeAddRemPanel("trajectory",
 					new AddListener(Trajectory.getChildrens(),ret -> stream.set((Trajectory)ret)),
 					()->Trajectory.serialization(trajectory),j->{stream.set(Trajectory.generation(j, Configurations.VERSION));},null));
+			
+			streams2.add(addBlink(stream == wv.getSelect(),e -> wv.setSelect(e ? stream : null)));			
+			streams2.add(makeAddRemPanel("stream",
+					new AddListener(StreamAbstract.getChildrens(),ret -> Configurations.streams.add((StreamAbstract)ret)),
+					()->StreamAbstract.serialization(stream),j->{Configurations.streams.add(StreamAbstract.generation(j, Configurations.VERSION));},e->Configurations.streams.remove(stream)));
+
 		}
 		if(Configurations.streams.isEmpty()){
 			streams2.add(addNew(Configurations.streams,StreamAbstract.getChildrens(), c->wv.setSelect((StreamAbstract) c.build())));

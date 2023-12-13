@@ -20,6 +20,7 @@ import javax.swing.JMenuItem;
 import Calculations.Configurations;
 import static Calculations.Configurations.getViewer;
 import Calculations.GenerateClassException;
+import Calculations.Point;
 import java.awt.Cursor;
 import java.io.File;
 import java.text.MessageFormat;
@@ -46,18 +47,39 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	private boolean gifRecord = false;
 	/**Дерево эволюции, которым мы правим*/
 	private EvolTreeDialog evolTreeDialog;
+	/**Окно поиска*/
+	private MenuSearch menuSearch = null;
 	
 	
 	/**Для выбора кнопочек меню*/
 	enum MENU_SELECT{NONE,REMOVE}
 	/**Перечисление для удаления только определённых объектов*/
 	enum REMOVE_O{
-		ORGANIC("organic"),POISON("poison"),OWALL("fossil"),BOT("alive"),ALL("all"),
+		ORGANIC("organic"),POISON("poison"),OWALL("fossil"),BOT("alive"),ALL("all"),CLEAR("clear"),
 		;
 		public static final REMOVE_O[] values = REMOVE_O.values();
 		/**Описание пункта меню*/
 		private final String text;
 		private REMOVE_O(String n){text = Configurations.getHProperty(Menu.class,"remove." + n);}
+	}
+	
+	private class jPopupMenuButton extends JButton {
+		public interface PopupGenerate{
+			public void generate(javax.swing.JPopupMenu menu);
+		}
+		
+		public jPopupMenuButton(PopupGenerate generator){
+			addMouseListener(new MouseAdapter(){
+				@Override
+				public void mouseClicked(MouseEvent evt) {
+					if(evt.getButton() == MouseEvent.BUTTON3){
+						var jPopupMenu1 = new javax.swing.JPopupMenu();
+						generator.generate(jPopupMenu1);
+						jPopupMenu1.show(jPopupMenuButton.this, evt.getX(), evt.getY());
+					}
+				}
+			});
+		}
 	}
 	
 	/**
@@ -66,11 +88,9 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	public Menu(EvolTreeDialog ed) {
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 		evolTreeDialog = ed;
-		//Конфигурация мира
-		//Рестарт
+		
 		add(makeButton("save", e-> save()));
 		add(makeButton("load", e-> load()));
-		//add(makeButton("search", e-> System.out.println(e)));
 		add(start = makeButton("play", e -> {if (Configurations.world.isActiv())Configurations.world.stop();else Configurations.world.start();} ));
 		add(record = makeButton("record", e-> record()));
 		add(makeButton("graph", e-> {
@@ -78,22 +98,17 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			evolTreeDialog.setLocation(Menu.this.getLocationOnScreen());
 		}));
 		add(makeButton("cursor", e-> toDefault()));
-		JButton kill;
-		add(kill = makeButton("kill", e-> remove(REMOVE_O.ALL)));
-		kill.addMouseListener(new MouseAdapter(){
-			@Override
-			public void mouseClicked(MouseEvent evt) {
-				if(evt.getButton() == MouseEvent.BUTTON3){
-					var jPopupMenu1 = new javax.swing.JPopupMenu();
-					for(var i : REMOVE_O.values){
-						var visible = new JMenuItem(i.text);
-						visible.addActionListener( e -> remove(i));
-						jPopupMenu1.add(visible);
-					}
-					jPopupMenu1.show(kill, evt.getX(), evt.getY());
-				}
+		add(makeButton("search", e-> search()));
+		add(configButton(new jPopupMenuButton((jPopupMenu1) -> {
+			for(var i : REMOVE_O.values){
+				var visible = new JMenuItem(i.text);
+				visible.addActionListener( e -> remove(i));
+				jPopupMenu1.add(visible);
 			}
-		});
+		}), "kill", e-> remove(REMOVE_O.ALL)));
+		//add(makeButton("loadCell", e-> loadCell()));
+		//add(makeButton("saveCell", e-> saveCell()));
+		
 
 		Configurations.addTask(this);
 	}
@@ -126,29 +141,48 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			gifRecord = false;
 		}
 	}
-
+	/** Создаёт кнопку с иконкой для меню
+	 * @param name имя файла из ресурсов, какую картинку взять
+	 * @param al слушатель события, что что-то произошо
+	 * @return новосозданая кнопка
+	 */
 	private JButton makeButton(String name, ActionListener al) {
-		
-		JButton button = new JButton();
+		return configButton(new JButton(),name,al);
+	}
+	/** Конфигурирует кнопку с иконкой для меню
+	 * @param button кнопка, которую конфигурируем
+	 * @param name имя файла из ресурсов, какую картинку взять
+	 * @param al слушатель события, что что-то произошо
+	 * @return новосозданая кнопка
+	 */
+	private JButton configButton(JButton button, String name, ActionListener al) {
 		Configurations.setIcon(button,name);
 		button.setMaximumSize (new Dimension(40,20));
-        button.setBorderPainted(false);
-        button.setFocusPainted(false);
-        button.setContentAreaFilled(false);
         button.addActionListener(e -> EventQueue.invokeLater(() -> al.actionPerformed(e)));
         button.setToolTipText(Configurations.getHProperty(Menu.class,name));
-        button.setFocusable(false);
 		return button;
 	}
 	/**Запускает удаление объектов на карте
 	 * @param o тип объектов, подлежащих удалению
 	 */
 	private void remove(REMOVE_O o) {
-		Configurations.world.stop();
-		final var vw = Configurations.getViewer().get(WorldView.class);
-		removeO = o;
-		select = MENU_SELECT.REMOVE;
-		vw.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+		if(o == REMOVE_O.CLEAR){
+			Configurations.world.awaitStop();
+			for(var x = 0 ; x < Configurations.getWidth() ; x++){
+				for(var y = 0 ; y < Configurations.getHeight(); y++){
+					final var point = Point.create(x,y);
+					if(!point.valid()) continue;
+					final var get = Configurations.world.get(point);
+					if(get != null) get.remove_NE();
+				}
+			}
+		} else {
+			Configurations.world.stop();
+			final var vw = Configurations.getViewer().get(WorldView.class);
+			removeO = o;
+			select = MENU_SELECT.REMOVE;
+			vw.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
+		}
 	}
 	private void toDefault() {
 		select = MENU_SELECT.NONE;
@@ -240,7 +274,6 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			gifs = null;
 		}
 	}
-	
 	/**Открывает окошечко сохранения мира и... Сохраняет мир, собственно*/
 	public void save() {
 		if(Configurations.confoguration.lastSaveCount == Configurations.world.step) return;
@@ -311,6 +344,19 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 				JOptionPane.showMessageDialog(vw,	ex.getLocalizedMessage(),	title, JOptionPane.ERROR_MESSAGE);
 			}
+		}
+	}
+	/**Открывает/закрывает окно поиска объектов на экране*/
+	public void search(){
+		if(menuSearch != null){
+			menuSearch.dispose();
+			menuSearch = null;
+		} else {
+			Configurations.world.stop();
+			menuSearch = new MenuSearch(false);
+			menuSearch.setVisible(true);
+			menuSearch.setLocationRelativeTo(this);
+			//menuSearch.setLocation(this.getLocation());
 		}
 	}
 }

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.locks.LockSupport;
 import Calculations.Configurations;
+import java.util.ArrayList;
 
 public class Utils {
 
@@ -259,6 +260,14 @@ public class Utils {
 			}
 		});
 		return list;
+	}
+	/** Создаёт новую коллекцию с дополнительным, нулевым элементом
+	 * @param <T> тип коллекции
+	 * @param collect сама коллекция
+	 * @return новая коллекция в которой есть новый элемент - null
+	 */
+	public static <T> T[] addNull(T [] collect){
+		return (T[]) new ArrayList<>(Arrays.asList(collect)){{add(null);}}.toArray(collect);
 	}
 	/**
 	 * Вычисляет обратимый хэш для числа.

@@ -41,6 +41,7 @@ public class CommandList {
 	 * @return
 	 */
 	protected static CommandDNA get(int key) {
+		final var JMP = new Jump();
 		return switch (key) {
 			case BLOCK_1 -> new Photosynthesis();
 			case BLOCK_1 + 1 -> new Minerals2Energy();
@@ -120,7 +121,7 @@ public class CommandList {
 			case BLOCK_6 + 8 -> new Mucosa(true);
 			case BLOCK_6 + 9 -> new Mucosa(false);
 
-			default -> new Jump(); // Любая остальная команда - прыжок
+			default -> JMP; // Любая остальная команда - прыжок
 		};
 	}
 }

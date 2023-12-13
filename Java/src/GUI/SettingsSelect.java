@@ -22,22 +22,25 @@ public class SettingsSelect<T> extends javax.swing.JPanel {
 	
 	/**
 	* Создаёт панельку настройки
-	* @param nameO имя параметра (по нему берутся навазния)
+	 * @param nameCl класс параметра, тоже для формирования локализованных подписей
+	* @param nameS имя параметра (по нему берутся навазния)
 	* @param values все доступные значения
 	* @param defVal значение по умолчанию
 	* @param nowVal текущее значение
 	* @param list слушатель, который сработает, когда значение изменится
 	*/
-   public SettingsSelect(String nameO, T[] values, T defVal, T nowVal, AdjustmentListener<T> list) {
+   public SettingsSelect(Class<?> nameCl, String nameS, T[] values, T defVal, T nowVal, AdjustmentListener<T> list) {
 		initComponents();
-		if (Arrays.stream(values).filter( v -> v.equals(defVal)).findFirst().isEmpty())
+		if (!Arrays.stream(values).anyMatch( v -> v == defVal || v != null && v.equals(defVal)))
 			throw new NumberFormatException("Значение defVal обязано принадлежать массиву values!");
-		if (Arrays.stream(values).filter( v -> v.equals(nowVal)).findFirst().isEmpty())
+		if (!Arrays.stream(values).anyMatch( v -> v == nowVal || v != null &&v.equals(nowVal)))
 			throw new NumberFormatException("Значение nowVal обязано принадлежать массиву values!");
+		if (Arrays.stream(values).filter(v -> v == null).count() > 1)
+			throw new NumberFormatException("Массив values может содержать не более одного null!");
 		listener = e -> {};
 
-		label.setText(Configurations.getHProperty(Settings.class, nameO + ".L"));
-		label.setToolTipText(Configurations.getHProperty(Settings.class, nameO + ".T"));
+		label.setText(Configurations.getHProperty(nameCl, nameS + ".L"));
+		label.setToolTipText(Configurations.getHProperty(nameCl, nameS + ".T"));
 		
 		this.values = new javax.swing.DefaultComboBoxModel(values);
 		select.setModel(this.values);
@@ -47,7 +50,7 @@ public class SettingsSelect<T> extends javax.swing.JPanel {
 		reset.addActionListener(e -> setValue(defVal));
 		reset.setToolTipText(Configurations.getHProperty(SettingsSelect.class, "resetSlider"));
 
-		value = null;
+		value = nowVal == null ? Arrays.stream(values).filter( v -> v != null).findFirst().orElse(null) : null;
 		setValue(nowVal);
 		listener = list;
 		select.addActionListener((e) -> setValue((T)select.getSelectedItem()));
@@ -56,12 +59,12 @@ public class SettingsSelect<T> extends javax.swing.JPanel {
 	 * @param val 
 	 */
 	public void setValue(T val) {
-		if (!val.equals(value)) {
+		if ((val == null && val != value) || (val != null && !val.equals(value))) {
 			for (int i = 0; i < values.getSize(); i++) {
 				final var get = values.getElementAt(i);
-				if(get.equals(val)){
+				if((get == null && get == val) || (get != null && get.equals(val))){
 					value = val;
-					select.setSelectedItem(val);
+					select.setSelectedIndex(i);
 					listener.adjustmentValueChanged(val);
 					break;
 				}

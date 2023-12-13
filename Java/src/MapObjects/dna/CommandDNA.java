@@ -23,7 +23,7 @@ public abstract class CommandDNA {
 	/**Полное имя*/
 	private final String longName;
 	/**Показывает, что мы должны отображать всё в кратком виде*/
-	private static boolean isFullMod = false;
+	private static boolean isFullMod = true;
 	/**Больше параметра*/
 	private static String parametrMoreOrEqual = "≥" + Configurations.getProperty(CommandDNA.class, "parameter");
 	/**Меньше параметра*/

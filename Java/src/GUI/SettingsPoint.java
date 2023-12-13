@@ -43,6 +43,51 @@ public class SettingsPoint extends javax.swing.JPanel {
 	* Создаёт панельку настройки для ввода двух чисел
 	 * @param nameCl класс для поиска локализованного имени
 	* @param nameS имя параметра (по нему берутся навазния)
+	 * @param min минимальное значение каждого из параметров
+	 * @param defX значение параметра Х по умолчанию
+	 * @param defY значение параметра Y по умолчанию
+	 * @param max максимамльное значение каждого из параметров
+	 * @param now текущее значение каждого из параметров
+	* @param list слушатель, который сработает, когда значение изменится
+	*/
+   public SettingsPoint(Class<?> nameCl, String nameS, int min, int defX,int defY, int max, Point.Vector now, AdjustmentListener<Point.Vector> list) {
+		this(nameCl,nameS,min, defX, max, now.x, min, defY, max, now.y, list);
+	}
+	/**
+	* Создаёт панельку настройки для ввода двух чисел
+	* @param nameS имя параметра (по нему берутся навазния)
+	 * @param nameCl класс для поиска локализованного имени
+	 * @param min минимальное значение каждого из параметров
+	 * @param def значение первого параметра по умолчанию. Для второго параметра по умолчанию будет -def
+	 * @param max максимамльное значение каждого из параметров
+	 * @param now текущее значение каждого из параметров
+	* @param list слушатель, который сработает, когда значение изменится
+	*/
+   public SettingsPoint(Class<?> nameCl, String nameS, int min, int def, int max, Point.Vector now, AdjustmentListener<Point.Vector> list) {
+		this(nameCl,nameS, 
+				min, def, max, now.x, min, 
+				def == Integer.MAX_VALUE ? Integer.MIN_VALUE : (def == Integer.MIN_VALUE ? Integer.MAX_VALUE : (-def)), 
+				max, now.y, list);
+	}
+	/**
+	* Создаёт панельку настройки для ввода двух чисел
+	 * @param nameCl класс для поиска локализованного имени
+	* @param nameS имя параметра (по нему берутся навазния)
+	 * @param min минимальное значение каждого из параметров
+	 * @param defX значение параметра Х по умолчанию
+	 * @param defY значение параметра Y по умолчанию
+	 * @param max максимамльное значение каждого из параметров
+	 * @param nowX текущее значение параметра Х
+	 * @param nowY текущее значение параметра Y
+	* @param list слушатель, который сработает, когда значение изменится
+	*/
+   public SettingsPoint(Class<?> nameCl, String nameS, int min, int defX, int defY, int max, int nowX,int nowY, AdjustmentListener<Point.Vector> list) {
+		this(nameCl,nameS,min, defX, max, nowY, min, defY, max, nowX, list);
+	}
+	/**
+	* Создаёт панельку настройки для ввода двух чисел
+	 * @param nameCl класс для поиска локализованного имени
+	* @param nameS имя параметра (по нему берутся навазния)
 	 * @param minX минимальное значение параметра Х
 	 * @param defX значение параметра Х по умолчанию
 	 * @param maxX максимамльное значение параметра Х
@@ -54,7 +99,27 @@ public class SettingsPoint extends javax.swing.JPanel {
 	* @param list слушатель, который сработает, когда значение изменится
 	*/
    public SettingsPoint(Class<?> nameCl, String nameS, int minX, int defX, int maxX, int nowX, int minY, int defY, int maxY, int nowY, AdjustmentListener<Point.Vector> list) {
-		this(nameCl,nameS,Configurations.getHProperty(nameCl, nameS + ".P1"),Configurations.getHProperty(nameCl, nameS + ".P2"), minX, defX, maxX, nowX, minY, defY, maxY, nowY, list, false);
+		this(nameCl,nameS,nameCl,nameS, minX, defX, maxX, nowX, minY, defY, maxY, nowY, list);
+	}
+	/**
+	 * Создаёт панельку настройки для ввода двух чисел
+	 *
+	 * @param labelClass класс для поиска локализованного имени
+	 * @param label  имя подписи параметра (ключ для поиска локлизованной строки)
+	 * @param paramClass класс для поиска локализованного имени пописей параметров
+	 * @param lebelP имя первого параметра (по нему берутся навазния). В БД ищется paramClass.lebelP1.P1 и paramClass.lebelP1.P2
+	 * @param minX   минимальное значение параметра Х
+	 * @param defX   значение параметра Х по умолчанию
+	 * @param maxX   максимамльное значение параметра Х
+	 * @param nowX   текущее значение параметра Х
+	 * @param minY   минимальное значение параметра Y
+	 * @param defY   значение параметра Y по умолчанию
+	 * @param maxY   максимамльное значение параметра Y
+	 * @param nowY   текущее значение параметра Y
+	 * @param list   слушатель, который сработает, когда значение изменится
+	 */
+	public SettingsPoint(Class<?> labelClass, String label,Class<?> paramClass, String lebelP, int minX, int defX, int maxX, int nowX, int minY, int defY, int maxY, int nowY, AdjustmentListener<Point.Vector> list) {
+		this(labelClass,label,Configurations.getHProperty(paramClass, lebelP + ".P1"),Configurations.getHProperty(paramClass, lebelP + ".P2"), minX, defX, maxX, nowX, minY, defY, maxY, nowY, list, false);
 	}
    
    
@@ -143,6 +208,7 @@ public class SettingsPoint extends javax.swing.JPanel {
 		
 		listener = list;
 		isPoint = isP;
+		select.setVisible(isPoint);
 		spinnerX.addChangeListener((e) -> setValue(Point.Vector.create(((Number)spinnerX.getValue()).intValue(),((Number)spinnerY.getValue()).intValue())));
 		spinnerY.addChangeListener((e) -> setValue(Point.Vector.create(((Number)spinnerX.getValue()).intValue(),((Number)spinnerY.getValue()).intValue())));
 	}
@@ -244,12 +310,12 @@ public class SettingsPoint extends javax.swing.JPanel {
         resetAndInsertLayout.setHorizontalGroup(
             resetAndInsertLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(resetAndInsertLayout.createSequentialGroup()
-                .addComponent(labelX, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, 0)
+                .addComponent(labelX, javax.swing.GroupLayout.PREFERRED_SIZE, 24, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(spinnerX, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGap(0, 0, 0)
-                .addComponent(labelY, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, 0)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(labelY, javax.swing.GroupLayout.PREFERRED_SIZE, 27, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(spinnerY, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGap(0, 0, 0)
                 .addComponent(reset)
