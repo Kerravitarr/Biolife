@@ -141,8 +141,16 @@ public abstract class AliveCellProtorype extends CellObject {
 		
 		/**Максимальная специализация*/
 		public static final int MAX_SPECIALIZATION = 100;
+		/**Коэффициенты влияния специализации в зависимости от развития*/
+		private static final double[] SPECIALIZATION_k = new double[MAX_SPECIALIZATION+1];
 		/**Ведущая специализация*/
 		private TYPE main = TYPE.PHOTOSYNTHESIS;
+		
+		static{
+			for (int i = 0; i <= MAX_SPECIALIZATION; i++) {
+				SPECIALIZATION_k[i] = Math.pow(((double)i)/MAX_SPECIALIZATION, 2); // Специализация развиватется по закону степени. Так низкие специализации почти ни чего не дают, а высокие дают очень много
+			}
+		}
 		
 		Specialization() {
 			for(var i : TYPE.values)
@@ -151,7 +159,7 @@ public abstract class AliveCellProtorype extends CellObject {
 			for(var i : map)
 				summ += i;
 			put(TYPE.PHOTOSYNTHESIS, get(TYPE.PHOTOSYNTHESIS) + (MAX_SPECIALIZATION - summ));
-			set(TYPE.PHOTOSYNTHESIS,50);
+			set(TYPE.PHOTOSYNTHESIS,70);//Потому что тут эффективность фотосинтеза примено 0,5
 			updateColor();
 		}
 		
@@ -215,7 +223,9 @@ public abstract class AliveCellProtorype extends CellObject {
 		public void set(TYPE type, int co) {
 			if(get(type) == co) {
 				return;
-			} else {
+			//} else if(get(type) > co) {
+			//	put(type, co); //Просто снизилась специализация. С кем не бывает!
+			} else {//А тут надо вытянуть с других специализацию...
 				final var del = co - get(type);
 				var summBefore = MAX_SPECIALIZATION - get(type);
 				var max = 0;
@@ -228,11 +238,17 @@ public abstract class AliveCellProtorype extends CellObject {
 						main = i;
 					}
 					sumAfter -= nVal;
-					put(i, nVal );
+					put(i, nVal);
 				}
-				if(sumAfter >= max)
+				if (sumAfter >= max) {
 					main = type;
-				put(type, sumAfter);
+				}
+				if (sumAfter >= 0) {
+					put(type, sumAfter);
+				} else {
+					put(main, get(main) + sumAfter);
+					put(type, 0);
+				}
 			}
 			updateColor();
 		}
@@ -255,7 +271,10 @@ public abstract class AliveCellProtorype extends CellObject {
 		 * @param type какая специализация
 		 * @param value какое значение у специализации теперь
 		 */
-		private void put(TYPE type, int value) {map[type.ordinal()] = value;	}
+		private void put(TYPE type, int value) {
+			assert value >= 0 : "Попытались установить отрицательное значение value = " + value;
+			map[type.ordinal()] = value;
+		}
 		/**Получить значение специализации по типу
 		 * @param type тип специализации
 		 * @return текущее значение специализации
@@ -512,10 +531,7 @@ public abstract class AliveCellProtorype extends CellObject {
 	 * @return [0, 1.0] в зависимости от приспособления
 	 */
 	public double specMaxVal(Specialization.TYPE type) {
-		double spec = specialization.get(type);
-		if(type != getMainSpec())
-			spec = Math.min(10, spec);
-		return spec / Specialization.MAX_SPECIALIZATION;
+		return Specialization.SPECIALIZATION_k[specialization.get(type)];
 	}
 	/**
 	 * Возвращает предельное значение параметра, в зависимости от специализации
