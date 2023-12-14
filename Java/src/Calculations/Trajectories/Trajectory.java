@@ -208,30 +208,40 @@ public class Trajectory implements Cloneable{
 		final var npos = position(step + (frame-frameOffset)); //Текущая позиция объекта
 		final var r2 = transform.toScrin(2);
 		
-		//Для обработки возможной телепортации через границу мира мы будем рисовать ни одну траекторию, а сразу 4
-		//i = 0 Главный экран
-		//i = 1 Она-же справа (слева)
-		//i = 2 Она-же сверху(снизу)
-		//i = 3 И её правую (левую) тень сверху (снизу)
+		//Мой любимый трюк с траекториями не прокатит. Их придётся рисовать все :/
+		//i = 0 Главный
+		//i = 1 Его-же справа 
+		//i = 2 Его-же сверху
+		//i = 3 И его правую тень сверху
+		//i = 4 Его-же слева
+		//i = 5 Его-же снизу
+		//i = 6 И его правую тень снизу
+		//i = 7 И его левую тень сверху
+		//i = 8 И его левую тень снизу
+		//
+		// 7  2  3
+		// 4  0  1
+		// 8  5  6
+		
 
-		for (int i = 0; i < 4; i++) {
-			if(i > 0){
-				switch (Configurations.confoguration.world_type) {
-					case LINE_H -> {if(i == 2 || i == 3) continue;}
-					case LINE_V -> {if(i == 1 || i == 3) continue;}
-					case FIELD_R -> {}
-					case CIRCLE,RECTANGLE -> {continue;}
-					default -> throw new AssertionError();
-				}
+		for (int i = 0; i < 9; i++) {
+			switch (Configurations.confoguration.world_type) {
+				case LINE_H -> {if(i == 2 || i == 3 || i == 7 || i == 8 || i == 5 || i == 6) continue;}
+				case LINE_V -> {if(i == 2 || i == 5 || i == 3 || i == 6 || i == 7 || i == 8) continue;}
+				case FIELD_R -> {}
+				case CIRCLE,RECTANGLE -> {continue;}
+				default -> throw new AssertionError();
 			}
 			final var dx = switch(i){
-				case 0,2 -> 0;
-				case 1,3 -> (npos.getX() > Configurations.confoguration.MAP_CELLS.width/2 ? - Configurations.confoguration.MAP_CELLS.width: Configurations.confoguration.MAP_CELLS.width);
+				case 0,2,5 -> 0;
+				case 1,3,6 -> Configurations.confoguration.MAP_CELLS.width;
+				case 4,7,8 -> -Configurations.confoguration.MAP_CELLS.width;
 				default -> throw new AssertionError();
 			};
 			final var dy = switch(i){
-				case 0,1 -> 0;
-				case 2,3 -> (npos.getY() > Configurations.confoguration.MAP_CELLS.height/2 ? - Configurations.confoguration.MAP_CELLS.height : Configurations.confoguration.MAP_CELLS.height);
+				case 0,1,4 -> 0;
+				case 5,6,8 -> Configurations.confoguration.MAP_CELLS.height;
+				case 2,3,7 -> -Configurations.confoguration.MAP_CELLS.height;
 				default -> throw new AssertionError();
 			};
 			g.setColor(AllColors.TRAJECTORY_POINT);
