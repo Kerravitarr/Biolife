@@ -25,16 +25,13 @@ import java.util.Arrays;
 
 public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.AliveCellI{
 
-    /**
-     * Создание клетки без рода и племени - Адмама
-     */
+    /**Создание клетки без рода и племени - Адмама*/
     public AliveCell() {
         super(-1, LV_STATUS.LV_ALIVE);
         setPos(Point.create(0, 0));
         dna = new DNA(DEF_MINDE_SIZE);
         color_DO = new Color(255, 255, 255);
-		Configurations.tree.setAdam(this);
-        evolutionNode = EvolutionTree.root;
+        evolutionNode = Configurations.tree.setAdam(this);
         specialization = new Specialization();
     }
 

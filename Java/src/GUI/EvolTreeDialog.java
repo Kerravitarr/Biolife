@@ -32,8 +32,8 @@ import java.awt.Graphics2D;
 public class EvolTreeDialog extends javax.swing.JDialog implements Configurations.EvrySecondTask{	
 	/**Высота текста подписей*/
 	static final int TEXT_SIZE = 12;
-	/**Ключевой узел, от которого рисуем*/
-	private EvolutionTree.Node rootNode = EvolutionTree.root;
+	/**Ключевой узел, от которого рисуем. Если null, то тут как пойдёт - или корневой узел (если он один) или все корневые узлы*/
+	private EvolutionTree.Node nodeInCenter = null;
 	/**Пара чисел, для вычисления количества детей и узлов*/
 	private static class Pair{	private int countAllChild,countChildCell; Pair(int cac, int ccc){countAllChild = cac; countChildCell = ccc;}}
 	/**Круглая диаграмма времени или плоская?*/
@@ -446,10 +446,10 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		}
 		if(EvolTreeDialog.this.isVisible()){
 			try{
-				if(countPair(rootNode).countChildCell == 0)
+				if(nodeInCenter != null && countPair(nodeInCenter).countChildCell == 0)
 					restart();
 				//А теперь проверка. Если у нас корень - адам, а в дерев эволюции другой адам... У нас перезагрузилась карта!
-				if(rootNode.getPerrent() == null && rootNode != EvolutionTree.root)
+				if(nodeInCenter != null && nodeInCenter.getPerrent() == null && !Configurations.tree.getRoots().stream().anyMatch(r -> r == nodeInCenter))
 					restart();
 			} catch(java.lang.NullPointerException e){} //Всё нормально, у нас прямо во время перерисовывания изменилось дерево. Такое бывает частенько. Асинхронность
 			jPanelTree.updateUI();
@@ -457,7 +457,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
     }
 	/**Обновляет цвета узлов*/
 	private void updateColor(){
-		EvolutionTree.root.resetColor();
+		Configurations.tree.root.resetColor();
 		if(rootNode.getPerrent() != null)
 			colorNode(rootNode.getPerrent());
 		colorNode(rootNode,0.0,0.8);
@@ -507,18 +507,18 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	 * Сбрасывает корневой узел дерева
 	 */
 	public void restart(){
-		if(EvolutionTree.root.countAliveCell() == 0 && EvolutionTree.root.getChild().size() == 1)
-			setRootNode(EvolutionTree.root.getChild().get(0));
+		if(Configurations.tree.root.countAliveCell() == 0 && Configurations.tree.root.getChild().size() == 1)
+			setRootNode(Configurations.tree.root.getChild().get(0));
 		else
-			setRootNode(EvolutionTree.root);
+			setRootNode(Configurations.tree.root);
 	}
 	
 	private void setRootNode(EvolutionTree.Node newNode){
-		EvolutionTree.root.resetColor();
+		Configurations.tree.root.resetColor();
 		rootNode = newNode;
 		updateColor();
 		DrawPanelEvoTree.isNeedUpdate = true;
-		resetButton.setVisible(newNode != EvolutionTree.root);
+		resetButton.setVisible(newNode != Configurations.tree.root);
 		repaint();
 	}
 	

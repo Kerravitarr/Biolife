@@ -10,16 +10,19 @@ import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import Utils.JSON;
 import Utils.SaveAndLoad;
+import java.util.Arrays;
 
 //@Deprecated
 public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
-	/**Корень эволюционного дерева, адам*/
-	public static Node root = new Node(0, null, 0);
+	/**Число ветвей у всего дерева*/
+	private final AtomicInteger countRoot = new AtomicInteger(0);
+	/**Все корневые узлы дерева эволюции*/
+	private final List<Node> roots = new ArrayList<>(1);
 	/**Список узлов, подлежащих удалению по окночании шага*/
-	private static Set<Node> removeNode = new java.util.concurrent.CopyOnWriteArraySet <>();
+	private Set<Node> removeNode = new java.util.concurrent.CopyOnWriteArraySet <>();
 	
 	/**Узел дерева эволюции */
-	public static class Node{
+	public class Node{
 		/**Базовый цвет узла и потомков узла*/
 		private static final Color DEFAULT_COLOR = new Color(255,255,255,50);
 		
@@ -258,12 +261,26 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 	
 	public EvolutionTree(JSON json, long version) {
 		this();
-		root = new Node(json.getJ("Node"), null,version);
+		if(version < 8){
+			roots.add(new Node(json.getJ("Node"), null,version));
+		} else {
+			for(final var adam : json.getAJ("roots")){
+				roots.add(new Node(adam, null,version));
+			}
+		}
 	};
+	/** Создаёт ещё одного родоначальника всего дерева.
+	 * @return узел этого родоначальника
+	 */
+	public Node makeTree(){
+		final var adam = new Node(0, null, countRoot.addAndGet(1));
+		roots.add(adam);
+		return adam;
+	}
 
 	@Override
 	public String toString() {
-		return root.toString();
+		return Arrays.toString(roots.toArray(Node[]::new));
 	}
 
 	@Override
@@ -273,7 +290,7 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 	@Override
 	public JSON getJSON() {
 		JSON make = new JSON();
-		make.add("Node", root.toJSON());
+		make.add("roots", roots.stream().map(r -> r.toJSON()).toList());
 		return make;
 	}
 	/**
@@ -283,11 +300,16 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 	 * @return Конкретный узел дерева
 	 */
 	public Node getNode(AliveCell cell, String s) {
-		String[] numbers = s.split(">");
-		Node ret = root;
+		Long[] numbers = Arrays.stream(s.split(">")).map(Long::valueOf).toArray(Long[]::new);
+		if(numbers.length < 1){
+			throw new IllegalArgumentException(Configurations.getProperty(EvolutionTree.class,"getNode.length",s));
+		} else if(roots.size() < numbers[0]){
+			throw new IllegalArgumentException(Configurations.getProperty(EvolutionTree.class,"getNode.no_root",numbers[0],s));
+		}
+		Node ret = roots.get(numbers[0].intValue());
 		
 		for (int i = 1; i < numbers.length; i++) {
-			ret = ret.getChild(Long.parseLong(numbers[i]));
+			ret = ret.getChild(numbers[i]);
 		}
 		if(ret.founder.aliveStatus(CellObject.LV_STATUS.LV_ALIVE) && ret.founder.getPos().equals(cell.getPos()))
 			ret.founder = cell;
@@ -297,9 +319,11 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 	}
 	/**Обновляет дерево эволюции - проверяет все узлы на их правильность и перерисовывает дерево*/
 	public void updatre() {
-		for(Node node : root.getEndNode()) {
-			if(node.countAliveCell.get() <= 0)
-				node.remove();
+		for(Node root : roots) {
+			for(Node node : root.getEndNode()) {
+				if(node.countAliveCell.get() <= 0)
+					node.remove();
+			}
 		}
 	}
 	/**
@@ -324,10 +348,27 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 			removeNode.clear();
 		}
 	}
-
-	public void setAdam(AliveCell adam) {
-		root = new Node(0, null, 0);
+	/**Вставляет адама в эволюционное дерево
+	 * @param adam клетка, которая образовала дерево
+	 * @return узел, который теперь принадлежит этой клетке
+	 */
+	public Node setAdam(AliveCell adam) {
+		final var root = makeTree();
 		root.countAliveCell.set(1);
 		root.founder = adam;
+		return root;
 	}
+	/** Возращает размер корня дерева - сколько у него основателей
+	 * @return 
+	 */
+	public int size(){return roots.size();}
+	/** Возвращает корневой узел по индексу
+	 * @param index номер корневого узла
+	 * @return сам корневой узел
+	 */
+	public Node getRoot(int index){return roots.get(index);}
+	/** Возвращает все корни дерева
+	 * @return 
+	 */
+	public List<Node> getRoots(){return roots;}
 }
