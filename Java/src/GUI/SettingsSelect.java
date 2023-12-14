@@ -32,9 +32,9 @@ public class SettingsSelect<T> extends javax.swing.JPanel {
    public SettingsSelect(Class<?> nameCl, String nameS, T[] values, T defVal, T nowVal, AdjustmentListener<T> list) {
 		initComponents();
 		if (!Arrays.stream(values).anyMatch( v -> v == defVal || v != null && v.equals(defVal)))
-			throw new NumberFormatException("Значение defVal обязано принадлежать массиву values!");
+			throw new NumberFormatException("Значение defVal("+defVal+") обязано принадлежать массиву values!("+Arrays.toString(values)+")");
 		if (!Arrays.stream(values).anyMatch( v -> v == nowVal || v != null &&v.equals(nowVal)))
-			throw new NumberFormatException("Значение nowVal обязано принадлежать массиву values!");
+			throw new NumberFormatException("Значение nowVal("+nowVal+") обязано принадлежать массиву values!("+Arrays.toString(values)+")");
 		if (Arrays.stream(values).filter(v -> v == null).count() > 1)
 			throw new NumberFormatException("Массив values может содержать не более одного null!");
 		listener = e -> {};

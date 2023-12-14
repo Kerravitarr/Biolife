@@ -15,6 +15,7 @@ import MapObjects.CellObject;
 import Utils.ColorRec;
 import Utils.FPScounter;
 import Utils.Variant;
+import java.awt.AlphaComposite;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -22,10 +23,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 
-	import java.awt.*;
-import java.awt.image.*;
-import java.util.Arrays;
-import java.util.Objects;
+
 /**
  *
  * @author Kerravitarr
@@ -238,7 +236,7 @@ public class WorldView extends javax.swing.JPanel {
 						//if(!p.valid()) continue;
 						if((x0 <= x && x <= x1 && y0 <= y && y <= y1)){
 							final var cell = Configurations.world.get(p);
-							if(cell != null)
+							if(cell != null && menu.isVisibleCell(cell))
 								selected.add(cell);
 						}
 					}
@@ -280,6 +278,7 @@ public class WorldView extends javax.swing.JPanel {
 		if(!(v instanceof DefaultViewer)) return;
 		final var legend = v.get(Legend.class);
 		final var settings = v.get(Settings.class);
+		final var menu = v.get(Menu.class);
 		
 		final var cms = System.currentTimeMillis();
 		if(cms > lastUpdate){
@@ -304,7 +303,7 @@ public class WorldView extends javax.swing.JPanel {
 							final var pos = Point.create(x, y);
 							if(!pos.valid()) continue;					
 							final var cell = Configurations.world.get(pos);
-							if(cell != null){
+							if(cell != null && menu.isVisibleCell(cell)){
 								int cx = transforms.toScrinX(cell.getPos());
 								int cy = transforms.toScrinY(cell.getPos());
 								if(legend.getMode() == Legend.MODE.PROGRAMMER)
@@ -334,7 +333,7 @@ public class WorldView extends javax.swing.JPanel {
 									final var pos = Point.create(x+dx, y+dy);
 									if(!pos.valid()) break;					
 									final var cell = Configurations.world.get(pos);
-									if(cell != null){
+									if(cell != null && menu.isVisibleCell(cell)){
 										if(legend.getMode() == Legend.MODE.PROGRAMMER)
 											ritangleColor[lendhtC++] = legend.ProgrammerMove(cell);
 										else
