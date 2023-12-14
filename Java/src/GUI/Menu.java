@@ -21,6 +21,8 @@ import Calculations.Configurations;
 import static Calculations.Configurations.getViewer;
 import Calculations.GenerateClassException;
 import Calculations.Point;
+import Utils.JSON;
+import Utils.SaveAndLoad;
 import java.awt.Cursor;
 import java.io.File;
 import java.text.MessageFormat;
@@ -34,7 +36,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	/**Какая из кнопок выбрана*/
 	private MENU_SELECT select = MENU_SELECT.NONE;
 	/**Объекты какого типа удаляем*/
-	private REMOVE_O removeO;
+	private Object select_mode;
 	/**Кнопка запуска моделирования*/
 	private final JButton start;
 	/*Память на то какая иконка у кнопки старта**/
@@ -49,18 +51,36 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	private EvolTreeDialog evolTreeDialog;
 	/**Окно поиска*/
 	private MenuSearch menuSearch = null;
+	/**Слушатель события щелчка по экрану для загрузи клетки*/
+	private java.awt.event.MouseAdapter loadListener;
 	
 	
 	/**Для выбора кнопочек меню*/
-	enum MENU_SELECT{NONE,REMOVE}
+	private enum MENU_SELECT{NONE,REMOVE,SAVE, LOAD}
 	/**Перечисление для удаления только определённых объектов*/
-	enum REMOVE_O{
+	private enum REMOVE_O{
 		ORGANIC("organic"),POISON("poison"),OWALL("fossil"),BOT("alive"),ALL("all"),CLEAR("clear"),
 		;
 		public static final REMOVE_O[] values = REMOVE_O.values();
 		/**Описание пункта меню*/
 		private final String text;
 		private REMOVE_O(String n){text = Configurations.getHProperty(Menu.class,"remove." + n);}
+	}
+	/**Перечисление режимов сохранения*/
+	private enum SAVE_T{
+		TO_DISK,TO_CLIPBOARD;
+		public static final SAVE_T[] values = SAVE_T.values();
+		/**Описание пункта меню*/
+		private final String text;
+		private SAVE_T(){text = Configurations.getHProperty(Menu.class,"SAVE_T." + name());}
+	}
+	/**Перечисление режимов сохранения*/
+	private enum LOAD_T{
+		FROM_DISK,FROM_CLIPBOARD;
+		public static final SAVE_T[] values = SAVE_T.values();
+		/**Описание пункта меню*/
+		private final String text;
+		private LOAD_T(){text = Configurations.getHProperty(Menu.class,"LOAD_T." + name());}
 	}
 	
 	private class jPopupMenuButton extends JButton {
@@ -89,6 +109,60 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 		evolTreeDialog = ed;
 		
+		loadListener = new java.awt.event.MouseAdapter() {
+				@Override public void mousePressed(MouseEvent e) {
+					if(e.getButton() == MouseEvent.BUTTON1){
+						final var vw = Configurations.getViewer().get(WorldView.class);
+						final var point = vw.getTransform().toWorldPoint(e);
+						if(point.valid()){
+							final var old = Configurations.world.get(point);
+							if(old != null){
+								JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.busy",old), "BioLife", JOptionPane.ERROR_MESSAGE);
+							} else {
+								final var cell = new AliveCell[]{null};
+								switch ((LOAD_T)select_mode) {
+									case FROM_CLIPBOARD -> {
+										try{
+											final var  data = (String) java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
+											final var json = new Utils.JSON(data);
+											final var node = Configurations.tree.makeTree();
+											json.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
+											cell[0] = new AliveCell(json, Configurations.tree, Configurations.VERSION);
+										} catch (Exception ex){
+											Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+											JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
+											cell[0] = null;
+										}
+									}
+									case FROM_DISK -> {
+										LoadSaveFactory.load("BioLife", "zbcell", filename -> {
+											var js = SaveAndLoad.load(filename);  
+											try{
+												cell[0] = js.load((j, version)-> {
+													final var node = Configurations.tree.makeTree();
+													j.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
+													return new AliveCell(j, Configurations.tree, version);
+												},"cell");
+											} catch (Exception ex){
+												Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+												JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
+												cell[0] = null;
+											}
+										});
+									}
+									default -> throw new AssertionError();
+								}
+								if(cell[0] != null){
+									cell[0].setPos(point);
+									Configurations.world.add(cell[0]);
+								}
+								toDefault();
+							}
+						}
+					}
+				}
+			};
+		
 		add(makeButton("save", e-> save()));
 		add(makeButton("load", e-> load()));
 		add(start = makeButton("play", e -> {if (Configurations.world.isActiv())Configurations.world.stop();else Configurations.world.start();} ));
@@ -106,8 +180,20 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 				jPopupMenu1.add(visible);
 			}
 		}), "kill", e-> remove(REMOVE_O.ALL)));
-		//add(makeButton("loadCell", e-> loadCell()));
-		//add(makeButton("saveCell", e-> saveCell()));
+		add(configButton(new jPopupMenuButton((jPopupMenu1) -> {
+			for(var i : SAVE_T.values){
+				var visible = new JMenuItem(i.text);
+				visible.addActionListener( e -> saveCell(i));
+				jPopupMenu1.add(visible);
+			}
+		}),"saveCell", e->saveCell(SAVE_T.TO_CLIPBOARD)));
+		add(configButton(new jPopupMenuButton((jPopupMenu1) -> {
+			for(var i : LOAD_T.values){
+				var visible = new JMenuItem(i.text);
+				visible.addActionListener( e -> saveCell(i));
+				jPopupMenu1.add(visible);
+			}
+		}),"loadCell", e->loadCell(LOAD_T.FROM_CLIPBOARD)));
 		
 
 		Configurations.addTask(this);
@@ -179,25 +265,27 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		} else {
 			Configurations.world.stop();
 			final var vw = Configurations.getViewer().get(WorldView.class);
-			removeO = o;
+			select_mode = o;
 			select = MENU_SELECT.REMOVE;
 			vw.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
 		}
 	}
+	/**Сбрасывает курсор и пункт меню в положение по умолчанию*/
 	private void toDefault() {
 		select = MENU_SELECT.NONE;
 		final var vw = Configurations.getViewer().get(WorldView.class);
 		vw.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
 	}
-
+	/** Обрабатывает выбранные на экране клетки
+	 * @param cellObjects 
+	 */
 	public void setCell(List<CellObject> cellObjects) {
 		if(cellObjects == null) return;
-		for(var cellObject : cellObjects){
-			if(cellObject == null) continue;
-			switch (select) {
-				case NONE -> {}
-				case REMOVE -> {
-					switch (removeO) {
+		switch (select) {
+			case REMOVE -> {
+				for(var cellObject : cellObjects){
+					if(cellObject == null) continue;
+					switch ((REMOVE_O)select_mode) {
 						case ALL -> {
 							if (cellObject instanceof AliveCell acell) {
 								try {
@@ -229,13 +317,55 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 					}
 				}
 			}
+			case SAVE->{
+				switch ((SAVE_T)select_mode) {
+					case TO_CLIPBOARD -> {
+						for(var cellObject : cellObjects){
+							if(cellObject == null) continue;
+							final var stringSelection = new java.awt.datatransfer.StringSelection(cellObject.toJSON().toJSONString());
+							final var clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
+							clipboard.setContents(stringSelection, null);
+							break;
+						}
+					}
+					case TO_DISK -> {
+						final var countCell = cellObjects.stream().filter(c -> c != null).count();
+						if(countCell == 0) return;
+						if(countCell == 1){
+							final var cell = cellObjects.stream().filter(c -> c != null).findFirst().get();
+							LoadSaveFactory.save("BioLife", "zbcell", name -> {
+								var js = SaveAndLoad.save(name, Configurations.VERSION);
+								js.save(new SaveAndLoad.Serialization() {
+									@Override public String getName() { return "cell";}
+									@Override public JSON getJSON() {return cell.toJSON();}
+								});
+							}, false);
+						} else {
+							LoadSaveFactory.save("BioLife", "zbcells", name -> {
+								var js = SaveAndLoad.save(name, Configurations.VERSION);
+								js.save(new SaveAndLoad.Serialization() {
+									@Override public String getName() { return "cells";}
+									@Override public JSON getJSON() {
+										final var j = new JSON();
+										j.add("array", cellObjects.stream().filter(c -> c != null).map(c -> c.toJSON()).toList());
+										return j;
+									}
+								});
+							}, false);
+						}
+					}
+					default -> throw new AssertionError();
+				}
+				toDefault();
+			}
+			default -> throw new AssertionError();
 		}
 	}
 	/**Режим выбора клеток для меню?
 	 * @return true, если мы должны нарисовать квадратик и выбрать некоторые клетки
 	 */
 	public boolean isSelectedCell(){
-		return select == MENU_SELECT.REMOVE;
+		return select == MENU_SELECT.REMOVE || select == MENU_SELECT.SAVE;
 	}
 	/**Функция активации и остановки записи видео */
 	private void record(){
@@ -249,25 +379,11 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 					"BioLife", javax.swing.JOptionPane.OK_CANCEL_OPTION);
 			if(result == javax.swing.JOptionPane.CANCEL_OPTION) return;
 			
-			String pathToRoot = System.getProperty("user.dir");
-			JFileChooser fileopen = new JFileChooser(pathToRoot);
-			fileopen.setFileFilter(new FileNameExtensionFilter("gif", "gif"));
-			int ret = fileopen.showDialog(null, "Началь запись");
-			if (ret != JFileChooser.APPROVE_OPTION) return;
-			try {
-				String fileName = fileopen.getSelectedFile().getPath();
-				if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
-					if(!fileName.substring(fileName.lastIndexOf(".")+1).equals("gif"))
-						fileName += ".gif";
-				} else {
-					fileName += ".gif";
-				}
-				gifs = new GifSequenceWriter(fileName, true, vw.getSize());
-				Configurations.world.start();
-			} catch (IOException e1) {
-				JOptionPane.showMessageDialog(vw,	Configurations.getHProperty(Menu.class,"record.error")
-						+ e1.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
-			}
+			LoadSaveFactory.save("BioLife", "gif", Configurations.getProperty(Menu.class,"record.start"),
+					fileName -> {gifs = new GifSequenceWriter(fileName, true, vw.getSize());Configurations.world.start();}, false,
+					el -> {JOptionPane.showMessageDialog(vw,	Configurations.getHProperty(Menu.class,"record.error")
+						+ el.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);}, false);
+			
 		} else { // Закончили
 			Configurations.world.stop();
 			try {gifs.close();} catch (IOException e1) {e1.printStackTrace();}
@@ -276,87 +392,67 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	}
 	/**Открывает окошечко сохранения мира и... Сохраняет мир, собственно*/
 	public void save() {
-		if(Configurations.confoguration.lastSaveCount == Configurations.world.step) return;
 		boolean oldStateWorld = Configurations.world.isActiv();	
 		Configurations.world.awaitStop();
-		final var vw = Configurations.getViewer().get(WorldView.class);
-		
-		JFileChooser fileopen = new JFileChooser(System.getProperty("user.dir"));
-		final var extension = "zbmap";
-		final var title = "BioLife";
-		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
-		while(true) {
-			int ret = fileopen.showDialog(vw, Configurations.getProperty(this.getClass(),"save.selectTitle"));
-			if (ret != JFileChooser.APPROVE_OPTION) return;
-			String fileName = fileopen.getSelectedFile().getPath();
-			if(fileName.lastIndexOf(".") != -1 && fileName.lastIndexOf(".") != 0) {
-				if(!fileName.substring(fileName.lastIndexOf(".")+1).equals(extension))
-					fileName += "."+extension;
-			} else {
-				fileName += "."+extension;
-			}
-			var file = new File(fileName);
-			if(file.exists()) {
-				int result;
-				if(fileName.lastIndexOf("\\") != -1)
-					result = JOptionPane.showConfirmDialog(vw,MessageFormat.format(Configurations.getProperty(this.getClass(),"save.fileExist"),fileName.substring(fileName.lastIndexOf("\\")+1)), title,JOptionPane.YES_NO_CANCEL_OPTION);
-				else
-					result = JOptionPane.showConfirmDialog(vw,MessageFormat.format(Configurations.getProperty(this.getClass(),"save.fileExist"),fileName), "BioLife",JOptionPane.YES_NO_CANCEL_OPTION);
-				switch (result) {
-					case JOptionPane.YES_OPTION-> {file.delete();}
-					case JOptionPane.NO_OPTION-> {continue;}
-					case JOptionPane.CANCEL_OPTION-> {return;}
-				}
-			}
-			try {
-				Configurations.save(fileName);
-				JOptionPane.showMessageDialog(vw,	Configurations.getProperty(this.getClass(),"save.ok"),	title, JOptionPane.INFORMATION_MESSAGE);
-				break;
-			} catch (IOException ex) {
-				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-				JOptionPane.showMessageDialog(vw,	Configurations.getHProperty(this.getClass(),"save.error") + ex,	title, JOptionPane.ERROR_MESSAGE);
-			}
-		}
+		LoadSaveFactory.save("BioLife", "zbmap", name -> Configurations.save(name));
 		if (oldStateWorld)
 			Configurations.world.start();
 	}
 	/**Открывает окошечко загрузки мира и... Загружает мир, собственно*/
 	public void load() {
 		Configurations.world.awaitStop();
-		final var vw = Configurations.getViewer().get(WorldView.class);
-		
-		JFileChooser fileopen = new JFileChooser(System.getProperty("user.dir"));
-		final var extension = "zbmap";
-		final var title = "BioLife";
-		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
-		int ret = fileopen.showDialog(vw, Configurations.getProperty(this.getClass(),"load.selectTitle"));
-		if (ret == JFileChooser.APPROVE_OPTION) {
+		LoadSaveFactory.load("BioLife", "zbmap", name -> {
+			final var vw = Configurations.getViewer().get(WorldView.class);
 			try {
-				Configurations.load(fileopen.getSelectedFile().getPath());
+				Configurations.load(name);
 				try {
 					Configurations.getViewer().get(Settings.class).rebuild();
 				} catch (IllegalArgumentException | NullPointerException ex){} //Всё нормально, просто нет такого класса
 				evolTreeDialog.restart();
-			} catch (IOException ex) {
-				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-				JOptionPane.showMessageDialog(vw,	Configurations.getHProperty(this.getClass(),"load.error") + ex,	title, JOptionPane.ERROR_MESSAGE);
 			} catch (GenerateClassException ex) {
 				Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-				JOptionPane.showMessageDialog(vw,	ex.getLocalizedMessage(),	title, JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(vw,	ex.getLocalizedMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);
 			}
-		}
+		});
 	}
 	/**Открывает/закрывает окно поиска объектов на экране*/
 	public void search(){
-		if(menuSearch != null){
+		if(menuSearch != null && menuSearch.isVisible()){
 			menuSearch.dispose();
 			menuSearch = null;
 		} else {
-			Configurations.world.stop();
 			menuSearch = new MenuSearch(false);
 			menuSearch.setVisible(true);
 			menuSearch.setLocationRelativeTo(this);
-			//menuSearch.setLocation(this.getLocation());
 		}
+	}
+	/**Проверяет объект по условиям поиска
+	 * @param co проверяемый объект
+	 * @return true, если это тот самый объект, что мы ищем
+	 */
+	public boolean isVisibleCell(CellObject co){
+		return (menuSearch == null || !menuSearch.isVisible() || menuSearch.isCorrect(co)) && (select != MENU_SELECT.SAVE || co.aliveStatus(CellObject.LV_STATUS.LV_ALIVE));
+	}
+	/**Активирует режим сохранения клетки
+	 * @param mode сопосб сохранения
+	 */
+	private void saveCell(SAVE_T mode){
+		Configurations.world.stop();
+		select = MENU_SELECT.SAVE;
+		select_mode = mode;
+		final var vw = Configurations.getViewer().get(WorldView.class);
+		vw.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		
+	}
+	/**Активирует режим сохранения клетки
+	 * @param mode сопосб сохранения
+	 */
+	private void loadCell(LOAD_T mode){
+		Configurations.world.stop();
+		select = MENU_SELECT.LOAD;
+		select_mode = mode;
+		final var vw = Configurations.getViewer().get(WorldView.class);
+		vw.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		vw.addMouseListener(loadListener);
 	}
 }

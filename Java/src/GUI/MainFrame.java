@@ -175,10 +175,13 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+	/** Закрытие окна
+	 * @param evt 
+	 */
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
 		if (Configurations.getViewer() instanceof DefaultViewer dv) {
-			dv.getMenu().save();
+			if(Configurations.confoguration.lastSaveCount != Configurations.world.step)
+				dv.getMenu().save();
 		}
     }//GEN-LAST:event_formWindowClosing
 
