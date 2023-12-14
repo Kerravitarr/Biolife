@@ -58,10 +58,10 @@ public class StreamEllipseTest extends AbstractBenchmark{
 		var summ = 0;
 		for (int x1 = 0; x1 < 10; x1++) {
 			for (int y1 = 0; y1 < 10; y1++) {
-				var p1 = new Point(x1, y1);
+				var p1 = Point.create(x1, y1);
 				for (int x2 = 0; x2 < 10; x2++) {
 					for (int y2 = 0; y2 < 10; y2++) {
-						var p2 = new Point(x2, y2);
+						var p2 = Point.create(x2, y2);
 						final var d = p1.distance(p2);
 						summ += Math.atan2(d.y,d.x);
 					}

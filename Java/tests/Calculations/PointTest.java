@@ -270,16 +270,6 @@ public class PointTest {
 	}
 
 	@Test
-	public void testUpdate() {
-		makeRECTANGLEWorld();
-		var f = Point.create(5, 5);
-		var s = Point.create(10, 10);
-		assertNotEquals(s, f);
-		f.update(s);
-		assertFalse(f == s);
-		assertTrue(f.equals(s));
-	}
-	@Test
 	public void testEquals() {
 		makeRECTANGLEWorld();
 		Point obj = Point.create(42, 42);
