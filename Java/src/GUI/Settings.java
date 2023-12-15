@@ -102,9 +102,6 @@ public class Settings extends javax.swing.JPanel {
 		borderClick(minerals, null);
 		borderClick(minerals2, null);
 		
-		isNeedWarning = false;
-		Logger.getLogger(Settings.class.getName()).log(Level.WARNING, "Поправить настройки");
-		
 		rebuildEdit();	
 	}
 	/**перестраивает настрйоки*/
