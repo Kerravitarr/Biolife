@@ -229,7 +229,7 @@ public class SunEllipse extends SunAbstract {
 		//Где солнышко заканчивается
 		final var a0 = transform.toScrin(Math.max(a2, b2))/2;
 		//Сколько энергии в солнышке
-		final var p = transform.toScrin((int)Math.round(getPower() / Configurations.confoguration.DIRTY_WATER));
+		final var p = (float)transform.toDScrin(getPower() / Configurations.confoguration.DIRTY_WATER);
 		//Где заканчивается свет от него
 		final var s = Math.max(1, a0 + p);
 		//А в процентах расстояние от 0 до границы солнца

@@ -151,7 +151,8 @@ public abstract class DefaultEmitter implements Trajectory.HasTrajectory{
 	 * @param g холст, на котором надо начертить солнышко
 	 * @param transform преобразователь размеров мировых в размеры экранные
 	 */
-	public void paint(java.awt.Graphics2D g, GUI.WorldView.Transforms transform){		
+	public void paint(java.awt.Graphics2D g, GUI.WorldView.Transforms transform){	
+		if(power <= 0) return; //Что мы тут собрались рисовать?
 		//Мы нарусем не один излучатель, а сразу все 4!
 		//i = 0 Главный
 		//i = 1 Его-же справа (слева)
