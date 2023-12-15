@@ -22,6 +22,8 @@ import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 /**
@@ -264,8 +266,11 @@ public class WorldView extends javax.swing.JPanel {
 
 	@Override
 	public void paintComponent(Graphics g) {
-		paintComponent((Graphics2D)g,false);
-		
+		try{
+			paintComponent((Graphics2D)g,false);
+		} catch(Exception ex){ //Вообще не ожидаются такие события... Но кто мы такие, чтобы спорить с фактами?
+			Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+		}
 	}
 	/**Отрисовывает мир на холст
 	 * @param g куда рисовать
