@@ -110,8 +110,8 @@ public class CommandList {
 			case BLOCK_5 + 9 -> new DNAFind(true);
 			case BLOCK_5 + 10 -> new ViralLysis();
 
-			case BLOCK_6 + 0 -> new Cling(true);
-			case BLOCK_6 + 1 -> new Cling(false);
+			//case BLOCK_6 + 0 -> new Cling(true); Из за этого мир превращается в большой бессмысленный и беспощадный лес
+			//case BLOCK_6 + 1 -> new Cling(false);
 			case BLOCK_6 + 2 -> new Clone(true);
 			case BLOCK_6 + 3 -> new Clone(false);
 			case BLOCK_6 + 4 -> new TankFood(true);
