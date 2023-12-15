@@ -56,7 +56,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	
 	
 	/**Для выбора кнопочек меню*/
-	private enum MENU_SELECT{NONE,REMOVE,SAVE, LOAD}
+	private enum MENU_SELECT{NONE,REMOVE,SAVE, LOAD, EDIT}
 	/**Перечисление для удаления только определённых объектов*/
 	private enum REMOVE_O{
 		ORGANIC("organic"),POISON("poison"),OWALL("fossil"),BOT("alive"),ALL("all"),CLEAR("clear"),
@@ -77,10 +77,18 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	/**Перечисление режимов сохранения*/
 	private enum LOAD_T{
 		FROM_DISK,FROM_CLIPBOARD;
-		public static final SAVE_T[] values = SAVE_T.values();
+		public static final LOAD_T[] values = LOAD_T.values();
 		/**Описание пункта меню*/
 		private final String text;
 		private LOAD_T(){text = Configurations.getHProperty(Menu.class,"LOAD_T." + name());}
+	}
+	/**Перечисление режимов изменения*/
+	private enum EDIT_T{
+		FROM_DISK,FROM_CLIPBOARD,FROM_FIELD;
+		public static final EDIT_T[] values = EDIT_T.values();
+		/**Описание пункта меню*/
+		private final String text;
+		private EDIT_T(){text = Configurations.getHProperty(Menu.class,"EDIT_T." + name());}
 	}
 	
 	private class jPopupMenuButton extends JButton {
@@ -109,59 +117,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
 		evolTreeDialog = ed;
 		
-		loadListener = new java.awt.event.MouseAdapter() {
-				@Override public void mousePressed(MouseEvent e) {
-					if(e.getButton() == MouseEvent.BUTTON1){
-						final var vw = Configurations.getViewer().get(WorldView.class);
-						final var point = vw.getTransform().toWorldPoint(e);
-						if(point.valid()){
-							final var old = Configurations.world.get(point);
-							if(old != null){
-								JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.busy",old), "BioLife", JOptionPane.ERROR_MESSAGE);
-							} else {
-								final var cell = new AliveCell[]{null};
-								switch ((LOAD_T)select_mode) {
-									case FROM_CLIPBOARD -> {
-										try{
-											final var  data = (String) java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
-											final var json = new Utils.JSON(data);
-											final var node = Configurations.tree.makeTree();
-											json.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
-											cell[0] = new AliveCell(json, Configurations.tree, Configurations.VERSION);
-										} catch (Exception ex){
-											Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-											JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
-											cell[0] = null;
-										}
-									}
-									case FROM_DISK -> {
-										LoadSaveFactory.load("BioLife", "zbcell", filename -> {
-											var js = SaveAndLoad.load(filename);  
-											try{
-												cell[0] = js.load((j, version)-> {
-													final var node = Configurations.tree.makeTree();
-													j.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
-													return new AliveCell(j, Configurations.tree, version);
-												},"cell");
-											} catch (Exception ex){
-												Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-												JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
-												cell[0] = null;
-											}
-										});
-									}
-									default -> throw new AssertionError();
-								}
-								if(cell[0] != null){
-									cell[0].setPos(point);
-									Configurations.world.add(cell[0]);
-								}
-								toDefault();
-							}
-						}
-					}
-				}
-			};
+		loadListener = new LoadCellClickListener();
 		
 		add(makeButton("save", e-> save()));
 		add(makeButton("load", e-> load()));
@@ -190,10 +146,17 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		add(configButton(new jPopupMenuButton((jPopupMenu1) -> {
 			for(var i : LOAD_T.values){
 				var visible = new JMenuItem(i.text);
-				visible.addActionListener( e -> saveCell(i));
+				visible.addActionListener( e -> loadCell(i));
 				jPopupMenu1.add(visible);
 			}
 		}),"loadCell", e->loadCell(LOAD_T.FROM_CLIPBOARD)));
+		add(configButton(new jPopupMenuButton((jPopupMenu1) -> {
+			for(var i : EDIT_T.values){
+				var visible = new JMenuItem(i.text);
+				visible.addActionListener( e -> editCell(i));
+				jPopupMenu1.add(visible);
+			}
+		}),"editCell", e->editCell(EDIT_T.FROM_FIELD)));
 		
 
 		Configurations.addTask(this);
@@ -442,7 +405,6 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		select_mode = mode;
 		final var vw = Configurations.getViewer().get(WorldView.class);
 		vw.setCursor(new Cursor(Cursor.HAND_CURSOR));
-		
 	}
 	/**Активирует режим сохранения клетки
 	 * @param mode сопосб сохранения
@@ -454,5 +416,132 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		final var vw = Configurations.getViewer().get(WorldView.class);
 		vw.setCursor(new Cursor(Cursor.HAND_CURSOR));
 		vw.addMouseListener(loadListener);
+	}
+	
+	/**Активирует режим редактирования клетки
+	 * @param mode сопосб сохранения
+	 */
+	private void editCell(EDIT_T mode){
+		Configurations.world.stop();
+		select = MENU_SELECT.EDIT;
+		select_mode = mode;
+		switch (mode) {
+			case FROM_CLIPBOARD -> {
+				try{
+					final var  data = (String) java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
+					final var json = new Utils.JSON(data);
+					final var node = Configurations.tree.makeTree();
+					json.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
+					final var cell = new AliveCell(json, Configurations.tree, Configurations.VERSION);
+					node.remove();
+					toDefault();
+					editCell(cell);
+				} catch (Exception ex){
+					Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+					JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+			case FROM_DISK ->{
+				LoadSaveFactory.load("BioLife", "zbcell", filename -> {
+					var js = SaveAndLoad.load(filename);
+					try{
+						final var cell = js.load((j, version)-> {
+							final var node = Configurations.tree.makeTree();
+							j.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
+							final var acell = new AliveCell(j, Configurations.tree, version);
+							node.remove();
+							return acell;
+						},"cell");
+						toDefault();
+						editCell(cell);
+					} catch (Exception ex){
+						Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+						JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
+					}
+				});
+			}
+			case FROM_FIELD -> {
+				final var vw = Configurations.getViewer().get(WorldView.class);
+				vw.setCursor(new Cursor(Cursor.HAND_CURSOR));
+				vw.addMouseListener(loadListener);
+			}
+			default -> throw new AssertionError();
+		}
+	}
+	
+	/** Открывает окно изменения клетк
+	 * @param cell сопосб сохранения
+	 */
+	private void editCell(AliveCell cell){
+		Configurations.world.stop();
+		final var editor = new CellEditor(cell);
+		final var vw = Configurations.getViewer().get(WorldView.class);
+		editor.setLocationRelativeTo(vw);
+		editor.setVisible(true);
+	}
+	
+	/**Слушатель события, что человек нажал на экран для вставки тудой клетки*/
+	private class LoadCellClickListener extends MouseAdapter {
+		public LoadCellClickListener() {}
+		@Override public void mousePressed(MouseEvent e) {
+			if(select == MENU_SELECT.LOAD && e.getButton() == MouseEvent.BUTTON1){
+				final var vw = Configurations.getViewer().get(WorldView.class);
+				final var point = vw.getTransform().toWorldPoint(e);
+				if(point.valid()){
+					final var old = Configurations.world.get(point);
+					if(old != null){
+						JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.busy",old), "BioLife", JOptionPane.ERROR_MESSAGE);
+					} else {
+						final var cell = new AliveCell[]{null};
+						switch ((LOAD_T)select_mode) {
+							case FROM_CLIPBOARD -> {
+								try{
+									final var  data = (String) java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
+									final var json = new Utils.JSON(data);
+									final var node = Configurations.tree.makeTree();
+									json.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
+									cell[0] = new AliveCell(json, Configurations.tree, Configurations.VERSION);
+								} catch (Exception ex){
+									Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+									JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
+									cell[0] = null;
+								}
+							}
+							case FROM_DISK -> {
+								LoadSaveFactory.load("BioLife", "zbcell", filename -> {
+									var js = SaveAndLoad.load(filename);
+									try{
+										cell[0] = js.load((j, version)-> {
+											final var node = Configurations.tree.makeTree();
+											j.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
+											return new AliveCell(j, Configurations.tree, version);
+										},"cell");
+									} catch (Exception ex){
+										Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+										JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
+										cell[0] = null;
+									}
+								});
+							}
+							default -> throw new AssertionError();
+						}
+						if(cell[0] != null){
+							cell[0].setPos(point);
+							Configurations.world.add(cell[0]);
+						}
+						toDefault();
+					}
+				}
+			} else if(select == MENU_SELECT.EDIT && e.getButton() == MouseEvent.BUTTON1){
+				final var vw = Configurations.getViewer().get(WorldView.class);
+				final var point = vw.getTransform().toWorldPoint(e);
+				if(point.valid()){
+					final var cell = Configurations.world.get(point);
+					if(cell == null || !(cell instanceof AliveCell)) return;
+					toDefault();
+					editCell((AliveCell)cell);
+				}
+			}
+		}
 	}
 }
