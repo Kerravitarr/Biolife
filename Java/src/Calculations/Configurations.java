@@ -130,15 +130,15 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public interface DeferredTask {public void run();};
 	/**Возможные типы мира*/
 	public enum WORLD_TYPE{
-		/**Вертикальный срез бассейна. Линейный мир представляет собой бесконечную полосу, ограниченную сверху и снизу. Справа и слева мир зациклен на себя.*/
+		/**Вертикальный срез бассейна.<br> Линейный мир представляет собой бесконечную полосу, ограниченную сверху и снизу. Справа и слева мир зациклен на себя.*/
 		LINE_H,
-		/**Река, вид сверху. Линейный мир, но на этот раз бесконечная полоса вертикальна*/
+		/**Река, вид сверху.<br>Линейный мир, но на этот раз бесконечная полоса вертикальна*/
 		LINE_V,
-		/**Аквариум. Прямоугольный мир, ограниченный со всех сторох.*/
+		/**Аквариум.<br>Прямоугольный мир, ограниченный со всех сторох.*/
 		RECTANGLE,
-		/**Океан. Бесконечное прямоугольное поле*/
+		/**Океан.<br>Бесконечное прямоугольное поле*/
 		FIELD_R,
-		/**Чашка Петри. Круглый мир, представляющий собой чашку петри*/
+		/**Чашка Петри.<br>Круглый мир, представляющий собой чашку петри*/
 		CIRCLE,
 		/**И, наконец, круглое поле, но без стенок - просто кусок океана - быть не может.
 		 Тут вообще хорошо-бы расписать доказательство, но сводится оно к простой истине - 
@@ -179,7 +179,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			case LINE_H,LINE_V -> DIRTY_WATER =  30d / (height * 0.33);
 			case RECTANGLE -> DIRTY_WATER =  30d / (Math.min(height, width) * 0.5); //Чтобы освещалась половина мира
 			case FIELD_R -> DIRTY_WATER = 30d / (Math.min(height, width) * 0.2); //Чтобы освещалась пятая часть мира
-			case CIRCLE -> DIRTY_WATER = 30d / (Math.min(height, width) * 0.15); //В два раза больше, потому что у нас солнце со всех сторон мира
+			case CIRCLE -> DIRTY_WATER = 30d / (Math.min(height, width) * 0.25); //В два раза больше, потому что у нас солнце со всех сторон мира
 			default -> throw new AssertionError();
 		}
 		VISCOSITY = 0.1;
@@ -498,7 +498,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			}
 			case CIRCLE -> {
 				//Органика падает в центр
-				buildMap(new Configurations(type, width, height), new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(100, Gravitation.Direction.CENTER));}});
+				buildMap(new Configurations(type, width, height), new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(2, Gravitation.Direction.CENTER));}});
 				//Светящяся кромка
 				suns.add(new SunEllipse(30, new Trajectory(Point.create(width/2, height/2)), width,height, 	true,"Кромка"));
 				//Путешествующая капля
