@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
+import javax.swing.JPopupMenu;
 
 /**
  *Диалоговое окно создания объекта
@@ -43,7 +45,12 @@ public class MenuSearch extends java.awt.Dialog {
 			params.add(new SeatchParam("posion",Poison.TYPE.vals, (AliveCell co) -> co.getPosionType().ordinal()));
 			params.add(new SeatchParam("direction",Point.DIRECTION.values, (AliveCell co) -> co.direction.ordinal()));
 			params.add(new SeatchParam("DNA_lenght",0,Integer.MAX_VALUE, (AliveCell co) -> co.getDna().size));
-			final var CMDS_DNA_SET = (new HashSet<>(Arrays.asList(MapObjects.dna.CommandList.list))).toArray(MapObjects.dna.CommandDNA[]::new);
+			final var CMDS_DNA_SET = //Функциональное программирование точно делает код поднятнеее? О_о
+					Arrays.stream(MapObjects.dna.CommandList.list).
+							collect(
+									Collectors.toMap(MapObjects.dna.CommandDNA::toString, d -> d, (e1,e2) -> e1.toString().compareTo(e2.toString()) > 0 ? e1 : e2)).
+							values().stream().sorted((d1,d2) -> d1.toString().compareTo(d2.toString())).
+							toArray(MapObjects.dna.CommandDNA[]::new);
 			params.add(new SeatchParam("DNA_CMD",CMDS_DNA_SET, (AliveCell co) -> co.getDna().mind));
 			for(final var s : AliveCell.Specialization.TYPE.values){
 				params.add(new SeatchParam("specialization."+s.name(),0,AliveCell.Specialization.MAX_SPECIALIZATION, (AliveCell co) -> co.getSpecialization().get(s)));
@@ -83,6 +90,8 @@ public class MenuSearch extends java.awt.Dialog {
 		public javax.swing.JPanel param;
 		/**Текущее значение точечного параметра*/
 		private Point.Vector nowP;
+		/**Значение по умолчанию точечного параметра*/
+		private Object def;
 		/**Тестер клетки*/
 		public final Tester tester;
 		
@@ -117,7 +126,7 @@ public class MenuSearch extends java.awt.Dialog {
 				defMin = min; defMax = max;
 			}
 
-			nowP = Point.Vector.create(defMin, defMax); //Больше просто не влазит в ползунок и получается не красиво :(
+			def = nowP = Point.Vector.create(defMin, defMax); //Больше просто не влазит в ползунок и получается не красиво :(
 			param = new SettingsPoint(MenuSearch.class,name,MenuSearch.class,"vectorParam", min, defMin, max, nowP.x, min, defMax, max, nowP.y, e -> {
 				nowP = e;
 			});
@@ -146,6 +155,7 @@ public class MenuSearch extends java.awt.Dialog {
 				nowP = Point.Vector.create(values.length, 0);
 			else
 				nowP = Point.Vector.create(init.ordinal(), init.ordinal());
+			def = init;
 			final var collWidthNull = Utils.Utils.addNull(values);
 			param = new SettingsSelect(MenuSearch.class,name, collWidthNull, init, collWidthNull[nowP.x], (e)->{
 				nowP = Point.Vector.create(((T) e).ordinal(), 0);
@@ -173,6 +183,7 @@ public class MenuSearch extends java.awt.Dialog {
 		public <T> SeatchParam(String name,T[] values, AliveCellVParam tst){
 			this((co, val) -> (val.x == values.length || Arrays.stream(tst.test((AliveCell)co)).anyMatch(num -> num == val.x)), CellObject.LV_STATUS.LV_ALIVE);
 			nowP = Point.Vector.create(values.length, 0);
+			def = null;
 			final var collWidthNull = Utils.Utils.addNull(values);
 			param = new SettingsSelect(MenuSearch.class,name, collWidthNull, null, collWidthNull[nowP.x], (e)->{
 				final var o = java.util.Arrays.asList(values).indexOf(e);
@@ -186,7 +197,7 @@ public class MenuSearch extends java.awt.Dialog {
 		 */
 		public <T> SeatchParam(String name,AliveCellParam tst){
 			this((co, val) -> (val.x == 2 || val.x == tst.test((AliveCell)co)), CellObject.LV_STATUS.LV_ALIVE);
-			nowP = Point.Vector.create(2, 0);
+			def = nowP = Point.Vector.create(2, 0);
 			final String[] values = {Configurations.getProperty(MenuSearch.class,"param.boolean.no"),Configurations.getProperty(MenuSearch.class,"param.boolean.yes"),Configurations.getProperty(MenuSearch.class,"param.boolean.any")};
 			param = new SettingsSelect(MenuSearch.class,name, values, values[nowP.x], values[nowP.x], (e)->{
 				final var o = java.util.Arrays.asList(values).indexOf(e);
@@ -201,6 +212,12 @@ public class MenuSearch extends java.awt.Dialog {
 		public boolean isCorrect(CellObject cell){
 			return (type != null && !cell.aliveStatus(type)) || tester.isCorrect(cell,nowP);
 		}
+		/** Сбрасывает значение параметра по умолчанию */
+		public void reset(){
+			if(param instanceof SettingsPoint p) p.setValue((Point.Vector)def);
+			else if(param instanceof SettingsSelect p) p.setValue(def);
+			else throw new UnsupportedOperationException("Не знаем что за слайдер такой, " + param.getClass());
+		}
 	}
 	
 	
@@ -213,6 +230,7 @@ public class MenuSearch extends java.awt.Dialog {
 		setAlwaysOnTop(true);
 		if(WH == null) WH = Point.Vector.create(Configurations.getWidth(), Configurations.getHeight());
 		initComponents();
+		Configurations.setIcon(reset, "reset");
 		if(mainSeeker == null)
 			mainSeeker = new Seeker();
 		
@@ -238,6 +256,7 @@ public class MenuSearch extends java.awt.Dialog {
         selectType = new javax.swing.JComboBox<>();
         jScrollPane1 = new javax.swing.JScrollPane();
         paramPanel = new javax.swing.JPanel();
+        reset = new javax.swing.JButton();
 
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -260,17 +279,31 @@ public class MenuSearch extends java.awt.Dialog {
         paramPanel.setLayout(new javax.swing.BoxLayout(paramPanel, javax.swing.BoxLayout.Y_AXIS));
         jScrollPane1.setViewportView(paramPanel);
 
+        reset.setText("jButton1");
+        reset.setToolTipText(Configurations.getProperty(MenuSearch.class,"reset"));
+        reset.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                resetActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(selectType, javax.swing.GroupLayout.PREFERRED_SIZE, 246, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addComponent(selectType, 0, 185, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(reset)
+                .addContainerGap())
             .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 275, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
-                .addComponent(selectType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(selectType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(reset))
                 .addGap(0, 0, 0)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 447, Short.MAX_VALUE))
         );
@@ -297,16 +330,22 @@ public class MenuSearch extends java.awt.Dialog {
 				1, Configurations.getWidth(), Configurations.getWidth(),WH.x,
 				1, Configurations.getHeight(), Configurations.getHeight(),WH.y,  e -> WH = e
 		));
-		
-		for(final var p : mainSeeker.params)
-			if(p.type == null || p.type == type)
-				paramPanel.add(p.param);
+		mainSeeker.params.stream().filter(p -> p.type == null).forEach(p -> paramPanel.add(p.param));
+		paramPanel.add(new JPopupMenu.Separator());
+		mainSeeker.params.stream().filter(p -> p.type == type).forEach(p -> paramPanel.add(p.param));
 		
     }//GEN-LAST:event_selectTypeActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
        	
     }//GEN-LAST:event_formWindowOpened
+
+    private void resetActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_resetActionPerformed
+        LU = Point.create(0, 0);
+		WH = Point.Vector.create(Configurations.getWidth(), Configurations.getHeight());
+		mainSeeker.params.forEach(SeatchParam::reset);
+		selectTypeActionPerformed(null); //И перестроем менюшку
+    }//GEN-LAST:event_resetActionPerformed
 	@Override
 	public void setVisible(boolean b){
 		super.setVisible(b);
@@ -330,9 +369,10 @@ public class MenuSearch extends java.awt.Dialog {
 	 * @return true, если это тот самый объект, что мы ищем
 	 */
 	public boolean isCorrect(CellObject co){
+		final var type = (CellObject.LV_STATUS)selectType.getSelectedItem();
 		return (LU.x <= co.getPos().x && co.getPos().x <= (LU.x + WH.x)) && 
 				(LU.y <= co.getPos().y && co.getPos().y <= (LU.y + WH.y)) && 
-				mainSeeker.isCorrect(co);
+				co.aliveStatus(type) && mainSeeker.isCorrect(co);
 	}
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -340,6 +380,7 @@ public class MenuSearch extends java.awt.Dialog {
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JPanel paramPanel;
+    private javax.swing.JButton reset;
     private javax.swing.JComboBox<CellObject.LV_STATUS> selectType;
     // End of variables declaration//GEN-END:variables
 	
