@@ -1,5 +1,5 @@
 package Utils;
-//Версия 2.5 от 7 октября 2023 года!
+//Версия 2.6 от 15 декабря 2023 года!
 
 
 
@@ -128,6 +128,19 @@ public final class JSON{
 					else
 						return new Token(JSON_TOKEN.NUMBER, isNegativ ? -long_ : long_);
 				}
+			} else if(ch == 'N') { //NaN
+				if((ch = read()) == 'a' && (ch = read()) == 'N') {
+					return new Token(JSON_TOKEN.NUMBER, Double.NaN);
+				} else {
+					throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
+				}
+			} else if(ch == 'I') { //Infinity
+				for(var c : "nfinity".toCharArray()){
+					if((ch = read()) != c){
+						throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
+					}
+				}
+				return new Token(JSON_TOKEN.NUMBER, isNegativ ? Double.NEGATIVE_INFINITY : Double.POSITIVE_INFINITY);
 			} else {
 		        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
 			}
