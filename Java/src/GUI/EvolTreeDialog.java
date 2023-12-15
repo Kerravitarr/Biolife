@@ -42,10 +42,42 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	private boolean isTimeLine = false;
 	/**В режиме пропорции по времени отображает сколько на пк приходится 1 век. В режиме без пропрции показывает расстояние между слоями*/
 	private double timeline = 0;
+	/**Флаг того, что окно ещё не открывалось*/
+	private boolean isFirstStart = false;
 	/**Дата рождения*/
 	private static final MyMessageFormat dateBirth = new MyMessageFormat(Configurations.getProperty(EvolTreeDialog.class,"dateBirth"));
 	/**Возраст основателя*/
 	private static final MyMessageFormat founderYear = new MyMessageFormat(Configurations.getProperty(EvolTreeDialog.class,"founderYear"));
+	
+	/**Интерфейс для переобора по всем узлам детей*/
+	private interface ForChild{
+		/** Следующий дочерний узел
+		 * @param child сам узел
+		 * @param Pstart начальное значение параметра
+		 * @param Pend конечное значение параметра
+		 */
+		public void next(EvolutionTree.Node child, double start, double end);
+	}
+	/**Интерфейс для переобора по всем корням*/
+	private interface ForRoot{
+		/** Следующий корень
+		 * @param child сам узел
+		 * @param c1 начальная цветовая палитра
+		 * @param c2 конечная цветовая палитра
+		 */
+		public void next(EvolutionTree.Node child, double c1, double c2);
+	}
+	/**Интерфейс для переобора по всем корням*/
+	private interface ForRootWidthparams{
+		/** Следующий корень
+		 * @param child сам узел
+		 * @param c1 начальная цветовая палитра
+		 * @param c2 конечная цветовая палитра
+		 * @param Pstart начальное значение параметра
+		 * @param Pend конечное значение параметра
+		 */
+		public void next(EvolutionTree.Node child, double c1, double c2, double Pstart, double Pend);
+	}
 	
 	/**Одоин отображающийся узел*/
 	private class NodeJpanel extends JPanel{
@@ -62,6 +94,8 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		
 		NodeJpanel(EvolutionTree.Node node,int x, int y){
 			this.node = node;
+			if(node == null)
+				node = null;
 			init();
 			final var width = TEXT_SIZE * 4;
 			setBounds(x - width / 2, y, width, TEXT_SIZE);
@@ -142,104 +176,164 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			);
 			setLayout(groupLayout);
 		}
+		
 		@Override
-		public void paintComponent(Graphics gold) {
-			final var g = (Graphics2D) gold;
-			final var rootPerent = rootNode.getPerrent();
+		public void paintComponent(Graphics g1) {
+			final var g = (Graphics2D) g1;
 			if(isCurcleDiagram) {
-				final var startTimeOffset = rootNode.getTimeFounder() - (rootPerent == null ? 0 : (long)((Configurations.world.step - rootNode.getTimeFounder()) / 10d));
-				final var cx = getWidth() / 2;
-				final var cy = getMaxY() / 2;
-				if(isTimeLine)
-					timeline = ((double) Math.min(cx, cy)) / (Configurations.world.step - startTimeOffset);
-				else
-					timeline = Math.min(cx, cy) / 7;
-				if(isNeedUpdate || Configurations.world.isActiv()) {
-					removeAll();
-					try{
-						g.setColor(Color.WHITE);
-						if(rootPerent != null){
-							final var r = isTimeLine? timeline * (rootNode.getTimeFounder() - startTimeOffset) : timeline;
-							add(new NodeJpanel(rootPerent, cx, cy - TEXT_SIZE / 2));
-							addCircleNode(rootNode,cx,cy,0d, Math.PI*2, r, startTimeOffset);
-						} else {
-							addCircleNode(rootNode,cx,cy,0d,Math.PI*2, 0, startTimeOffset);
-						}
-						isNeedUpdate = false;
-					}catch(Exception e){isNeedUpdate = true;} //Нормально всё, асинхронность выполнения и всё прочее
-					repaint();
-				}
-				//Рисуем, собственно, поле и всех детей
-				super.paintComponent(g);
-				//А теперь рисуем связи между детками
+				paintCurcle(g);
+			} else {
+				paintLine(g);
+			}
+		}
+		/** Рисует на холсте круговую диаграмму
+		 * @param g холст
+		 */
+		private void paintCurcle(Graphics2D g) {
+			final var tree = Configurations.tree;
+			final var world = Configurations.world;
+			
+			final var isMonoRoot = tree.size() == 1 || nodeInCenter != null; //У нас один корен или узел на ветви
+			final var rootPerent =  nodeInCenter == null ? null : nodeInCenter.getPerrent();
+			final var startTimeOffset = nodeInCenter == null ? 0L : nodeInCenter.getTimeFounder() - (rootPerent == null ? 0 : (long)((world.step - nodeInCenter.getTimeFounder()) / 10d));
+			final var cx = getWidth() / 2;
+			final var cy = getMaxY() / 2;
+			if(isTimeLine)
+				timeline = ((double) Math.min(cx, cy)) / (Configurations.world.step - startTimeOffset);
+			else
+				timeline = Math.min(cx, cy) / 7;
+			if(isNeedUpdate || Configurations.world.isActiv()) {
+				removeAll();
 				try{
+					g.setColor(Color.WHITE);
+					if(isMonoRoot){
+						if(rootPerent != null){
+							final var r = isTimeLine? timeline * (nodeInCenter.getTimeFounder() - startTimeOffset) : timeline;
+							add(new NodeJpanel(rootPerent, cx, cy - TEXT_SIZE / 2));
+							addCircleNode(nodeInCenter,cx,cy,0d, Math.PI*2, r, startTimeOffset);
+						} else {
+							addCircleNode(nodeInCenter,cx,cy,0d,Math.PI*2, 0, startTimeOffset);
+						}
+					} else {
+						forEach(Math.PI*2, (node, c1, c2, from, to) -> {
+							final var cr = (int) (isTimeLine? timeline * (node.getTimeFounder()-startTimeOffset) : (timeline) + timeline);
+							addCircleNode(node,cx,cy,from, to, cr, startTimeOffset);
+						});
+					}
+					isNeedUpdate = false;
+				}catch(Exception e){isNeedUpdate = true;} //Нормально всё, асинхронность выполнения и всё прочее
+				repaint();
+			}
+			//Рисуем, собственно, поле и всех детей
+			super.paintComponent(g);
+			//А теперь рисуем связи между детками
+			try{
+				if(isMonoRoot){
 					if(rootPerent != null){
 						g.setColor(Color.WHITE);
-						final var r = isTimeLine? timeline * (rootNode.getTimeFounder() - startTimeOffset) : timeline;
+						final var r = isTimeLine? timeline * (nodeInCenter.getTimeFounder() - startTimeOffset) : timeline;
 						g.drawLine(cx, cy, (int) (cx - r), cy);
-						paintCircleNode(g,rootNode,cx,cy,0d,360d, r,0,0.8, startTimeOffset);
+						paintCircleNode(g,nodeInCenter,cx,cy,0d,360d, r,0,0.8, startTimeOffset);
 					} else {
-						paintCircleNode(g,rootNode,cx,cy,0d,360d, 2,0,0.8, startTimeOffset);
+						paintCircleNode(g,nodeInCenter,cx,cy,0d,360d, 2,0,0.8, startTimeOffset);
 					}
-				}catch(Exception e){} //Нормально всё, асинхронность выполнения и всё прочее
-				//А теперь, если надо, рисуем шкалу времени
-				if(isTimeLine){
-					g.setColor(AllColors.toDark(Color.BLACK, 100));
-					var scale = (Configurations.world.step - startTimeOffset) / countTimeLinePoints;
-					//Рисуем 10 отметок
-					for (int i = 0; i < countTimeLinePoints; i++) {
-						final int r = (int) Math.round(timeline * scale * i);
-						if(r > 0)
-							g.drawOval(cx - r, cy - r, r*2, r*2);
-						if(i == 0)
-							g.drawString(Utils.degree(Math.round(startTimeOffset + scale * i)), cx + r, cy);
-						else
-							g.drawString("+"+Utils.degree(Math.round(i*scale)), cx + r, cy);
-					}
+				} else {
+					forEach(360, (node, c1, c2, from, to) -> {
+						final var cr = (int) (isTimeLine? timeline * (node.getTimeFounder()-startTimeOffset) : (timeline+2) + timeline);
+						paintCircleNode(g,node,cx,cy,from,to, cr,c1, c2, startTimeOffset);
+					});
 				}
-			} else {
-				final var startTimeOffset = rootNode.getTimeFounder();
-				final var xStart = isTimeLine ? TEXT_SIZE * 3 : 0;
-				final var xEnd = getWidth();
-				if(isTimeLine)
-					timeline = ((double) getMaxY() - TEXT_SIZE * 2) / (Configurations.world.step - startTimeOffset);
-				else if(maxDeep == 0)
-					timeline = TEXT_SIZE * 3;
-				else
-					timeline = (getMaxY()) / (maxDeep * 3d / 2);
-				final var yStart = getMaxY() - (rootPerent == null ? 0 : TEXT_SIZE * 2);
-				//Определяем, нужно ли нам узлы перестроить?
-				if(isNeedUpdate || Configurations.world.isActiv()) {
-					removeAll();
-					try{
+			}catch(Exception e){} //Нормально всё, асинхронность выполнения и всё прочее
+			//А теперь, если надо, рисуем шкалу времени
+			if(isTimeLine){
+				g.setColor(AllColors.toDark(Color.BLACK, 100));
+				var scale = (Configurations.world.step - startTimeOffset) / countTimeLinePoints;
+				//Рисуем 10 отметок
+				for (int i = 0; i < countTimeLinePoints; i++) {
+					final int r = (int) Math.round(timeline * scale * i);
+					if(r > 0)
+						g.drawOval(cx - r, cy - r, r*2, r*2);
+					if(i == 0)
+						g.drawString(Utils.degree(Math.round(startTimeOffset + scale * i)), cx + r, cy);
+					else
+						g.drawString("+"+Utils.degree(Math.round(i*scale)), cx + r, cy);
+				}
+			}
+		}
+		/** Рисует на холсте линейную диаграмму
+		 * @param g холст
+		 */
+		private void paintLine(Graphics2D g) {
+			final var tree = Configurations.tree;
+			final var world = Configurations.world;
+			
+			final var isMonoRoot = tree.size() == 1 || nodeInCenter != null; //У нас один корен или узел на ветви
+			final var rootPerent =  nodeInCenter == null ? null : nodeInCenter.getPerrent();
+			final var startTimeOffset = nodeInCenter == null ? 0L : nodeInCenter.getTimeFounder();
+			final var xStart = isTimeLine ? TEXT_SIZE * 3 : 0;
+			final var xEnd = getWidth();
+			if(isTimeLine)
+				timeline = ((double) getMaxY() - TEXT_SIZE * 2) / (world.step - startTimeOffset);
+			else if(maxDeep == 0)
+				timeline = TEXT_SIZE * 3;
+			else
+				timeline = (getMaxY()) / (maxDeep * 3d / 2);
+			final var yStart = getMaxY() - (rootPerent == null ? 0 : TEXT_SIZE * 2);
+			
+			//Определяем, нужно ли нам узлы перестроить?
+			if(isNeedUpdate || world.isActiv()) {
+				removeAll();
+				try{
+					final int ndeep;
+					if(isMonoRoot){
+						//У нас один основатель или мы на ветке дерева
 						if(rootPerent != null)
 							addLineRootNode(rootPerent,(xEnd +xStart)/ 2, yStart + TEXT_SIZE*2);
-						final var ndeep = addLinearNode(rootNode,xStart,xEnd, yStart,startTimeOffset, 0);
-						isNeedUpdate = maxDeep != ndeep;
-						maxDeep = ndeep;
-					}catch(Exception e){isNeedUpdate = true;} //Нормально всё, асинхронность выполнения и всё прочее
-					repaint();
-				}
-				//Рисуем, собственно, поле и всех детей
-				super.paintComponent(g);
-				//А теперь рисуем связи между детками
-				try{
+						ndeep = addLinearNode(nodeInCenter,xStart,xEnd, yStart,startTimeOffset, 0);
+					} else {
+						//Нам нужно отрисовать все корни...
+						final var fin = new int[]{0};
+						forEach((xEnd - xStart), (node, c1, c2, from, to) -> {
+							final var cy = (int) (isTimeLine ? getMaxY() - (node.getTimeFounder()-startTimeOffset) * timeline : yStart);
+							fin[0] = Math.max(fin[0],addLinearNode(node,
+									(int) Math.round(xStart + from),
+									(int) Math.round(xStart + to),
+									cy,startTimeOffset, 0));
+						});
+						ndeep = fin[0];
+					}
+					isNeedUpdate = maxDeep != ndeep;
+					maxDeep = ndeep;
+				}catch(Exception e){isNeedUpdate = true;} //Нормально всё, асинхронность выполнения и всё прочее
+				repaint();
+			}
+			//Рисуем, собственно, поле и всех детей
+			super.paintComponent(g);
+			//А теперь рисуем связи между детками
+			try{
+				if(isMonoRoot){
 					if(rootPerent != null)
 						paintLineRootNode(g,(xEnd +xStart) / 2,yStart, yStart + TEXT_SIZE*2);
-					paintLineNode(g,rootNode,xStart,xEnd, yStart,0,0.8,startTimeOffset);
-				}catch(Exception e){} //Нормально всё, асинхронность выполнения и всё прочее
-				//А теперь, если надо, рисуем шкалу времени
-				if(isTimeLine){
-					g.setColor(Color.BLACK);
-					g.drawLine(TEXT_SIZE,  TEXT_SIZE * 2, TEXT_SIZE, getMaxY());
-					var scale = (Configurations.world.step - startTimeOffset) / countTimeLinePoints;
-					//Рисуем 10 отметок
-					for (double i = 0; i < countTimeLinePoints; i++) {
-						if(i == 0)
-							g.drawString(Utils.degree(Math.round(startTimeOffset)), TEXT_SIZE, (int) (getMaxY() - timeline));
-						else
-							g.drawString("+" + Utils.degree(Math.round(i*scale)), TEXT_SIZE, (int) (getMaxY() - scale * i * timeline));
-					}
+					paintLineNode(g,nodeInCenter,xStart,xEnd, yStart,0,0.8,startTimeOffset);
+				} else {
+					forEach((xEnd - xStart), (node, c1, c2, from, to) -> {
+						final var cy = (int) (isTimeLine ? getMaxY() - (node.getTimeFounder()-startTimeOffset) * timeline : yStart);
+						paintLineNode(g,node,(int) Math.round(xStart + from),(int) Math.round(xStart + to),cy,c1,c2,startTimeOffset);
+					});
+				}
+				
+			}catch(Exception e){} //Нормально всё, асинхронность выполнения и всё прочее
+			//А теперь, если надо, рисуем шкалу времени
+			if(isTimeLine){
+				g.setColor(Color.BLACK);
+				g.drawLine(TEXT_SIZE,  TEXT_SIZE * 2, TEXT_SIZE, getMaxY());
+				var scale = (world.step - startTimeOffset) / countTimeLinePoints;
+				//Рисуем 10 отметок
+				for (double i = 0; i < countTimeLinePoints; i++) {
+					if(i == 0)
+						g.drawString(Utils.degree(Math.round(startTimeOffset)), TEXT_SIZE, (int) (getMaxY() - timeline));
+					else
+						g.drawString("+" + Utils.degree(Math.round(i*scale)), TEXT_SIZE, (int) (getMaxY() - scale * i * timeline));
 				}
 			}
 		}
@@ -275,6 +369,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		 * @return максимальную глубину погружения, то есть сколько клеток по оси Y отображается
 		 */
 		private int addLinearNode(EvolutionTree.Node root, int xStart, int xEnd, int yPos, long startTimeOffset, int deep) {
+			if(root == null) return deep;
 			final var delX = (xEnd - xStart);
 			final var centerX = xStart + delX / 2;
 			add(new NodeJpanel(root, centerX, yPos));
@@ -341,6 +436,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		 * @param r 
 		 */
 		private void addCircleNode(EvolutionTree.Node root, int cx, int cy, double startAngle, double endAngle, double r, long startTimeOffset) {
+			if(root == null) return;
 			final double delAngle = (endAngle - startAngle);
 			final double centerAngle = startAngle + delAngle / 2;
 			final int fromX = (int) Math.round(cx + r * Math.cos(centerAngle));
@@ -387,7 +483,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			//final int fromY = getMaxY() - (int) Math.round(cy + r * Math.sin(centerAngle));
 			if(childs.size() > 1){
 				g.draw(new java.awt.geom.Arc2D.Double(cx - r, cy - r, r*2, r*2, startAngle + stepAnglePerChild/2, endAngle - startAngle - stepAnglePerChild, java.awt.geom.Arc2D.OPEN));
-			}
+			}		
 			
 			EvolutionTree.Node child = null;
 			for(int i = 0 ; i < childs.size() ; i++) {
@@ -427,6 +523,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	public EvolTreeDialog() {
 		super((Frame) null, false);
 		initComponents();
+		setAlwaysOnTop(true);
 		Configurations.setIcon(resetButton,"reset");
 		resetButton.addActionListener( e-> restart());
 		resetButton.setToolTipText(Configurations.getHProperty(EvolTreeDialog.class,"reset"));
@@ -441,15 +538,25 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	@Override
     public void taskStep() {
 		final var v = Configurations.getViewer();
+		final var tree = Configurations.tree;
+		if(v != null && v.get(Legend.class).getMode() == Legend.MODE.EVO_TREE && !isFirstStart){//Если у нас ещё не было октрытия, то сбрасываем корневой узел
+			restart();
+		}
 		if (v != null && v.get(Legend.class).getMode() == Legend.MODE.EVO_TREE || EvolTreeDialog.this.isVisible()){
 			try{updateColor();} catch(java.lang.NullPointerException e){} //Всё нормально, у нас прямо во время перерисовывания изменилось дерево. Такое бывает частенько. Асинхронность
 		}
 		if(EvolTreeDialog.this.isVisible()){
 			try{
+				//Проверям, нужно-ли отобразить кнопку сброса корня
+				if(tree.size() == 1){
+					resetButton.setVisible(nodeInCenter != tree.getRoot(0)); //Мы не будем показывать кнопку ресета если мы в самом низу 
+				} else {
+					resetButton.setVisible(nodeInCenter != null);
+				}
 				if(nodeInCenter != null && countPair(nodeInCenter).countChildCell == 0)
 					restart();
 				//А теперь проверка. Если у нас корень - адам, а в дерев эволюции другой адам... У нас перезагрузилась карта!
-				if(nodeInCenter != null && nodeInCenter.getPerrent() == null && !Configurations.tree.getRoots().stream().anyMatch(r -> r == nodeInCenter))
+				if(nodeInCenter != null && nodeInCenter.getPerrent() == null && !tree.getRoots().stream().anyMatch(r -> r == nodeInCenter))
 					restart();
 			} catch(java.lang.NullPointerException e){} //Всё нормально, у нас прямо во время перерисовывания изменилось дерево. Такое бывает частенько. Асинхронность
 			jPanelTree.updateUI();
@@ -457,10 +564,16 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
     }
 	/**Обновляет цвета узлов*/
 	private void updateColor(){
-		Configurations.tree.root.resetColor();
-		if(rootNode.getPerrent() != null)
-			colorNode(rootNode.getPerrent());
-		colorNode(rootNode,0.0,0.8);
+		final var tree = Configurations.tree;
+		tree.resetColor();
+		if(tree.size() == 1 || nodeInCenter != null){ 
+			//У нас один основатель или мы на ветке дерева
+			if(nodeInCenter.getPerrent() != null)
+				colorNode(nodeInCenter.getPerrent());
+			colorNode(nodeInCenter,0.0,0.8);
+		} else {
+			forEach(EvolTreeDialog::colorNode);
+		}
 	}
 	/**
 	 * Раскрашивает дерево потомков в цвета, согласно их дереву эволюции
@@ -473,14 +586,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		else
 			root.setColor(Utils.getHSBColor(colorStart + delColor / 2, 1.0, 1.0, 1.0));
 
-		List<EvolutionTree.Node> childs = root.getChild();		
-		var stepColor = delColor / childs.size();
-
-		EvolutionTree.Node child = null;
-		for(int i = 0 ; i < childs.size() ; i++) {
-			child = next(childs,child);
-			colorNode(child,colorStart + stepColor * i,colorStart + stepColor * (i + 1));
-		}
+		forEach(root,delColor, (c, i1, i2) -> colorNode(c,colorStart + i1,colorStart + i2));
 	}
 	/**
 	 * Раскрашивает дерево предков в белый цвет. Все предки - белые
@@ -507,18 +613,28 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	 * Сбрасывает корневой узел дерева
 	 */
 	public void restart(){
-		if(Configurations.tree.root.countAliveCell() == 0 && Configurations.tree.root.getChild().size() == 1)
-			setRootNode(Configurations.tree.root.getChild().get(0));
-		else
-			setRootNode(Configurations.tree.root);
+		final var tree = Configurations.tree;
+		if(tree.size() == 1){
+			//У нас один основатель
+			final var root = tree.getRoot(0);
+			if(root.countAliveCell() == 0 && root.getChild().size() == 1)
+				setRootNode(root.getChild().get(0));
+			else
+				setRootNode(root);
+		} else {
+			//У нас многорутость. Так что в качестве рута у нас null, чтобы это показать
+			setRootNode(null);
+		}
 	}
-	
+	/** Сохраняет новый корневой узел
+	 * @param newNode корневой узел или null, если у нас корень корней
+	 */
 	private void setRootNode(EvolutionTree.Node newNode){
-		Configurations.tree.root.resetColor();
-		rootNode = newNode;
+		final var tree = Configurations.tree;
+		tree.resetColor();
+		nodeInCenter = newNode;
 		updateColor();
 		DrawPanelEvoTree.isNeedUpdate = true;
-		resetButton.setVisible(newNode != Configurations.tree.root);
 		repaint();
 	}
 	
@@ -575,6 +691,58 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			return ret;
 		}
 	}
+	/** Цикл по всем потомкам узла
+	 * @param root корневой узел
+	 * @param paramDelta вся велечина параметра, отпущеного на всех потомков
+	 * @param function функция, которая будет вызывана для каждого потомка
+	 */
+	private static void forEach(EvolutionTree.Node root, double paramDelta, ForChild function){
+		final var childs = root.getChild();
+		final var step = paramDelta / childs.size();
+		EvolutionTree.Node child = null;
+		for(int i = 0 ; i < childs.size() ; i++) {
+			if (child == null) {
+				child = childs.stream().min((a, b) -> (int) (a.getGeneration() - b.getGeneration())).orElse(null);
+			} else {
+				var minG = Long.MAX_VALUE;
+				EvolutionTree.Node ret = null;
+				for (final var node : childs) {
+					if(node.getGeneration() > child.getGeneration() && node.getGeneration() < minG){
+						minG = node.getGeneration();
+						ret = node;
+					}
+				}
+				child = ret;
+			}
+			function.next(child,step * i, step * (i+1));
+		}
+	}
+	/** Проходит по всем корням дерева эволюции
+	 * @param function 
+	 */
+	private static void forEach(ForRoot function){
+		final var tree = Configurations.tree;
+		var stepColor = 0.8 / tree.size();
+		for(int i = 0 ; i < tree.size() ; i++) {
+			final var node = tree.getRoot(i);
+			function.next(node, stepColor * i,stepColor * (i + 1));
+		}
+	}
+	/** Проходит по всем корням дерева эволюции
+	 * 
+	 * @param paramDelta вся велечина параметра, отпущеного на всех корней
+	 * @param function 
+	 */
+	private static void forEach(double paramDelta, ForRootWidthparams function){
+		final var tree = Configurations.tree;
+		var stepColor = 0.8 / tree.size();
+		final var step = paramDelta / tree.size();
+		for(int i = 0 ; i < tree.size() ; i++) {
+			final var node = tree.getRoot(i);
+			function.next(node, stepColor * i,stepColor * (i + 1), step * i,step * (i + 1));
+		}
+	}
+
 
 
 	/** This method is called from within the constructor to
@@ -599,6 +767,11 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setAlwaysOnTop(true);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowOpened(java.awt.event.WindowEvent evt) {
+                formWindowOpened(evt);
+            }
+        });
         addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 formKeyReleased(evt);
@@ -731,6 +904,11 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
         isTimeLine = _timeLineButton.isSelected();
 		 ((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
     }//GEN-LAST:event__timeLineButtonActionPerformed
+
+    private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
+        if(!isFirstStart) restart();
+		isFirstStart = true;
+    }//GEN-LAST:event_formWindowOpened
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JToggleButton _timeLineButton;
