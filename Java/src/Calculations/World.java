@@ -178,7 +178,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 				}
 			} 
 		}
-		Configurations.tree.updatre();
+		Configurations.tree.initialization();
 	}
 	
 	@Override

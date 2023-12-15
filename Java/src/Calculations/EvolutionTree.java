@@ -105,8 +105,10 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 			child.remove(node);
 			node.child = null;
 			if(countAliveCell.get() == 0 && child.isEmpty()){
-				if(perrent != null)
+				if(perrent != null) //Пока мы не корень - удалем себя
 					getPerrent().remove(this);
+				else //А если мы корень - то удаляемся уже как узел
+					removeNode.add(this);
 			}else if(countAliveCell.get() == 0 && child.size() == 1)
 				merge();
 		}
@@ -169,7 +171,7 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 			if(getPerrent() != null)
 				return getPerrent().getBranch() + ">" + getGeneration();
 			else
-				return "0";
+				return String.valueOf(getGeneration());
 		}
 		/**Возвращает потомка под определеённым номером*/
 		private Node getChild(long genCh) {
@@ -227,8 +229,7 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 		/**Сбрасывает цвет для узла и всех его потомков*/
 		public void resetColor(){
 			this.colorNode = DEFAULT_COLOR;
-			for (var node : child)
-				node.resetColor();
+			child.forEach(Node::resetColor);
 		}
 
 		/**
@@ -273,7 +274,7 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 	 * @return узел этого родоначальника
 	 */
 	public Node makeTree(){
-		final var adam = new Node(0, null, countRoot.addAndGet(1));
+		final var adam = new Node(Configurations.world.step, null, countRoot.getAndAdd(-1));
 		roots.add(adam);
 		return adam;
 	}
@@ -301,30 +302,28 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 	 */
 	public Node getNode(AliveCell cell, String s) {
 		Long[] numbers = Arrays.stream(s.split(">")).map(Long::valueOf).toArray(Long[]::new);
-		if(numbers.length < 1){
-			throw new IllegalArgumentException(Configurations.getProperty(EvolutionTree.class,"getNode.length",s));
-		} else if(roots.size() < numbers[0]){
-			throw new IllegalArgumentException(Configurations.getProperty(EvolutionTree.class,"getNode.no_root",numbers[0],s));
-		}
-		Node ret = roots.get(numbers[0].intValue());
+		assert numbers.length > 0 : Configurations.getProperty(EvolutionTree.class,"getNode.length",s);
+		Node ret = roots.stream().filter(n -> n.generation == numbers[0]).findFirst().orElse(null);
+		assert ret != null : Configurations.getProperty(EvolutionTree.class,"getNode.no_root",numbers[0],s);
 		
 		for (int i = 1; i < numbers.length; i++) {
 			ret = ret.getChild(numbers[i]);
 		}
-		if(ret.founder.aliveStatus(CellObject.LV_STATUS.LV_ALIVE) && ret.founder.getPos().equals(cell.getPos()))
+		if(ret.founder == null || (ret.founder.aliveStatus(CellObject.LV_STATUS.LV_ALIVE) && ret.founder.getPos().equals(cell.getPos())))
 			ret.founder = cell;
 		
 		ret.countAliveCell.incrementAndGet(); //Подсчитали ещё одного живчика
 		return ret;
 	}
-	/**Обновляет дерево эволюции - проверяет все узлы на их правильность и перерисовывает дерево*/
-	public void updatre() {
+	/**Обновляет дерево эволюции - проверяет все узлы на их правильность и перерисовывает дерево после загрузки с диска*/
+	public void initialization() {
 		for(Node root : roots) {
 			for(Node node : root.getEndNode()) {
 				if(node.countAliveCell.get() <= 0)
 					node.remove();
 			}
 		}
+		step(); //Ну и чтобы очистить всё дерево от лишних узлов
 	}
 	/**
 	 * Перестраивает всё дерево эволюции для текущего шага.
@@ -337,8 +336,9 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 				if(child == null)
 					continue;
 				else if (child.isEmpty()){// У нас нет детей, всё, удаляем у родителя
-					if(node.getPerrent() == null) { //Ой. У нас и родителя нет... Упс
-						//Симуляция закончена. Больше нет живых клеток
+					if(node.getPerrent() == null) { //Ой. У нас и родителя нет... Значит мы корень
+						if(roots.size() > 1)
+							roots.remove(node); //Если у нас много корней, то удаляем этот конкретный корень. Его не жалко
 					} else {
 						node.getPerrent().remove(node);
 					}
@@ -348,7 +348,7 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 			removeNode.clear();
 		}
 	}
-	/**Вставляет адама в эволюционное дерево
+	/** Вставляет адама в эволюционное дерево
 	 * @param adam клетка, которая образовала дерево
 	 * @return узел, который теперь принадлежит этой клетке
 	 */
@@ -357,6 +357,15 @@ public class EvolutionTree extends SaveAndLoad.JSONSerialization<EvolutionTree>{
 		root.countAliveCell.set(1);
 		root.founder = adam;
 		return root;
+	}
+	/** Сбрасывает цвет для всех цветов
+	 * Гарантированно выкенет исключение. Тут всё просто - асинхронность. В процессе могут поменять обрабатываемые
+	 * массивы, а это сразу приводит к вылету с ошибкой
+	 * @throws java.lang.NullPointerException если узел удалён, но его попытались перерисовать
+	 * 
+	 */
+	public void resetColor() throws java.lang.NullPointerException{
+		roots.forEach(Node::resetColor);
 	}
 	/** Возращает размер корня дерева - сколько у него основателей
 	 * @return 
