@@ -712,7 +712,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			var err = "Не найдено свойство " + name;
 			logger.log(Level.WARNING, err, e);
 			System.err.println(err);
-			return err;
+			return name;
 		}
 	}
 	/**Проверяет - существует такая локализованная строка или нет
