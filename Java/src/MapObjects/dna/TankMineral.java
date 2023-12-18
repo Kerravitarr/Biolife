@@ -13,7 +13,7 @@ public class TankMineral extends CommandDo {
 	/**Цена операции. А вы думали, бесплатно всё будет?*/
 	private static final int HP_COST = 1;
 	/**Размер желудка*/
-	static final int TANK_SIZE = 10 * AliveCell.MAX_MP;
+	static final int TANK_SIZE = (int) Math.round(10 * AliveCell.MAX_MP);
 	/**Форматирование значения*/
 	private static final MyMessageFormat valueFormatAdd = new MyMessageFormat("MP -= {0} 🛢 = {1}");
 	private static final MyMessageFormat valueFormatSub = new MyMessageFormat("MP -= {0} 🛢 = {1}");

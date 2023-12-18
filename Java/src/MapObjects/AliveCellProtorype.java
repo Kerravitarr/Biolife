@@ -44,13 +44,13 @@ public abstract class AliveCellProtorype extends CellObject {
 	/**Размер мозга максимальный, чтобы небыло взрывного роста и поедания памяти*/
 	public static final int MAX_MINDE_SIZE = 1024;
 	/**Начальный уровень здоровья клеток*/
-	protected static final int START_HP = 5;
+	public static final double START_HP = 5;
 	/**Начальный уровень минералов клеток*/
-	protected static final int START_MP = 5;
+	public static final long START_MP = 5;
 	/**Сколько нужно жизней для размножения, по умолчанию*/
-	public static final int MAX_HP = 9999;
+	public static final double MAX_HP = 9999;
 	/**Сколько можно сохранить минералов*/
-	public static final int MAX_MP = 9999;
+	public static final long MAX_MP = 9999;
 	/**Столько здоровья требуется клетке для жизни на ход*/
 	public static final long HP_PER_STEP = 4;
 	/**Для изменения цвета*/
@@ -403,6 +403,8 @@ public abstract class AliveCellProtorype extends CellObject {
 	public Poison.TYPE getPosionType() {
 		return poisonType;
 	}
+	/** @param type тип яда, к которому устойчива клетка*/
+	public void setPosionType(Poison.TYPE type) {poisonType = type;}
 
 	/**
 	 * @return на сколько много очков урона клетка может игнорировать
@@ -602,24 +604,18 @@ public abstract class AliveCellProtorype extends CellObject {
 		return specMaxVal(Configurations.getConcentrationMinerals(getPos()), Specialization.TYPE.MINERALIZATION);
 	}
 
-	/**
-	 * @return the mucosa
-	 */
-	public int getMucosa() {
-		return mucosa;
-	}
-
-	/**
-	 * @param mucosa the mucosa to set
-	 */
-	public void setMucosa(int mucosa) {
-		this.mucosa = mucosa;
-	}
-
-	/**
-	 * @param dna the dna to set
-	 */
-	public void setDna(DNA dna) {
-		this.dna = dna;
-	}
+	/** @return количество слизи у бота. Слизь защищает бота от присасывания других к нему*/
+	public int getMucosa() {return mucosa;}
+	/**@param mucosa новое значение слизи бота*/
+	public void setMucosa(int mucosa) {this.mucosa = mucosa;}
+	/** @param dna новое ДНК бота*/
+	public void setDna(DNA dna) {this.dna = dna;}
+	/** @return сколько нужно жизней, чтобы принудительно поделиться*/
+	public int getHp_by_div() { return hp_by_div;}
+	/** @param hp_by_div сколько нужно жизней, чтобы принудительно поделиться */
+	public void setHp_by_div(int hp_by_div) {this.hp_by_div = hp_by_div;}
+	/** @return чем больше толерантность - тем меньше клетка отличает своих от врагов */
+	public int getTolerance() {return tolerance;}
+	/**@param tolerance чем больше толерантность - тем меньше клетка отличает своих от врагов */
+	public void setTolerance(int tolerance) {this.tolerance = tolerance;}
 }

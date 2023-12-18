@@ -20,7 +20,10 @@ import javax.swing.text.PlainDocument;
 
 /**
  *Универсальный набор:
- * Подпись, ползунок, ресет и кнопка ввода числового значения
+ *<br>       НАЗВАНИЕ
+ *<br> Л:****-**** RESET INPUT
+ * 
+ * 
  * @author Kerravitarr
  */
 public class SettingsSlider<NumberT extends Number & Comparable<NumberT>> extends javax.swing.JPanel {

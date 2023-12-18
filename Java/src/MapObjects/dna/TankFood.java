@@ -13,7 +13,7 @@ public class TankFood extends CommandDo {
 	/**Цена операции. А вы думали, бесплатно всё будет?*/
 	private static final int HP_COST = 1;
 	/**Максимальный размер желудка*/
-	static final int TANK_SIZE = 10 * AliveCell.MAX_HP;
+	static final int TANK_SIZE = (int) Math.round(10 * AliveCell.MAX_HP);
 	/**Форматирование значения*/
 	private static final MyMessageFormat valueFormatSub = new MyMessageFormat("HP += {0} 🛢 = {1}");
 	private static final MyMessageFormat valueFormatAdd = new MyMessageFormat("HP -= {0} 🛢 = {1}");

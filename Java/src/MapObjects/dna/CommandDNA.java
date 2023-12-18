@@ -239,12 +239,12 @@ public abstract class CommandDNA {
 	protected static DIRECTION relatively(AliveCell cell,int direction) {
 		return cell.direction.next(direction);
 	}
-
-	protected String getLongName() {
+	/** @return длинное название команды*/
+	public String getLongName() {
 		return longName;
 	}
-
-	protected String getShotName() {
+	/** @return короткое, символьное название команды*/
+	public String getShotName() {
 		return shotName;
 	}
 

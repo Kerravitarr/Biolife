@@ -50,7 +50,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
         buoyancy = cell.getI("buoyancy");
         direction = DIRECTION.toEnum(cell.getI("direction"));
         DNA_wall = cell.getI("DNA_wall");
-        poisonType = Poison.TYPE.toEnum(cell.getI("posionType"));
+		setPosionType(Poison.TYPE.toEnum(cell.getI("posionType")));
         setPosionPower(cell.getI("posionPower"));
         tolerance = cell.getI("tolerance");
         foodTank = cell.get("foodTank");
@@ -77,7 +77,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
         setMineral(cell.getMineral());
 		setImpuls(getImpuls());
         DNA_wall = cell.DNA_wall;
-        poisonType = cell.getPosionType();
+		setPosionType(cell.getPosionType());
         poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
         mucosa = cell.mucosa;
 		setFoodTank(cell.getFoodTank());//Поделимся жирком и минералами
@@ -105,7 +105,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
         cell.setMineral(cell.getMineral() / 2);
         DNA_wall = cell.DNA_wall / 2;
         cell.DNA_wall = cell.DNA_wall / 2; //Забирается половина защиты ДНК
-        poisonType = cell.getPosionType();
+		setPosionType(cell.getPosionType());
         poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
         mucosa = (cell.mucosa = (int) (cell.mucosa / 2.1)); //Делится слизистой оболочкой
 		setFoodTank(cell.getFoodTank() / 2);//Поделимся жирком и минералами 
@@ -145,7 +145,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
         cell.setMineral(cell.getMineral() / 2);
         DNA_wall = cell.DNA_wall / 2;
         cell.DNA_wall = cell.DNA_wall / 2; //Забирается половина защиты ДНК
-        poisonType = cell.getPosionType();
+		setPosionType(cell.getPosionType());
         poisonPower = cell.getPosionPower(); // Тип и степень защищённости у клеток сохраняются
         mucosa = (cell.mucosa = (int) (cell.mucosa / 2.1)); //Делится слизистой оболочкой
 		hp_by_div = cell.hp_by_div;					//ХП для деления остаётся тем-же
@@ -181,15 +181,15 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
             addHealth(-HP_PER_STEP); //Пожили - устали
         }
         //Излишки в желудок
-        if (getHealth() > hp_by_div - 100) {
-            TankFood.add(this, (int) (getHealth() - (hp_by_div - 100)));
+        if (getHealth() > getHp_by_div() - 100) {
+            TankFood.add(this, (int) (getHealth() - (getHp_by_div() - 100)));
         }
         if (getMineral() > MAX_MP - 100) {
             TankMineral.add(this, (int) (getMineral() - (MAX_MP - 100)));
         }
 
         //Если жизней много - делимся
-        if (this.getHealth() > hp_by_div) {
+        if (this.getHealth() > getHp_by_div()) {
             Birth.birth(this);
         }
         //Если есть друзья - делимся с ними едой
@@ -479,10 +479,10 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
                 dna.interrupts[ma] = mc;
             }
             case 9 -> { //Мутирует наша невосприимчивость к ДНК других клеток
-                tolerance = Utils.random(0, getDna().size - 1);
+                setTolerance(Utils.random(0, getDna().size - 1));
             }
 			case 10 -> { //Мутирует скорость размножения, сколько нужно ХП для поделишек
-				hp_by_div = Math.min(MAX_HP, hp_by_div * Utils.random(90, 110) / 100);
+				setHp_by_div(Math.min((int)MAX_HP, getHp_by_div() * Utils.random(90, 110) / 100));
 			}
 			case 11 -> { //Мутирует программный счётчик ДНК
 				dna.next(Utils.random(1, dna.size));
@@ -546,7 +546,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
     @Override
     protected boolean isRelative(CellObject cell0) {
         if (cell0 instanceof AliveCell bot0) {
-           return bot0.getDna().equals(this.getDna(), this.tolerance);
+           return bot0.getDna().equals(this.getDna(), this.getTolerance());
         } else if (cell0 instanceof ConnectiveTissue ct){
             return ct.contains(this);
         } else {
@@ -628,11 +628,11 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
         make.add("DNA_wall", DNA_wall);
         make.add("posionType", getPosionType().ordinal());
         make.add("posionPower", getPosionPower());
-        make.add("tolerance", tolerance);
+        make.add("tolerance", getTolerance());
         make.add("foodTank", getFoodTank());
         make.add("mineralTank", mineralTank);
         make.add("mucosa", getMucosa());
-        make.add("hp_by_div", hp_by_div);
+        make.add("hp_by_div", getHp_by_div());
 
         //=================ПАРАМЕТРЫ БОТА============
         make.add("Generation", Generation);
@@ -739,5 +739,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
 	public String toString(){
 		return 	MessageFormat.format(Configurations.getProperty(AliveCell.class,"toString"), getPos());
 	}
+	@Override
+	public AliveCell clone(){return new AliveCell(this);}
 
 }

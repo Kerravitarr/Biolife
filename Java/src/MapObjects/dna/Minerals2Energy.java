@@ -14,7 +14,7 @@ public class Minerals2Energy extends CommandDo {
 	/**Сколько ХП дадут за 1 минерал*/
 	private static final long MIN_PER_HP = 10;
 	/**Сколько максимально минералов можно переработать. 1/4 от полных жизней*/
-	private static final long MAX_MIN = (AliveCellProtorype.MAX_HP / MIN_PER_HP) / 4;
+	private static final double MAX_MIN = (AliveCellProtorype.MAX_HP / MIN_PER_HP) / 4;
 	
 	private final MyMessageFormat valueFormat = new MyMessageFormat("MP -= {0, number, #.#} HP += {0, number, #.#}");
 

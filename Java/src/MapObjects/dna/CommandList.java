@@ -64,23 +64,23 @@ public class CommandList {
 			case BLOCK_2 + 7 -> new Swap(true);
 			case BLOCK_2 + 8 -> new Swap(false);
 
-			case BLOCK_3_1 -> new HowMuch("HP", cell -> cell.getHealth(), false, AliveCellProtorype.MAX_HP);
-			case BLOCK_3_1 + 1 -> new HowMuch("MP", cell -> cell.getMineral(), false, AliveCellProtorype.MAX_MP);
-			case BLOCK_3_1 + 2 -> new HowMuch("Mucosa", cell -> cell.getMucosa(), false);
-			case BLOCK_3_1 + 3 -> new HowMuch("FoodTank", cell -> cell.getFoodTank(), false, TankFood.TANK_SIZE);
-			case BLOCK_3_1 + 4 -> new HowMuch("DW", cell -> cell.getDNA_wall(), false);
-			case BLOCK_3_1 + 5 -> new HowMuch("Old", cell -> (cell.getAge() / 100), false);
+			case BLOCK_3_1 -> new HowMuch("HP", false,cell -> cell.getHealth(),  AliveCellProtorype.MAX_HP);
+			case BLOCK_3_1 + 1 -> new HowMuch("MP", false, cell -> cell.getMineral(), AliveCellProtorype.MAX_MP);
+			case BLOCK_3_1 + 2 -> new HowMuch("Mucosa", false, cell -> cell.getMucosa());
+			case BLOCK_3_1 + 3 -> new HowMuch("FoodTank", false, cell -> cell.getFoodTank(), TankFood.TANK_SIZE);
+			case BLOCK_3_1 + 4 -> new HowMuch("DW",  false,cell -> cell.getDNA_wall());
+			case BLOCK_3_1 + 5 -> new HowMuch("Old", false, cell -> (cell.getAge() / 100));
 			case BLOCK_3_1 + 6 -> new HowMuchSun();
 			case BLOCK_3_1 + 7 -> new HowMuchMinerals();
 			case BLOCK_3_1 + 8 -> new IAmMulticellular();
 			case BLOCK_3_1 + 9 -> new HowHigh();
 			case BLOCK_3_1 + 10 -> new IAmSurrounded();
 
-			case BLOCK_3_2 + 0 -> new HowMuch("HP", cell -> cell.getHealth(), true, AliveCellProtorype.MAX_HP);
-			case BLOCK_3_2 + 1 -> new HowMuch("MP", cell -> cell.getMineral(), true, AliveCellProtorype.MAX_MP);
-			case BLOCK_3_2 + 2 -> new HowMuch("Mucosa", cell -> cell.getMucosa(), true);
-			case BLOCK_3_2 + 3 -> new HowMuch("MineralTank", cell -> cell.getMineralTank(), false, TankMineral.TANK_SIZE);
-			case BLOCK_3_2 + 4 -> new HowMuch("DW", cell -> cell.getDNA_wall(), true);
+			case BLOCK_3_2 + 0 -> new HowMuch("HP",true, cell -> cell.getHealth(),  AliveCellProtorype.MAX_HP);
+			case BLOCK_3_2 + 1 -> new HowMuch("MP",true, cell -> cell.getMineral(), AliveCellProtorype.MAX_MP);
+			case BLOCK_3_2 + 2 -> new HowMuch("Mucosa", true,cell -> cell.getMucosa());
+			case BLOCK_3_2 + 3 -> new HowMuch("MineralTank",false,  cell -> cell.getMineralTank(), TankMineral.TANK_SIZE);
+			case BLOCK_3_2 + 4 -> new HowMuch("DW", true,cell -> cell.getDNA_wall());
 			case BLOCK_3_2 + 5 -> new FindNear();
 			case BLOCK_3_2 + 6 -> new WhatMyPosion();
 			case BLOCK_3_2 + 7 -> new See(true);
