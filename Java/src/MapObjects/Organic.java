@@ -151,7 +151,7 @@ public class Organic extends CellObject {
 
 	@Override
 	public double getHealth() {
-		return Math.round(energy);
+		return energy;
 	}
 
 
