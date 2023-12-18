@@ -223,6 +223,7 @@ public abstract class CellObject {
 	 * @param dy значение по y
 	 */
 	protected final void setImpuls(double dx, double dy){
+		assert !Double.isNaN(dx) && !Double.isNaN(dy) : "Значения импульса обязаны быть числами!";
 		impuls.x = dx;
 		impuls.y = dy;
 	}
@@ -232,6 +233,7 @@ public abstract class CellObject {
 	 * @param dy добавка по y
 	 */
 	protected final void addImpuls(double dx, double dy){
+		assert !Double.isNaN(dx) && !Double.isNaN(dy) : "Значения импульса обязаны быть числами!";
 		impuls.x += dx;
 		impuls.y += dy;
 	}
