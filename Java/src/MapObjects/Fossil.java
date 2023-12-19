@@ -20,7 +20,7 @@ public class Fossil extends CellObject {
 	/**Сколько у нас энергии*/
 	private double energy = 0;
 	/**Стены не бессмертны, напротив, эроизия разлагает их*/
-	public static final int MAX_AGE = 1_000_000;
+	public static final int MAX_AGE = 100_000;
 
 	public Fossil(JSON poison, long version) {
 		super(poison);
