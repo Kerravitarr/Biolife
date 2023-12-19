@@ -173,7 +173,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		//Мутагенность воды
 		AGGRESSIVE_ENVIRONMENT = 20;
 		//Скорость разложения органики. За сколько шагов уходит 1 единица энергии
-		TIK_TO_EXIT = 1000;
+		TIK_TO_EXIT = 10_000;
 		 //Чтобы освещалось только 33 % мира при силе света в 30 единиц
 		 switch (type) {
 			case LINE_H,LINE_V -> DIRTY_WATER =  30d / (height * 0.33);
