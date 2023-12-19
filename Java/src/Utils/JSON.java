@@ -1,5 +1,5 @@
 package Utils;
-//Версия 2.6 от 15 декабря 2023 года!
+//Версия 2.7 от 19 декабря 2023 года!
 
 
 
@@ -854,6 +854,69 @@ public final class JSON{
 			return ((JSON_O<T>) par).value_o;
 		}else {
 			return null;
+		}
+	}
+	/**
+	 * Получает значение по ключу
+	 * @param <T>
+	 * @param cls ожидаемый класс
+	 * @param key ключ
+	 * @return значение, или null, если значение не найдено
+	 * @throws IllegalArgumentException возникает, если элемент представляет собой массив, а мы хотим вернуть единственное значение
+	 */
+	public <T> T get(Class<T> cls, String key) throws IllegalArgumentException {
+		if(!parametrs.containsKey(key)) return null;
+		final var par = parametrs.get(key);
+		if (par instanceof JSON_O o) {
+			final var ret = o.value_o;
+			if(Number.class.isAssignableFrom(cls)){
+				final var nret = (Number)ret;
+				if(cls.equals(Byte.class) || cls.equals(byte.class)) return (T) Byte.valueOf(nret.byteValue());
+				else if(cls.equals(Double.class) || cls.equals(double.class)) return (T) Double.valueOf(nret.doubleValue());
+				else if(cls.equals(Float.class) || cls.equals(float.class)) return (T) Float.valueOf(nret.floatValue());
+				else if(cls.equals(Integer.class) || cls.equals(int.class)) return (T) Integer.valueOf(nret.intValue());
+				else if(cls.equals(Long.class) || cls.equals(long.class)) return (T) Long.valueOf(nret.longValue());
+				else return (T) Short.valueOf(nret.shortValue());
+			} else {
+				return (T) ret;
+			}
+		} else {
+			throw new IllegalArgumentException("Ключ " + key + " представлен типом массива, а не элемента");
+		}
+	}
+	
+	/**
+	 * Получает значение массива по ключу
+	 * @param <T>
+	 * @param cls - ожидаемый класс элементов
+	 * @param key - ключ
+	 * @return - значение, или null, если значение не найдено
+	 * @throws IllegalArgumentException возникает, если элемент представляет единственное значение и вернуть как массив его нельзя
+	 */
+	public <T> List<T> getA(Class<T> cls, String key) {
+		if(!parametrs.containsKey(key)) return null;
+		final var par = parametrs.get(key);
+		if (par instanceof JSON_A a) {
+			final var ret = a.value_mo;
+			if(Number.class.isAssignableFrom(cls)){
+				final var nret = (List<Number>)ret;
+				if(cls.equals(Byte.class)) return (List<T>) nret.stream().map(v -> Byte.valueOf(v.byteValue())).toList();
+				else if(cls.equals(Double.class)) return (List<T>) nret.stream().map(v -> Double.valueOf(v.doubleValue())).toList();
+				else if(cls.equals(Float.class)) return (List<T>) nret.stream().map(v -> Float.valueOf(v.floatValue())).toList();
+				else if(cls.equals(Integer.class)) return (List<T>) nret.stream().map(v -> Integer.valueOf(v.intValue())).toList();
+				else if(cls.equals(Long.class)) return (List<T>) nret.stream().map(v -> Long.valueOf(v.longValue())).toList();
+				else if(cls.equals(Short.class)) return (List<T>) nret.stream().map(v -> Short.valueOf(v.shortValue())).toList();
+				else if(cls.equals(byte.class)) return (List<T>) nret.stream().map(v -> v.byteValue()).toList();
+				else if(cls.equals(double.class)) return (List<T>) nret.stream().map(v -> v.doubleValue()).toList();
+				else if(cls.equals(float.class)) return (List<T>) nret.stream().map(v -> v.floatValue()).toList();
+				else if(cls.equals(int.class)) return (List<T>) nret.stream().map(v -> v.intValue()).toList();
+				else if(cls.equals(long.class)) return (List<T>) nret.stream().map(v -> v.longValue()).toList();
+				else return (List<T>) nret.stream().map(v -> v.shortValue()).toList();
+			} else {
+				return (List<T>) ret;
+			}
+		} else {
+			throw new IllegalArgumentException("Ключ " + key + " представлен типом массива, а не элемента");
 		}
 	}
 
