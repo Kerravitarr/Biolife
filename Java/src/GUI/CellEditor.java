@@ -10,9 +10,11 @@ import MapObjects.AliveCellProtorype;
 import MapObjects.CellObject;
 import MapObjects.Poison;
 import MapObjects.dna.CommandDNA;
+import MapObjects.dna.DNA;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.event.ComponentEvent;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
@@ -103,7 +105,10 @@ public class CellEditor extends java.awt.Dialog {
 			final var index = i;
 			final var aInt = interrupts[index];
 			final var o = objects[index];
-			interaptPanel.add(new SettingsSelect<>(CellEditor.class,"interraptPanel."+o.name(),ints,i, aInt, e -> interrupts[index] = e));
+			interaptPanel.add(new SettingsSelect<>(CellEditor.class,"interraptPanel."+o.name(),ints,i, aInt, e -> {
+				interrupts[index] = e;
+				centralPanel.repaint();
+			}));
 		}
 	}
 	/**Создаёт заголовок страницы*/
@@ -113,7 +118,15 @@ public class CellEditor extends java.awt.Dialog {
 	}
 	
 	private class PaintJPanel extends javax.swing.JPanel{
-		private enum TYPE{CMD, PARAM, BRANCH};	
+		/**Цвета прерываний*/
+		private final Color[] I_COLOR;
+		
+		PaintJPanel(){
+			I_COLOR = new Color[CellObject.OBJECT.lenght];
+			for (int i = 0; i < I_COLOR.length; i++) {
+				I_COLOR[i] = Utils.Utils.getHSBColor(((double)i)/I_COLOR.length, 1, 1, 0.5);
+			}
+		}
 		
 		@Override
 		public void paintComponent(Graphics g) {
@@ -132,65 +145,278 @@ public class CellEditor extends java.awt.Dialog {
 			final var cy = h / 2;
 			final var min = Math.min(h, w);
 			final var dna = object.getDna();
+			int size;
+			for (size = 0; size < dna.size; ) {
+				size += dna.get(size).size();
+			}
+			final var BETWIN_LINE = 4; //Интервал между линиями связывающими прерывания и гены
+			final var rD = min / 80d; //"ширина" спирали ДНК
+			final var r = min/2  - BETWIN_LINE * CellObject.OBJECT.lenght - rD*2; //Радиус ДНК
+			printInterrapts(g,size,cx,cy, r,rD,h,BETWIN_LINE);
+			printDNA(g, cx, cy, size, dna, r, rD);
+			{//Рисуем толстую стрелочку от ПК
+				final var os = g.getStroke();
+				final var dashed = new java.awt.BasicStroke(3);
+				g.setStroke(dashed);
+				g.setColor(Color.BLACK);
+				final var my = cy - r - 3 * rD;
+				g.draw(new Line2D.Double(cx, 0, cx, my));
+				g.draw(new Line2D.Double(cx, my, cx + my / 2, my / 2));
+				g.draw(new Line2D.Double(cx, my, cx - my / 2, my / 2));
+				g.setStroke(os);
+			}
+		}
+		/** Рисует все прерывания на холсте
+		 * @param g холст
+		 * @param size размер ДНК
+		 * @param cx центр холста 
+		 * @param cy центр холста
+		 * @param r радиус ДНК
+		 * @param rD ширина ДНК
+		 * @param h высота экрана
+		 * @param BETWIN_LINE 
+		 */
+		private void printInterrapts(Graphics2D g, int size, final int cx,final int cy, final double r, final double rD, final int h, final int BETWIN_LINE) {
+			final var locationOnScreen = this.getLocationOnScreen();
+			final var dna = object.getDna();
+			final var interrupts = dna.interrupts;
+			final var PC = dna.getPC();
+			final var dr = (Math.PI) / size; //Какой угол относится к одной команде ДНК
 			
-			var r = min / 2.2; //Радиус ДНК
-			{
-				final var dr = (Math.PI) / dna.size; //Какой угол относится к одной команде ДНК
-				final var rD = min / 80; //"ширина" спирали ДНК
-				for (var i = 0; i < dna.size; ) {
-					final var a = i * Math.PI * 2 / dna.size - Math.PI / 2;
-					var af = a - dr;
-					final var index = dna.getIndex(i);
-					final var cmd = dna.get(i++);
-					
-					//Рисуем начало команды
-					g.setColor(Color.BLUE);
-					var tx = cx + (r + rD) * Math.cos(af);
-					var ty = cy + (r + rD) * Math.sin(af);
-					print(g,tx,ty,af,String.valueOf(index));
-					
-					drawStartEnd(g,cx,cy,r,rD,af, true);
-					tx = cx + (r + 2*rD) * Math.cos(a);
-					ty = cy + (r + 2*rD) * Math.sin(a);
-					print(g,tx,ty,a,cmd.getShotName());
-					//Её параметры
-					{
-						g.setColor(new Color(255, 70, 70, 150));
-						for (int j = 0; j < cmd.getCountParams(); j++, i++) {
-							final var ap = i * Math.PI * 2 / dna.size - Math.PI / 2;
-							af = ap - dr * 2;
-							r = drawCentral(g,cx,cy,r,rD, af,i == dna.size);
-							if(i < dna.size){
-								tx = cx + (r + 2*rD) * Math.cos(ap);
-								ty = cy + (r + 2*rD) * Math.sin(ap);
-							} else {
-								tx = cx + (r - 2*rD) * Math.cos(ap);
-								ty = cy + (r - 2*rD) * Math.sin(ap);
+			//Рисуем связи от прерываний к ДНК
+			//От каждого прерывания надо нарисовать линию к его нуклеотиду.
+			//Эти линии будут огибать центральный рисунок со всех сторон
+			//
+			//            _____
+			//           /  0  \     |I1
+			//          /7     1\    |I2
+			//         (6       2)   |I3
+			//          \5     3/    |
+			//           \__4__/     |In
+			//
+			// В зону 1-3 все линии подходят прямо
+			// В зону 3-5 все линии подходят снизу
+			// В зону 6 все линии подоходя слева. А вот слева через верх (6А) или слева через низ(6В), зависит от длины лини
+			// В зону 7-1 все линии подходят сверху
+			
+			var count0 = 0;
+			var count1 = 0;
+			var count2 = 0;
+			var count3 = 0;
+			var count4 = 0;
+			var count6A = 0;
+			var count6B = 0;
+			for (int i = 0; i < interrupts.length; i++) {
+				g.setColor(I_COLOR[i]);
+				var interrupt = interrupts[i];
+				if(interrupt < PC) interrupt += dna.size; //Проворачиваем на один круг
+				interrupt -= PC; //А теперь переводим индекс в нулевую позицию
+				final var field = ((8 * interrupt + size / 2) / size) % 8; //Номер зоны
+				final var cmd_a = interrupt * 2 * dr - Math.PI / 2; //Угол, на котором находится команда
+				final var cos = Math.cos(cmd_a);
+				final var sin = Math.sin(cmd_a);
+				final int tx = (int) (cx + (r + 2*rD) * cos); //Координаты этой команды
+				final int ty = (int) (cy + (r + 2*rD) * sin);
+				
+				final var panel = (SettingsSelect<Integer>)interaptPanel.getComponent(i);
+				var point = panel.getLocationOnScreen();
+				point.move(point.x - locationOnScreen.x, point.y - locationOnScreen.y + panel.getHeight() / 2);//Вернём положение относительно нас
+				final var fieldStart = 1 + 3 * point.y / h; //А это зона, из которой мы выходим
+				
+				{//Сначала рисуем стартовую полочку
+					switch (fieldStart) {//Откуда выходим
+						case 1 -> {
+							switch (field) { //куда мы целимся
+								case 0,1,6,7 -> {
+									final var xel = point.x - count1 * BETWIN_LINE - 10; //Стартовая полочка
+									g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+									point.x = xel;
+									count1++;
+								}
+								case 2 -> {
+									final var count = Math.max(count1, count2); //Линия на максимальном удалении для обоих блоков
+									final var xel = point.x - count * BETWIN_LINE - 10; //Стартовая полочка
+									g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+									point.x = xel;
+									count1 = count2 = count + 1;
+								}
+								default -> {
+									final var count = Math.max(Math.max(count1, count2), count3);
+									final var xel = point.x - count * BETWIN_LINE - 10; //Стартовая полочка
+									g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+									point.x = xel;
+									count1 = count2 = count3 = count + 1;
+								}
 							}
-							print(g,tx,ty,ap,cmd.getParam(object, j, dna));
+						}
+						case 2-> {
+							switch (field) { //куда мы целимся
+								case 2 -> {
+									final var xel = point.x - count2 * BETWIN_LINE - 10; //Стартовая полочка
+									g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+									point.x = xel;
+									count2++;
+								}
+								case 0,1,7 -> {
+									final var count = Math.max(count1, count2); //Линия на максимальном удалении для обоих блоков
+									final var xel = point.x - count * BETWIN_LINE - 10; //Стартовая полочка
+									g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+									point.x = xel;
+									count1 = count2 = count + 1;
+								}
+								case 3,4,5 -> {
+									final var count = Math.max(count3, count2); //Линия на максимальном удалении для обоих блоков
+									final var xel = point.x - count * BETWIN_LINE - 10; //Стартовая полочка
+									g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+									point.x = xel;
+									count3 = count2 = count + 1;
+								}
+								default ->{
+									if(ty > cy ){ //Будем рисовать вниз
+										final var count = Math.max(count1, count2); //Линия на максимальном удалении для обоих блоков
+										final var xel = point.x - count * BETWIN_LINE - 10; //Стартовая полочка
+										g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+										point.x = xel;
+										count1 = count2 = count + 1;
+									} else {
+										final var count = Math.max(count3, count2); //Линия на максимальном удалении для обоих блоков
+										final var xel = point.x - count * BETWIN_LINE - 10; //Стартовая полочка
+										g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+										point.x = xel;
+										count3 = count2 = count + 1;
+									}
+								}
+							}
+						}
+						default -> {
+							switch (field) { //куда мы целимся
+								case 3,4,5,6 -> {
+									final var xel = point.x - count3 * BETWIN_LINE - 10; //Стартовая полочка
+									g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+									point.x = xel;
+									count3++;
+								}
+								case 2 -> {
+									final var count = Math.max(count3, count2); //Линия на максимальном удалении для обоих блоков
+									final var xel = point.x - count * BETWIN_LINE - 10; //Стартовая полочка
+									g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+									point.x = xel;
+									count3 = count2 = count + 1;
+								}
+								default -> {
+									final var count = Math.max(Math.max(count1, count2), count3);
+									final var xel = point.x - count * BETWIN_LINE - 10; //Стартовая полочка
+									g.draw(new Line2D.Double(point.x, point.y,xel, point.y));
+									point.x = xel;
+									count1 = count2 = count3 = count + 1;
+								}
+							}
 						}
 					}
-					{//Её ветви
-						g.setColor(new Color(100, 100, 100, 150));
-						for (int j = 0; j < cmd.getCountBranch(); j++, i++) {
-							final var ap = i * Math.PI * 2 / dna.size - Math.PI / 2;
-							af = ap - dr * 2;
-							r = drawCentral(g,cx,cy,r,rD, af,i == dna.size);
-							if(i < dna.size){
-								tx = cx + (r + 2*rD) * Math.cos(ap);
-								ty = cy + (r + 2*rD) * Math.sin(ap);
-							} else {
-								tx = cx + (r - 2*rD) * Math.cos(ap);
-								ty = cy + (r - 2*rD) * Math.sin(ap);
-							}
-							print(g,tx,ty,ap,cmd.getBranch(object, j, dna));
-						}
-					}
-					//А теперь рисуем завершение ветви
-					g.setColor(Color.BLUE);
-					af = (i * Math.PI * 2 / dna.size - Math.PI / 2) - dr*2;
-					drawStartEnd(g,cx,cy,r,rD,af, false);					
 				}
+				{
+					switch (field) { //куда мы целимся
+						case 1,2,3 -> {
+							g.draw(new Line2D.Double(point.x, point.y, point.x, ty));
+							point.y = ty;
+							g.draw(new Line2D.Double(point.x, point.y, tx, point.y));
+						}
+						case 0,7 -> {
+							final var xey = (count0++) * BETWIN_LINE; //Верхняя планка
+							g.draw(new Line2D.Double(point.x, point.y, point.x,xey));
+							point.y = xey;
+							g.draw(new Line2D.Double(point.x, point.y, tx,point.y));
+							point.x = tx;
+							g.draw(new Line2D.Double(point.x, point.y, point.x,ty));
+						}
+						case 4,5 -> {
+							final var xey = h - ((count4++) + 1) * BETWIN_LINE; //Нижняя планка
+							g.draw(new Line2D.Double(point.x, point.y, point.x,xey));
+							point.y = xey;
+							g.draw(new Line2D.Double(point.x, point.y, tx,point.y));
+							point.x = tx;
+							g.draw(new Line2D.Double(point.x, point.y, point.x,ty));
+						}
+						default -> {
+							final int xey, xex;
+							if(ty > cy){ //Будем рисовать вниз
+								xey = h - ((count4++) + 1) * BETWIN_LINE;
+								xex = ((count6B++) + 1) * BETWIN_LINE;
+							} else {
+								xey = (count0++) * BETWIN_LINE;
+								xex = ((count6A++) + 1) * BETWIN_LINE;
+							}
+							g.draw(new Line2D.Double(point.x, point.y, point.x,xey));
+							point.y = xey;
+							g.draw(new Line2D.Double(point.x, point.y, xex,point.y));
+							point.x = xex;
+							g.draw(new Line2D.Double(point.x, point.y, point.x,ty));
+							point.y = ty;
+							g.draw(new Line2D.Double(point.x, point.y, tx, point.y));
+						}
+					}
+				}
+			}
+		}
+		/** Рисует спираль ДНК
+		 * @param g холст, на котором рисуем
+		 * @param cx координаты центра
+		 * @param cy координаты центра
+		 * @param size количество нуклиотидов в ДНК
+		 * @param dna сама ДНК
+		 * @param r кадиус ДНК
+		 * @param rD ширина ДНК
+		 */
+		private void printDNA(Graphics2D g, final int cx, final int cy,  int size, final DNA dna,double r, final double rD) {
+			//Рисуем ДНК
+			final var dr = (Math.PI) / size; //Какой угол относится к одной команде ДНК
+			for (var i = 0; i < dna.size; ) {
+				final var a = i * 2 * dr - Math.PI / 2;
+				var af = a - dr;
+				final var index = dna.getIndex(i);
+				final var cmd = dna.get(i++);
+				
+				//Рисуем начало команды
+				{
+				g.setColor(Color.BLUE);
+				final var cos = Math.cos(a);
+				final var sin = Math.sin(a);
+				var tx = cx + (r - 2*rD) * cos;
+				var ty = cy + (r - 2*rD) * sin;
+				print(g,tx,ty,af,String.valueOf(index));
+				
+				drawStartEnd(g,cx,cy,r,rD,af, true,dr);
+				tx = cx + (r + 2*rD) * cos;
+				ty = cy + (r + 2*rD) * sin;
+				print(g,tx,ty,a,cmd.getShotName());
+			}
+				//Её параметры
+				{
+				g.setColor(new Color(255, 70, 70, 150));
+				for (int j = 0; j < cmd.getCountParams(); j++, i++) {
+					final var ap = i * 2 * dr - Math.PI / 2;
+					af = ap - dr * 2;
+					drawCentral(g,cx,cy,r,rD, af, dr);
+					final var tx = cx + (r + 2*rD) * Math.cos(ap);
+					final var ty = cy + (r + 2*rD) * Math.sin(ap);
+					print(g,tx,ty,ap,cmd.getParam(object, j, dna));
+				}
+			}
+				{//Её ветви
+					g.setColor(new Color(100, 100, 100, 150));
+					for (int j = 0; j < cmd.getCountBranch(); j++, i++) {
+						final var ap = i * 2 * dr - Math.PI / 2;
+						af = ap - dr * 2;
+						drawCentral(g,cx,cy,r,rD, af, dr);
+						final var tx = cx + (r + 2*rD) * Math.cos(ap);
+						final var ty = cy + (r + 2*rD) * Math.sin(ap);
+						print(g,tx,ty,ap,cmd.getBranch(object, j, dna));
+					}
+				}
+				//А теперь рисуем завершение ветви
+				g.setColor(Color.BLUE);
+				af = (i * 2 * dr - Math.PI / 2) - dr*2;
+				drawStartEnd(g,cx,cy,r,rD,af, false,dr);
 			}
 		}
 		/** Рисует стартовую или финальную часть спирали
@@ -201,10 +427,10 @@ public class CellEditor extends java.awt.Dialog {
 		 * @param width ширина спирали
 		 * @param angle стартовый угол, на котором начинается рисовка
 		 * @param isStart стартовая часть?
+		 * @param dr какой угол занимает эта дуга
 		 */
-		private void drawStartEnd(Graphics2D g, int cx, int cy, double r,double width, double angle, boolean isStart){	
+		private void drawStartEnd(Graphics2D g, int cx, int cy, double r,double width, double angle, boolean isStart,double dr){	
 			final var dna = object.getDna();
-			final var dr = (Math.PI) / dna.size; //Какой угол относится к одной команде ДНК
 			
 			double fx1, fx2, fy1, fy2;
 			fx1 = fx2 = cx + r * Math.cos(angle);
@@ -236,21 +462,17 @@ public class CellEditor extends java.awt.Dialog {
 		 * @param r радиус спирали
 		 * @param width ширина спирали
 		 * @param angle стартовый гол, на котором начинается рисовка
-		 * @param isOffset эта спираль переходная между верхним и нижним диаметром?
+		 * @param dr какой угол занимает эта дуга
 		 * @return новый радиус, если спираль переходная. Иначе - старый радиус
 		 */
-		private double drawCentral(Graphics2D g, int cx, int cy, double r,double width, double angle, boolean isOffset){
-			final var dna = object.getDna();
-			final var dr = (Math.PI) / dna.size; //Какой угол относится к одной команде ДНК
+		private void drawCentral(Graphics2D g, int cx, int cy, double r,double width, double angle, double dr){
 			final var step = Math.PI/180; //Как часто вырисовывать ДНК
-			final var stepDR =  width / (dr / ( 2 * step)); //Это мы уменьшаем радиус хвоста, если он залазит на следующий круг
 			
 			var fx1 = cx + (r+width) * Math.cos(angle);
 			var fy1 = cy + (r+width) * Math.sin(angle);
 			var fx2 = cx + (r-width) * Math.cos(angle);
 			var fy2 = cy + (r-width) * Math.sin(angle);
 			for(var a = 0d ; a < dr * 2 + step / 2; a += step){
-				if(isOffset) r -= stepDR;
 				final var rad1 = r + width;
 				final var rad2 = r - width;
 				
@@ -267,7 +489,6 @@ public class CellEditor extends java.awt.Dialog {
 				g.draw(new Line2D.Double(fx1, fy1,fx2, fy2));
 				fx1 = tx1; fy1 = ty1; fx2 = tx2; fy2 = ty2;
 			}
-			return r;
 		}
 		/** Печатает текст под углом
 		 * @param g холст
