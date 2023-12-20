@@ -352,6 +352,14 @@ public abstract class CellObject {
 		if(o == null) return OBJECT.CLEAN;
 		else return OBJECT.transform(o.alive);
 	}
+	/**Анализирует пустая ли клетка куда объект смотрит. Клетка считается пустой, если там пусто или если там яд
+	 * @param point координаты, в которых смотрим
+	 * @return true, если та клетка свободна
+	 */
+	public boolean isEmpty(Point point){
+		final var see = see(point);
+		return see == CellObject.OBJECT.CLEAN || see.groupLeader == CellObject.OBJECT.BANE;
+	}
 	/**
 	 * Толкает объект в обсолютном направлении.Это значит, что объекту будет дан импульс в каком-то одном направлении
 	 * А вот сможет бот туда сходить или нет - вопрос уже куда серьёзнее

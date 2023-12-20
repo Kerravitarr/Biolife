@@ -300,8 +300,8 @@ public abstract class AliveCellProtorype extends CellObject {
     protected int poisonPower = 0;
     /**Плавучесть. Меняется от -100 до 100 Где -100 - тонуть каждый ход, 100 - всплывать каждый ход, 1 - тонуть каждые 100 ходов*/
     protected int buoyancy = 0;
-    /**Специальный флаг, показывает, что бот на этом ходу спит*/
-    protected boolean isSleep = false;
+    /**Показывает, сколько ходов клетка должна спать*/
+    protected int sleepCounter = 0;
     /**Цвет бота по действиям*/
     protected DColor color_cell = new DColor();
     /**Внутреннее хранилище энергии*/
@@ -425,10 +425,8 @@ public abstract class AliveCellProtorype extends CellObject {
 	public int getBuoyancy() {
 		return buoyancy;
 	}
-
-	public void setSleep(boolean isSleep) {
-		this.isSleep = isSleep;
-	}
+	/** @param sleep указывает, на сколько ходов клетке следует заснуть*/
+	public void setSleep(int sleep) {this.sleepCounter = sleep;}
 
 	public void setBuoyancy(int buoyancy) {
 		this.buoyancy = Utils.betwin(-100, buoyancy, 100);
@@ -618,4 +616,28 @@ public abstract class AliveCellProtorype extends CellObject {
 	public int getTolerance() {return tolerance;}
 	/**@param tolerance чем больше толерантность - тем меньше клетка отличает своих от врагов */
 	public void setTolerance(int tolerance) {this.tolerance = tolerance;}
+	
+	
+	/** Ищет пустое направление вокруг объекта. Клетка считается пустой, если там пусто или если там яд
+	 * @return ближайшая пустая точка или null
+	 */
+	public Point findEmptyDirection() {
+		for (int i = 0; i < DIRECTION.size()/2+1; i++) {
+	    	if(i == 0 || i == 4) {
+		        Point point = getPos().next(direction.next(DIRECTION.toEnum(i)));
+		        if (isEmpty(point))
+		            return point;
+	    	} else {
+	    		int dir = getAge() % 2 == 0 ? i : -i; //Хоть какой-то фактр рандомности появления потомка
+	    		Point point = getPos().next(direction.next(DIRECTION.toEnum(dir)));
+		        if (isEmpty(point))
+		            return point;
+		        dir = -dir;
+	    		point = getPos().next(direction.next(DIRECTION.toEnum(dir)));
+		        if (isEmpty(point))
+		            return point;
+	    	}
+	    }
+	    return null;
+	}
 }

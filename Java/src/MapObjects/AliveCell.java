@@ -168,50 +168,50 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
 
     @Override
     public void step() {
-        //Работа ДНК
-        for (int cyc = 0; (cyc < 15); cyc++) {
-			var cmd = getDna().get();
-            if (cmd.execute(this))  break;
-        }
-        //Трата энергии на ход
-        if (isSleep) {
-            setSleep(false);
-            addHealth(-HP_PER_STEP/10d);          //Спать куда эффективнее
+		if (sleepCounter > 0) {
+			sleepCounter--;
+            addHealth(-HP_PER_STEP/100d);//Спать куда эффективнее
         } else {
-            addHealth(-HP_PER_STEP); //Пожили - устали
-        }
-        //Излишки в желудок
-        if (getHealth() > getHp_by_div() - 100) {
-            TankFood.add(this, (int) (getHealth() - (getHp_by_div() - 100)));
-        }
-        if (getMineral() > MAX_MP - 100) {
-            TankMineral.add(this, (int) (getMineral() - (MAX_MP - 100)));
-        }
+			//Работа ДНК
+			for (int cyc = 0; (cyc < 15); cyc++) {
+				var cmd = getDna().get();
+				if (cmd.execute(this))  break;
+			}
+			//Трата энергии на ход
+			addHealth(-HP_PER_STEP); //Пожили - устали
+			//Излишки в желудок
+			if (getHealth() > getHp_by_div() - 100) {
+				TankFood.add(this, (int) (getHealth() - (getHp_by_div() - 100)));
+			}
+			if (getMineral() > MAX_MP - 100) {
+				TankMineral.add(this, (int) (getMineral() - (MAX_MP - 100)));
+			}
 
-        //Если жизней много - делимся
-        if (this.getHealth() > getHp_by_div()) {
-            Birth.birth(this);
-        }
-        //Если есть друзья - делимся с ними едой
-        if (getCountComrades() != 0) {
-            clingFriends();
-        }
-        //Меняем цвет, если бездельничаем
-        if (getAge() % 50 == 0) {
-            color(ACTION.NOTHING, color_cell.r + color_cell.g + color_cell.b);
-        }
-        //Если мало жизней, достаём заначку!
-        if (getHealth() < 100) {
-            TankFood.sub(this, 100);
-        }
-        //Если мало минералов, достаём заначку!
-        if (getMineral() < 100) {
-            TankMineral.sub(this, 100);
-        }
-        //Слизь постепенно раствоярется
-        if (mucosa > 0 && getAge() % 50 == 0) {
-            mucosa--;
-        }
+			//Если жизней много - делимся
+			if (this.getHealth() > getHp_by_div()) {
+				Birth.birth(this);
+			}
+			//Если есть друзья - делимся с ними едой
+			if (getCountComrades() != 0) {
+				clingFriends();
+			}
+			//Если мало минералов, достаём заначку!
+			if (getMineral() < 100) {
+				TankMineral.sub(this, 100);
+			}
+		}
+		//Если мало жизней, достаём заначку!
+		if (getHealth() < 100) {
+			TankFood.sub(this, 100);
+		}
+		//Меняем цвет, если бездельничаем
+		if (getAge() % 50 == 0) {
+			color(ACTION.NOTHING, color_cell.r + color_cell.g + color_cell.b);
+		}
+		//Слизь постепенно раствоярется
+		if (mucosa > 0 && getAge() % 50 == 0) {
+			mucosa--;
+		}
     }
 
     /**
