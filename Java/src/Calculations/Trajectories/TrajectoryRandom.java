@@ -165,12 +165,12 @@ public class TrajectoryRandom extends Trajectory{
 	 * @param mass массив, в которй будут записаны новые точки
 	 */
 	private void regenerate(Point.Vector from, Point.Vector to, Point.Vector C1, Point.Vector C4, List<Point> mass){
-		final var F0 = 1;
-		final var F1 = 1;
-		final var F2 = 1 * 2;
-		final var F3 = 1 * 2 * 3;
-		final var F4 = 1 * 2 * 3 * 4;
-		final var F5 = 1 * 2 * 3 * 4 * 5;
+		final double F0 = 1;
+		final double F1 = 1;
+		final double F2 = 1 * 2;
+		final double F3 = 1 * 2 * 3;
+		final double F4 = 1 * 2 * 3 * 4;
+		final double F5 = 1 * 2 * 3 * 4 * 5;
 		
 		final var isFromEqTo = from.equals(to);
 		final var v = distance((isFromEqTo ? C4 : from), to);
