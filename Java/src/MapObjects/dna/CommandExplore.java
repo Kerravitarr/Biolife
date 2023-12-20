@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import Utils.MyMessageFormat;
 
@@ -12,11 +13,13 @@ import Utils.MyMessageFormat;
  *
  */
 public abstract class CommandExplore extends CommandDNA {
-	
-	private final MyMessageFormat valueFormat = new MyMessageFormat("A{0} PC += {1}");
+	/**Формат текстового описания того, что команда сделает с клеткой*/
+	private final MyMessageFormat shortValue = new MyMessageFormat(Configurations.getProperty(CommandExplore.class,"value.S"));
+	/**Формат текстового описания того, что команда сделает с клеткой*/
+	private final MyMessageFormat longValue = new MyMessageFormat(Configurations.getProperty(CommandExplore.class,"value.L"));
 
 	/**
-	 * Cнициализирует класс исследования
+	 * Cпециализирует класс исследования
 	 * @param countBranch - число возможных ответов функции
 	 */
 	protected CommandExplore(int countBranch) {this(0,countBranch);}
@@ -32,12 +35,14 @@ public abstract class CommandExplore extends CommandDNA {
 	
 	@Override
 	protected int perform(AliveCell cell) {
-		return explore(cell);
+		final var branch = explore(cell);
+		assert branch >= 0 && branch <= getCountBranch() : "У нас доступно только " + getCountBranch() + " ветвей, тогда как мы решили вызвать ветвь " + branch + ". Мы - " + this;
+		final var offset = cell.getDna().get(1 + getCountParams() + branch,false);
+		return offset;
 	}
-	/**
-	 * Собственно функция исследования
-	 * @param cell - клетка, которая исследует
-	 * @return какая ветвь выполняется
+	/** Фукнция исследования, которую обязана реализовать каждая команда исследования
+	 * @param cell клетка, которая исследует
+	 * @return номер ветви, которая будет выполнена
 	 */
 	protected abstract int explore(AliveCell cell);
 	/**Это явно не функция действия, мы можем сколько угодно рассматривать окружающий мир*/
@@ -51,6 +56,6 @@ public abstract class CommandExplore extends CommandDNA {
 	@Override
 	public String value(AliveCell cell, DNA dna) {
 		var ofset = explore(cell);
-        return valueFormat.format(ofset,(dna.get(1 + getCountParams() + ofset, false)) % dna.size);
+        return (isFullMod() ? longValue : shortValue).format(ofset,branch(dna,ofset));
 	}
 }

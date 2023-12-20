@@ -30,7 +30,7 @@ public class Clone extends CommandDoInterupted {
 	 * @param direction - в какую сторону
 	 */
 	protected void clone(AliveCell cell,DIRECTION direction) {	
-		var childCMD = 1 + 1 + param(cell,1); // Откуда будет выполняться команда ребёнка	
+		var childCMD = param(cell,1); // Откуда будет выполняться команда ребёнка	
 		var see = cell.see(direction);
 		switch (see.groupLeader) {
 			case CLEAN -> {
@@ -49,9 +49,11 @@ public class Clone extends CommandDoInterupted {
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		if(numParam == 0)
-			return isFullMod() ? param(dna, cell, numParam, isAbolute).toString() : param(dna, cell, numParam, isAbolute).toSString();
-		else
-			return "PCc = " + String.valueOf((dna.getPC() + param(cell,1)) % dna.size);
+		if (numParam == 0) {
+			return getDirectionParam(cell, 0, dna);
+		} else {
+			final var param = param(cell, 1);
+			return Configurations.getProperty(Birth.class,isFullMod() ? "param.L" : "param.S",(dna.getPC() + param) % dna.size);
+		}
 	}
 }

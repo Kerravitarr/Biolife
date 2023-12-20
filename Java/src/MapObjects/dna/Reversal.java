@@ -1,5 +1,7 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
+import Calculations.Point;
 import MapObjects.AliveCell;
 
 /**
@@ -20,4 +22,12 @@ public class Reversal extends CommandDo {
 	/**Эта команда не занимает времени*/
 	@Override
 	public boolean isDoing() {return false;};
+	
+	@Override
+	public String value(AliveCell cell, DNA dna) {
+		final var d = cell.direction;
+        return isFullMod() ? 
+				Configurations.getProperty(Align_UP.class,"value.L", d.toSString()) 
+				: Configurations.getProperty(Align_UP.class,"value.S", d.toString());
+	}
 }

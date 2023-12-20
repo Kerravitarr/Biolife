@@ -55,10 +55,7 @@ public class DNA {
     	for (int i = 0; i < size; i++) 
 			mind[i] = mindL.get(i);
 		this.pc=dna.getI("instruction");
-    	List<Integer> interruptsL = dna.getA("interrupts");
-		interrupts = new int[interruptsL.size()];
-    	for (int i = 0; i < interrupts.length; i++) 
-    		interrupts[i] = interruptsL.get(i);
+    	this.interrupts = (dna.<Integer>getA("interrupts")).stream().mapToInt(i->i).toArray();
 	}
 	
 	/**
@@ -88,7 +85,7 @@ public class DNA {
 	 * @param num число
 	 * @return число [0,size]
 	 */
-	private int normalization(int num){
+	public int normalization(int num){
 		num = num % size;
         if(num < 0)
         	num += size;

@@ -1,13 +1,10 @@
 package MapObjects.dna;
 
-import MapObjects.AliveCell;
-import MapObjects.CellObject;
-import MapObjects.CellObject.OBJECT;
-import MapObjects.Poison;
 import Calculations.Configurations;
+import MapObjects.AliveCell;
+import MapObjects.CellObject.OBJECT;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
-import static MapObjects.CellObject.OBJECT.ALIVE;
 
 /**
  * Крутится вокруг бота, выискивая свою цель
@@ -15,7 +12,8 @@ import static MapObjects.CellObject.OBJECT.ALIVE;
  *
  */
 public class FindNear extends CommandExplore {
-	final int COUNT_FIND = OBJECT.lenght - 1; //Кроме
+	/**Сколкьо мы можем найти объектов. -1, так как param() возвращает включительно последнее число*/
+	final int COUNT_FIND = OBJECT.lenght - 1;
 
 	public FindNear() {super(1,2);}
 	
@@ -29,7 +27,7 @@ public class FindNear extends CommandExplore {
 	 * @param type что ищет
 	 * @return 0, если такого объекта нет рядом и 1, если такой объект есть
 	 */
-	protected int search(AliveCell cell, OBJECT type) {
+	protected static int search(AliveCell cell, OBJECT type) {
 		for (int i = 0; i < DIRECTION.size()/2+1; i++) {
 			if(i == 0 || i == 4) {
 				final var point = nextPoint(cell,relatively(cell,DIRECTION.toEnum(i)));
@@ -61,11 +59,12 @@ public class FindNear extends CommandExplore {
 
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		return OBJECT.values[param(dna,0, COUNT_FIND)].toString();
+		final var param = OBJECT.values[param(dna,0, COUNT_FIND)];
+		return param.toString();
 	}
 	
 	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
-		return numBranch == 0 ? "👎" : "👌";
+		return Configurations.getProperty(FindNear.class,isFullMod() ? "branch"+numBranch+".L" : "branch"+numBranch+".S");
 	};
 }

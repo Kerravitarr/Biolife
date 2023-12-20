@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import Utils.MyMessageFormat;
@@ -14,9 +15,6 @@ public class TankMineral extends CommandDo {
 	private static final int HP_COST = 1;
 	/**Размер желудка*/
 	static final int TANK_SIZE = (int) Math.round(10 * AliveCell.MAX_MP);
-	/**Форматирование значения*/
-	private static final MyMessageFormat valueFormatAdd = new MyMessageFormat("MP -= {0} 🛢 = {1}");
-	private static final MyMessageFormat valueFormatSub = new MyMessageFormat("MP -= {0} 🛢 = {1}");
 	/**Функция добавки или убавки*/
 	private final boolean isAdd;
 
@@ -77,12 +75,12 @@ public class TankMineral extends CommandDo {
 			//Сколько у нас места осталось
 			val = Math.min(val, cell.specMaxVal(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION)- cell.getMineralTank());
 			val = Math.max(0, val);
-			return valueFormatAdd.format(val, cell.getMineralTank() + val);
+			return Configurations.getProperty(TankMineral.class,isFullMod() ? "value.A.L" : "value.A.S",HP_COST , val, val);
 		} else {
 			//Сколько можем взять
 			val = (int) Math.min(val, cell.getMineralTank());
 			val = Math.max(0, val);
-			return valueFormatSub.format(val, cell.getMineralTank() - val);
+			return Configurations.getProperty(TankMineral.class,isFullMod() ? "value.S.L" : "value.S.S",HP_COST , val, val);
 		}
 	}
 }

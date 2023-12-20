@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import Utils.MyMessageFormat;
 
@@ -10,32 +11,20 @@ import Utils.MyMessageFormat;
  *
  */
 public class Loop extends CommandDNA {
-	
-	private final MyMessageFormat paramFormat = new MyMessageFormat("{0} ({1})");
+	/**На сколько прыгать будем*/
+	public final int LOOP;
 
-	public Loop() {super(1,0);};
+	public Loop(int l) {super(0,0);LOOP = l;};
 	@Override
 	protected int perform(AliveCell cell) {
-		int count = param(cell,0);
-		return -count;
+		return -LOOP;
 	}
 	
 	@Override
 	public boolean isDoing() {return false;};
 	
 	@Override
-	public String getParam(AliveCell cell, int numParam, DNA dna){
-		var val = param(dna, 0);
-		var npc = (dna.getPC() + 2 - val) % dna.size;
-		if(npc < 0) 
-			npc += dna.size;
-		return paramFormat.format(val,npc);
-	};
-	@Override
 	public String value(AliveCell cell, DNA dna) {
-		var npc = (dna.getPC() + 2 - param(dna, 0)) % dna.size;
-		if (npc < 0)
-			npc += dna.size;
-		return Integer.toString(npc);
+        return Configurations.getProperty(Jump.class,isFullMod() ? "value.L" : "value.S",dna.normalization(dna.getPC() - LOOP));
 	}
 }

@@ -41,7 +41,6 @@ public class CommandList {
 	 * @return
 	 */
 	protected static CommandDNA get(int key) {
-		final var JMP = new Jump();
 		return switch (key) {
 			case BLOCK_1 -> new Photosynthesis();
 			case BLOCK_1 + 1 -> new Minerals2Energy();
@@ -70,8 +69,8 @@ public class CommandList {
 			case BLOCK_3_1 + 3 -> new HowMuch("FoodTank", false, cell -> cell.getFoodTank(), TankFood.TANK_SIZE);
 			case BLOCK_3_1 + 4 -> new HowMuch("DW",  false,cell -> cell.getDNA_wall());
 			case BLOCK_3_1 + 5 -> new HowMuch("Old", false, cell -> (cell.getAge() / 100));
-			case BLOCK_3_1 + 6 -> new HowMuchSun();
-			case BLOCK_3_1 + 7 -> new HowMuchMinerals();
+			case BLOCK_3_1 + 6 -> new HowMuch("Sun",  false,cell -> cell.sunAround());
+			case BLOCK_3_1 + 7 -> new HowMuch("MA",  false,cell -> cell.mineralAround());
 			case BLOCK_3_1 + 8 -> new IAmMulticellular();
 			case BLOCK_3_1 + 9 -> new HowHigh();
 			case BLOCK_3_1 + 10 -> new IAmSurrounded();
@@ -104,7 +103,7 @@ public class CommandList {
 			case BLOCK_5 + 3 -> new DNABreak(false, false);
 			case BLOCK_5 + 4 -> new DNAStrengthen();
 			case BLOCK_5 + 5 -> new DNAWallBreak();
-			case BLOCK_5 + 6 -> new Loop();
+			//case BLOCK_5 + 6 -> 
 			case BLOCK_5 + 7 -> new ChangeSpecialization();
 			case BLOCK_5 + 8 -> new DNAFind(false);
 			case BLOCK_5 + 9 -> new DNAFind(true);
@@ -121,7 +120,7 @@ public class CommandList {
 			case BLOCK_6 + 8 -> new Mucosa(true);
 			case BLOCK_6 + 9 -> new Mucosa(false);
 
-			default -> JMP; // Любая остальная команда - прыжок
+			default -> key % 2 == 0 ? new Jump(key) : new Loop(key); // Любая остальная команда - прыжок
 		};
 	}
 }

@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import Utils.MyMessageFormat;
 
@@ -12,8 +13,6 @@ import Utils.MyMessageFormat;
 public class Photosynthesis extends CommandDo {
 	/**Цена энергии на ход. Да, фотосинтез тоже требует энергии!*/
 	private final int HP_COST = 2;
-	
-	private final MyMessageFormat valueFormat = new MyMessageFormat("HP += {0, number, #.#}");
 
 	protected Photosynthesis() {super();}
 
@@ -32,9 +31,6 @@ public class Photosynthesis extends CommandDo {
 	@Override
 	protected String value(AliveCell cell) {
         double hlt = cell.sunAround();
-		if (hlt > 0)
-			return valueFormat.format(hlt);
-		else
-			return null;
+        return Configurations.getProperty(Photosynthesis.class,isFullMod() ? "value.L" : "value.S",hlt-HP_COST);
 	}
 }

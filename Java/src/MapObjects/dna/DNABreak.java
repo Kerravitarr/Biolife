@@ -29,14 +29,6 @@ import Calculations.Point;
 public class DNABreak extends CommandDo {
 	/**Цена энергии на ход, только для вставки одного значения*/
 	private final int HP_COST = 100;
-	private final MyMessageFormat oneParam0ormat = new MyMessageFormat("🔍CMD = {0}");
-	private final MyMessageFormat oneParam1ormat = new MyMessageFormat("CMD = {0}");
-	private final MyMessageFormat manyParam1ormat = new MyMessageFormat("L = {0}");
-	private final MyMessageFormat manyParam2ormat = new MyMessageFormat("PC -= {0}");
-	
-	private final String manyValueFormatS = Configurations.getProperty(Destroy.class,  "Shot");
-	private final String manyValueFormatL = Configurations.getProperty(Destroy.class,  "Long");
-	private final MyMessageFormat manyValueFormat = new MyMessageFormat("HP -= {0}");
 	
 	/**Операция вставки? Или обновления*/
 	private final boolean isInsert;
@@ -191,15 +183,15 @@ public class DNABreak extends CommandDo {
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
 		if(isOne){
 			return switch (numParam) {
-				case 0 -> oneParam0ormat.format(CommandList.list[param(dna, numParam)]);
-				case 1 -> oneParam1ormat.format(CommandList.list[param(dna, numParam)]);
+				case 0 -> Configurations.getProperty(DNABreak.class,isFullMod() ? "param0.L" : "param0.S", CommandList.list[param(dna, numParam)]);
+				case 1 -> Configurations.getProperty(DNABreak.class,isFullMod() ? "param1.O.L" : "param1.O.S", CommandList.list[param(dna, numParam)]);
 				default-> super.getParam(cell, numParam, dna);
 			};
 		} else {
 			return switch (numParam) {
-				case 0 -> oneParam0ormat.format(CommandList.list[param(dna, numParam)]);
-				case 1 -> manyParam1ormat.format(param(dna,0, dna.size - 1) + 1);
-				case 2 -> manyParam2ormat.format(param(dna,0, dna.size));
+				case 0 -> Configurations.getProperty(DNABreak.class,isFullMod() ? "param0.L" : "param0.S", CommandList.list[param(dna, numParam)]);
+				case 1 -> Configurations.getProperty(DNABreak.class,isFullMod() ? "param1.M.L" : "param1.M.S", param(dna,numParam, dna.size - 1) + 1);
+				case 2 -> Configurations.getProperty(DNABreak.class,isFullMod() ? "param2.M.L" : "param2.M.S", dna.normalization(dna.getPC() - param(dna,numParam, dna.size)));
 				default-> super.getParam(cell, numParam, dna);
 			};
 		}
@@ -207,10 +199,16 @@ public class DNABreak extends CommandDo {
 	
 	@Override
 	public String value(AliveCell cell, DNA dna) {
+		final var sym = Configurations.getProperty(DNABreak.class, "value" + (isInsert ? ".I" : ".U") +(isFullMod() ? ".L" : ".S"));
 		if (isOne) {
-			return manyValueFormat.format(HP_COST);
+			final var p0 = CommandList.list[param(dna, 0)];
+			final var p1 = CommandList.list[param(dna, 1)];
+			return Configurations.getProperty(DNABreak.class,isFullMod() ? "value.O.L" : "value.O.S", p0,p1,sym);
 		} else {
-			return isFullMod() ? manyValueFormatL : manyValueFormatS;
+			final var p0 = CommandList.list[param(dna, 0)];
+			final var p1 = param(dna,1, dna.size - 1) + 1;
+			final var p2 = dna.normalization(dna.getPC() - param(dna,2, dna.size));
+			return Configurations.getProperty(DNABreak.class,isFullMod() ? "value.M.L" : "value.M.S", p0,p1,p2,sym);
 		}
 	}
 }

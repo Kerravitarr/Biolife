@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 /**
  * Задаёт философский вопрос - я многоклеточный?
@@ -17,6 +18,6 @@ public class IAmMulticellular extends CommandExplore {
 	
 	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
-		return numBranch == 0 ? "·" : "░";
+		return Configurations.getProperty(IAmMulticellular.class,isFullMod() ? "branch"+numBranch+".L" : "branch"+numBranch+".S");
 	};
 }

@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import Utils.MyMessageFormat;
@@ -14,9 +15,6 @@ public class TankFood extends CommandDo {
 	private static final int HP_COST = 1;
 	/**Максимальный размер желудка*/
 	static final int TANK_SIZE = (int) Math.round(10 * AliveCell.MAX_HP);
-	/**Форматирование значения*/
-	private static final MyMessageFormat valueFormatSub = new MyMessageFormat("HP += {0} 🛢 = {1}");
-	private static final MyMessageFormat valueFormatAdd = new MyMessageFormat("HP -= {0} 🛢 = {1}");
 	/**Функция добавки или убавки*/
 	private final boolean isAdd;
 
@@ -93,12 +91,12 @@ public class TankFood extends CommandDo {
 			//Сколько у нас места осталось
 			val = Math.min(val, cell.specMaxVal(TANK_SIZE,AliveCellProtorype.Specialization.TYPE.ACCUMULATION)- cell.getFoodTank());
 			val = Math.max(0, val);
-			return valueFormatAdd.format(HP_COST + val, cell.getFoodTank() + val);
+			return Configurations.getProperty(TankFood.class,isFullMod() ? "value.A.L" : "value.A.S",HP_COST + val, val);
 		} else {
 			//Сколько можем взять
 			val = (int) Math.min(val, cell.getFoodTank());
 			val = Math.max(0, val);
-			return valueFormatSub.format(val - HP_COST, cell.getFoodTank() - val);
+			return Configurations.getProperty(TankFood.class,isFullMod() ? "value.S.L" : "value.S.S",val - HP_COST, val);
 		}
 	}
 }

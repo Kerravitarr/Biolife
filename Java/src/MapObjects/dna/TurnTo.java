@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
@@ -12,7 +13,6 @@ import Calculations.Point.DIRECTION;
  *
  */
 public class TurnTo extends CommandDo {
-	private final MyMessageFormat valueFormat = new MyMessageFormat("D = {0}");
 
 	public TurnTo() {super(1);};
 	@Override
@@ -33,7 +33,7 @@ public class TurnTo extends CommandDo {
 	 * @param type - что ищем
 	 * @return новое направление или то направление, какое и было у клетки до вращения
 	 */
-	protected DIRECTION search(AliveCell cell, CellObject.OBJECT type) {
+	protected static DIRECTION search(AliveCell cell, CellObject.OBJECT type) {
 		for (int i = 0; i < DIRECTION.size()/2+1; i++) {
 			if(i == 0 || i == 4) {
 				var rDir = relatively(cell,DIRECTION.toEnum(i));
@@ -59,7 +59,9 @@ public class TurnTo extends CommandDo {
 	
 	@Override
 	public String value(AliveCell cell, DNA dna) {
-		var d = search(cell,OBJECT.values[param(dna,0, OBJECT.lenght - 1)]);
-       return valueFormat.format(isFullMod() ? d.toSString() : d.toString());
+		final var d = search(cell,OBJECT.values[param(dna,0, OBJECT.lenght - 1)]);
+        return isFullMod() ? 
+				Configurations.getProperty(Align_UP.class,"value.L", d.toSString()) 
+				: Configurations.getProperty(Align_UP.class,"value.S", d.toString());
 	}
 }

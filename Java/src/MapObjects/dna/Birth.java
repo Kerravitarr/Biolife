@@ -13,17 +13,15 @@ import Calculations.Point;
  */
 public class Birth extends CommandDo {
 	/**Сколько ХП стоит скопировать каждый кадон ДНК*/
-	private static final double HP_FOR_KADON = 2;
+	private static final double HP_FOR_KADON = 1;
 
 	public Birth() {this(1);};
 	protected Birth(int countParams) {super(countParams);};
 	@Override
 	protected void doing(AliveCell cell) {
-		int childCMD = 1 + 1 + param(cell,0); // Откуда будет выполняться команда ребёнка	
-       
-        Point n = findEmptyDirection(cell);    // проверим, окружен ли бот
-        if (n == null)          	// если бот окружен, то он в муках погибает
-        	cell.bot2Organic();
+		final var childCMD = param(cell,0);	// Откуда будет выполняться команда ребёнка	
+        final var n = cell.findEmptyDirection();	// проверим, окружен ли бот
+        if (n == null) cell.bot2Organic();			// если бот окружен, то он в муках погибает
         birth(cell,n,childCMD);
 	}
 	/**
@@ -32,9 +30,8 @@ public class Birth extends CommandDo {
 	 * @param cell - клетка, которая должна поделиться
 	 */
 	public static void birth(AliveCell cell) {	       
-        Point n = findEmptyDirection(cell);    // проверим, окружен ли бот
-        if (n == null)           	// если бот окружен, то он в муках погибает
-        	cell.bot2Organic();
+        final var n = cell.findEmptyDirection();// проверим, окружен ли бот
+        if (n == null) cell.bot2Organic();      // если бот окружен, то он в муках погибает
         birth(cell,n,0);
 	}
 	/**
@@ -71,5 +68,17 @@ public class Birth extends CommandDo {
 	
 
 	@Override
-	public String getParam(AliveCell cell, int numParam, DNA dna){return String.valueOf(param(cell,0)+1+1);}
+	public String getParam(AliveCell cell, int numParam, DNA dna) {
+		final var param = param(cell, 0);
+		return Configurations.getProperty(Birth.class,isFullMod() ? "param.L" : "param.S",(dna.getPC() + param) % dna.size);
+	}
+	@Override
+	public String value(AliveCell cell, DNA dna) {
+		final var p = cell.findEmptyDirection();
+		if(p == null){
+			return Configurations.getProperty(Birth.class,isFullMod() ? "value.die.L" : "value.die.S");
+		} else {
+			return Configurations.getProperty(Birth.class,isFullMod() ? "value.L" : "value.S",dna.size*HP_FOR_KADON, p,param(dna, 0));
+		}
+	}
 }

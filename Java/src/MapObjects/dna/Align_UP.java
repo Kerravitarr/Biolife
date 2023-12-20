@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import Calculations.Point.DIRECTION;
 
@@ -18,6 +19,12 @@ public class Align_UP extends CommandDo {
 		cell.direction = DIRECTION.UP;
 	}
 	
-	/**Эта команда не занимает времени*/
-	public boolean isDoing() {return false;};
+	@Override public boolean isDoing() {return false;};
+	
+	@Override
+	public String value(AliveCell cell, DNA dna) {
+        return isFullMod() ? 
+				Configurations.getProperty(Align_UP.class,"value.L", DIRECTION.UP.toSString()) 
+				: Configurations.getProperty(Align_UP.class,"value.S", DIRECTION.UP.toString());
+	}
 }

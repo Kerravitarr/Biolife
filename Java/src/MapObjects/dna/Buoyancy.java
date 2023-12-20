@@ -1,6 +1,8 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
+import static MapObjects.dna.CommandDNA.param;
 import Utils.MyMessageFormat;
 
 /**
@@ -28,12 +30,13 @@ public class Buoyancy extends CommandDo {
 
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna){
-		return Integer.toString(param(cell, 0,200) - 100);
+		final var param = param(cell, 0,100);
+		return Configurations.getProperty(Buoyancy.class,isFullMod() ? "param.L" : "param.S", param);
 	};
 	
 	@Override
 	public String value(AliveCell cell) {
 		var par = param(cell, 0, 100);
-		return valueFormat.format(Math.abs(HP_COST * par / 10), (isUp ? '+' : '-'), DEL * par);
+		return Configurations.getProperty(Buoyancy.class,isFullMod() ? "value.L" : "value.S", Math.abs(HP_COST * par / 10), (isUp ? '+' : '-'), DEL * par);
 	}
 }

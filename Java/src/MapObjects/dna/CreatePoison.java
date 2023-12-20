@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import MapObjects.Poison;
@@ -42,10 +43,17 @@ public class CreatePoison extends CommandDo {
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
 		if(numParam == 0) {
-			return Integer.toString(param(dna, numParam, MAX_STREAM));
+			var stream = (int) Math.round(Math.exp(param(cell,0, MAX_STREAM)));
+			return Configurations.getProperty(CreatePoison.class,isFullMod() ? "param0.L" : "param0.S", stream);
 		} else {
-			var dir = param(dna,cell,numParam,isAbolute);
-			return isFullMod() ? dir.toSString() : dir.toString();
+			return getDirectionParam(cell, numParam, dna);
 		}
+	}
+	@Override
+	public String value(AliveCell cell, DNA dna) {
+		var stream = (int) Math.round(Math.exp(param(cell,0, MAX_STREAM)));
+		var energy = cell.specMaxVal(Math.min(Poison.MAX_TOXIC, cell.getPosionPower()), AliveCellProtorype.Specialization.TYPE.FERMENTATION);
+		var direction = param(dna,cell,1,isAbolute);
+		return Configurations.getProperty(CreatePoison.class,isFullMod() ? "value.L" : "value.S",HP_FOR_POISON,stream,energy, nextPoint(cell,direction));
 	}
 }

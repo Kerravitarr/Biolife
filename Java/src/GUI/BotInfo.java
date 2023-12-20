@@ -679,7 +679,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 		switch (type) {
 			case CMD,CMD_D,CMD_I -> {
 				sb.append(" ");
-				sb.append(cmd_o.toString(lcell, dna));
+				sb.append(cmd_o.toString());
 				if(indexRowInModel == 0) {
 					var val = cmd_o.value(lcell, dna);
 					if(val != null) {

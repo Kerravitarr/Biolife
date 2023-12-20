@@ -62,8 +62,7 @@ public class Give extends CommandDoInterupted {
 
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		var dir = param(dna, cell, numParam, isAbolute);
-		return isFullMod() ? dir.toString() : dir.toSString();
+		return getDirectionParam(cell, numParam, dna);
 	}
 	
 }

@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 
 /**
@@ -13,11 +14,11 @@ public class IAmSurrounded extends CommandExplore {
 
 	@Override
 	protected int explore(AliveCell cell) {
-		return findEmptyDirection(cell) == null ? 0 : 1;
+		return cell.findEmptyDirection() == null ? 0 : 1;
 	}
 	
 	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
-		return numBranch == 0 ? "◯" : "◉";
+		return Configurations.getProperty(IAmSurrounded.class,isFullMod() ? "branch"+numBranch+".L" : "branch"+numBranch+".S");
 	};
 }

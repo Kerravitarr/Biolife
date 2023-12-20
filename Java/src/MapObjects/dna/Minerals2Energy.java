@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import Utils.MyMessageFormat;
@@ -39,9 +40,9 @@ public class Minerals2Energy extends CommandDo {
          if(cell.getMineral() > 0) {  // если минералов меньше, то все минералы переходят в энергию
 			var min = Math.min(cell.getMineral(), MAX_MIN);
 			var add_hp = cell.specMaxVal(MIN_PER_HP * min, AliveCellProtorype.Specialization.TYPE.MINERAL_PROCESSING);
-        	return valueFormat.format(min,add_hp);
+        	return Configurations.getProperty(Minerals2Energy.class,isFullMod() ? "value.L" : "value.S",min,add_hp - HP_COST);
         } else {
-        	return null;
+        	return Configurations.getProperty(Minerals2Energy.class,isFullMod() ? "value.non.L" : "value.non.S",HP_COST);
         }
 	}
 }

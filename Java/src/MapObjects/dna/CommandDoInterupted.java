@@ -1,14 +1,15 @@
 package MapObjects.dna;
 
 import Calculations.Point;
+import Calculations.Point.DIRECTION;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
 import static MapObjects.dna.CommandDNA.param;
-import static MapObjects.dna.CommandDNA.relatively;
 
 /**
  * Абстрактный класс для всех команд действий c прерываниями
+ * Это не обёртка над класом команд-действий, а просто набор вспомогательных функций
  * @author Kerravitarr
  *
  */
@@ -80,6 +81,15 @@ public abstract class CommandDoInterupted extends CommandDo {
 	 */
 	private int getInterruptR(AliveCell cell,DNA dna,int paramNum,CellObject.OBJECT ... targets){
 		return getInterrupt(cell,relatively(cell,param(dna,paramNum, Point.DIRECTION.size())),targets);
+	}
+	/**
+	 * Превращает относительное направление в абсолютное
+	 * @param cell - клетка, с её напралвлением смотерния
+	 * @param direction - направление, на которое нужно сдвинуть гляделку
+	 * @return 
+	 */
+	protected static DIRECTION relatively(AliveCell cell,int direction) {
+		return cell.direction.next(direction);
 	}
 }
 

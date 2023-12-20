@@ -1,5 +1,6 @@
 package MapObjects.dna;
 
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import Utils.MyMessageFormat;
 
@@ -12,8 +13,6 @@ public class Mucosa extends CommandDo {
 	/**Тип команды*/
 	private final boolean isUp;
 	
-	private static final MyMessageFormat valueFormat = new MyMessageFormat("HP -= {0} 🌢 = {1}");
-	
 	protected Mucosa(boolean isA) {super(isA ? "Add" : "Sub");isUp = isA;}
 
 	@Override
@@ -24,6 +23,6 @@ public class Mucosa extends CommandDo {
 	
 	@Override
 	public String value(AliveCell cell) {
-		return valueFormat.format(HP_COST, isUp ? cell.getMucosa() + 1 : 0);
+        return Configurations.getProperty(Mucosa.class,isFullMod() ? "value.L" : "value.S",HP_COST,isUp ? cell.getMucosa() + 1 : 0);
 	}
 }

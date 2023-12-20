@@ -37,17 +37,13 @@ public class DNAFind extends CommandExplore {
 	
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-		return String.valueOf(param(cell, 0));
+		 return Configurations.getProperty(DNAFind.class,isFullMod() ? "param.L" : "param.S", CommandList.list[param(dna, numParam)]);
 	}
 	
 	@Override
 	public String getBranch(AliveCell cell, int numBranch, DNA dna){
 		if(isTarget) {
-			return switch (numBranch) {
-				case 0 -> "≥П";
-				case 1 -> "<П";
-				default -> "∅";
-			};
+			return branchMoreeLeesEmpty(cell, numBranch, dna);
 		} else {
 			return branchMoreeLees(cell,numBranch,dna);
 		}

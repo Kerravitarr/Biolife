@@ -20,7 +20,7 @@ public abstract class CommandDo extends CommandDNA {
 	@Override
 	protected int perform(AliveCell cell) {
 		doing(cell);
-		return 0;
+		return size();
 	}
 	/**
 	 * Непосредственно те действия, которые выполняет клетка
