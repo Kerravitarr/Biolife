@@ -9,14 +9,12 @@ import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import MapObjects.CellObject;
 import MapObjects.Poison;
-import MapObjects.dna.CommandDNA;
 import MapObjects.dna.DNA;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.event.ComponentEvent;
 import java.awt.geom.Line2D;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -164,6 +162,65 @@ public class CellEditor extends java.awt.Dialog {
 				g.draw(new Line2D.Double(cx, my, cx + my / 2, my / 2));
 				g.draw(new Line2D.Double(cx, my, cx - my / 2, my / 2));
 				g.setStroke(os);
+			}
+			{
+				final var PC = dna.getPC();
+				final var dr2 = (Math.PI * 2) / size; //Какой угол относится к одной команде ДНК
+				final var rL = r - 2*rD; //На каком радиусе чертим линии
+				final var center = new Point2D.Double(cx,cy);
+				final var os = g.getStroke();
+				
+				for (var i = 0; i < dna.size; ) {
+					final var cmd = dna.get(i);
+					var index = dna.normalization(PC + i);
+					if(index < PC) index += dna.size; //Проворачиваем на один круг
+					index -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
+					final var cmd_a = index * dr2 - Math.PI / 2; //Угол, на котором находится команда
+					if(index == 0){
+						g.setStroke(new java.awt.BasicStroke(3));
+					}
+					g.setColor(Utils.Utils.getHSBColor(((double)i)/size, 1, 1, 0.5));
+					
+					
+					if(cmd.getClass().equals(MapObjects.dna.Jump.class)){
+						var nPC = dna.normalization(PC + i + ((MapObjects.dna.Jump) cmd).JAMP); //Индекс того гена, куда мы прыгнем
+						if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
+						nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
+						final var cmd_to = nPC * dr2 - Math.PI / 2;
+						final int sx = (int) (cx + rL * Math.cos(cmd_a)); //Координаты старта
+						final int sy = (int) (cy + rL * Math.sin(cmd_a));			
+						final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
+						final int ey = (int) (cy + rL * Math.sin(cmd_to));
+						bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
+					} else if(cmd.getClass().equals(MapObjects.dna.Loop.class)){
+						var nPC = dna.normalization(PC + i - ((MapObjects.dna.Loop) cmd).LOOP); //Индекс того гена, куда мы прыгнем
+						if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
+						nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
+						final var cmd_to = nPC * dr2 - Math.PI / 2;
+						final int sx = (int) (cx + rL * Math.cos(cmd_a)); //Координаты старта
+						final int sy = (int) (cy + rL * Math.sin(cmd_a));			
+						final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
+						final int ey = (int) (cy + rL * Math.sin(cmd_to));
+						bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
+					} else if(cmd.getCountBranch() > 0) {
+						var anglS = cmd_a + dr2 * (1 + cmd.getCountParams());
+						for(var j = 0 ; j < cmd.getCountBranch() ; j++, anglS += (dr2)){
+							var nPC = dna.normalization((PC + i) + dna.get(PC + i + 1 + cmd.getCountParams() + j, true)); //Индекс того гена, куда мы прыгнем
+							if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
+							nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
+							final var cmd_to = nPC * dr2 - Math.PI / 2;
+							final int sx = (int) (cx + rL * Math.cos(anglS)); //Координаты старта
+							final int sy = (int) (cy + rL * Math.sin(anglS));			
+							final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
+							final int ey = (int) (cy + rL * Math.sin(cmd_to));
+							bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
+						}
+					}
+					if(index == 0){
+						g.setStroke(os);
+					}
+					i += cmd.size();
+				}
 			}
 		}
 		/** Рисует все прерывания на холсте
@@ -502,6 +559,32 @@ public class CellEditor extends java.awt.Dialog {
 			g.rotate(angle + Math.PI / 2, cx, cy);
 			Utils.Utils.centeredText(g, (int) cx,(int)cy, 12, text);
 			g.setTransform(ot);
+		}
+		/** Рисует кривую безье по трём точкам
+		 * @param g холст
+		 * @param from откуда 
+		 * @param intermediate промежуточная точка
+		 * @param to куда
+		 */
+		private void bezie(Graphics2D g,java.awt.Point.Double from,java.awt.Point.Double intermediate,java.awt.Point.Double to){
+			final double F0 = 1;
+			final double F1 = 1;
+			final double F2 = 1 * 2;
+			
+			final var lenght = from.distance(intermediate) +  intermediate.distance(to);
+
+			var pref = from;
+			for(var i = 0.0 ; i < lenght; i++){
+				final var t = i/lenght;
+				final var B0 = (F2 / (F0 * F2)) * Math.pow(t, 0) * Math.pow(1 - t, 2);
+				final var B1 = (F2 / (F1 * F1)) * Math.pow(t, 1) * Math.pow(1 - t, 1);
+				final var B2 = (F2 / (F2 * F0)) * Math.pow(t, 2) * Math.pow(1 - t, 0);
+				final var x = B0 * from.x + B1 * intermediate.x + B2 * to.x;
+				final var y = B0 * from.y + B1 * intermediate.y + B2 * to.y;
+				final var point = new java.awt.Point.Double(x,y);
+				g.draw(new Line2D.Double(pref, point));
+				pref = point;
+			}
 		}
 	}
 	
