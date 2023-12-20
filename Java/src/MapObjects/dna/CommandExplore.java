@@ -36,7 +36,7 @@ public abstract class CommandExplore extends CommandDNA {
 	@Override
 	protected int perform(AliveCell cell) {
 		final var branch = explore(cell);
-		assert branch >= 0 && branch <= getCountBranch() : "У нас доступно только " + getCountBranch() + " ветвей, тогда как мы решили вызвать ветвь " + branch + ". Мы - " + this;
+		assert branch >= 0 && branch < getCountBranch() : "У нас доступно только " + getCountBranch() + " ветвей, тогда как мы решили вызвать ветвь " + branch + ". Мы - " + this;
 		final var offset = cell.getDna().get(1 + getCountParams() + branch,false);
 		return offset;
 	}

@@ -8,7 +8,7 @@ import MapObjects.Poison;
  */
 public class WhatMyPosion extends CommandExplore {
 	/**Какой у меня яд?*/
-	public WhatMyPosion() {super(0,Poison.TYPE.size() - 1);};
+	public WhatMyPosion() {super(0,Poison.TYPE.size());}
 
 	@Override
 	protected int explore(AliveCell cell) {
