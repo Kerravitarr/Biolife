@@ -49,7 +49,7 @@ public class RingBuffer<T> {
 	public int size() {
 		return (writeSequence - readSequence) + 1;
 	}
-	/**Кладёт новый элемент в буфер
+	/**Кладёт новый элемент в буфер. Если в буфере нет места - то перезаписывает хвост
 	 * @param item элемент, который будет положен в голову буфера
 	 */
 	public void push(T item) throws IndexOutOfBoundsException {

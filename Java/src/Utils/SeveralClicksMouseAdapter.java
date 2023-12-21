@@ -25,11 +25,7 @@ public class SeveralClicksMouseAdapter extends MouseAdapter {
 	private MouseEvent lastEevent = null;
 
 	public SeveralClicksMouseAdapter() {
-		ActionListener al = new ActionListener() {
-			public void actionPerformed(ActionEvent evt) {
-				mouseSeveralClick(lastEevent);
-			}
-		};
+		ActionListener al = (ActionEvent evt) -> mouseSeveralClick(lastEevent);
 		timer = new javax.swing.Timer(DELAY, al);
 		timer.setRepeats(false);
 	}

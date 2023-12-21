@@ -56,13 +56,13 @@ public class ViralLysis extends CommandDo {
 	}
 	@Override
 	public String getParam(AliveCell cell, int numParam, DNA dna) {
-			return switch (numParam) {
-				case 0 -> Configurations.getProperty(ViralLysis.class,isFullMod() ? "param0.L" : "param0.S",Math.min(param(dna,numParam),dna.size),Math.min(param(dna,numParam),dna.size) * HP_PER_CODON);
-				case 1 -> Configurations.getProperty(ViralLysis.class,isFullMod() ? "param1.L" : "param1.S",dna.normalization(dna.getPC() - param(dna,numParam)));
-				case 2 -> Configurations.getProperty(ViralLysis.class,isFullMod() ? "param2.L" : "param2.S",param(dna,numParam));
-				case 3 -> Configurations.getProperty(ViralLysis.class,isFullMod() ? "param3.L" : "param3.S",param(dna,numParam,AliveCellProtorype.MAX_HP));
-				default-> super.getParam(cell, numParam, dna);
-			};
+		return switch (numParam) {
+			case 0 -> Configurations.getProperty(ViralLysis.class,isFullMod() ? "param0.L" : "param0.S",Math.min(param(dna,numParam),dna.size),Math.min(param(dna,numParam),dna.size) * HP_PER_CODON);
+			case 1 -> Configurations.getProperty(ViralLysis.class,isFullMod() ? "param1.L" : "param1.S",dna.normalization(dna.getPC() - param(dna,numParam)));
+			case 2 -> Configurations.getProperty(ViralLysis.class,isFullMod() ? "param2.L" : "param2.S",param(dna,numParam));
+			case 3 -> Configurations.getProperty(ViralLysis.class,isFullMod() ? "param3.L" : "param3.S",param(dna,numParam,AliveCellProtorype.MAX_HP));
+			default-> super.getParam(cell, numParam, dna);
+		};
 	}
 	
 	@Override
