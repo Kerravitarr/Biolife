@@ -14,6 +14,8 @@ import Calculations.Point;
 public class Birth extends CommandDo {
 	/**Сколько ХП стоит скопировать каждый кадон ДНК*/
 	private static final double HP_FOR_KADON = 1;
+	/**Сколько ХП стоит поделиться в целом*/
+	private static final double HP_FOR_DIV = 150;
 
 	public Birth() {this(1);};
 	protected Birth(int countParams) {super(countParams);};
@@ -44,7 +46,7 @@ public class Birth extends CommandDo {
 	protected static boolean birth(AliveCell cell, Point pos, int nextCmd) {   
 		var dna = cell.getDna();
 		//Энергия на копирование
-		cell.addHealth(-dna.size*HP_FOR_KADON);
+		cell.addHealth(-(dna.size*HP_FOR_KADON + HP_FOR_DIV));
         boolean isBirth;
 		dna.next(nextCmd); // Чтобы у потомка выполнилась следующая команда
         if(cell.see(pos).groupLeader == OBJECT.BANE) {
@@ -78,7 +80,7 @@ public class Birth extends CommandDo {
 		if(p == null){
 			return Configurations.getProperty(Birth.class,isFullMod() ? "value.die.L" : "value.die.S");
 		} else {
-			return Configurations.getProperty(Birth.class,isFullMod() ? "value.L" : "value.S",dna.size*HP_FOR_KADON, p,param(dna, 0));
+			return Configurations.getProperty(Birth.class,isFullMod() ? "value.L" : "value.S",(dna.size*HP_FOR_KADON + HP_FOR_DIV), p,param(dna, 0));
 		}
 	}
 }
