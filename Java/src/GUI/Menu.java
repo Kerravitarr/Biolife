@@ -437,7 +437,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 					toDefault();
 					editCell(cell);
 				} catch (Exception ex){
-					Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+					Logger.getLogger(CellEditor.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 					JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -455,15 +455,21 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 						toDefault();
 						editCell(cell);
 					} catch (Exception ex){
-						Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+						Logger.getLogger(CellEditor.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 						JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
 					}
 				});
 			}
 			case FROM_FIELD -> {
-				final var vw = Configurations.getViewer().get(WorldView.class);
-				vw.setCursor(new Cursor(Cursor.HAND_CURSOR));
-				vw.addMouseListener(loadListener);
+				final var bi = Configurations.getViewer().get(BotInfo.class);
+				if(bi.isVisible() && bi.getCell() instanceof AliveCell ac){
+					toDefault();
+					editCell(ac);
+				} else {
+					final var vw = Configurations.getViewer().get(WorldView.class);
+					vw.setCursor(new Cursor(Cursor.HAND_CURSOR));
+					vw.addMouseListener(loadListener);
+				}
 			}
 			default -> throw new AssertionError();
 		}
