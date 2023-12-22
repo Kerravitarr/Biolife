@@ -1044,6 +1044,7 @@ public class Settings extends javax.swing.JPanel {
     private void tableListsMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tableListsMouseClicked
         if(tableLists.getSelectedIndex() == 1){
 			Configurations.world.awaitStop();
+			 assert (isNeedWarning = false) == false : "Специально скрываем эту плашку, когда происходит отладка. В выпуске она появится потому что там асертов нет!";
 			if(isNeedWarning){
 				final var checkbox = new javax.swing.JCheckBox(Configurations.getProperty(Settings.class, "hideWarning"));
 				String message = Configurations.getProperty(Settings.class, "warningText");
