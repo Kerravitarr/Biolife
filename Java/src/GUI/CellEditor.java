@@ -11,18 +11,26 @@ import MapObjects.CellObject;
 import MapObjects.Poison;
 import MapObjects.dna.CommandDNA;
 import MapObjects.dna.DNA;
+import Utils.JSON;
 import Utils.RingBuffer;
+import Utils.SaveAndLoad;
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.event.MouseEvent;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JToolTip;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
@@ -32,11 +40,13 @@ import javax.swing.PopupFactory;
  * @author Kerravitarr
  */
 public class CellEditor extends javax.swing.JDialog {
+	private enum POPUP_STATUS {
+		UNDEF, INC, DEC, REM, REM_GEN,ADD,COPY
+	}
 
 	/** Creates new form CellEditor */
 	public CellEditor(AliveCell edit) {
 		super();
-		object = edit.clone();
 		CommandDNA.setFullMod(false);
 		initComponents();
 		setAlwaysOnTop(true);
@@ -47,20 +57,31 @@ public class CellEditor extends javax.swing.JDialog {
 		setButtonParam(jampBack);
 		
 		
-		makeSettingsPanel();
-		makeInterraptPanel();
-		updateHeaderPanel();
+		setObject(edit);
 		
-		//setSize(java.awt.Toolkit.getDefaultToolkit().getScreenSize());
 	}
 	/**Делает кнопочки покрасивее
 	 * @param button 
 	 */
 	private void setButtonParam(JButton button) {
 		button.setContentAreaFilled(false);
+		button.setFocusable(false);
 	}
+	/** @param o новый объет, который мы описываем*/
+	private void setObject(AliveCell o){
+		object = o.clone();
+		makeSettingsPanel();
+		makeInterraptPanel();
+		updateHeaderPanel();
+		
+		nextDNA(0);
+		while(!history.isEmpty())history.pop();
+	}
+	
+	
 	/**Создаёт панель настроек*/
 	private void makeSettingsPanel() {
+		settingsPanel.removeAll();
 		final var ST = AliveCellProtorype.Specialization.TYPE.values;
 		
 		final var spec = new ArrayList<SettingsSlider>(ST.length);
@@ -101,9 +122,79 @@ public class CellEditor extends javax.swing.JDialog {
 		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.tolerance",
 					0, 2, AliveCellProtorype.DEF_MINDE_SIZE, 0, object.getTolerance(), null, 
 				e->object.setTolerance(e)));
+		settingsPanel.add(javax.swing.Box.createVerticalGlue()); //Чтобы кнопки были внизу
+		
+		final var panelSL = new javax.swing.JPanel();
+		panelSL.setLayout(new javax.swing.BoxLayout(panelSL, javax.swing.BoxLayout.X_AXIS));
+		{
+			final var load = new javax.swing.JButton();
+			Configurations.setIcon(load,"loadCell");
+			load.addActionListener(e -> {
+				LoadSaveFactory.load("BioLife", "zbcell", filename -> {
+					var js = SaveAndLoad.load(filename);
+					try{
+						final var c = js.load((j, version)-> {
+							final var node = Configurations.tree.makeTree();
+							j.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
+							final var acell = new AliveCell(j, Configurations.tree, version);
+							node.remove();
+							return acell;
+						},"cell");
+						setObject(c);
+					} catch (Exception ex){
+						Logger.getLogger(CellEditor.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+						JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
+					}
+				});
+			});
+			load.setToolTipText(Configurations.getHProperty(CellEditor.class, "load"));
+			load.setFocusable(false);
+			panelSL.add(load);
+		}
+		{
+			final var save = new javax.swing.JButton();
+			Configurations.setIcon(save,"saveCell");
+			save.addActionListener(e -> {
+				final var cell = object;
+				LoadSaveFactory.save("BioLife", "zbcell", name -> {
+					var js = SaveAndLoad.save(name, Configurations.VERSION);
+					js.save(new SaveAndLoad.Serialization() {
+						@Override public String getName() { return "cell";}
+						@Override public JSON getJSON() {return cell.toJSON();}
+					});
+				}, false);
+			});
+			save.setToolTipText(Configurations.getHProperty(CellEditor.class, "save"));
+			save.setFocusable(false);
+			panelSL.add(save);
+		}
+		{
+			final var copy = new javax.swing.JButton();
+			Configurations.setIcon(copy,"clipboardCopy");
+			copy.addActionListener(e -> {
+				final var j = object.toJSON();
+				final var stringSelection = new java.awt.datatransfer.StringSelection(j.toJSONString());
+				final var clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
+				clipboard.setContents(stringSelection, null);
+			});
+			copy.setToolTipText(Configurations.getHProperty(CellEditor.class, "copy"));
+			copy.setFocusable(false);
+			panelSL.add(copy);
+		}
+		{
+			final var close = new javax.swing.JButton();
+			Configurations.setIcon(close,"close");
+			close.addActionListener(e -> closeDialog(null));
+			close.setToolTipText(Configurations.getHProperty(CellEditor.class, "close"));
+			close.setFocusable(false);
+			panelSL.add(close);
+		}
+		panelSL.setBorder(javax.swing.BorderFactory.createLineBorder(Color.BLACK));
+		settingsPanel.add(panelSL);
 	}
 	/**Создаёт панель со всеми прерываниями*/
 	private void makeInterraptPanel(){
+		interaptPanel.removeAll();
 		final var dna = object.getDna();
 		final var interrupts = dna.interrupts;
 		final var objects = CellObject.OBJECT.values;
@@ -112,7 +203,7 @@ public class CellEditor extends javax.swing.JDialog {
 			final var index = i;
 			final var aInt = interrupts[index];
 			final var o = objects[index];
-			interaptPanel.add(new SettingsSelect<>(CellEditor.class,"interraptPanel."+o.name(),ints,i, aInt, e -> {
+			interaptPanel.add(new SettingsSelect<>(CellEditor.class,"interraptPanel."+o.name(),ints,i % dna.size, aInt, e -> {
 				interrupts[index] = e;
 				centralPanel.repaint();
 			}));
@@ -151,7 +242,7 @@ public class CellEditor extends javax.swing.JDialog {
 						g.fillRect(0, 0, getWidth(), getHeight());
 					}
 				};
-				next.setToolTipText(Configurations.getProperty(CellEditor.class,"BRANCH.T",j));
+				next.setToolTipText(Configurations.getHProperty(CellEditor.class,"BRANCH.T",j,cmd.getLongName(),cmd.getBranch(object, j, dna).replaceAll("<", "&#60;")));
 				setButtonParam(next);
 				next.addActionListener( e-> nextDNA(+nPC));
 				nextCmdPanel.add(next);
@@ -177,17 +268,22 @@ public class CellEditor extends javax.swing.JDialog {
 		private Double selectAngle = null;
 		/**Выбранная команда*/
 		private CommandDNA selectComand = null;
+		/**Индекс выбранной команды*/
+		private Integer selectComandIndex = null;
+		/**Выбраный кодон команды*/
+		private Integer codon = null;
 		/**Всплывшее окно рядом с командой ДНК*/
 		private static Popup popup = null;
 		/**Сама подсказка*/
-		private JToolTip DnaToolTip;
+		private final JToolTip DnaToolTip;
 		
 		PaintJPanel(){
 			I_COLOR = new Color[CellObject.OBJECT.lenght];
 			for (int i = 0; i < I_COLOR.length; i++) {
 				I_COLOR[i] = Utils.Utils.getHSBColor(((double)i)/I_COLOR.length, 1, 1, 0.5);
 			}
-			final var mouseListener = new Utils.SeveralClicksMouseAdapter(){
+			
+			final var mouseListener = new java.awt.event.MouseAdapter(){
 				@Override public void mouseMoved(MouseEvent e){
 					final var h = getHeight();
 					final var w = getWidth();
@@ -196,14 +292,50 @@ public class CellEditor extends javax.swing.JDialog {
 					final var x = cx - e.getX();
 					final var y = cy - e.getY();
 					final var rxy = x*x + y*y;
-					final var a = Math.pow(Rdna-Wdna, 2);
 					if(Math.pow(Rdna-Wdna, 2) <= rxy && rxy <= Math.pow(Rdna+Wdna, 2)){
 						//Мы попали аккурат в ДНК. Нам теперь нужен угол
 						selectAngle = Math.atan2(y, x) + Math.PI;
 						repaint();
 					} else if(selectAngle != null){
-						selectAngle = null;
+						selectAngle = null; selectComand = null;
 						if(popup != null)popup.hide();
+						repaint();
+					}
+				}
+				@Override public void mouseClicked(MouseEvent e){
+					if(e.getButton() == MouseEvent.BUTTON3){
+						var dna = object.getDna();
+						instruments.show(PaintJPanel.this, e.getX(), e.getY());
+						removeGen.setVisible(dna.size > 10);
+						remove.setVisible(dna.size > 2);
+					} else if(e.getButton() == MouseEvent.BUTTON1 && codon != null && pstatus != POPUP_STATUS.UNDEF){
+						var dna = object.getDna();
+						switch (pstatus) {
+							case INC -> {
+								dna = dna.update(codon, false, dna.get(codon, false) + 1);
+							}
+							case DEC -> {
+								dna = dna.update(codon, false, dna.get(codon, false) - 1);
+							}
+							case REM -> {
+								dna = dna.compression(codon, false);
+								if(dna.size <= 2) set(POPUP_STATUS.UNDEF);
+							}
+							case REM_GEN -> {
+								dna = dna.compression(selectComandIndex, true, selectComand.size());
+								if(dna.size <= 10) set(POPUP_STATUS.UNDEF);
+							}
+							case ADD -> {
+								dna = dna.doubling(codon, false);
+							}
+							case COPY -> {
+								dna = dna.doubling(selectComandIndex, true, selectComand.size());
+							}
+							default -> {return;}
+						}
+						object.setDna(dna);
+						mouseMoved(e); //Мы ещё и пришли в эту точку, а точка теперь по факту в другом месте!
+						updateHeaderPanel();
 						repaint();
 					}
 				}
@@ -230,10 +362,10 @@ public class CellEditor extends javax.swing.JDialog {
 			final var cx = w / 2;
 			final var cy = h / 2;
 			final var min = Math.min(h, w);
-			final var dna = object.getDna();
+			final var dna_o = object.getDna();
 			int size;
-			for (size = 0; size < dna.size; ) {
-				size += dna.get(size).size();
+			for (size = 0; size < dna_o.size; ) {
+				size += dna_o.get(size).size();
 			}
 			final var BETWIN_LINE = 4; //Интервал между линиями связывающими прерывания и гены
 			Wdna = min / 80d; //"ширина" спирали ДНК
@@ -252,6 +384,25 @@ public class CellEditor extends javax.swing.JDialog {
 				g.setStroke(os);
 			}
 			printJumps(g, cx, cy, size, Rdna, Wdna);
+			{//Рисуем кодоны
+				final var dna = object.getDna();
+				final var dr = (Math.PI) / size; //Какой угол относится к одной команде ДНК
+				final var dr2 = dr*2;
+				final var r = Rdna;
+				final var wDNA = Wdna - 2;
+				codon = null;
+				for (var i = 0; i < dna.size; i++ ) {
+					final var num = dna.get(i, false);
+					var a = i * dr2 - Math.PI / 2;
+					if(selectAngle != null && isOneAngle(a - dr, selectAngle, a+dr)) codon = i;
+					var tx = cx + (r) * Math.cos(a);
+					var ty = cy + (r) * Math.sin(a); //Центр кружочка
+					g.setColor(getBackground());
+					g.fill(new Ellipse2D.Double(tx - wDNA, ty - wDNA, wDNA*2, wDNA*2));
+					g.setColor(Color.BLACK);
+					Utils.Utils.centeredText(g,(int) tx,(int) ty, 12, String.valueOf(num));
+				}
+			}
 		}
 		/** Рисует все прыжки внутри ДНК
 		 * @param g холст
@@ -541,11 +692,11 @@ public class CellEditor extends javax.swing.JDialog {
 				dna.next(index - dna.getPC()); 
 				final var cmd = dna.get();
 				final var ae = a + dr + dr2 * (cmd.size() - 1); 
-				final var isSelect = selectAngle != null && compareAngle(af, selectAngle) < 0 && compareAngle(selectAngle, ae) < 0;
+				final var isSelect = selectAngle != null && isOneAngle(af, selectAngle, ae);
 				
 				if(isSelect){
 					g.setStroke(new java.awt.BasicStroke(3));
-					if(selectComand != cmd) generateToolTip(dna);
+					generateToolTip(dna);
 				}
 				//Рисуем начало команды
 				{
@@ -556,7 +707,7 @@ public class CellEditor extends javax.swing.JDialog {
 					var ty = cy + (r - 2*rD) * sin;
 					print(g,tx,ty,af,String.valueOf(index));
 
-					drawStartEnd(g,cx,cy,r,rD,af, true,dr);
+					drawStartEnd(g,cx,cy,r,rD,af, true,dr, size);
 					tx = cx + (r + 2*rD) * cos;
 					ty = cy + (r + 2*rD) * sin;
 					print(g,tx,ty,a,cmd.getShotName());
@@ -587,7 +738,7 @@ public class CellEditor extends javax.swing.JDialog {
 				//А теперь рисуем завершение ветви
 				g.setColor(Color.BLUE);
 				af = (i * dr2 - Math.PI / 2) - dr2;
-				drawStartEnd(g,cx,cy,r,rD,af, false,dr);
+				drawStartEnd(g,cx,cy,r,rD,af, false,dr, size);
 				
 				if(isSelect){
 					g.setStroke(os);
@@ -604,15 +755,15 @@ public class CellEditor extends javax.swing.JDialog {
 		 * @param angle стартовый угол, на котором начинается рисовка
 		 * @param isStart стартовая часть?
 		 * @param dr какой угол занимает эта дуга
+		 * @param size количество отображаемых нуклеотидов
 		 */
-		private void drawStartEnd(Graphics2D g, int cx, int cy, double r,double width, double angle, boolean isStart,double dr){	
-			final var dna = object.getDna();
+		private void drawStartEnd(Graphics2D g, int cx, int cy, double r,double width, double angle, boolean isStart,double dr, int size){
 		
 			double fx1, fx2, fy1, fy2;
 			fx1 = fx2 = cx + r * Math.cos(angle);
 			fy1 = fy2 = cy + r * Math.sin(angle);
 			for(var a = 0d ; a < dr + Math.PI/360; a += Math.PI/180){
-				final var rx = isStart ? width * Math.sin(a*dna.size / 2) : width * Math.cos(a*dna.size / 2);
+				final var rx = isStart ? width * Math.sin(a*size / 2) : width * Math.cos(a*size / 2);
 
 				final var rad1 = r + rx;
 				final var rad2 = r - rx;
@@ -715,32 +866,51 @@ public class CellEditor extends javax.swing.JDialog {
 				pref = point;
 			}
 		}
-		/** Сравнивает два угла
-		 * @param a1 первый угол
-		 * @param a2 второй угол
-		 * @return 0, если они равны, 1, если a1 > a2
+		/** Проверяет, что точка попадает в промежуток [from;to]
+		 * @param from первый угол
+		 * @param a анализируемый угол
+		 * @param to второй угол
+		 * @return true, если анализируемый угол находится между углами
 		 */
-		private int compareAngle(double a1, double a2){
+		private boolean isOneAngle(double from, double a, double to){
 			final var PI2 = Math.PI * 2;
-			var sub = a1 - a2;
-				if(sub < 0)		do{sub += PI2;}while(sub < 0);
-			else if(sub >= PI2)	do{sub -= PI2;}while(sub >= PI2);
-			
-			if(sub == 0) return 0;
-			else if(sub < Math.PI) return 1;
-			else return -1;
+			if(from > 0 && a > 0 && to > 0){
+				return from <= a && a <= to;
+			} else {
+				a -= from;
+				to -= from; //Сдвигаем всех в начало координат
+				if(a > PI2) a -= PI2; //И, если провернулся a, то возвращаем его обратно
+				return 0 <= a && a <= to;
+			}
 		}
 		/**Создаёт подсказку из команды ДНК
 		 * @param dna ДНК в которой PC установлен на выбранную команду
 		 */
 		private void generateToolTip(DNA dna){
-			final var cmd = dna.get();
-			
-			String text = String.format("<html>%d=%s<br>",dna.getPC(), cmd.getLongName());
-			var val = cmd.value(object, dna);
-			//if(val != null)
-			//	text += "";
-			showToolTip(text);
+			final var isFull = CommandDNA.isFullMod();
+			CommandDNA.setFullMod(true);
+			final var cmd = selectComand = dna.get();
+			selectComandIndex = dna.getPC();
+			final var text = new StringBuilder();
+			text.append("<html>&nbsp;&nbsp;");
+			text.append(dna.getPC());
+			text.append("=");
+			text.append(cmd.getLongName());
+			text.append("<br>");
+			for(var i = 0 ; i < cmd.getCountParams() ; i++){
+				text.append(" П ");
+				text.append(cmd.getParam(object, i, dna).replaceAll("<", "&#60;"));
+				text.append("<br>");
+			}
+			for(var i = 0 ; i < cmd.getCountBranch(); i++){
+				text.append("  B");
+				text.append(i);
+				text.append(" ");
+				text.append(cmd.getBranch(object, i, dna).replaceAll("<", "&#60;"));
+				text.append("<br>");
+			}
+			showToolTip(text.toString());
+			CommandDNA.setFullMod(isFull);
 		}
 		/** Герерирует бегающую за мышкой подсказку на экране
 		 * @param text текст, который будет в подсказке
@@ -749,6 +919,7 @@ public class CellEditor extends javax.swing.JDialog {
 			final var ml = java.awt.MouseInfo.getPointerInfo().getLocation();
 			DnaToolTip.setTipText(text);
 			if(popup != null) popup.hide();
+			if(pstatus != POPUP_STATUS.UNDEF) return; //Не показываем подсказку
 			popup = PopupFactory.getSharedInstance().getPopup(this, DnaToolTip, ml.x, ml.y);
 			popup.show();
 		}
@@ -762,6 +933,14 @@ public class CellEditor extends javax.swing.JDialog {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        instruments = new javax.swing.JPopupMenu();
+        def = new javax.swing.JMenuItem();
+        inc = new javax.swing.JMenuItem();
+        dec = new javax.swing.JMenuItem();
+        remove = new javax.swing.JMenuItem();
+        removeGen = new javax.swing.JMenuItem();
+        add = new javax.swing.JMenuItem();
+        copyGen = new javax.swing.JMenuItem();
         jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         settingsPanel = new javax.swing.JPanel();
@@ -774,6 +953,62 @@ public class CellEditor extends javax.swing.JDialog {
         PClabel = new javax.swing.JLabel();
         increment = new javax.swing.JButton();
         nextCmdPanel = new javax.swing.JPanel();
+
+        def.setText(Configurations.getProperty(CellEditor.class,"instruments.def"));
+        def.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                defActionPerformed(evt);
+            }
+        });
+        instruments.add(def);
+
+        inc.setText(Configurations.getProperty(CellEditor.class,"instruments.inc"));
+        inc.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                incActionPerformed(evt);
+            }
+        });
+        instruments.add(inc);
+
+        dec.setText(Configurations.getProperty(CellEditor.class,"instruments.dec"));
+        dec.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                decActionPerformed(evt);
+            }
+        });
+        instruments.add(dec);
+
+        remove.setText(Configurations.getProperty(CellEditor.class,"instruments.remove"));
+        remove.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                removeActionPerformed(evt);
+            }
+        });
+        instruments.add(remove);
+
+        removeGen.setText(Configurations.getProperty(CellEditor.class,"instruments.removeGEN"));
+        removeGen.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                removeGenActionPerformed(evt);
+            }
+        });
+        instruments.add(removeGen);
+
+        add.setText(Configurations.getProperty(CellEditor.class,"instruments.add"));
+        add.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                addActionPerformed(evt);
+            }
+        });
+        instruments.add(add);
+
+        copyGen.setText(Configurations.getProperty(CellEditor.class,"instruments.copy"));
+        copyGen.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                copyGenActionPerformed(evt);
+            }
+        });
+        instruments.add(copyGen);
 
         setTitle(Configurations.getProperty(CellEditor.class,"title"));
         addWindowListener(new java.awt.event.WindowAdapter() {
@@ -915,8 +1150,48 @@ public class CellEditor extends javax.swing.JDialog {
     }//GEN-LAST:event_jampBackActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
-        // TODO add your handling code here:
+        assert (isNeedHello = false) == false : "Специально скрываем эту плашку, когда происходит отладка. В выпуске она появится потому что там асертов нет!";
+		
+		final var ss = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
+		ss.height *= 0.9;
+		ss.width *= 0.9;
+		setSize(ss);
+		
+		if(isNeedHello){
+			String message = Configurations.getHProperty(CellEditor.class, "helloText");
+			Object[] params = {message};
+			JOptionPane.showConfirmDialog(this, params, "BioLife", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE);
+			isNeedHello = false;
+		}
     }//GEN-LAST:event_formWindowOpened
+
+    private void defActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_defActionPerformed
+       set(POPUP_STATUS.UNDEF);
+    }//GEN-LAST:event_defActionPerformed
+
+    private void incActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_incActionPerformed
+        set(POPUP_STATUS.INC);
+    }//GEN-LAST:event_incActionPerformed
+
+    private void decActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_decActionPerformed
+        set(POPUP_STATUS.DEC);
+    }//GEN-LAST:event_decActionPerformed
+
+    private void removeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeActionPerformed
+        set(POPUP_STATUS.REM);
+    }//GEN-LAST:event_removeActionPerformed
+
+    private void removeGenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_removeGenActionPerformed
+        set(POPUP_STATUS.REM_GEN);
+    }//GEN-LAST:event_removeGenActionPerformed
+
+    private void addActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addActionPerformed
+        set(POPUP_STATUS.ADD);
+    }//GEN-LAST:event_addActionPerformed
+
+    private void copyGenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyGenActionPerformed
+        set(POPUP_STATUS.COPY);
+    }//GEN-LAST:event_copyGenActionPerformed
 	/**Поворачивает ДНК на выбранное число
 	 * @param val на сколько повернуть ДНК
 	 */
@@ -926,25 +1201,62 @@ public class CellEditor extends javax.swing.JDialog {
 		dna.next(val);
 		updateHeaderPanel();
 		centralPanel.repaint();
+		set(POPUP_STATUS.UNDEF);
+	}
+	/**@param s текущий выбранный инструмент*/
+	private void set(POPUP_STATUS s){
+		pstatus = s;
+		switch (s) {
+			case UNDEF -> this.setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+			case INC -> this.setCursor(loadCursor("add"));
+			case DEC -> this.setCursor(loadCursor("sub"));
+			case REM,REM_GEN -> this.setCursor(loadCursor("kill"));
+			case ADD,COPY -> this.setCursor(loadCursor("clipboardCopy"));
+			default -> throw new AssertionError();
+		}
+	}
+	/**Название картинки из ресурсов игры, которая будет загружена как курсор*/
+	private Cursor loadCursor(String name){
+		var name_const = MessageFormat.format("resources/{0}.png", name);
+		var constResource = Configurations.class.getClassLoader().getResource(name_const);
+		if(constResource == null) {
+			System.err.println("Не смогли загрузить фотографию " + name_const);
+			return new Cursor(Cursor.HAND_CURSOR);
+		}
+		//Координаты сдвига. Сдвигаем на половину, так получается мышка по центру рисунка
+        final var p11 = new java.awt.Point(7, 7); 
+		return java.awt.Toolkit.getDefaultToolkit().createCustomCursor(new ImageIcon(constResource).getImage().getScaledInstance(15, 15, Image.SCALE_SMOOTH), p11, "cursor."+name); 
 	}
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel PClabel;
     private javax.swing.JPanel PCpanel;
+    private javax.swing.JMenuItem add;
     private javax.swing.JPanel botPanel;
     private javax.swing.JPanel centralPanel;
+    private javax.swing.JMenuItem copyGen;
+    private javax.swing.JMenuItem dec;
     private javax.swing.JButton decrement;
+    private javax.swing.JMenuItem def;
+    private javax.swing.JMenuItem inc;
     private javax.swing.JButton increment;
+    private javax.swing.JPopupMenu instruments;
     private javax.swing.JPanel interaptPanel;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JButton jampBack;
     private javax.swing.JPanel nextCmdPanel;
+    private javax.swing.JMenuItem remove;
+    private javax.swing.JMenuItem removeGen;
     private javax.swing.JPanel settingsPanel;
     // End of variables declaration//GEN-END:variables
 	private AliveCell object;
 	/**История*/
 	private RingBuffer<Integer> history = new RingBuffer(100);
+	/**Текущий инструмент*/
+	private POPUP_STATUS pstatus = POPUP_STATUS.UNDEF;	
+	/**Нужна печать сообщение приветствия?*/
+	private static boolean isNeedHello = true;
 
 }
