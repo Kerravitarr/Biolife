@@ -16,7 +16,7 @@ import Calculations.Point.DIRECTION;
  */
 public class WhoIsNearby extends CommandExplore {
 	/**Количество возможных найденных объектов*/
-	static final int OBJECT_L = OBJECT.lenght - 1 - 2 - 2 + 1; //-2 так как не ищет CLEAN и WALL. -2 так как не может найти ALIVE и BANE. +1, так как может вернуть число, означающее, что ни чего нет.
+	static final int OBJECT_L = OBJECT.lenght - 2 - 2; //-2 так как не ищет CLEAN и WALL. -2 так как не может найти ALIVE и BANE.
 	
 	/**
 	 * Ищет первый попавшийся объект
@@ -40,7 +40,7 @@ public class WhoIsNearby extends CommandExplore {
 					return ret;
 			}
 		}
-		return OBJECT_L;
+		return OBJECT_L - 1; //-1, так как у нас ветви считаются с 0
 	}
 	/**
 	 * Ищет у клетки относительно её моськи нужный объект
@@ -69,7 +69,7 @@ public class WhoIsNearby extends CommandExplore {
 		if (numBranch >= OBJECT.WALL.ordinal()) numBranch++;
 		if (numBranch >= OBJECT.ALIVE.ordinal())numBranch++;
 		if (numBranch >= OBJECT.BANE.ordinal())	numBranch++;
-		if (numBranch == OBJECT_L) {
+		if (numBranch == OBJECT_L-1) {
 			return "∅";
 		} else {
 			for (var o : OBJECT.values) {
