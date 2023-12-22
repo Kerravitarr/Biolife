@@ -71,9 +71,8 @@ public abstract class CommandDNA {
 		String nameL = Configurations.getProperty(this.getClass(), propName == null ? "Long" : (propName + ".Long"));
 		if(isAbsolute != null) {
 			isAbolute = isAbsolute;
-			var suname = isAbolute ? Configurations.getProperty(CommandDNA.class, "absolute") : Configurations.getProperty(CommandDNA.class, "relative");
-			nameS += suname;
-			nameL += suname;
+			nameS += " " + Configurations.getProperty(CommandDNA.class, isAbolute ?"absolute.S":"relative.S");
+			nameL += " " + Configurations.getProperty(CommandDNA.class, isAbolute ?"absolute.L":"relative.L");
 		} else {
 			isAbolute = false;
 		}
@@ -311,7 +310,7 @@ public abstract class CommandDNA {
 		return switch (numBranch) {
 			case 0 -> parametrMoreOrEqual;
 			case 1 -> parametrLess;
-			default -> getBranch(cell,numBranch,dna);
+			default -> throw new IllegalArgumentException("Ветвь " + numBranch + " не может быть!");
 		};
 	}
 	/** Стандартное описание ветвей, если их три. И если у команды всего один параметр. 
@@ -329,7 +328,7 @@ public abstract class CommandDNA {
 			case 0 -> parametrMoreOrEqual;
 			case 1 -> parametrLess;
 			case 2 -> "∅";
-			default -> getBranch(cell,numBranch,dna);
+			default -> throw new IllegalArgumentException("Ветвь " + numBranch + " не может быть!");
 		};
 	}
 	/** Возвращает стандартное описание для параметра, определяющего направление клетки.

@@ -35,8 +35,9 @@ public class DNA {
 		Arrays.fill(mind, CommandList.BLOCK_1);
 		pc = 0;
 		interrupts = new int[OBJECT.lenght];
-		for (int i = 0; i < interrupts.length; i++)
-			interrupts[i] = i;
+		for (int i = 0; i < interrupts.length; i++){
+			interrupts[i] = i % size;
+		}
 	}
 	/**ДНК у нас неизменяемая, поэтому при копировании мы можем сослаться на старую версию*/
 	public DNA(DNA dna){
@@ -156,6 +157,8 @@ public class DNA {
 	 * @return Новую ДНК в которой ДНК[0,index) U cmd U ДНК[index+1,size]
 	 */
 	public DNA update(int index, boolean isAbsolute, int cmd) {
+		if(cmd >= CommandList.COUNT_COMAND) cmd = cmd % CommandList.COUNT_COMAND;
+		else if(cmd < 0) cmd = cmd + CommandList.COUNT_COMAND;
 		return update(index, isAbsolute, new int[]{cmd});
 	}
 	/**
