@@ -419,7 +419,7 @@ public class PointTest {
 										case -1 -> assertEquals(Point.DIRECTION.UP, p1.direction(p2));
 										case 0 -> thr = assertThrows(IllegalArgumentException.class,() -> p1.direction(p2));
 										case 1 -> assertEquals(Point.DIRECTION.DOWN, p1.direction(p2));
-										default -> thr = assertThrows(IllegalArgumentException.class,() -> p1.direction(p2));
+										default -> thr = assertThrows(p1 + " и " + p2,IllegalArgumentException.class,() -> p1.direction(p2));
 									}
 								}
 								case 1 -> {
@@ -433,7 +433,7 @@ public class PointTest {
 								default -> thr = assertThrows(IllegalArgumentException.class,() -> p1.direction(p2));
 							}
 							if(thr != null)
-								assertEquals("Расстояние между точками должно быть ровно 1 клетка!", thr.getMessage());
+								assertTrue(thr.getMessage(), thr.getMessage().startsWith("Расстояние между точками должно быть ровно 1 клетка!"));
 						}
 					}
 				}

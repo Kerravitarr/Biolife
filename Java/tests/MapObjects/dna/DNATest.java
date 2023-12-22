@@ -60,7 +60,7 @@ public class DNATest {
 	public void testHelpFunction() {
 		var make = make();
 		assertArrayEquals(new int[]{0,1,2,3,4,5,6,7,8,9},make.mind);
-		assertArrayEquals(new int[]{0,1,2,3,4,5,6,7},make.interrupts);
+		assertArrayEquals(new int[]{0,1,2,3,4,5,6,7,8,9,0,1},make.interrupts);
 		assertEquals(5,make.getPC());
 	}
 
@@ -198,7 +198,7 @@ public class DNATest {
 		var make = make();
 		make = make.update(0, true, 64);
 		assertArrayEquals(new int[] {64,1,2,3,4,5,6,7,8,9},make.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7},make.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7,8,9,0,1},make.interrupts);
 		assertEquals(5,make.getPC());
 	}
 	@Test
@@ -224,7 +224,7 @@ public class DNATest {
 		var make = make();
 		make = make.update(0, true, new int[] {64,65,66,67,68});
 		assertArrayEquals(new int[] {64,65,66,67,68,5,6,7,8,9},make.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7},make.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7,8,9,0,1},make.interrupts);
 		assertEquals(5,make.getPC());
 	}
 	@Test
@@ -260,31 +260,31 @@ public class DNATest {
 		var test = make();
 		test = test.doubling(0, true);
 		assertArrayEquals(new int[] {0,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,2,3,4,5,6,7,8},test.interrupts);
+		assertArrayEquals(new int[] {0,2,3,4,5,6,7,8,9,10,0,2},test.interrupts);
 		assertEquals(6,test.getPC());
 		
 		test = make();
 		test = test.doubling(1, true);
 		assertArrayEquals(new int[] {0,1,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,3,4,5,6,7,8},test.interrupts);
+		assertArrayEquals(new int[] {0,1,3,4,5,6,7,8,9,10,0,1},test.interrupts);
 		assertEquals(6,test.getPC());
 		
 		test = make();
 		test = test.doubling(5, true);
 		assertArrayEquals(new int[] {0,1,2,3,4,5,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,7,8},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,7,8,9,10,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.doubling(9, true);
 		assertArrayEquals(new int[] {9,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {1,2,3,4,5,6,7,8},test.interrupts);
+		assertArrayEquals(new int[] {1,2,3,4,5,6,7,8,9,10,1,2},test.interrupts);
 		assertEquals(6,test.getPC());
 		
 		test = make();
 		test = test.doubling(15, true);
 		assertArrayEquals(new int[] {0,1,2,3,4,5,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,7,8},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,7,8,9,10,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 	}
 	@Test
@@ -292,31 +292,31 @@ public class DNATest {
 		var test = make();
 		test = test.doubling(0, false);
 		assertArrayEquals(new int[] {0,1,2,3,4,5,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,7,8},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,7,8,9,10,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.doubling(1, false);
 		assertArrayEquals(new int[] {0,1,2,3,4,5,6,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,6,8},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,6,8,9,10,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.doubling(5, false);
 		assertArrayEquals(new int[] {0,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,2,3,4,5,6,7,8},test.interrupts);
+		assertArrayEquals(new int[] {0,2,3,4,5,6,7,8,9,10,0,2},test.interrupts);
 		assertEquals(6,test.getPC());
 		
 		test = make();
 		test = test.doubling(9, false);
 		assertArrayEquals(new int[] {0,1,2,3,4,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,6,7,8},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,6,7,8,9,10,0,1},test.interrupts);
 		assertEquals(6,test.getPC());
 		
 		test = make();
 		test = test.doubling(15, false);
 		assertArrayEquals(new int[] {0,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,2,3,4,5,6,7,8},test.interrupts);
+		assertArrayEquals(new int[] {0,2,3,4,5,6,7,8,9,10,0,2},test.interrupts);
 		assertEquals(6,test.getPC());
 	}
 	@Test
@@ -324,31 +324,31 @@ public class DNATest {
 		var test = make();
 		test = test.doubling(0, true,5);
 		assertArrayEquals(new int[] {0,1,2,3,4,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12,13,14,0,1},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.doubling(1, true,5);
 		assertArrayEquals(new int[] {0,1,2,3,4,5,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,11,12,13,14,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.doubling(5, true,5);
 		assertArrayEquals(new int[] {5,6,7,8,9,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12,13,14,5,6},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.doubling(9, true,5);
 		assertArrayEquals(new int[] {0,1,2,3,9,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,9,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,9,10,11,12,13,14,0,1},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.doubling(15, true,5);
 		assertArrayEquals(new int[] {5,6,7,8,9,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12,13,14,5,6},test.interrupts);
 		assertEquals(10,test.getPC());
 	}
 	@Test
@@ -356,31 +356,31 @@ public class DNATest {
 		var test = make();
 		test = test.doubling(0, false,5);
 		assertArrayEquals(new int[] {5,6,7,8,9,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12,13,14,5,6},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.doubling(1, false,5);
 		assertArrayEquals(new int[] {0,6,7,8,9,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,6,7,8,9,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,6,7,8,9,10,11,12,13,14,0,6},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.doubling(5, false,5);
 		assertArrayEquals(new int[] {0,1,2,3,4,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12,13,14,0,1},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.doubling(9, false,5);
 		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7,8,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7,8,14,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.doubling(15, false,5);
 		assertArrayEquals(new int[] {0,1,2,3,4,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12,13,14,0,1},test.interrupts);
 		assertEquals(10,test.getPC());
 	}
 	@Test
@@ -399,31 +399,31 @@ public class DNATest {
 		var cmds = new int[] {64,65,66,67,68};
 		test = test.insert(0, true,cmds);
 		assertArrayEquals(new int[] {64,65,66,67,68,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12,13,14,5,6},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.insert(1, true,cmds);
 		assertArrayEquals(new int[] {0,64,65,66,67,68,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,6,7,8,9,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,6,7,8,9,10,11,12,13,14,0,6},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.insert(5, true,cmds);
 		assertArrayEquals(new int[] {0,1,2,3,4,64,65,66,67,68,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12,13,14,0,1},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.insert(9, true,cmds);
 		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7,8,64,65,66,67,68,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7,8,14,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.insert(15, true,cmds);
 		assertArrayEquals(new int[] {0,1,2,3,4,64,65,66,67,68,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12,13,14,0,1},test.interrupts);
 		assertEquals(10,test.getPC());
 	}
 	@Test
@@ -432,31 +432,31 @@ public class DNATest {
 		var cmds = new int[] {64,65,66,67,68};
 		test = test.insert(0, false,cmds);
 		assertArrayEquals(new int[] {0,1,2,3,4,64,65,66,67,68,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,10,11,12,13,14,0,1},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.insert(1, false,cmds);
 		assertArrayEquals(new int[] {0,1,2,3,4,5,64,65,66,67,68,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,11,12,13,14,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.insert(5, false,cmds);
 		assertArrayEquals(new int[] {64,65,66,67,68,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12,13,14,5,6},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.insert(9, false,cmds);
 		assertArrayEquals(new int[] {0,1,2,3,64,65,66,67,68,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,9,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,9,10,11,12,13,14,0,1},test.interrupts);
 		assertEquals(10,test.getPC());
 		
 		test = make();
 		test = test.insert(15, false,cmds);
 		assertArrayEquals(new int[] {64,65,66,67,68,0,1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12},test.interrupts);
+		assertArrayEquals(new int[] {5,6,7,8,9,10,11,12,13,14,5,6},test.interrupts);
 		assertEquals(10,test.getPC());
 	}
 	@Test
@@ -473,31 +473,31 @@ public class DNATest {
 		var test = make();
 		test = test.compression(0, true);
 		assertArrayEquals(new int[] {1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,0,1,2,3,4,5,6},test.interrupts);
+		assertArrayEquals(new int[] {0,0,1,2,3,4,5,6,7,8,0,0},test.interrupts);
 		assertEquals(4,test.getPC());
 		
 		test = make();
 		test = test.compression(1, true);
 		assertArrayEquals(new int[] {0,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,1,2,3,4,5,6},test.interrupts);
+		assertArrayEquals(new int[] {0,1,1,2,3,4,5,6,7,8,0,1},test.interrupts);
 		assertEquals(4,test.getPC());
 		
 		test = make();
 		test = test.compression(5, true);
 		assertArrayEquals(new int[] {0,1,2,3,4,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,5,6},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,5,6,7,8,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.compression(9, true);
 		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7,8}, test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,6,7,8,8,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.compression(15, true);
 		assertArrayEquals(new int[] {0,1,2,3,4,6,7,8,9}, test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,5,6},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,5,6,7,8,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 	}
 	@Test
@@ -505,31 +505,31 @@ public class DNATest {
 		var test = make();
 		test = test.compression(0, false);
 		assertArrayEquals(new int[] {0,1,2,3,4,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,5,6},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,5,6,7,8,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.compression(1, false);
 		assertArrayEquals(new int[] {0,1,2,3,4,5,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,5,6,6},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,5,6,6,7,8,0,1},test.interrupts);
 		assertEquals(5,test.getPC());
 		
 		test = make();
 		test = test.compression(5, false);
 		assertArrayEquals(new int[] {1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,0,1,2,3,4,5,6},test.interrupts);
+		assertArrayEquals(new int[] {0,0,1,2,3,4,5,6,7,8,0,0},test.interrupts);
 		assertEquals(4,test.getPC());
 		
 		test = make();
 		test = test.compression(9, false);
 		assertArrayEquals(new int[] {0,1,2,3,5,6,7,8,9}, test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,4,5,6},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,4,5,6,7,8,0,1},test.interrupts);
 		assertEquals(4,test.getPC());
 		
 		test = make();
 		test = test.compression(15, false);
 		assertArrayEquals(new int[] {1,2,3,4,5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,0,1,2,3,4,5,6},test.interrupts);
+		assertArrayEquals(new int[] {0,0,1,2,3,4,5,6,7,8,0,0},test.interrupts);
 		assertEquals(4,test.getPC());
 	}
 	@Test
@@ -537,31 +537,31 @@ public class DNATest {
 		var test = make();
 		test = test.compression(0, true,5);
 		assertArrayEquals(new int[] {5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,0,0,0,0,0,1,2},test.interrupts);
+		assertArrayEquals(new int[] {0,0,0,0,0,0,1,2,3,4,0,0},test.interrupts);
 		assertEquals(0,test.getPC());
 		
 		test = make();
 		test = test.compression(1, true,5);
 		assertArrayEquals(new int[] {0,6,7,8,9}, test.mind);
-		assertArrayEquals(new int[] {0,1,1,1,1,1,1,2},test.interrupts);
+		assertArrayEquals(new int[] {0,1,1,1,1,1,1,2,3,4,0,1},test.interrupts);
 		assertEquals(1,test.getPC());
 		
 		test = make();
 		test = test.compression(5, true,5);
 		assertArrayEquals(new int[] {0,1,2,3,4},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,4,4,4},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,4,4,4,4,4,0,1},test.interrupts);
 		assertEquals(0,test.getPC());
 		
 		test = make();
 		test = test.compression(9, true,5);
 		assertArrayEquals(new int[] {4,5,6,7,8},test.mind);
-		assertArrayEquals(new int[] {4,4,4,4,0,1,2,3},test.interrupts);
+		assertArrayEquals(new int[] {4,4,4,4,0,1,2,3,4,4,4,4},test.interrupts);
 		assertEquals(1,test.getPC());
 		
 		test = make();
 		test = test.compression(15, true,5);
 		assertArrayEquals(new int[] {0,1,2,3,4},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,4,4,4},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,4,4,4,4,4,0,1},test.interrupts);
 		assertEquals(0,test.getPC());
 	}
 	@Test
@@ -569,31 +569,31 @@ public class DNATest {
 		var test = make();
 		test = test.compression(0, false,5);
 		assertArrayEquals(new int[] {0,1,2,3,4},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,4,4,4},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,4,4,4,4,4,0,1},test.interrupts);
 		assertEquals(0,test.getPC());
 		
 		test = make();
 		test = test.compression(1, false,5);
 		assertArrayEquals(new int[] {1,2,3,4,5},test.mind);
-		assertArrayEquals(new int[] {4,0,1,2,3,4,4,4},test.interrupts);
+		assertArrayEquals(new int[] {4,0,1,2,3,4,4,4,4,4,4,0},test.interrupts);
 		assertEquals(4,test.getPC());
 		
 		test = make();
 		test = test.compression(5, false,5);
 		assertArrayEquals(new int[] {5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,0,0,0,0,0,1,2},test.interrupts);
+		assertArrayEquals(new int[] {0,0,0,0,0,0,1,2,3,4,0,0},test.interrupts);
 		assertEquals(0,test.getPC());
 		
 		test = make();
 		test = test.compression(9, false,5);
 		assertArrayEquals(new int[] {0,1,2,3,9},test.mind);
-		assertArrayEquals(new int[] {0,1,2,3,4,4,4,4},test.interrupts);
+		assertArrayEquals(new int[] {0,1,2,3,4,4,4,4,4,4,0,1},test.interrupts);
 		assertEquals(4,test.getPC());
 		
 		test = make();
 		test = test.compression(15, false,5);
 		assertArrayEquals(new int[] {5,6,7,8,9},test.mind);
-		assertArrayEquals(new int[] {0,0,0,0,0,0,1,2},test.interrupts);
+		assertArrayEquals(new int[] {0,0,0,0,0,0,1,2,3,4,0,0},test.interrupts);
 		assertEquals(0,test.getPC());
 	}
 	@Test(expected = IllegalArgumentException.class)
@@ -633,7 +633,7 @@ public class DNATest {
 	@Test
 	public void testToJSON() {
 		var test = make();
-		assertEquals("{\"size\":10,\"mind\":[0,1,2,3,4,5,6,7,8,9],\"instruction\":5,\"interrupts\":[0,1,2,3,4,5,6,7]}",test.toJSON().toJSONString());
+		assertEquals("{\"size\":10,\"mind\":[0,1,2,3,4,5,6,7,8,9],\"instruction\":5,\"interrupts\":[0,1,2,3,4,5,6,7,8,9,0,1]}",test.toJSON().toJSONString());
 	}
 	
 }

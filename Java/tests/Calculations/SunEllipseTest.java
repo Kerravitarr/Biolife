@@ -55,34 +55,36 @@ public class SunEllipseTest {
 
 	@Test
 	public void testCyrcle() {
-		final var sun = new SunEllipse(10, new Trajectory(Point.create(50, 50)), 20, false,"");
+		final var point = Point.create(50, 50);
+		final var sun = new SunEllipse(10, new Trajectory(point), 20, false,"");
 		forEvwyPoint(p -> {
-			final var d = p.distance(sun.position);
+			final var d = p.distance(point);
 			final var msg = String.format("В точке %s удалённой от центра солнца на %s", p,d);
 			if(d.getHypotenuse() < 10)
-				assertEquals(msg,10,sun.getEnergy(p),0d);
+				assertEquals(msg,10,sun.getE(p),0d);
 			else if(d.getHypotenuse() < 10 + 5)
-				assertEquals(msg,10 - (d.getHypotenuse() - 10) * 2,sun.getEnergy(p),0d);
+				assertEquals(msg,10 - (d.getHypotenuse() - 10) * 2,sun.getE(p),0d);
 			else
-				assertEquals(msg,0,sun.getEnergy(p),0d);			
+				assertEquals(msg,0,sun.getE(p),0d);			
 		});
 	}
 	@Test
 	public void testCyrcleLine() {
-		final var sunL = new SunEllipse(10, new Trajectory(Point.create(50, 50)), 20, true, "");
+		final var point = Point.create(50, 50);
+		final var sunL = new SunEllipse(10, new Trajectory(point), 20, true, "");
 		forEvwyPoint(p -> {
-			final var d = p.distance(sunL.position);
+			final var d = p.distance(point);
 			final var msg = String.format("В точке %s удалённой от центра солнца на %s", p,d);
 			if(d.getHypotenuse() == 10)
-				assertEquals(msg,10,sunL.getEnergy(p),0d);
+				assertEquals(msg,10,sunL.getE(p),0d);
 			else if(d.getHypotenuse() < 10 && d.getHypotenuse() > 5)
-				assertEquals(msg,10 - (10 - d.getHypotenuse()) * 2,sunL.getEnergy(p),0d);
+				assertEquals(msg,10 - (10 - d.getHypotenuse()) * 2,sunL.getE(p),0d);
 			else if(d.getHypotenuse() <= 5)
-				assertEquals(msg,0,sunL.getEnergy(p),0d);
+				assertEquals(msg,0,sunL.getE(p),0d);
 			else if(d.getHypotenuse() < 10 + 5)
-				assertEquals(msg,10 - (d.getHypotenuse() - 10) * 2,sunL.getEnergy(p),0d);
+				assertEquals(msg,10 - (d.getHypotenuse() - 10) * 2,sunL.getE(p),0d);
 			else
-				assertEquals(msg,0,sunL.getEnergy(p),0d);			
+				assertEquals(msg,0,sunL.getE(p),0d);			
 		});
 	}
 	
@@ -144,7 +146,7 @@ public class SunEllipseTest {
 		forEvwyPoint(p -> {
 			final var value = (35 <= p.getX() && p.getX() <= 64) && (26 <= p.getY() && p.getY() <= 74) ? valid[p.getY() - 26][p.getX() - 35] : 0;
 			final var msg = String.format("В точке %s ожидалась освещённость %f", p,value);
-			assertEquals(msg,value,sun.getEnergy(p),0.2d);		
+			assertEquals(msg,value,sun.getE(p),0.2d);		
 		});
 	}
 	@Test
@@ -183,12 +185,12 @@ public class SunEllipseTest {
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0,0.5,1.1,1.6,2.1,2.5,2.8,3.2,3.4,3.6,3.8,3.9,4.0,4.0,4.0,3.9,3.8,3.6,3.4,3.2,2.8,2.5,2.1,1.6,1.1,0.5,0,0,0,0,0,0,0,0,0,0,0,0}, // y = 63
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.1,0.5,0.9,1.2,1.4,1.6,1.8,1.9,2.0,2.0,2.0,1.9,1.8,1.6,1.4,1.2,0.9,0.5,0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, // y = 64
 		};
-		var pp = sun.getEnergy(Point.create(26, 46));
+		var pp = sun.getE(Point.create(26, 46));
 		pp = 0;
 		forEvwyPoint(p -> {
 			final var value = (26 <= p.getX() && p.getX() <= 74) && (35 <= p.getY() && p.getY() <= 64) ? valid[p.getY() - 35][p.getX() - 26] : 0;
 			final var msg = String.format("В точке %s ожидалась освещённость %f", p,value);
-			assertEquals(msg,value,sun.getEnergy(p),0.2d);		
+			assertEquals(msg,value,sun.getE(p),0.2d);		
 		});
 	}
 	@Test
@@ -249,7 +251,7 @@ public class SunEllipseTest {
 		forEvwyPoint(p -> {
 			final var value = (35 <= p.getX() && p.getX() <= 64) && (26 <= p.getY() && p.getY() <= 74) ? valid[p.getY() - 26][p.getX() - 35] : 0;
 			final var msg = String.format("В точке %s ожидалась освещённость %f", p,value);
-			assertEquals(msg,value,sun.getEnergy(p),0.2d);		
+			assertEquals(msg,value,sun.getE(p),0.2d);		
 		});
 	}
 	@Test
@@ -288,12 +290,12 @@ public class SunEllipseTest {
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0,0.5,1.1,1.6,2.1,2.5,2.8,3.2,3.4,3.6,3.8,3.9,4.0,4.0,4.0,3.9,3.8,3.6,3.4,3.2,2.8,2.5,2.1,1.6,1.1,0.5,0,0,0,0,0,0,0,0,0,0,0,0}, // y = 63
 			new double[]{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.1,0.5,0.9,1.2,1.4,1.6,1.8,1.9,2.0,2.0,2.0,1.9,1.8,1.6,1.4,1.2,0.9,0.5,0.1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, // y = 64
 		};
-		var pp = sun.getEnergy(Point.create(26, 46));
+		var pp = sun.getE(Point.create(26, 46));
 		pp = 0;
 		forEvwyPoint(p -> {
 			final var value = (26 <= p.getX() && p.getX() <= 74) && (35 <= p.getY() && p.getY() <= 64) ? valid[p.getY() - 35][p.getX() - 26] : 0;
 			final var msg = String.format("В точке %s ожидалась освещённость %f", p,value);
-			assertEquals(msg,value,sun.getEnergy(p),0.2d);		
+			assertEquals(msg,value,sun.getE(p),0.2d);		
 		});
 	}
 	

@@ -632,7 +632,7 @@ public final class Point{
 
 	 * @throws IllegalArgumentException если расстояние между точками больш 1
 	 */
-	public DIRECTION direction(Point s){
+	public DIRECTION direction(Point s) throws IllegalArgumentException{
 		return direction(this,s);
 	}
 	/**
@@ -644,9 +644,10 @@ public final class Point{
 
 	 * @throws IllegalArgumentException если расстояние между точками больш 1
 	 */
-	public static DIRECTION direction(Point f, Point s){
+	public static DIRECTION direction(Point f, Point s) throws IllegalArgumentException{
 		var v = distance(f, s);
-		assert 0.5 <= v.getHypotenuse() && v.getHypotenuse() <= 2.5 : "Расстояние между точками должно быть ровно 1 клетка! А между " + f + " и " + s + " " + v.getHypotenuse();
+		if(!(0.5 <= v.getHypotenuse() && v.getHypotenuse() <= 1.5))
+				throw new IllegalArgumentException("Расстояние между точками должно быть ровно 1 клетка! А между " + f + " и " + s + " " + v.getHypotenuse());
 		return v.direction();
 	}
 	

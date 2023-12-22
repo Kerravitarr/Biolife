@@ -34,11 +34,15 @@ public class SeveralClicksMouseAdapter extends MouseAdapter {
 	public final void mouseClicked(MouseEvent e) {
 		checkClicks(e);
 	}
-
+	/** Функция для подсчёта количества кликов
+	 * @param e новый клик
+	 */
 	private void checkClicks(MouseEvent e) {
 		lastEevent = e;
 		timer.restart();
 	}
-
+	/** Событие клика по экрану
+	 * @param e событие клика. При множественных кликах вернётся толкьо последний, с правильным числом кликов
+	 */
 	public void mouseSeveralClick(MouseEvent e){}
 }
