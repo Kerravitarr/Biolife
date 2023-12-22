@@ -13,7 +13,7 @@ import Calculations.Point;
  */
 public class Birth extends CommandDo {
 	/**Сколько ХП стоит скопировать каждый кадон ДНК*/
-	private static final double HP_FOR_KADON = 1;
+	private static final double HP_FOR_KADON = 0.1;
 	/**Сколько ХП стоит поделиться в целом*/
 	private static final double HP_FOR_DIV = 150;
 
