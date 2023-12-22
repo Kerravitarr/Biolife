@@ -28,7 +28,7 @@ public class CommandList {
 	/**Команды многоклеточности*/
     public static final int BLOCK_6 = COUNT_COMAND * 7 / 8;
     
-    public static final CommandDNA[] list = new CommandDNA[COUNT_COMAND+1];
+    public static final CommandDNA[] list = new CommandDNA[COUNT_COMAND];
 	static{
 		for(var i = 0 ; i < CommandList.list.length ; i++)
 			CommandList.list[i] = CommandList.get(i);
@@ -42,6 +42,8 @@ public class CommandList {
 	 */
 	protected static CommandDNA get(int key) {
 		return switch (key) {
+			case 0 -> new Nop();
+				
 			case BLOCK_1 -> new Photosynthesis();
 			case BLOCK_1 + 1 -> new Minerals2Energy();
 			case BLOCK_1 + 2 -> new Birth();
