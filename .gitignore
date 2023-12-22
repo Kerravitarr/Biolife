@@ -1,21 +1,25 @@
 
 *.map
 *.json
-Java/.project
+.project
 
-Java/binFiles/
-Java/testBinFiles/
-Java/docsFiles/
-Java/jarFile/BioLife.jar
-Java/.settings/org.eclipse.core.resources.prefs
+binFiles/
+dist/
+testBinFiles/
+docsFiles/
+jarFile/BioLife.jar
+.settings/org.eclipse.core.resources.prefs
 
-Java/history/
-Java/docsFiles/
-Java/binFiles/
-Java/build/
-Java/nbproject/
-Java/build.xml
-Java/.settings/org.sonarlint.eclipse.core.prefs
-Java/.settings/org.eclipse.ltk.core.refactoring.prefs
+history/
+docsFiles/
+binFiles/
+build/
+nbproject/
+build.xml
+.settings/org.sonarlint.eclipse.core.prefs
+.settings/org.eclipse.ltk.core.refactoring.prefs
 bin1/
 *.zbmap
+*.zbcells
+*.zbcell
+.settings/org.eclipse.jdt.core.prefs
