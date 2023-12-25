@@ -276,11 +276,13 @@ public class CellEditor extends javax.swing.JDialog {
 		private static Popup popup = null;
 		/**Сама подсказка*/
 		private final JToolTip DnaToolTip;
+		/**Выделение жирненьким по умолчанию*/
+		private final static java.awt.BasicStroke DASHED = new java.awt.BasicStroke(3);
 		
 		PaintJPanel(){
 			I_COLOR = new Color[CellObject.OBJECT.lenght];
 			for (int i = 0; i < I_COLOR.length; i++) {
-				I_COLOR[i] = Utils.Utils.getHSBColor(((double)i)/I_COLOR.length, 1, 1, 0.5);
+				I_COLOR[i] = Utils.Utils.getHSBColor(((double)i)/I_COLOR.length, 1, 0.7, 0.5);
 			}
 			
 			final var mouseListener = new java.awt.event.MouseAdapter(){
@@ -374,8 +376,7 @@ public class CellEditor extends javax.swing.JDialog {
 			printDNA(g, cx, cy, size, Rdna, Wdna);
 			{//Рисуем толстую стрелочку от ПК
 				final var os = g.getStroke();
-				final var dashed = new java.awt.BasicStroke(3);
-				g.setStroke(dashed);
+				g.setStroke(DASHED);
 				g.setColor(Color.BLACK);
 				final var my = cy - Rdna - 3 * Wdna;
 				g.draw(new Line2D.Double(cx, 0, cx, my));
@@ -427,7 +428,7 @@ public class CellEditor extends javax.swing.JDialog {
 				index -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
 				final var cmd_a = index * dr2 - Math.PI / 2; //Угол, на котором находится команда
 				if(index == 0){
-					g.setStroke(new java.awt.BasicStroke(3));
+					g.setStroke(DASHED);
 				}
 				
 				
@@ -491,6 +492,7 @@ public class CellEditor extends javax.swing.JDialog {
 			final var interrupts = dna.interrupts;
 			final var PC = dna.getPC();
 			final var dr = (Math.PI) / size; //Какой угол относится к одной команде ДНК
+			final var os = g.getStroke();
 			
 			//Рисуем связи от прерываний к ДНК
 			//От каждого прерывания надо нарисовать линию к его нуклеотиду.
@@ -531,7 +533,7 @@ public class CellEditor extends javax.swing.JDialog {
 				var point = panel.getLocationOnScreen();
 				point.move(point.x - locationOnScreen.x, point.y - locationOnScreen.y + panel.getHeight() / 2);//Вернём положение относительно нас
 				final var fieldStart = 1 + 3 * point.y / h; //А это зона, из которой мы выходим
-				
+				if(interrupt == 0) g.setStroke(DASHED);
 				{//Сначала рисуем стартовую полочку
 					switch (fieldStart) {//Откуда выходим
 						case 1 -> {
@@ -665,6 +667,7 @@ public class CellEditor extends javax.swing.JDialog {
 						}
 					}
 				}
+				if(interrupt == 0) g.setStroke(os);
 			}
 		}
 		/** Рисует спираль ДНК
@@ -695,7 +698,7 @@ public class CellEditor extends javax.swing.JDialog {
 				final var isSelect = selectAngle != null && isOneAngle(af, selectAngle, ae);
 				
 				if(isSelect){
-					g.setStroke(new java.awt.BasicStroke(3));
+					g.setStroke(DASHED);
 					generateToolTip(dna);
 				}
 				//Рисуем начало команды
