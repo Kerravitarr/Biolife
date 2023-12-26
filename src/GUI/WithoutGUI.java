@@ -26,7 +26,10 @@ import java.util.logging.Logger;
  * @author Kerravitarr
  */
 public class WithoutGUI {
-	private enum TCP_E{
+	/**Коды HTTP. глядеть сюдой: https://upload.wikimedia.org/wikipedia/commons/6/65/Http-headers-status.gif*/
+	private enum HTTP_C{
+		OK("OK",200),
+		
 		BR("Bad Request", 400),
 		
 		NI("Not Implemented", 501),
@@ -35,7 +38,7 @@ public class WithoutGUI {
 		public final String text;
 		/**Код ошибки*/
 		public final int code;
-		private TCP_E(String t, int c){text=t;code=c;}
+		private HTTP_C(String t, int c){text=t;code=c;}
 	}
 	/**Заголовок http запроса*/
 	private class Header{
@@ -46,20 +49,37 @@ public class WithoutGUI {
 		
 		public Header(String line){
 			if(line.startsWith("GET")) {
-				key = "method"; params.add("GET");
+				key = "method"; 
+				add("GET");
 			}else if(line.startsWith("POST")){
-				key = "method"; params.add("POST");
+				key = "method"; 
+				add("POST");
 			} else if(line.indexOf(':') != -1){
 				final var pair = line.split(":");
-				key = pair[0]; params.addAll(Arrays.asList(pair[1].split(";")));
+				key = pair[0]; 
+				Arrays.stream(pair[1].split(";")).forEach(this::add);	
 			} else {
 				key = null;
 			}
+			if(line.startsWith("GET") || line.startsWith("POST")){
+				final var end_host = line;
+				if(end_host.lastIndexOf("/?") != -1){
+					final var params_row = end_host.substring(end_host.lastIndexOf("/?") + 2,end_host.lastIndexOf(" "));
+					Arrays.stream(params_row.split("&")).forEach(this::add);
+				}
+			}
 		}
+		private void add(String param){
+			params.add(param.trim());
+		}
+		public String getFirst(){return params.get(0);}
+		@Override public String toString(){return key + " " + Arrays.toString(params.toArray());}
 	}
-	
+
 	/**Имя файла для сохранения*/
 	private final String fileName;
+	/**Флаг, показывающий что мы работаем*/
+	private boolean isWork = true;
 	
 	public static void start(String fn, int port){
 		new Thread(()->new WithoutGUI(fn, port)).start();
@@ -82,27 +102,11 @@ public class WithoutGUI {
 		
 		try(final var reader = new BufferedReader(new InputStreamReader(System.in));){
 			var lut = System.currentTimeMillis() / 1000;
-			while(true){
+			while(isWork){
 				var nut = System.currentTimeMillis() / 1000;
 				if(reader.ready()){
-					final var ch = reader.readLine();
-					switch (ch) {
-						case "p" -> {
-							if(Configurations.world.isActiv()) {
-								Configurations.world.awaitStop();
-								printTitle();
-							} else {
-								Configurations.world.start();
-							}
-						}
-						case "q" -> {
-							shutdown();
-							return;
-						}
-						default -> {
-							System.out.println(Configurations.getProperty(WithoutGUI.class,"help"));
-						}
-					}
+					if(!in(reader.readLine()))
+						System.out.println(Configurations.getProperty(WithoutGUI.class,"help"));
 				}
 				if(nut - lut > 10){ //Каждые 60 с
 					if(Configurations.world.isActiv()){
@@ -130,47 +134,144 @@ public class WithoutGUI {
 			System.err.println(ex);
 			System.err.println("Закончили работу...");
 		}
+		System.out.println(Configurations.getProperty(WithoutGUI.class,"bay"));
 	}
 	/**Основной цикл сервера*/
 	private void TCP_IP(int port){
 		try (final var serverSocket = new java.net.ServerSocket(port)) {
             System.out.println(Configurations.getProperty(WithoutGUI.class,"port.start",port));
- 
-            while (true) {
-                final var socket = serverSocket.accept(); //Ждём клиента
+            while (isWork) {
+				final var socket = serverSocket.accept(); //Ждём клиента
+				socket.setSoTimeout(1000);
 				
 				try ( final var input = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));) {
-					
 					//Заголовки
 					final var headers = new HashMap<String, Header>();
-					
-					//Считываем весь запрос
-					String line;
-					while (!(line = input.readLine()).isBlank()) {
-						final var h = new Header(line);
-						headers.put(h.key, h);
-					}
-					if(!headers.containsKey("ContentType") || !headers.get("ContentType").params.get(0).equals("application/json")){
-						sendResponse(socket,TCP_E.BR);
+					//Данные
+					final var datas = new StringBuffer();
+					try{
+						//Считываем весь запрос
+						String line;
+						while (!(line = input.readLine()).isBlank()) {
+							final var h = new Header(line);
+							headers.put(h.key, h);
+						}
+						if(headers.containsKey("method") && headers.get("method").getFirst().equals("POST")){
+							//Считываем тело сообщения
+							if(headers.containsKey("Content-Length")){
+								final var l = Integer.parseInt(headers.get("Content-Length").getFirst());
+								final var s = new char[l];
+								input.read(s, 0, l);
+								datas.append(s);
+							} else {
+								final var part = 77;
+								final var s = new char[part];
+								int l;
+								while((l = input.read(s, 0, s.length)) != -1){
+									datas.append(s, 0, l);
+								}
+							}
+							
+						}
+					} catch(java.net.SocketTimeoutException e){}
+					final var isJSON_CT = headers.containsKey("Content-Type") && headers.get("Content-Type").getFirst().equals("application/json");
+					if(headers.containsKey("method") && headers.get("method").getFirst().equals("POST") && isJSON_CT){
+						//Пришёл POST запрос с JSON в центре. Можем и обработать
+						try{
+							final var json = new JSON(datas.toString());
+							if(in(json)) sendResponse(socket,HTTP_C.OK);
+							else sendResponse(socket,HTTP_C.NI);
+						}catch(JSON.ParseException | IllegalArgumentException | ClassCastException e){
+							sendResponse(socket,HTTP_C.BR);
+						}
+					} else if(headers.containsKey("method") && headers.get("method").getFirst().equals("GET")){
+						final var params = headers.get("method").params;
+						final var cmd = params.stream().filter(p->p.startsWith("cmd=")).findFirst().orElse(null);
+						if(cmd == null || !in(cmd.substring(4))){
+							sendResponse(socket,Configurations.getHProperty(WithoutGUI.class,"help"));
+						} else {
+							sendResponse(socket,getTitle());
+						}
 					} else {
-						sendResponse(socket,TCP_E.NI);
+						sendResponse(socket,HTTP_C.BR);
 					}
 				}
                 socket.close();
             }
- 
         } catch (IOException ex) {
             System.out.println("Server exception: " + ex.getMessage());
             ex.printStackTrace();
         }
+        System.out.println(Configurations.getProperty(WithoutGUI.class,"port.end"));
 	}
+	/** обработка команд консоли
+	 * @param console пришедший запрос из консоли
+	 * @return false, если пришла неизвестная команда
+	 */
+	private boolean in(String console){
+		boolean isOk = true;
+		switch (console) {
+			case "p" -> {
+				if(Configurations.world.isActiv()) {
+					Configurations.world.awaitStop();
+					printTitle();
+				} else {
+					Configurations.world.start();
+				}
+			}
+			case "q" -> shutdown();
+			default -> isOk = false;
+		}
+		return isOk;
+	}
+	/** Обработка команд HTTP
+	 * @param http запрос
+	 * @return false, если пришла неизвестная команда
+	 */
+	private boolean in(JSON http){
+		boolean isOk = true;
+		if(http.containsKey("WORLD")){
+			final var doing = http.get(String.class,"WORLD");
+			switch (doing) {
+				case "start" -> Configurations.world.start();
+				case "stop" -> Configurations.world.stop();
+				case "step" -> Configurations.world.step();
+				case "shutdown" -> shutdown();
+				default -> isOk = false;
+			}
+		} else {
+			isOk = false;
+		}
+		return isOk;
+	}
+	/**Отправляет клиенту сообщение
+	 * @param text какой текст ему отправить
+	 * @throws IOException 
+	 */
+	 private void sendResponse(java.net.Socket client, String text) throws IOException {
+		 final var page = """
+						  <!DOCTYPE html>
+						  <html>
+						      <head>
+						          <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+						          <title> 
+									"""+getTitle()+"""
+								   </title>
+						      </head>
+						      <body>
+						          """+text+"""
+						      </body>
+						  </html>
+                    """;
+		 sendResponse(client, HTTP_C.OK.code + " " + HTTP_C.OK.text, "text/html; charset=utf-8", page.getBytes());
+	 }
 	/**Отправляет клиенту сообщение об ошибке
 	 * @param client кому
 	 * @param error что за ошибка
 	 * @throws IOException 
 	 */
-	 private static void sendResponse(java.net.Socket client, TCP_E error) throws IOException {
-		 sendResponse(client, error.code + " " + error.text, "text/html", ("<h1>" + error.text + "</h1>").getBytes());
+	 private static void sendResponse(java.net.Socket client, HTTP_C error) throws IOException {
+		 sendResponse(client, error.code + " " + error.text, "text/html; charset=utf-8", ("<h1>" + error.text + "</h1>").getBytes());
 	 }
 	 /** Отправляет сообщение клиенту
 	  * @param client кому
@@ -193,14 +294,17 @@ public class WithoutGUI {
 	/**Печатает заголовок в режиме без GUI*/
 	private void printTitle(){
 		System.out.println("\n-------------------");
-		String title = MessageFormat.format(Configurations.getProperty(WithoutGUI.class,"title"), world.step,
+		System.out.println(getTitle());
+        System.out.println("-------------------\n");
+	}
+	private String getTitle(){
+		return MessageFormat.format(Configurations.getProperty(WithoutGUI.class,"title"), world.step,
 				world.pps.FPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
 				world.getCount(CellObject.LV_STATUS.LV_POISON), world.getCount(CellObject.LV_STATUS.LV_WALL), world.isActiv() ? ">" : "||");
-		System.out.println(title);
-        System.out.println("-------------------\n");
 	}
 	/**Функция будет вызвана, когда приложению следует завершиться в режиме без GUI*/
 	private void shutdown(){
+		isWork = false;
 		Configurations.world.awaitStop();
 		try {
 			Configurations.save(fileName);
