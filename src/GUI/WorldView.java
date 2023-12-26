@@ -11,6 +11,7 @@ import Calculations.Emitters.SunAbstract;
 import Calculations.Point;
 import Calculations.Streams.StreamAbstract;
 import Calculations.Trajectories.Trajectory;
+import GUI.WorldAnimation.DefaultAnimation;
 import MapObjects.CellObject;
 import Utils.ColorRec;
 import Utils.FPScounter;
@@ -281,9 +282,6 @@ public class WorldView extends javax.swing.JPanel {
 		
 		var v = Configurations.getViewer();
 		if(!(v instanceof DefaultViewer)) return;
-		final var legend = v.get(Legend.class);
-		final var settings = v.get(Settings.class);
-		final var menu = v.get(Menu.class);
 		
 		final var cms = System.currentTimeMillis();
 		if(cms > lastUpdate){
@@ -296,10 +294,89 @@ public class WorldView extends javax.swing.JPanel {
 		}
 		
 		paintField(g);
+		paintCells(g, isAll);
 		
-		if(!settings.isEdit()){
+		//Отрисовываем перекрестие на выбранную клетку
+		final var infoCell = v.get(BotInfo.class).getCell();
+		if(infoCell != null) {
+			g.setColor(Color.GRAY);
+			g.drawLine(transforms.toScrinX(infoCell.getPos()), 0, transforms.toScrinX(infoCell.getPos()), getHeight());
+			g.drawLine(0, transforms.toScrinY(infoCell.getPos()), getWidth(), transforms.toScrinY(infoCell.getPos()));
+		}
+		//Отрисовываем рамку выбора клеток на поле
+		if(selectPoint[0] != null && selectPoint[1] != null){
+			g.setColor(new Color(255,255,255,50));
+			var x0 = transforms.toScrinX(selectPoint[0]);
+			var y0 = transforms.toScrinY(selectPoint[0]);
+			var x1 = transforms.toScrinX(selectPoint[1]);
+			var y1 = transforms.toScrinY(selectPoint[1]);
+			g.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x0 - x1), Math.abs(y0 - y1));
+		}
+		
+		if(isAll) return;
+		fps.interapt();
+		repaint();
+	}
+	
+	/**Закрашивает картину, согласно текущему раскладу
+	 * @param g полотно, которое красим
+	 */
+	private void paintField(Graphics2D g) {
+		//Рисуем игровое поле
+		animation.water(g);
+		//И рисуем бордюр когда он должен быть под объектами
+		if(Configurations.confoguration.world_type == Configurations.WORLD_TYPE.FIELD_R){
+			animation.world(g);
+		}
+		{ //Теперь рисуем звёзды, минералы и прочее
+			final var oldC = g.getComposite();
+			g.setComposite(AlphaComposite.getInstance( AlphaComposite.SRC_OVER, 0.6f ));
+
+			final var mineralSelect = (select.isNull() || !isSelected || !select.isContains(MineralAbstract.class)) ? null : select.get(MineralAbstract.class);
+			final var sunSelect = (select.isNull() || !isSelected || !select.isContains(SunAbstract.class)) ? null : select.get(SunAbstract.class);
+			final var streamSelect = (select.isNull() || !isSelected || !select.isContains(StreamAbstract.class)) ? null : select.get(StreamAbstract.class);
+			//А теперь, поверх воды, рисуем минеральки
+			Configurations.minerals.paint(g,getTransform(), mineralSelect);
+			//И сонышки
+			Configurations.suns.paint(g,getTransform(), sunSelect);
+			//И и шлефанём всё это потоками
+			if(streamSelect == null){
+				Configurations.streams.forEach(s -> s.paint(g, getTransform(), frame));
+			} else {
+				boolean isPrint = false;
+				for(final var s : Configurations.streams){
+					if(s != streamSelect) s.paint(g, getTransform(), frame);
+					else isPrint = true;
+				}
+				if(!isPrint) streamSelect.paint(g, getTransform(), frame);
+			}
+
+			//И, если нужно, нанесём траекторию
+			if (select.isContains(Trajectory.class)) {
+				select.get(Trajectory.class).paint(g, getTransform(), frame);
+			}
+
+			g.setComposite(oldC);
+		}
+		//Рисуем всё остальное
+		if(Configurations.confoguration.world_type != Configurations.WORLD_TYPE.FIELD_R){
+			animation.world(g);
+		}
+		//Вспомогательное построение
+		//Utils.DeprecatedMetods.paintCells(g);
+	}
+	/**Рисует на холсте клетки
+	 * @param g холст
+	 * @param isAll нужно рисовать прям всё или только то, что видно на экране?
+	 */
+	private void paintCells(Graphics2D g, boolean isAll) {
+		final var legend = Configurations.getViewer().get(Legend.class);
+		final var settings = Configurations.getViewer().get(Settings.class);
+		final var menu = Configurations.getViewer().get(Menu.class);
+		
+		if (!settings.isEdit()) {
 			int r = transforms.toScrin(1);
-			if(r > 2){
+			if (r > 2) {
 				//Если у нас радиус больше 2пк, то тут можно рисовать что угодно - от кругов до детальной проработки
 				for (int x = 0; x < Configurations.getWidth(); x++) {
 					for (int y = 0; y < Configurations.getHeight(); y++) {
@@ -323,11 +400,10 @@ public class WorldView extends javax.swing.JPanel {
 			} else {
 				//А если меньше, то рисовать мы будем самыми общими чертами
 				final var dr = transforms.toDScrin(1);
-				if(dr <= 0) return;
+				if (dr <= 0) return;
 				final var step =  r >= 1 ? 2 : (int)Math.round(2d/dr);
 				final var nr = transforms.toScrin(step);
 				final var ritangleColor = new Color[step * step];
-				
 				for (int x = 0; x < Configurations.getWidth(); x+=step) {
 					for (int y = 0; y < Configurations.getHeight(); y+=step) {
 						if(isAll || (visible[0].getX() <= (x+step) && x <= visible[1].getX()
@@ -358,98 +434,6 @@ public class WorldView extends javax.swing.JPanel {
 				}
 			}
 		}
-		//Отрисовываем перекрестие на выбранную клетку
-		final var infoCell = v.get(BotInfo.class).getCell();
-		if(infoCell != null) {
-			g.setColor(Color.GRAY);
-			g.drawLine(transforms.toScrinX(infoCell.getPos()), 0, transforms.toScrinX(infoCell.getPos()), getHeight());
-			g.drawLine(0, transforms.toScrinY(infoCell.getPos()), getWidth(), transforms.toScrinY(infoCell.getPos()));
-		}
-		//Отрисовываем рамку выбора клеток на поле
-		if(selectPoint[0] != null && selectPoint[1] != null){
-			g.setColor(new Color(255,255,255,50));
-			var x0 = transforms.toScrinX(selectPoint[0]);
-			var y0 = transforms.toScrinY(selectPoint[0]);
-			var x1 = transforms.toScrinX(selectPoint[1]);
-			var y1 = transforms.toScrinY(selectPoint[1]);
-			g.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x0 - x1), Math.abs(y0 - y1));
-		}
-		
-		if(isAll) return;
-		fps.interapt();
-		repaint();
-	}
-	
-	/**Закрашивает картину, согласно текущему раскладу
-	 * @param g полотно, которое красим
-	 */
-	private void paintField(Graphics2D g) {
-		//Рисуем игровое поле
-		switch (Configurations.confoguration.world_type) {
-			case LINE_H,LINE_V, RECTANGLE,CIRCLE ->{
-				//Вода
-				colors[1].paint(g);
-			}
-			case FIELD_R -> {
-				//Вода
-				colors[1].paint(g);
-				//Замаза
-				colors[0].paint(g);
-				colors[2].paint(g);
-			}
-			default -> 	throw new AssertionError();
-		}
-		final var oldC = g.getComposite();
-		g.setComposite(AlphaComposite.getInstance( AlphaComposite.SRC_OVER, 0.6f ));
-		
-		final var mineralSelect = (select.isNull() || !isSelected || !select.isContains(MineralAbstract.class)) ? null : select.get(MineralAbstract.class);
-		final var sunSelect = (select.isNull() || !isSelected || !select.isContains(SunAbstract.class)) ? null : select.get(SunAbstract.class);
-		final var streamSelect = (select.isNull() || !isSelected || !select.isContains(StreamAbstract.class)) ? null : select.get(StreamAbstract.class);
-		//А теперь, поверх воды, рисуем минеральки
-		Configurations.minerals.paint(g,getTransform(), mineralSelect);
-		//И сонышки
-		Configurations.suns.paint(g,getTransform(), sunSelect);
-		//И и шлефанём всё это потоками
-		if(streamSelect == null){
-			Configurations.streams.forEach(s -> s.paint(g, getTransform(), frame));
-		} else {
-			boolean isPrint = false;
-			for(final var s : Configurations.streams){
-				if(s != streamSelect) s.paint(g, getTransform(), frame);
-				else isPrint = true;
-			}
-			if(!isPrint) streamSelect.paint(g, getTransform(), frame);
-		}
-		
-		//И, если нужно, нанесём траекторию
-		if (select.isContains(Trajectory.class)) {
-			select.get(Trajectory.class).paint(g, getTransform(), frame);
-		}
-
-		g.setComposite(oldC);
-		//Рисуем всё остальное
-		switch (Configurations.confoguration.world_type) {
-			case LINE_H ->{
-				//Небо
-				colors[0].paint(g);
-				//Земля
-				colors[2].paint(g);
-			}
-			case LINE_V ->{
-				//Песочки
-				colors[0].paint(g);
-				colors[2].paint(g);
-			}
-			case RECTANGLE,CIRCLE ->{
-				//Нижняя и верхняя части
-				colors[0].paint(g);
-				colors[2].paint(g);
-			}
-			case FIELD_R-> {}
-			default -> 	throw new AssertionError();
-		}
-		//Вспомогательное построение
-		//Utils.DeprecatedMetods.paintCells(g);
 	}
 	
 	/**Пересчитывает относительные размеры мира в пикселях.*/
@@ -458,210 +442,19 @@ public class WorldView extends javax.swing.JPanel {
 		Configurations.world.awaitStop();
 		transforms.recalculate();
 		
-		updateScrin();
+		animation = switch (Configurations.confoguration.world_type) {
+			case LINE_H -> new GUI.WorldAnimation.Pond(transforms, getWidth(), getHeight());
+			case LINE_V -> new GUI.WorldAnimation.River(transforms, getWidth(), getHeight());
+			case RECTANGLE -> new GUI.WorldAnimation.Aquarium(transforms, getWidth(), getHeight());
+			case FIELD_R -> new GUI.WorldAnimation.Ocean(transforms, getWidth(), getHeight());
+			case CIRCLE -> new GUI.WorldAnimation.Microscope(transforms, getWidth(), getHeight());
+			default -> throw new AssertionError("Не реализовано для " + Configurations.confoguration.world_type);
+		};
 		
 		if(oActiv)
 			Configurations.world.start();
 	}
 	
-	/**Пересчитывает всю побочную графику на мониторе*/
-	public void updateScrin() {
-		switch (Configurations.confoguration.world_type) {
-			case LINE_H ->{
-				//Верхнее небо
-				int xs[] = new int[4];
-				int ys[] = new int[4];
-				//Поле, вода
-				int yw[] = new int[4];
-				//Дно
-				int yb[] = new int[4];
-
-				xs[0] = xs[1] = 0;
-				xs[2] = xs[3] = getWidth();
-				
-				ys[0] = ys[3] = 0;
-				ys[1] = ys[2] = yw[0] = yw[3] = transforms.toScrinY(0);
-				yb[0] = yb[3] = yw[1] = yw[2] = transforms.toScrinY(Configurations.getHeight() - 1);
-				yb[1] = yb[2] = getHeight();
-				//Небо
-				colors[0] = new ColorRec(xs,ys,AllColors.SKY);
-				//Вода
-				colors[1] = new ColorRec(xs,yw, AllColors.WATER_POND);
-				//Земля
-				colors[2] = new ColorRec(xs,yb, AllColors.DRY);
-			}
-			case LINE_V -> {
-				//Левый песочек
-				int xl[] = new int[4];
-				//Поле, вода
-				int xw[] = new int[4];
-				int yw[] = new int[4];
-				//Правый песочек
-				int xr[] = new int[4];
-				
-				xl[0] = xl[3] = 0;
-				xl[1] = xl[2] = xw[0] = xw[3] = transforms.toScrinX(0);
-				xw[1] = xw[2] = xr[0] = xr[3] = transforms.toScrinX(Configurations.getWidth()-1);
-				xr[1] = xr[2] = getWidth();
-				
-				yw[0] = yw[1] = 0;
-				yw[2] = yw[3] = getHeight();
-				//Песочек левый
-				colors[0] = new ColorRec(xl,yw,AllColors.SAND);
-				//Вода
-				colors[1] = new ColorRec(xw,yw, AllColors.WATER_RIVER);
-				//Песочек правый
-				colors[2] = new ColorRec(xr,yw, AllColors.SAND);
-			}
-			case RECTANGLE -> {
-				//Нижняя часть поля
-				final int xd[] = new int[8];
-				final int yd[] = new int[8];
-				//Поле, вода
-				final int xw[] = new int[4];
-				final int yw[] = new int[4];
-				//Верхняя часть поля
-				final int yu[] = new int[8];
-				
-				xd[0] = xd[1] = 0;
-				xd[6] = xd[7] = xw[0] = xw[3] = transforms.toScrinX(0);
-				xd[4] = xd[5] = xw[1] = xw[2] = transforms.toScrinX(Configurations.getWidth()-1);
-				xd[2] = xd[3] = getWidth();
-				
-				yd[1] = yd[2] = 0;
-				yw[0] = yw[1] = yd[5] = yd[6] = transforms.toScrinY(0);
-				yd[0] = yd[3] = yd[4] = yd[7] = yu[0] = yu[3] = yu[4] = yu[7] = transforms.toScrinY(Configurations.getHeight()-3); //Место сшивания полей
-				yw[2] = yw[3] = yu[5] = yu[6] = transforms.toScrinY(Configurations.getHeight()-1);
-				yu[1] = yu[2] = getHeight();
-				
-				
-				colors[0] = new ColorRec(xd,yd,AllColors.SKY);
-				colors[2] = new ColorRec(xd,yu, AllColors.OAK);
-				//Вода
-				colors[1] = new ColorRec(xw,yw, AllColors.WATER_AQUARIUM);
-			}
-			case FIELD_R -> {
-				//Поле, вода
-				final int xw[] = new int[4];
-				final int yw[] = new int[4];
-				//Верхний прямоугольник
-				final int xu[] = new int[4];
-				final int yu[] = new int[4];
-				//Нижний блок
-				final int xd[] = new int[8];
-				final int yd[] = new int[8];
-				
-				xu[0] = xu[3] = xd[0] = xd[7] = 0;
-				xd[1] = xd[2] = xw[0] = xw[3] = transforms.toScrinX(0);
-				xd[3] = xd[4] = xw[1] = xw[2] = transforms.toScrinX(Configurations.getWidth()-1);
-				xd[5] = xd[6] = xu[1] = xu[2] = getWidth();
-				
-				yu[0] = yu[1] = 0;
-				yd[0] = yd[0] = yd[1] = yd[4] = yd[5] = yu[2] = yu[3] = yw[0] = yw[1] = transforms.toScrinY(0);
-				yd[2] = yd[3] = yw[2] = yw[3] = transforms.toScrinY(Configurations.getHeight()-1);
-				yd[6] = yd[7] = getHeight();
-				
-				colors[0] = new ColorRec(xu,yu, AllColors.WATER_OCEAN);
-				colors[1] = new ColorRec(xw,yw, AllColors.WATER_OCEAN);
-				colors[2] = new ColorRec(xd,yd, AllColors.WATER_OCEAN);	
-			}
-			case CIRCLE -> {
-				final var a2 = Configurations.getWidth();
-				final var b2 = Configurations.getHeight();
-				final var a = a2/2d;
-				final var b = b2/2d;
-				//Поле, вода
-				final var xw = new ArrayList<Integer>(a2 * b2);
-				final var yw = new ArrayList<Integer>(a2 * b2);
-				//Верхняя половина стола
-				final var xut = new ArrayList<Integer>(a2 * b2);
-				final var yut = new ArrayList<Integer>(a2 * b2);
-				//Нижняя половина стола
-				final var xdt = new ArrayList<Integer>(a2 * b2);
-				final var ydt = new ArrayList<Integer>(a2 * b2);
-				
-				//Прочёсываем все точки слева направо, в поисках первых (верхних) наших 
-				xut.add(0);
-				yut.add(transforms.toScrinY(b));
-				boolean isFirst = true; //Флаг, чтобы первая точка в обязательном порядке была посредине
-				for(var x = 0; x < a2; x++){
-					var y = 0;
-					for(; y < b2; y++){
-						final var point = Point.create(x, y);
-						if(point.valid()){
-							final int sx = transforms.toScrinX(x);
-							final int sy;
-							if(isFirst){
-								isFirst = false;
-								sy = transforms.toScrinY(b);
-							} else {
-								sy = transforms.toScrinY(y);
-							}
-							xw.add(sx);
-							yw.add(sy);
-							xut.add(sx);
-							yut.add(sy);
-							break;
-						}
-					}
-					if(y == b2 && x > a){ //Когда мы не встретим ни одной правильной точки и пройдём больше половины пути по X - мы в конце. Заканчиваем
-						break;
-					}
-				}
-				xut.add(xut.get(xut.size()-1));
-				yut.add(transforms.toScrinY(b));
-				xut.add(getWidth());
-				yut.add(transforms.toScrinY(b));
-				xut.add(getWidth());
-				yut.add(0);
-				xut.add(0);
-				yut.add(0);
-				//А теперь пройдём тоже самое, но в обратную сторону
-				xdt.add(getWidth());
-				ydt.add(transforms.toScrinY(b));
-				isFirst = true;
-				for(var x = a2-1; x >= 0; x--){
-					var y = b2-1;
-					for(; y >= 0; y--){
-						final var point = Point.create(x, y);
-						if(point.valid()){
-							final int sx = transforms.toScrinX(x);
-							final int sy;
-							if(isFirst){
-								isFirst = false;
-								sy = transforms.toScrinY(b);
-							} else {
-								sy = transforms.toScrinY(y);
-							}
-							xw.add(sx);
-							yw.add(sy);
-							xdt.add(sx);
-							ydt.add(sy);
-							break;
-						}
-					}
-					if(y == 0 && x < a){ //Когда мы не встретим ни одной правильной точки и пройдём больше половины пути по X - мы в самом начале. Заканчиваем
-						break;
-					}
-				}
-				xdt.add(xdt.get(xdt.size()-1));
-				ydt.add(transforms.toScrinY(b));
-				xdt.add(0);
-				ydt.add(transforms.toScrinY(b));
-				xdt.add(0);
-				ydt.add(getHeight());
-				xdt.add(getWidth());
-				ydt.add(getHeight());
-				//Вода
-				colors[1] = new ColorRec(xw.stream().mapToInt(Integer::intValue).toArray(),yw.stream().mapToInt(Integer::intValue).toArray(), AllColors.GLASS);
-				//Стол
-				colors[0] = new ColorRec(xut.stream().mapToInt(Integer::intValue).toArray(),yut.stream().mapToInt(Integer::intValue).toArray(),AllColors.OAK);
-				colors[2] = new ColorRec(xdt.stream().mapToInt(Integer::intValue).toArray(),ydt.stream().mapToInt(Integer::intValue).toArray(), AllColors.OAK);
-				
-			}
-			default -> 	throw new AssertionError();
-		}
-	}
 	
 	/**Сохраняет размеры в координатах мира отображаемого прямоугольника
 	 * @param leftUp верхний левый угол прямоугольника
@@ -767,6 +560,8 @@ public class WorldView extends javax.swing.JPanel {
 	private final Point[] selectPoint = new Point[2];
 	/**Счётчик шагов. Puls Per Second*/
 	public final FPScounter fps = new FPScounter();
+	/**Класс, отвечающий за красивое поле и его окружение*/
+	private DefaultAnimation animation = null;
 	/**Все цвета, которые мы должны отобразить на поле*/
 	private final ColorRec [] colors = new ColorRec[3];
 	/**Преобразователь из одних координат в другие*/

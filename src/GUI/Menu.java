@@ -370,6 +370,8 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 				Configurations.load(name);
 				try {
 					Configurations.getViewer().get(Settings.class).rebuild();
+					vw.setVisible(Point.create(0,0), Point.create(Configurations.getWidth() - 1, Configurations.getHeight()- 1));
+					vw.recalculate();
 				} catch (IllegalArgumentException | NullPointerException ex){} //Всё нормально, просто нет такого класса
 				evolTreeDialog.restart();
 			} catch (GenerateClassException ex) {
@@ -481,8 +483,6 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	private void editCell(AliveCell cell){
 		Configurations.world.stop();
 		final var editor = new CellEditor(cell);
-		final var vw = Configurations.getViewer().get(WorldView.class);
-		editor.setLocationRelativeTo(vw);
 		editor.setVisible(true);
 	}
 	

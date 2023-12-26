@@ -65,7 +65,7 @@ public class BioLife{
 		//Создаём случайный мир
 		final var defType = Configurations.WORLD_TYPE.values[Utils.Utils.random(0, Configurations.WORLD_TYPE.length - 1)];
 		final var load = _opts.get('L').get(String.class);
-		if(!!_opts.get('V').get(Boolean.class)){
+		if(!_opts.get('V').get(Boolean.class)){
 			//С графической частью
 			final var  sSize = Configurations.getDefaultConfiguration(defType);
 			Configurations.makeDefaultWord(defType,sSize.MAP_CELLS.width, sSize.MAP_CELLS.height);
@@ -88,7 +88,7 @@ public class BioLife{
 				Configurations.load(load);
 			
 			WithoutGUI.start(_opts.get('L').get(String.class),_opts.get('p').get(Integer.class));
-			//Configurations.world.start();
+			Configurations.world.start();
 			
 		}
 	}
