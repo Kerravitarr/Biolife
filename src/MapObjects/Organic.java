@@ -69,7 +69,7 @@ public class Organic extends CellObject {
 				poisonCount += 1.0/Configurations.confoguration.TIK_TO_EXIT;
 			}
 		}
-		if(energy <= 0){
+		if(energy <= 1){
 			try {
 				destroy();
 			}catch (CellObjectRemoveException e) {

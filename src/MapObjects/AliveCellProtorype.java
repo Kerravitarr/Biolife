@@ -43,10 +43,12 @@ public abstract class AliveCellProtorype extends CellObject {
 	public static final int DEF_MINDE_SIZE = 64;
 	/**Размер мозга максимальный, чтобы небыло взрывного роста и поедания памяти*/
 	public static final int MAX_MINDE_SIZE = 1024;
+	/**Минимальный уровень здоровья, меньше которого живая клетка переходит в не живую*/
+	public static final double MIN_HP = 100;
 	/**Начальный уровень здоровья клеток*/
-	public static final double START_HP = 5;
+	public static final double START_HP = MIN_HP + 5;
 	/**Начальный уровень минералов клеток*/
-	public static final long START_MP = 5;
+	public static final long START_MP = 500;
 	/**Сколько нужно жизней для размножения, по умолчанию*/
 	public static final double MAX_HP = 9999;
 	/**Сколько можно сохранить минералов*/

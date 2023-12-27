@@ -212,6 +212,8 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
 		if (mucosa > 0 && getAge() % 50 == 0) {
 			mucosa--;
 		}
+		if(getHealth() < MIN_HP)
+			bot2Organic();
     }
 
     /**
@@ -612,10 +614,10 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
 
     @Override
     public void setHealth(double health) {
-        this.health = health;
-        if (this.health < 0) {
-            bot2Organic();
-        }
+		this.health = health;
+		if (this.health < 0) { //Хотя у клетки вроде как ещё должны оставаться жизни... Это уходит на корм падальщикам
+			bot2Organic();
+		}
     }
 
     @Override

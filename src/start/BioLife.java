@@ -8,13 +8,8 @@ import Calculations.GenerateClassException;
 import GUI.MainFrame;
 import GUI.WithoutGUI;
 import java.io.IOException;
-import java.util.regex.Pattern;
 
-public class BioLife{
-	/**Паттерен для проверки валидности ip адреса*/
-	private static final Pattern PATTERN = Pattern.compile("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$");
-	
-	
+public class BioLife{	
 	/**Точка входа в приложение
 	 * @param args аргументы командной строки
 	 * @throws java.io.IOException
@@ -64,15 +59,18 @@ public class BioLife{
 		Utils.Reflector.getClassesByClasses(BioLife.class);
 		//Создаём случайный мир
 		final var defType = Configurations.WORLD_TYPE.values[Utils.Utils.random(0, Configurations.WORLD_TYPE.length - 1)];
+		final var isGUI = !_opts.get('V').get(Boolean.class); //Наличие графического окна
+		//final var defType = Configurations.WORLD_TYPE.values[Utils.Utils.random(0, Configurations.WORLD_TYPE.length - 1)];
 		final var load = _opts.get('L').get(String.class);
-		if(!_opts.get('V').get(Boolean.class)){
-			//С графической частью
+		if(!load.isEmpty()){
+			Configurations.load(load);
+		} else if(isGUI){//Создаём случайный мир
 			final var  sSize = Configurations.getDefaultConfiguration(defType);
 			Configurations.makeDefaultWord(defType,sSize.MAP_CELLS.width, sSize.MAP_CELLS.height);
-			if(!load.isEmpty())
-				Configurations.load(load);
-
-			
+		} else {//Создаём случайный мир
+			Configurations.makeDefaultWord(defType,_opts.get('W').get(Integer.class), _opts.get('H').get(Integer.class));
+		}
+		if(isGUI){			
 			//Обработка переменных окружения
 			//Настраиваем буковки
 			Configurations.defaultFont = new java.awt.Font("Default", Font.BOLD, 12);
@@ -80,17 +78,12 @@ public class BioLife{
 			setUIFont(new javax.swing.plaf.FontUIResource(Configurations.defaultFont));
 			
 			EventQueue.invokeLater(() -> {try {new MainFrame().setVisible(true);} catch (Exception e) {e.printStackTrace();}});
-			Configurations.world.start();
 		} else {
 			//Только с матаном
-			Configurations.makeDefaultWord(defType,_opts.get('W').get(Integer.class), _opts.get('H').get(Integer.class));
-			if(!load.isEmpty())
-				Configurations.load(load);
-			
 			WithoutGUI.start(_opts.get('L').get(String.class),_opts.get('p').get(Integer.class));
-			Configurations.world.start();
-			
 		}
+		//И понеслась!
+		Configurations.world.start();
 	}
 	/**Сохраняет шрифты по умолчанию для всего приложения
 	 * @param f 
@@ -108,9 +101,5 @@ public class BioLife{
 	
 	private static String getProperty(String name){
 		return Configurations.getProperty(BioLife.class, name);
-	}
-	/**Проверяет валидность ip адреса*/
-	public static boolean validate(final String ip) {
-		return PATTERN.matcher(ip).matches();
 	}
 }
