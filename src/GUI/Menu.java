@@ -29,6 +29,7 @@ import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFileChooser;
+import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
@@ -47,6 +48,10 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	private GifSequenceWriter gifs = null;
 	/**Флаг, что мы пишем гифки*/
 	private boolean gifRecord = false;
+	/**Плашка для пояснения данных по записи*/
+	private JLabel record_label;
+	/**Сколько кадров уже замутили*/
+	private int gif_frame = 0;
 	/**Дерево эволюции, которым мы правим*/
 	private EvolTreeDialog evolTreeDialog;
 	/**Окно поиска*/
@@ -123,6 +128,8 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		add(makeButton("load", e-> load()));
 		add(start = makeButton("play", e -> {if (Configurations.world.isActiv())Configurations.world.stop();else Configurations.world.start();} ));
 		add(record = makeButton("record", e-> record()));
+		add(record_label = new JLabel());
+		record_label.setVisible(false);
 		add(makeButton("graph", e-> {
 			evolTreeDialog.setVisible(true);
 			evolTreeDialog.setLocation(Menu.this.getLocationOnScreen());
@@ -178,6 +185,15 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			try {
 				final var vw = ((DefaultViewer) Configurations.getViewer()).getWorld();
 				gifs.nextFrame(g -> vw.paintComponent(g, true));
+				gif_frame++;
+				if(0 <= gif_frame && gif_frame < 25 * 2){
+					record_label.setText(Configurations.getProperty(Menu.class,"record.frame",gif_frame));
+				} else if(25 * 2 <= gif_frame && gif_frame < 25 * 60){
+					record_label.setText(Configurations.getProperty(Menu.class,"record.second",gif_frame / 60));
+				} else {
+					record_label.setText(Configurations.getProperty(Menu.class,"record.minut",gif_frame / (60*60)));
+				}
+				
 			} catch (IOException e) {
 				Configurations.world.stop();
 				e.printStackTrace();
@@ -343,7 +359,13 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			if(result == javax.swing.JOptionPane.CANCEL_OPTION) return;
 			
 			LoadSaveFactory.save("BioLife", "gif", Configurations.getProperty(Menu.class,"record.start"),
-					fileName -> {gifs = new GifSequenceWriter(fileName, true, vw.getSize());Configurations.world.start();}, false,
+					fileName -> {
+						gifs = new GifSequenceWriter(fileName, true, vw.getSize());
+						Configurations.world.start();
+						record_label.setText("");
+						record_label.setVisible(true);
+						gif_frame = 0;
+					}, false,
 					el -> {JOptionPane.showMessageDialog(vw,	Configurations.getHProperty(Menu.class,"record.error")
 						+ el.getMessage(),	"BioLife", JOptionPane.ERROR_MESSAGE);}, false);
 			
@@ -351,6 +373,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			Configurations.world.stop();
 			try {gifs.close();} catch (IOException e1) {e1.printStackTrace();}
 			gifs = null;
+			record_label.setVisible(false);
 		}
 	}
 	/**Открывает окошечко сохранения мира и... Сохраняет мир, собственно*/
