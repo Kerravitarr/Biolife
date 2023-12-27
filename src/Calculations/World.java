@@ -361,7 +361,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 * @param cell объект, которому больше нет места на поле
 	 */
 	public void clean(CellObject cell) {
-		assert get(cell.getPos()) == cell : String.format("Объект %s(%d) решил удалиться со своих координат(%s), но тут занято %s(%d) - это не он!!!!!!", cell,cell.hashCode(), cell.getPos(),get(cell.getPos()),get(cell.getPos()).hashCode());
+		assert get(cell.getPos()) == cell : String.format("Объект %s(%d) решил удалиться со своих координат(%s), но тут занято %s(%d) - это не он!!!!!!", cell,cell.hashCode(), cell.getPos(),get(cell.getPos()),get(cell.getPos()) == null ? 0 : get(cell.getPos()).hashCode());
 		assert !cell.aliveStatus(LV_STATUS.GHOST) : "Объект нужно удалить, но " + cell + " уже мёртв!!!";
 		_WORLD_MAP[cell.getPos().getX()][cell.getPos().getY()] = null;
 	}

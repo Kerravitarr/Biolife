@@ -323,11 +323,10 @@ public class WorldView extends javax.swing.JPanel {
 	 */
 	private void paintField(Graphics2D g) {
 		//Рисуем игровое поле
-		animation.water(g);
+		animation.water(g, frame);
 		//И рисуем бордюр когда он должен быть под объектами
-		if(Configurations.confoguration.world_type == Configurations.WORLD_TYPE.FIELD_R){
+		if(Configurations.confoguration.world_type == Configurations.WORLD_TYPE.FIELD_R)
 			animation.world(g);
-		}
 		{ //Теперь рисуем звёзды, минералы и прочее
 			final var oldC = g.getComposite();
 			g.setComposite(AlphaComposite.getInstance( AlphaComposite.SRC_OVER, 0.6f ));
@@ -359,9 +358,8 @@ public class WorldView extends javax.swing.JPanel {
 			g.setComposite(oldC);
 		}
 		//Рисуем всё остальное
-		if(Configurations.confoguration.world_type != Configurations.WORLD_TYPE.FIELD_R){
+		if(Configurations.confoguration.world_type != Configurations.WORLD_TYPE.FIELD_R)
 			animation.world(g);
-		}
 		//Вспомогательное построение
 		//Utils.DeprecatedMetods.paintCells(g);
 	}

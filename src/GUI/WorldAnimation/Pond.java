@@ -8,7 +8,9 @@ import Calculations.Configurations;
 import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ColorRec;
+import Utils.RingBuffer;
 import java.awt.Graphics2D;
+import java.awt.geom.Ellipse2D;
 
 /**
  * анимация для бассена
@@ -36,27 +38,63 @@ import java.awt.Graphics2D;
  * @author Kerravitarr
  */
 public class Pond extends DefaultAnimation{
-	private class Wether{
-		enum Cloudy{ 
-			/**Ясно*/		CLEAR,
-			/**Малооблачно*/PARTLY,
-			/**Облачно*/	CLOUDY,
-			/**Пасмурно*/	OVERCAST,
-			/**Переменно*/	PARTIALLY,
-		}
-		
-		/**Облачность
-		 * 0	Ясно
-		 *	1	Малооблачно
-		 *	2	Облачно
-		 *	3	Пасмурно
-		 *	4	Переменная облачность
+	/**Погода, конечный автомат*/
+	private static class Wether{
+		/**Облачность. Показывает сколько облаков. 
+		*	0	Ясно
+		*	50	Переменная облачность
+		*	100	Малооблачно
+		*	150	Облачно
+		*	200	Пасмурно
 		 */
-		int cloud;
+		byte cloud;
+		/**Гроза. 0 - нет, 255 - в полную силу*/
+		byte storm;
+		/** Осадки
+		 * 0 нет
+		 * 0х0F - дождь (0-15)
+		 * 0хF0 - снег (0-15)
+		 * Для смешанных можно выкруть и дождь и снег
+		 */
+		byte Precipitation;
+		/**Ветер [0;0x7F] от штиля до урагана левый. [0x80;0xFF]*/
+		byte Wind;
+		/**Создаёт базовую погоду*/
+		public Wether(){
+			cloud = 0;
+			storm = 0;
+			Precipitation = 0;
+			Wind = 0;
+		}
+		/** @param key число, на основе которого создаётся погода*/
+		public Wether(long key){
+			cloud = random(key);
+			storm = random(Long.rotateLeft(key, 1));
+			Precipitation = random(Long.rotateLeft(key, 2));
+			Wind = random(Long.rotateLeft(key, 3));
+		}
+		private byte random(long key){return (byte) Utils.Utils.randomByHash(key, 0, 0xFF);}
+	}
+	/**Облачно*/
+	private static class Cloud{
+		/**Минимальная ширина облачка, в пк*/
+		public final static int MIN_W = 50;
+		
 	}
 	
-	/**Длина дня в тиках мира*/
-	private static final int DAY_LENGHT = 1000;
+	/**Длина одного периода в тиках мира*/
+	private static final int PERIOD_LENGHT = 1000;
+	
+	
+	/**Текущая погода*/
+	private static Wether now = new Wether();
+	/**Ожидаемая погода*/
+	private static Wether expectation = new Wether();
+	/**"Состояние" мира. Это число, которое можно считать номером состояния начиная от нулевого*/
+	private static long next_step_update = -1;
+	
+	/**Облака на небе*/
+	private RingBuffer<Cloud> clouds;
 	
 	/**Небо*/
 	private ColorRec sky;
@@ -84,6 +122,22 @@ public class Pond extends DefaultAnimation{
 		sky = new ColorRec(xs,ys,AllColors.SKY);
 		water = new ColorRec(xs,yw, AllColors.WATER_POND);
 		dirt = new ColorRec(xs,yb, AllColors.DRY);
+		
+		clouds = new RingBuffer<>(w / Cloud.MIN_W);
+	}
+	
+	@Override
+	protected void nextStep(long step){
+		final var s = step / PERIOD_LENGHT;
+		if(s != next_step_update){
+			next_step_update = s;
+			expectation = new Wether(s);
+		}
+	}
+	@Override
+	protected void nextFrame(){
+		final var cc = clouds.size();
+		
 	}
 
 	@Override
