@@ -421,5 +421,15 @@ public class Utils {
         }
         return r;
 	}
-	
+	/** Преобразует значение из одного интервала в другой
+	 * @param value значение
+	 * @param min минимальное значение исходного интервала
+	 * @param max максимальное значение исходного интервала
+	 * @param target_min минимальное значение целевого интервала
+	 * @param target_max максимальное значение целевого интервала
+	 * @return значение [target_min;target_max]
+	 */
+	public static int normalize_value(int value, int min, int max, int target_min, int target_max){
+		return ((value - min) * (target_max - target_min)) / (max - min) + target_min;
+	}
 }
