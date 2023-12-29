@@ -40,6 +40,10 @@ public class GifSequenceWriter {
 	protected Dimension size;
 	/**Тип гифки*/
 	protected int typeImg;
+	/**Кадр для изображения*/
+	private final BufferedImage frame;
+	/**Поток, который пишет созданный кадр*/
+	private final IIOImage outFrame;
 
 	/**
 	 * @param out - поток, файловый, куда будет писаться гифка
@@ -77,6 +81,8 @@ public class GifSequenceWriter {
 		writer.setOutput(out);
 		writer.prepareWriteSequence(null);
 		size = maxSize;
+		frame = new BufferedImage(size.width, size.height,typeImg);
+		outFrame = new IIOImage(frame, null, metadata);
 	}
 	/**
 	 * Создаёт гифку с частотой смены кадров по 40 мс (25 кадров в сек)
@@ -141,9 +147,9 @@ public class GifSequenceWriter {
 	
 	/**Дорисовывает новый кадр*/
 	public synchronized void nextFrame(FrameFun f) throws IOException {
-		BufferedImage image = new BufferedImage(size.width, size.height,typeImg);
-		f.paint((Graphics2D)image.getGraphics());
-		writer.writeToSequence(new IIOImage(image, null, metadata), params);
+		f.paint(frame.createGraphics());
+		outFrame.setRenderedImage(frame);
+		writer.writeToSequence(outFrame, params);
 	}
 
 	/**

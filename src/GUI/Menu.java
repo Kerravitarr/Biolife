@@ -189,9 +189,9 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 				if(0 <= gif_frame && gif_frame < 25 * 2){
 					record_label.setText(Configurations.getProperty(Menu.class,"record.frame",gif_frame));
 				} else if(25 * 2 <= gif_frame && gif_frame < 25 * 60){
-					record_label.setText(Configurations.getProperty(Menu.class,"record.second",gif_frame / 60));
+					record_label.setText(Configurations.getProperty(Menu.class,"record.second",gif_frame / 25));
 				} else {
-					record_label.setText(Configurations.getProperty(Menu.class,"record.minut",gif_frame / (60*60)));
+					record_label.setText(Configurations.getProperty(Menu.class,"record.minut",gif_frame / (25*60)));
 				}
 				
 			} catch (IOException e) {
