@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
 /**
  *
  * @author Kerravitarr
@@ -35,17 +34,15 @@ public class WorldView extends javax.swing.JPanel {
 	/**Класс для всех преобразований из размеров мира в размеры пиксеелй на экране*/
 	public class Transforms{
 		/**Масштаб - количество пикселей на 1 ячейку мира*/
-		private double scalePxPerCell = 1;
+		private double scalePxPerCell = 1d;
 		/**Верхний и нижний бордюр. Нужен, чтобы мир не упиралдся прям в потолок, а имел небольшой зазор сверху и снизу*/
 		private static final java.awt.geom.Point2D UP_DOWN_border = new java.awt.Point.Double(0.02, 0.02);
 		/**Верхний и нижний бордюр. Нужен, чтобы мир не упиралдся прям в края, а имел небольшой зазор слева и справа*/
 		private static final java.awt.geom.Point2D LEFT_RIGHT_border = new java.awt.Point.Double(0.02, 0.02);
-		/**Дополнительный край из-за не совершенства арены*/
-		public static final Dimension border = new Dimension();
-		/**Количество пиксеелй на сколько мир смещается от верхней границы из за необходимости отрисовки границы*/
-		private double pixelXDel = 0d;
-		/**Количество пиксеелй на сколько мир смещается от левой границы из за необходимости отрисовки границы*/
-		private double pixelYDel = 0d;
+		/**Верхняя левая точка, ограничивающая игровое поле. Если там х = 10, значит поле начинается только с 10ого пикселя*/
+		private final java.awt.Point.Double LU = new java.awt.Point.Double();
+		/**Нижняя правая точка, ограничивающая игровое поле. Если там х = 10, значит поле после 10ого пикселя не существует*/
+		private final java.awt.Point.Double RD = new java.awt.Point.Double();
 		
 		/**
 		* Переводит координаты мира в координаты экрана
@@ -58,7 +55,7 @@ public class WorldView extends javax.swing.JPanel {
 		* @param x координата в масштабах клеток
 		* @return x координата в масштабе окна, пк
 		*/
-		public double toDScrinX(double x) {return x*scalePxPerCell + pixelXDel;}
+		public double toDScrinX(double x) {return x*scalePxPerCell + LU.x;}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param point объект с координатами, из которого выбирается только Х
@@ -76,7 +73,7 @@ public class WorldView extends javax.swing.JPanel {
 		* @param y координата в масштабах клетки
 		* @return y координата в масштабе окна, пк
 		*/
-		public double toDScrinY(double y) {return y*scalePxPerCell + pixelYDel;}
+		public double toDScrinY(double y) {return y*scalePxPerCell + LU.y;}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param point объект с координатами, из которого выбирается только Y
@@ -105,13 +102,19 @@ public class WorldView extends javax.swing.JPanel {
 		* @param x координата на экране
 		* @return x координата на поле. Эта координата может выходить за размеры мира!!!
 		*/
-		public int toWorldX(int x) {return (int) ((x - border.width)/scalePxPerCell);}
+		public int toWorldX(int x) {return (int) toWorldX((double) x);}
+	   /**
+		* Переводит координаты экрана в координаты мира
+		* @param x координата на экране
+		* @return x координата на поле. Эта координата может выходить за размеры мира!!!
+		*/
+		public double toWorldX(double x) {return (x - LU.x)/scalePxPerCell;}
 	   /**
 		* Переводит координаты экрана в координаты мира
 		* @param y координата на экране
 		* @return x координата на поле. Эта координата может выходить за размеры мира!!!
 		*/
-		public int toWorldY(int y) {return (int) ((y - border.height)/scalePxPerCell);}
+		public int toWorldY(int y) {return (int) ((y - LU.y)/scalePxPerCell);}
 		
 		/**
 		 * Пересчитыавет координаты мировые в пикселях в координаты ячейки
@@ -136,9 +139,9 @@ public class WorldView extends javax.swing.JPanel {
 		 * @return точку в реальном пространстве
 		 */
 		private Point recalculation(int x, int y) {
-			x = (int) Utils.Utils.betwin(transforms.pixelXDel, x, WorldView.this.getWidth() - Transforms.border.width);
-			y = (int) Utils.Utils.betwin(transforms.pixelYDel, y, WorldView.this.getHeight() - Transforms.border.height);
-			return Point.create(transforms.toWorldX(x), transforms.toWorldY(y));
+			x = (int) Utils.Utils.betwin(LU.x, x, RD.x);
+			y = (int) Utils.Utils.betwin(LU.y, y,RD.y);
+			return Point.create(toWorldX(x), toWorldY(y));
 		}
 	   
 		/** Специальная функция, которая обновляет все масштабные коэффициенты */
@@ -146,12 +149,27 @@ public class WorldView extends javax.swing.JPanel {
 			//Размеры мира, с учётом обязательного запаса
 			final double h = WorldView.this.getHeight();
 			final double w = WorldView.this.getWidth();
+			final var wh = Configurations.getHeight();
+			final var ww = Configurations.getWidth();
+			final var wt = Configurations.confoguration.world_type;
 			//Пересчёт размера мира
-			scalePxPerCell = Math.min(h * (1d - getUborder() - getDborder()) / (Configurations.getHeight()), w * (1d - getLborder() - getRborder()) / (Configurations.getWidth()));
-			border.width = (int) Math.round((w - Configurations.getWidth() * scalePxPerCell) / 2);
-			border.height = (int) Math.round((h - Configurations.getHeight() * scalePxPerCell) / 2);
-			pixelXDel = (w - (Configurations.getWidth() - 1) * scalePxPerCell) / 2;
-			pixelYDel = (h - (Configurations.getHeight() - 1) * scalePxPerCell) / 2;
+			final var yS = h * (1d - getUborder() - getDborder()) / wh;
+			final var xS = w * (1d - getLborder() - getRborder()) / ww;
+			scalePxPerCell = Math.min(yS, xS);
+			switch (wt) {
+				case LINE_H -> {
+					LU.x = (w - (ww - 1) * scalePxPerCell) / 2;
+					RD.x = LU.x + ww * scalePxPerCell;
+					RD.y = h * (1 - getDborder());
+					LU.y = RD.y - wh * scalePxPerCell;
+				}
+				default -> {
+					LU.x = (w - (ww - 1) * scalePxPerCell) / 2;
+					RD.x = LU.x + ww * scalePxPerCell;
+					LU.y = (h - (wh - 1) * scalePxPerCell) / 2;
+					RD.y = LU.y + wh * scalePxPerCell;
+				}
+			}
 		}
 	}
 
@@ -161,6 +179,7 @@ public class WorldView extends javax.swing.JPanel {
 		setVisible(Point.create(0, 0), Point.create(Configurations.getWidth()-1, Configurations.getHeight()-1));
 		recalculate();
 		setBackground(null);
+		rebuildField();
 	}
 
 	/** This method is called from within the constructor to
@@ -265,39 +284,75 @@ public class WorldView extends javax.swing.JPanel {
 		}
     }//GEN-LAST:event_formMouseClicked
 
+	/**Обновляет буфер изображения*/
+	private void rebuildField(){
+		if(isVisible() && Configurations.getViewer() instanceof DefaultViewer){
+			final var w = getWidth();
+			final var h = getHeight();
+			final var bi = (bufferIndex+1) % doubleBuffer.length;
+			if(doubleBuffer[bi].getHeight() < h || doubleBuffer[bi].getWidth() < w)
+				doubleBuffer[bi] = new java.awt.image.BufferedImage(w,h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+			final var buffer = doubleBuffer[bi];
+			final var g = buffer.createGraphics();
+			
+			final var cms = System.currentTimeMillis();
+			if(cms > lastUpdate){
+				lastUpdate = cms + 0*1000/25; //25 кадров в секунду
+				frame++;
+				if(cms > lastSelected){
+					lastSelected = cms + SELECT_PERIOD / 2; //Половина, потому что за период мы должны дважды переключиться
+					isSelected = !isSelected;
+				}
+			}
+		
+			try{
+				paintComponent(g,false);
+			} catch(Exception ex){ //Вообще не ожидаются такие события... Но кто мы такие, чтобы спорить с фактами?
+				Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+			}
+			fps.interapt();
+			
+			bufferIndex = bi;
+			repaint();
+			g.dispose();
+		}
+		//Configurations.addOnceTask(this::rebuildField, 0);
+	}
+	
 	@Override
 	public void paintComponent(Graphics g) {
+		//g.drawImage(doubleBuffer[bufferIndex], 0, 0, this);/*
+		
+		final var cms = System.currentTimeMillis();
+		if(cms > lastUpdate){
+			lastUpdate = cms + 1000/25; //25 кадров в секунду максимум
+			frame++;
+		} else if(cms > lastSelected){
+			lastSelected = cms + SELECT_PERIOD / 2; //Половина, потому что за период мы должны дважды переключиться
+			isSelected = !isSelected;
+		}
+
 		try{
-			paintComponent((Graphics2D)g,false);
+			paintComponent((Graphics2D) g,false);
 		} catch(Exception ex){ //Вообще не ожидаются такие события... Но кто мы такие, чтобы спорить с фактами?
 			Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 		}
+		fps.interapt();
+
+		repaint();/**/
 	}
 	/**Отрисовывает мир на холст
 	 * @param g куда рисовать
 	 * @param isAll рисовать всё или только то, что видно на экране?
 	 */
 	public void paintComponent(Graphics2D g, boolean isAll) {
-		super.paintComponent(g);
-		
-		var v = Configurations.getViewer();
-		if(!(v instanceof DefaultViewer)) return;
-		
-		final var cms = System.currentTimeMillis();
-		if(cms > lastUpdate){
-			lastUpdate = cms + 1000/25; //25 кадров в секунду
-			frame++;
-			if(cms > lastSelected){
-				lastSelected = cms + SELECT_PERIOD / 2; //Половина, потому что за период мы должны дважды переключиться
-				isSelected = !isSelected;
-			}
-		}
+		//super.paintComponent(g);		
 		
 		paintField(g);
 		paintCells(g, isAll);
 		
 		//Отрисовываем перекрестие на выбранную клетку
-		final var infoCell = v.get(BotInfo.class).getCell();
+		final var infoCell = Configurations.getViewer().get(BotInfo.class).getCell();
 		if(infoCell != null) {
 			g.setColor(Color.GRAY);
 			g.drawLine(transforms.toScrinX(infoCell.getPos()), 0, transforms.toScrinX(infoCell.getPos()), getHeight());
@@ -312,10 +367,6 @@ public class WorldView extends javax.swing.JPanel {
 			var y1 = transforms.toScrinY(selectPoint[1]);
 			g.fillRect(Math.min(x0, x1), Math.min(y0, y1), Math.abs(x0 - x1), Math.abs(y0 - y1));
 		}
-		
-		if(isAll) return;
-		fps.interapt();
-		repaint();
 	}
 	
 	/**Закрашивает картину, согласно текущему раскладу
@@ -576,4 +627,8 @@ public class WorldView extends javax.swing.JPanel {
 	private static boolean isSelected = false;
 	/**Как часто надо мигать объектами на экране. Это время периода!, мс*/
 	private static final long SELECT_PERIOD = 1000 * 40 / 60; // 40 миганий в минуту... Образование моё такое :)
+	/**Двойной буффер для отрисовки экрана*/
+	private final java.awt.image.BufferedImage[] doubleBuffer = new java.awt.image.BufferedImage[]{new java.awt.image.BufferedImage(1,1, java.awt.image.BufferedImage.TYPE_INT_ARGB),new java.awt.image.BufferedImage(1,1, java.awt.image.BufferedImage.TYPE_INT_ARGB)};
+	/**Текущий индекс буффера*/
+	private int bufferIndex = 0;
 }
