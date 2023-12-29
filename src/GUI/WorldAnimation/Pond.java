@@ -45,43 +45,89 @@ import java.util.List;
 public class Pond extends DefaultAnimation{
 	/**Погода, конечный автомат*/
 	private static class Wether{
+		/**Максимальное значение, включетнльно, которое могут принимать численные переменные*/
+		public static final int MAX_V = 100;
+		
 		/**Облачность. Показывает сколько облаков. 
 		*	0	Ясно
-		*	50	Переменная облачность
-		*	100	Малооблачно
-		*	150	Облачно
-		*	200	Пасмурно
+		*	MAX_V/5	Переменная облачность
+		*	MAX_V*2/5	Малооблачно
+		*	MAX_V*3/5	Облачно
+		*	MAX_V*4/5	Пасмурно
 		 */
-		int cloud;
-		/**Гроза. 0 - нет, 255 - в полную силу*/
-		int storm;
-		/** Осадки
-		 * 0 нет
-		 * 0х0F - дождь (0-15)
-		 * 0хF0 - снег (0-15)
-		 * Для смешанных можно выкруть и дождь и снег
-		 */
-		int Precipitation;
-		/**Ветер [0;0x7F] от штиля до урагана левый. [0x80;0xFF] - правый*/
-		int Wind;
+		public int cloud;
+		/**Гроза. [0;MAX_V]*/
+		public int storm;
+		/** Осадки в ввиде дождя [0;MAX_V]*/
+		public int rain;
+		/** Осадки в ввиде снега [0;MAX_V]*/
+		public int snow;
+		/**Ветер [0;MAX_V]*/
+		public int wind;
+		/**Ветер дует направо, если true*/
+		public boolean rightWind;
 		/**Создаёт базовую погоду*/
 		public Wether(){
-			cloud = 0;
-			storm = 0;
-			Precipitation = 0;
-			Wind = 0;
+			cloud = storm = rain = snow = wind = 0;
+			rightWind = true;
 		}
-		/** @param key число, на основе которого создаётся погода*/
-		public Wether(long key){
-			cloud = random(key);
-			storm = random(Long.rotateLeft(key, 1));
-			Precipitation = random(Long.rotateLeft(key, 2));
-			Wind = random(Long.rotateLeft(key, 3));
+		/** @param key число, на основе которого создаётся новая погода*/
+		public void update(long key){
+			//Ветер
+			final var up = random(key);
+			if(up && wind < MAX_V) wind++;
+			else if(!up && wind > 0) wind--;
+			//Если есть ветер, то могут появиться облачка
+			if(wind != 0){
+				final var upc = random(Long.rotateLeft(key, 1));
+				if(upc && cloud < MAX_V) cloud++;
+				else if(!upc && cloud > 0) cloud--;
+			} else if(random(Long.rotateLeft(key, 2))){//Шанс сменить направление ну очень небольшой
+				rightWind = !rightWind;
+			}
+			//Если есть облачка, то могут пойти и осадки
+			if(cloud > MAX_V*2/5){
+				final var uprs = random(Long.rotateLeft(key, 4));
+				if(uprs && Math.max(rain,snow) < MAX_V){
+					if(rain == 0 && snow != 0) snow ++;
+					else if(rain != 0 && snow == 0) rain ++;
+					else if(rain == 0 && snow == 0) {
+						switch ((int)Utils.Utils.randomByHash(key, 12)) {
+							case 0,1,2,3,4,5 -> snow ++;
+							case 6,7,8,9,10,11 -> rain ++;
+							case 12 -> rain = ++snow;
+						}
+					}
+				} else if(!uprs && Math.max(rain,snow) > 0){
+					if(rain == 0 && snow != 0) snow --;
+					else if(rain != 0 && snow == 0) rain --;
+					else rain = --snow;
+				}
+			} else if(cloud > MAX_V/5) {
+				final var uprs = random(Long.rotateLeft(key, 4));
+				if(!uprs && Math.max(rain,snow) > 0){
+					if(rain == 0 && snow != 0) snow --;
+					else if(rain != 0 && snow == 0) rain --;
+					else rain = --snow;
+				}
+			} else if(snow != 0 || rain != 0){
+				snow = rain = 0;
+			}
+			//А если есть осадки, то может быть и гроза
+			if(Math.max(rain,snow) > MAX_V / 2){
+				final var ups = random(Long.rotateLeft(key, 6));
+				if(ups && storm < MAX_V) storm++;
+				else if(!ups && storm > 0) storm--;
+			} else if(Math.max(rain,snow) > MAX_V / 4){
+				if(random(Long.rotateLeft(key, 6)) && storm > 0) storm--;
+			} else if(storm > 0) {
+				storm = 0;
+			}
 		}
-		private int random(long key){return (int) Utils.Utils.randomByHash(key, 0, 0xFF);}
+		private boolean random(long key){return Utils.Utils.randomByHash(key, 1) == 0;}
 		@Override
 		public String toString(){
-			return String.format("Облачность %.0f%%, гроза %.0f%%, дождь %.0f%%, снег %.0f%%. ветер %s %.0f%%", cloud * 100d / 0xff,  storm * 100d / 0xff, (Precipitation & 0x0F) * 100d / 0x0f, ((Precipitation >> 4) & 0x0F) * 100d / 0x0f,(Wind & 0x80) == 0 ? "левый" : "правый", (Wind & ~0x80) * 100d / 0x7f);
+			return String.format("Облачность %.0f%%, гроза %.0f%%, дождь %.0f%%, снег %.0f%%. ветер %s %.0f%%", cloud * 100d / MAX_V,  storm * 100d / MAX_V, rain * 100d / MAX_V, snow * 100d / MAX_V,rightWind ? "правый" : "левый", wind * 100d / MAX_V);
 		};
 	}
 	/**Облачно*/
@@ -111,15 +157,19 @@ public class Pond extends DefaultAnimation{
 		public int width_line = 0;
 		/**Масштаб облачка, для формирования якобы удалённости облачков*/
 		private double scale = 0;
-		private Arc2D.Double[] arcs = new Arc2D.Double[COUNT_C * (COUNT_C + 1) / 2];
+		/**Высота одной дуги облачка конкретного облака*/
+		private double heightOne = 0;
+		/**Ширина одной дуги облачка конкретного облака*/
+		private double widthOne = 0;
+		/**Все дуги, из которых может состоять облачко*/
+		private final Arc2D.Double[] arcs = new Arc2D.Double[COUNT_C * (COUNT_C + 1) / 2];
 		/** Пересоздаёт облачко
 		 * @param hash хэш, для генерации чисел
-		 * @param wind [0;0x7F] от штиля до урагана левый. [0x80;0xFF] - правый
-		 * @param width
-		 * @param height
-		 * @param cloudy 
+		 * @param width ширина экрана
+		 * @param height высота под облачка
+		 * @param wether текущая погода
 		 */
-		public void regenerate(int hash, int wind, int width,int height, int cloudy){
+		public void regenerate(int hash, int width,int height,final Wether wether){
 			isVisible = true;
 			if(wind == 0){
 				//У нас штиль, но нам нужно создать облако. Создаём самое маленькое, в любом месте
@@ -127,38 +177,41 @@ public class Pond extends DefaultAnimation{
 				location.x = Utils.Utils.randomByHash(hash, 0, width);
 			} else {
 				//У нас нормальная погода. Можно и облако замутить нормальное за границами экрана
-				width_line = Utils.Utils.normalize_value(Utils.Utils.randomByHash(hash, 0, cloudy), 0, 0xFF, 1, COUNT_C);
+				width_line = Utils.Utils.normalize_value(Utils.Utils.randomByHash(hash, 0, wether.cloud), 0, Wether.MAX_V, 1, COUNT_C);
 				final var maxC = (width_line*(width_line+1))/2; //Сколько у нам может быть дуг максимум
 				count = width_line == 1 ? 1 : Utils.Utils.randomByHash(hash + maxC, maxC - width_line, maxC);
 			}
-			this.wind = (Utils.Utils.randomByHash(hash, 50, 150) / 100d) * (wind & (~0x80)) * WIND_TO_SPEED;
-			if((wind & 0x80) == 0) this.wind = -this.wind;
+			this.wind = (Utils.Utils.randomByHash(hash, 50, 150) / 100d) * wether.wind * WIND_TO_SPEED / Wether.MAX_V;
+			if(!wether.rightWind) this.wind = -this.wind;
 			scale = Utils.Utils.randomByHash(hash + count, 50, 150) / 100d;
-			size.width = (int) (width_line * WIDTH_PER_CL * scale);
-			size.height = (int) (width_line * HEIGHT_PER_CL * scale);
-			if((wind & 0x80) != 0) location.x = - size.width;
+			heightOne = HEIGHT_PER_CL * scale;
+			widthOne = WIDTH_PER_CL * scale;
+			size.width = (int) (width_line * widthOne);
+			size.height = (int) (width_line * heightOne);
+			if(!wether.rightWind) location.x = - size.width;
 			else location.x = width + size.width;
-			location.y = Utils.Utils.randomByHash((hash + size.height), 0, height) - size.height;
+			location.y = Utils.Utils.randomByHash((hash + size.height), 0, height) - size.height - heightOne/2;
 			
 			{//Буфферизируем наши дуги
-				final var W = WIDTH_PER_CL * scale;
-				final var H = HEIGHT_PER_CL * scale;
 				for (int i = 0; i < count; i++) {
-					if(arcs[i] == null) arcs[i] = new Arc2D.Double(0, 0, W, H*2, 0, 180, Arc2D.OPEN);	
+					if (arcs[i] == null) {
+						arcs[i] = new Arc2D.Double(0, 0, widthOne, heightOne * 2, 0, 180, Arc2D.OPEN);
+					} else {
+						arcs[i].width = widthOne;
+						arcs[i].height = heightOne * 2;
+					}
 				}
 			}
 		}
 		/** Рисует облачко
 		 * @param g холст, на котором его надо нарисовать
 		 */
-		private void paint(Graphics2D g) {
+		private void paint(Graphics2D g, WorldView.Transforms t) {
 			var r = width_line;
 			var y = location.y;
 			var countC = 0;
-			final var W = WIDTH_PER_CL * scale;
-			final var H = HEIGHT_PER_CL * scale;
-			if(wind > 0){
-				var x = location.x;
+			if(wind > 0 || count <= r){
+				var x = t.toDScrinX(location.x);
 				for(var i = 0 ; i < count ; i++){
 					final var a = arcs[i];
 					a.x = x; a.y= y;
@@ -166,14 +219,14 @@ public class Pond extends DefaultAnimation{
 					if(++countC == r){
 						countC = 0;
 						r--;
-						x -= r * W - W / 2;
-						y -= H;
+						x -= r * widthOne - widthOne / 2;
+						y -= heightOne;
 					} else {
-						x += W;
+						x += widthOne;
 					}
 				}
 			} else {
-				var x = location.x + r * W;
+				var x = t.toDScrinX(location.x) + r * widthOne;
 				for(var i = 0 ; i < count ; i++){
 					final var a = arcs[i];
 					a.x = x; a.y= y;
@@ -181,10 +234,10 @@ public class Pond extends DefaultAnimation{
 					if(++countC == r){
 						countC = 0;
 						r--;
-						x += r * W - W / 2;
-						y -= H;
+						x += r * widthOne - widthOne / 2;
+						y -= heightOne;
 					} else {
-						x -= W;
+						x -= widthOne;
 					}
 				}
 			}
@@ -206,7 +259,9 @@ public class Pond extends DefaultAnimation{
 	}
 	
 	/**Длина одного периода в тиках мира*/
-	private static final int PERIOD_LENGHT = 1000;
+	private static final int PERIOD_LENGHT = 10;
+	/**Выделение жирненьким по умолчанию*/
+	private final static java.awt.BasicStroke DASHED = new java.awt.BasicStroke(2);
 	/**Текущее состояние погоды, не зависящее от реального разрешения экрана*/
 	private static Static state;
 	/**Ширина экрана*/
@@ -217,6 +272,8 @@ public class Pond extends DefaultAnimation{
 	private final int height_sky;
 	/**Максимальное количество облаков*/
 	private final int maxCloud;
+	/**Преобразователь кординат объектов в координаты мира*/
+	private final WorldView.Transforms transform;
 	
 	/**Небо*/
 	private ColorRec sky;
@@ -249,7 +306,20 @@ public class Pond extends DefaultAnimation{
 		height = h;
 		height_sky = transform.toScrinY(0);
 		maxCloud = (width * height) / Cloud.MAX_CLOUD_DENSITY;
+		this.transform = transform;
 		if(state == null) state = new Static();
+	}
+	/** Цикл, проходящий по всем видимым облакам
+	 * @param c обработчик каждого видимого облака
+	 */
+	private void forEachVisibleCloud(java.util.function.Consumer<Cloud> c){
+		for (int i = 0, cc = 0; i < state.clouds.size() && cc < state.countCloud; i++) {
+			final var cloud = state.clouds.get(i);
+			if(cloud.isVisible) {
+				c.accept(cloud);
+				cc++;
+			}
+		}
 	}
 	
 	@Override
@@ -257,8 +327,19 @@ public class Pond extends DefaultAnimation{
 		final var s = step / PERIOD_LENGHT;
 		if(s != state.next_step_update){
 			state.next_step_update = s;
-			state.expectation = new Wether(s+1);
+			final var w = state.expectation.wind;
+			final var wr = state.expectation.rightWind;
+			state.expectation.update(s);
 			System.out.println(state.expectation);
+			if(w > state.expectation.wind){
+				//Ветер уменьшился
+				forEachVisibleCloud(c -> c.wind -= Cloud.WIND_TO_SPEED);
+			} else if(w < state.expectation.wind) {
+				forEachVisibleCloud(c -> c.wind += Cloud.WIND_TO_SPEED);
+			}
+			if(wr != state.expectation.rightWind){ //Если ветер поменял сторону
+				forEachVisibleCloud(c -> c.wind = -c.wind);
+			}
 		}
 	}
 	@Override
@@ -272,15 +353,11 @@ public class Pond extends DefaultAnimation{
 				if(!cloud.isVisible) continue;
 				else cc++;
 				cloud.location.x += cloud.wind;
-				if (cloud.location.x < -cloud.size.width || cloud.location.x > width + cloud.size.width || cloud.location.y + cloud.size.height > height_sky) {
+				final var cx = transform.toScrinX(cloud.location.x);
+				if (cx < -cloud.size.width || cx > width + cloud.size.width || cloud.location.y + cloud.size.height > height_sky)
 					cloud.isVisible = false;
-				} else {
+				else 
 					state.countCloud++;
-					if(state.expectation.Wind != 0x00 && cloud.wind == 0){//У нас изменилась сила ветра
-						if((state.expectation.Wind & 0x80) != 0) cloud.wind += Cloud.WIND_TO_SPEED;
-						else cloud.wind -= Cloud.WIND_TO_SPEED;
-					}
-				}
 			}
 		}
 		final var expectedCloud = (state.expectation.cloud) * maxCloud / 0xFF;
@@ -295,16 +372,9 @@ public class Pond extends DefaultAnimation{
 				cloud = new Cloud();
 				state.clouds.add(cloud);
 			}
-			cloud.regenerate(state.hashCountr++,state.expectation.Wind,width, height_sky,state.expectation.cloud);
+			cloud.regenerate(state.hashCountr++,width, height_sky,state.expectation);
+			cloud.location.x = transform.toWorldX(cloud.location.x);
 			state.countCloud++;
-		} else if(state.expectation.Wind == 0x00 && state.countCloud != 0 && state.countCloud > expectedCloud){
-			//У нас слишком много облаков и не стоит ждать, что их сдует ветер
-			final var cloud = state.clouds.stream().filter(c -> !c.isVisible).findFirst().get();
-			if(cloud.count > 1){
-				cloud.count--;
-			} else {
-				cloud.isVisible = false;
-			}
 		}
 	}
 
@@ -318,10 +388,7 @@ public class Pond extends DefaultAnimation{
 		sky.paint(g);
 		dirt.paint(g);
 		g.setColor(Color.BLACK);
-		for (int i = 0, cc = 0; i < state.clouds.size() && cc < state.countCloud; i++) {
-			final var c = state.clouds.get(i);
-			if(c.isVisible) c.paint(g);
-		}
+		forEachVisibleCloud(c -> c.paint(g, transform));
 	}
 	
 }

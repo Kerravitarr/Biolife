@@ -301,6 +301,7 @@ public class Utils {
 	 * @return [min,max]
 	 */
 	public static int randomByHash(int base, int max){
+		max++; //Для включения верхней границы
 		final var m = max - 1;
         var r = hashCode(base);
         if ((max & m) == 0) {
@@ -376,6 +377,7 @@ public class Utils {
 	 * @return [min,max]
 	 */
 	public static long randomByHash(long base, long max){
+		max++; //Для включения верхней границы
 		final var m = max - 1;
         var r = hashCode(base);
         if ((max & m) == 0L) {
