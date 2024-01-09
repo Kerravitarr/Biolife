@@ -432,6 +432,9 @@ public class Utils {
 	 * @return значение [target_min;target_max]
 	 */
 	public static int normalize_value(int value, int min, int max, int target_min, int target_max){
-		return ((value - min) * (target_max - target_min)) / (max - min) + target_min;
+		if(min == max)
+			return (target_max + target_min) / 2;
+		else
+			return ((value - min) * (target_max - target_min)) / (max - min) + target_min;
 	}
 }

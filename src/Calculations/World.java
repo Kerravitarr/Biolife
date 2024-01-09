@@ -96,7 +96,6 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		 * @param point место, где он находился до начала хода
 		 */
 		private void action(CellObject cell, Point point){
-			//cell.addHealth(100 - cell.getHealth());
 			if(cell.canStep(step)) {
 				try {
 					cell.step(step);					
