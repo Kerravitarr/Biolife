@@ -9,6 +9,11 @@ import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ColorRec;
 import java.awt.Graphics2D;
+import java.awt.geom.CubicCurve2D;
+import java.awt.geom.Point2D;
+import java.awt.geom.QuadCurve2D;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Анимация для реки.
@@ -17,6 +22,38 @@ import java.awt.Graphics2D;
  * @author Kerravitarr
  */
 public class River extends DefaultAnimation{
+	/**Волна. Её один элемент*/
+	private static class Wave{
+		/**Точка волны*/
+		public static class Point{
+			/**Текущее значение координаты*/
+			public Point2D.Double now;
+			/**Значение координаты, вокруг которой точка может немного флуктуировать*/
+			public Point2D.Double real;
+			
+			public Point(Point2D.Double p){real = p; now = new Point2D.Double(p.x, p.y);}
+		}
+		/**Начальная точка волны*/
+		public Point first;
+		/**Центральная точка волны, вспомогательная*/
+		public Point centered;
+		/**Конечная точка волны*/
+		public Point second;
+		/**Сама волна, которая будет начерчена на экране*/
+		public QuadCurve2D.Double wave;
+		/**Отображается эта волна на экране?*/
+		public boolean isVisible;
+	}
+	/**Все статические переменные*/
+	private static class Static{
+		/**Количество отображаемых волн*/
+		public int countWave = 0;
+		/**Все волны, даже те, что не отображаются - для кэширования*/
+		public final List<Wave> waves = new ArrayList<>();
+	}
+	
+	/**Состояние анимации*/
+	private static Static state;
 	/**Берег левый*/
 	private ColorRec left;
 	/**водичка*/
@@ -43,6 +80,12 @@ public class River extends DefaultAnimation{
 		left = new ColorRec(xl,yw,AllColors.SAND);
 		water = new ColorRec(xw,yw, AllColors.WATER_RIVER);
 		right = new ColorRec(xr,yw, AllColors.SAND);
+		
+		if(state == null) state = new Static();
+	}
+		
+	@Override
+	protected void nextFrame(){
 	}
 
 	@Override
@@ -54,6 +97,9 @@ public class River extends DefaultAnimation{
 	public void world(Graphics2D g) {
 		left.paint(g);
 		right.paint(g);
+		
+		final var q = new QuadCurve2D.Double(50,0,70,50,50,140);
+		g.fill(q);
 	}
 	
 }

@@ -363,11 +363,11 @@ public class Pond extends DefaultAnimation{
 	/**Класс со всеми статическими переменными*/
 	private static class Static{
 		/**Ожидаемая погода*/
-		public Wether expectation = new Wether();
+		public final Wether expectation = new Wether();
 		/**"Состояние" мира. Это число, которое можно считать номером состояния начиная от нулевого*/
 		public long next_step_update = -1;
 		/**Облака на небе*/
-		public List<Cloud> clouds = new ArrayList<>();
+		public final List<Cloud> clouds = new ArrayList<>();
 		/**Количество реально оторбражаемых облаков на небе*/
 		public int countCloud = 0;
 		/**Количество реально оторбражаемых капелек дождя на небе*/
@@ -377,7 +377,7 @@ public class Pond extends DefaultAnimation{
 	}
 	
 	/**Длина одного периода в тиках мира*/
-	private static final int PERIOD_LENGHT = 10;
+	private static final int PERIOD_LENGHT = 1000;
 	/**Текущее состояние погоды, не зависящее от реального разрешения экрана*/
 	private static Static state;
 	/**Ширина экрана*/
