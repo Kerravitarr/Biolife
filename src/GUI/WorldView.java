@@ -450,7 +450,7 @@ public class WorldView extends javax.swing.JPanel {
 				//А если меньше, то рисовать мы будем самыми общими чертами
 				final var dr = transforms.toDScrin(1);
 				if (dr <= 0) return;
-				final var step =  r >= 1 ? 2 : (int)Math.round(2d/dr);
+				final var step = (int)Math.ceil(4d/dr); //4 - потому что рисуем квадратиками 2х2 пк
 				final var nr = transforms.toScrin(step);
 				final var ritangleColor = new Color[step * step];
 				for (int x = 0; x < Configurations.getWidth(); x+=step) {

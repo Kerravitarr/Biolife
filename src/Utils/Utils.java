@@ -112,7 +112,13 @@ public class Utils {
 	public static void fillSquare(Graphics g, int x, int y, int r) {
 		g.fillRect(x-r/2, y-r/2,r, r);
 	}
-	
+	/**Отрисовывает центрированный текст
+	 * @param g холст, на котором рисуем
+	 * @param x центр по оси
+	 * @param y центр по оси
+	 * @param size размер шрифта
+	 * @param text сам текст
+	 */
 	public static void centeredText(Graphics g, int x, int y, float size, String text) {
 		// Create a new font with the desired size
 		Font newFont = g.getFont().deriveFont(size);
