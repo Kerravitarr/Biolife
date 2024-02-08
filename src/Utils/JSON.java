@@ -1,5 +1,5 @@
-package Utils;
-//Версия 2.7 от 19 декабря 2023 года!
+package utils;
+//Версия 2.8 от 8 февраля 2023 года!
 
 
 
@@ -390,6 +390,48 @@ public final class JSON{
 	/**Интерфейс для любого параметра JSON*/
 	private interface JSON_par{
 		public void write(Writer writer, String tabs) throws IOException;
+		
+		public static <T> String getVal(T value_o) {
+			if(value_o == null)
+				return "null";
+			else if(value_o instanceof String s) {
+				final var sb = new StringBuffer();
+				sb.append("\"");
+				final int len = s.length();
+				for(int i=0;i<len;i++){
+					char ch=s.charAt(i);
+					switch(ch){
+					case '"' -> sb.append("\\\"");
+					case '\\' -> sb.append("\\\\");
+					case '\b' -> sb.append("\\b");
+					case '\f' -> sb.append("\\f");
+					case '\n' -> sb.append("\\n");
+					case '\r' -> sb.append("\\r");
+					case '\t' -> sb.append("\\t");
+					case '/' -> sb.append("\\/");
+					default -> {
+							//Reference: http://www.unicode.org/versions/Unicode5.1.0/
+							if((ch>='\u0000' && ch<='\u001F') || (ch>='\u007F' && ch<='\u009F') || (ch>='\u2000' && ch<='\u20FF')){
+								String ss=Integer.toHexString(ch);
+								sb.append("\\u");
+								for(int k=0;k<4-ss.length();k++){
+									sb.append('0');
+								}
+								sb.append(ss.toUpperCase());
+							} else{
+								sb.append(ch);
+							}
+						}
+					}
+				}//for	
+				sb.append("\"");			
+				return sb.toString();
+			} else if(value_o instanceof Enum e) {
+				return "\"" + e.name() + "\"";
+			} else {
+				return String.valueOf(value_o);
+			}
+		}
 	}
 
 	/**Специальный класс, который хранит только значение*/
@@ -419,25 +461,7 @@ public final class JSON{
 					((JSON) value_o).toBeautifulJSONString(writer, null);
 				}
 			} else {
-				writer.write(getVal(value_o));
-			}
-		}
-		private String getVal(T value_o) {
-			if(value_o == null)
-				return "null";
-			else if(value_o instanceof String) {
-				var ret = value_o.toString().replace("\\", "\\\\")
-						.replace("\t", "\\t")
-						.replace("\b", "\\b")
-						.replace("\n", "\\n")
-						.replace("\r", "\\r")
-						.replace("\f", "\\f")
-						.replace("\"", "\\\"");
-				return "\"" + ret + "\"";
-			} else if(value_o instanceof Enum e) {
-				return "\"" + e.name() + "\"";
-			} else {
-				return String.valueOf(value_o);
+				writer.write(JSON_par.getVal(value_o));
 			}
 		}
 		
@@ -492,12 +516,28 @@ public final class JSON{
 		 */
 		@Override
 		public void write(Writer writer, String tabs) throws IOException {
-			if(value_mo != null && !value_mo.isEmpty() && value_mo.get(0) instanceof JSON) {
+			write(value_mo,writer, tabs);
+		}
+		/**
+		 * Записывает красиво форматированный объект в поток.
+		 * @param list массив объектов, которых мы и запишем в поток
+		 * @param writer - цель, куда записывается объект
+		 * @param tabs - специальная переменная, позволяет сделать красивое форматирование.
+		 * 				Если она null, то форматирования не будет
+		 * @throws IOException - следует учитывать возможность выброса исключения при работе с файлом
+		 */
+		private void write(List<T> list, Writer writer, String tabs) throws IOException{
+			if(list == null){
+				writer.write("null");
+			} else if(list.isEmpty()){
+				writer.write("[]");
+			} else if(list.get(0) instanceof JSON) {
 				writer.write("[");
 				if (tabs != null)
 					writer.write("\n");
 				boolean isFirst = true;
-				for(T i : value_mo) {
+				for(T i : list) {
+					final var json = (JSON) i;
 					if(isFirst)
 						isFirst = false;
 					else if (tabs != null)
@@ -506,32 +546,49 @@ public final class JSON{
 						writer.write(",");
 					if (tabs != null) {
 						writer.write(tabs + "\t");
-						((JSON) i).toBeautifulJSONString(writer, tabs + "\t");
+						json.toBeautifulJSONString(writer, tabs + "\t");
 					} else {
-						((JSON) i).toBeautifulJSONString(writer, null);
+						json.toBeautifulJSONString(writer, null);
 					}
 				}
 				if (tabs != null)
 					writer.write("\n" + tabs + "]");
 				else
 					writer.write("]");
-			} else if(value_mo != null) {
+			} else if(list.get(0) instanceof List) {
+				writer.write("[");
+				if (tabs != null)
+					writer.write("\n");
+				boolean isFirst = true;
+				for(T i : list) {
+					final var par = (List) i;
+					if(isFirst)
+						isFirst = false;
+					else if (tabs != null)
+						writer.write(",\n");
+					else
+						writer.write(",");
+					if (tabs != null) {
+						writer.write(tabs + "\t");
+						write(par,writer, tabs + "\t");
+					} else {
+						write(par,writer, null);
+					}
+				}
+				if (tabs != null)
+					writer.write("\n" + tabs + "]");
+				else
+					writer.write("]");
+			} else {
 				StringBuilder vals = new StringBuilder();
-				for (T i : value_mo) {
+				for (T i : list) {
 					if (!vals.isEmpty())
 						vals.append(",");
-					vals.append(getVal(i));
+					vals.append(JSON_par.getVal(i));
 				}
-				writer.write("[" + vals + "]");
-			} else {
-				writer.write("[]");
-			}
-		}
-		private String getVal(T value_o) {
-			if(value_o instanceof String) {
-				return "\"" + value_o.toString().replaceAll("\"", "\\\\\"") + "\"";
-			}else {
-				return String.valueOf(value_o);
+				writer.write("[");
+				writer.write(vals.toString());
+				writer.write("]");
 			}
 		}
 		
@@ -762,9 +819,11 @@ public final class JSON{
 	 * Получает любые векторные значения по ключу
 	 * @param <T>
 	 * @param key - ключ
+	 * @deprecated теперь надо пользоваться фукнцией с указанием класса объектов
 	 * @return - значение, или null, если значение не найдено
 	 */
 	@SuppressWarnings("unchecked")
+	@Deprecated
 	public <T> List<T> getA(String key) {
 		var par = parametrs.get(key);
 		if (par instanceof JSON_A)
@@ -845,9 +904,11 @@ public final class JSON{
 	 * Получает значение по ключу
 	 * @param <T>
 	 * @param key - ключ
-	 * @return - значение, или null, если значение не найдено
+	 * @deprecated теперь надо пользоваться методами с указанием класса объекта
+	 * @return - значение, или null, если значение не найдено или значение не является единственным, а, например, это массив
 	 */
 	@SuppressWarnings("unchecked")
+	@Deprecated
 	public <T> T get(String key) {
 		var par = parametrs.get(key);
 		if (par instanceof JSON_O) {
