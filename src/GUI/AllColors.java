@@ -63,6 +63,14 @@ public class AllColors {
 	
 	/**
 	 * Смешивает цвета в равной пропорции
+	 * @param c массив цветов
+	 * @return итоговый цвет
+	 */
+	public static Color blend( Color... c) {
+		return blend(c.length, c);
+	}
+	/**
+	 * Смешивает цвета в равной пропорции
 	 * @param size количество цветов
 	 * @param c массив цветов, может быть заполнен лишь частично
 	 * @return итоговый цвет
@@ -82,6 +90,44 @@ public class AllColors {
 			r += c[i].getRed() * ratio;
 			g += c[i].getGreen() * ratio;
 			b += c[i].getBlue() * ratio;
+		}
+
+		return new Color(r, g, b, a);
+	}
+	/**
+	 * Смешивает цвета пропорционально прозрачности
+	 * @param c массив цветов
+	 * @return итоговый цвет
+	 */
+	public static Color blendA( Color... c) {
+		return blendA(c.length, c);
+	}
+	/**
+	 * Смешивает цвета пропорционально прозрачности
+	 * @param size количество цветов
+	 * @param c массив цветов, может быть заполнен лишь частично
+	 * @return итоговый цвет
+	 */
+	public static Color blendA(int size, Color... c) {
+		if(size == 1) return c[0];
+		
+		float sA = 0;
+		for (int i = 0; i < size; i++) {
+			sA += c[i].getAlpha();
+		}
+		
+		float a = 0;
+		float r = 0;
+		float g = 0;
+		float b = 0;
+
+		for (int i = 0; i < size; i++) {
+			final var color = c[i];
+			final var ratio = color.getAlpha() / (sA * 255f) ;
+			a += color.getAlpha() * ratio;
+			r += color.getRed() * ratio;
+			g += color.getGreen() * ratio;
+			b += color.getBlue() * ratio;
 		}
 
 		return new Color(r, g, b, a);
