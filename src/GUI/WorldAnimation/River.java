@@ -144,20 +144,48 @@ public class River extends DefaultAnimation{
 		private double que;
 		private double row;
 		private HexPoint.Direction direction = null;
-		private double lenght = -1;
+		private double _lenght = -1;
 		public HexVector(){this(0,0);}
 		public HexVector(double q, double r){que = q; row = r;};
+		/**Создаёт вектор, направленный от точки from к точке to
+		 * @param from
+		 * @param to 
+		 */
+		public HexVector(HexPoint from, HexPoint to){this(to.que - from.que, to.row - from .row);};
+		/**Прибавляет число к вектору */
+		public HexVector add(double add){return add(add, add);}
+		/**Прибавляет вектор к вектору */
+		public HexVector add(HexVector add){return add(add.que, add.row);}
 		/**Прибавляет вектор к вектору */
 		public HexVector add(double q, double r){
-			direction = null;lenght = -1;
+			direction = null;_lenght = -1;
 			que += q;
 			row += r;
 			return this;
 		}
+		/**Увеличивает вектор на заданую велечину*/
+		public HexVector scale(double p){
+			direction = null;_lenght = -1;
+			que *= p;
+			row *= p;
+			return this;
+		}
+		/**Уменьшает вектор на заданую велечину*/
+		public HexVector div(double p){
+			direction = null;_lenght = -1;
+			que /= p;
+			row /= p;
+			return this;
+		}
 		public double lenght(){
-			if(lenght < 0)
-				lenght = (Math.abs(que)+Math.abs(que + row)+Math.abs(row)) / 2;
-			return lenght;
+			if(_lenght < 0)
+				_lenght = (Math.abs(que)+Math.abs(que + row)+Math.abs(row)) / 2;
+			return _lenght;
+		}
+		/**Нормализует вектор и возвращает его-же*/
+		public HexVector normalize(){
+			div(lenght());
+			return this;
 		}
 		public HexPoint.Direction direction(){
 			if(direction == null){
@@ -168,6 +196,10 @@ public class River extends DefaultAnimation{
 			return direction;
 		}
 		@Override
+		public HexVector clone(){
+			return new HexVector(que, row);
+		}
+		@Override
 		public String toString(){return String.format("q;r=%.1f;%.1f%s", que , row, direction());}
 	}
 	/**Одна клетка берега*/
@@ -176,59 +208,50 @@ public class River extends DefaultAnimation{
 		public static final int SILT_LV_DEF = 20;
 		/**Сколлько сторон будет у полигона клеток*/
 		private static final int SIDES = 6;
-		/**Во сколько раз столб земли должен быть выше окружения, чтобы упасть*/
-		private static final double PILLAR_FALL = 4;
-		/**Сколько грязи с собой забирает течение. При течении = 1*/
-		private static final double GET_SILT = 0.001;
-		/**На сколько высоко мы можем закинуть ил вместе с течением. При течении = 1*/
-		private static final double JUMP_SILT = 1e10;
-		/**Во сколько должен быть высокий столб грязи под водой, чтобы упасть против течения*/
-		private static final double STANDING_PILLAR = 2;
+		/**Скорость перестройки ланшафта. Как быстро появляются реки и как быстро они исчезают*/
+		private static final double EVOLUTION_SPEED = 0.1;
 		
 		/**Центральная точка*/
 		private java.awt.geom.Point2D.Double center = new java.awt.geom.Point2D.Double(0, 0);
 		/**Радиус клетки, в пикселях*/
 		private double radius = 1;
-		
 	
 		/**Местоположение клетки*/
 		public final HexPoint point;
 		/**Ил на клетке. То, что лежит на её дне*/
 		private double _silt;
 		/**Вода на клетке. Естественно над илом!*/
-		private double _water;
-		/**Течение в клетке*/
-		private HexVector _flow = new HexVector();
+		private double _water = 0;
+		/**Вода на клетке. Для следующего хода*/
+		private double _water_next = 0;
+		/**Количество корней на клетке. Показывает на сколько клетка не хочет отдавать свой ил*/
+		public double roots = 0;
 		/**Цвет клетки*/
 		private Color color = AllColors.SAND;
-		/**Показывает, что это у нас клетка источника*/
-		private boolean isMouth = false;
 		/**Флаг, показывающий что клетка является крайней, за ней - река. Показывается направление, в котором река*/
 		private HexPoint.Direction isEnd = null;
 		/**Массив всех соседей клетки*/
 		private java.util.EnumMap<HexPoint.Direction,Cell> neighbours = null;
-		/**Мы - карйняя стенка у какой-то из стороны. Мы грязью ни с кем не делимся, как порядочная стенка*/
-		private boolean isWail = true;
 		/**Наличие на клетке "кораблика"*/
-		private boolean isShip = false;
+		private final boolean isShip = true;
 		
+		/**Течение на клетке. Куда и как сильно*/
+		private HexVector flow = new HexVector();
+		/**Течение на клетке для следующего хода*/
+		private HexVector flow_next = new HexVector();
 		
-		private HexVector _flow_t = new HexVector();
 		
 		
 		public Cell(HexPoint p){
 			point = p;
 		}
 		/** Иициализирует клетку
-		 * @param isMouth эта клетка - источник?
 		 * @param isEnd направление где карта заканчивается. Относится только к крайним клеткам
 		 * @param neighbours список соседних клеток
 		 */
-		public void init(boolean isMouth, HexPoint.Direction isEnd, java.util.EnumMap<HexPoint.Direction,Cell> neighbours){
-			this.isMouth = isMouth;
+		public void init(HexPoint.Direction isEnd, java.util.EnumMap<HexPoint.Direction,Cell> neighbours){
 			this.isEnd = isEnd;
 			this.neighbours = neighbours;
-			this.isWail = isEnd == null && neighbours.values().stream().filter(v -> v != null).count() != HexPoint.Direction.sides.length;
 			setParams(0,Utils.Utils.random(SILT_LV_DEF / 2, SILT_LV_DEF + SILT_LV_DEF / 2));
 		}
 		/**Сохраняет размеры клетки, перерисовывая её заодно
@@ -268,65 +291,14 @@ public class River extends DefaultAnimation{
 		public double maxLavel(){return water() + silt();}
 		public double water(){return _water;}
 		public double silt(){return _silt;}
-		
-		/** Логика работы клетки
-		 */
-		public void step(){			
-			//На первом этапе - вода.			
-			if(water() > 0){
-				waterStep();
-				//Передаём кораблик дальше
-				if(isShip && _flow.lenght() > 0){
-					final var tar = neighbours.get(_flow.direction());
-					if(tar != null) tar.isShip = true;
-				}
-				//Водичка протекла. Теперь проверим - а течение есть?
-				if(_flow.lenght() > 0 && !isWail){
-					//Течение есть! Надо забрать земельку с противоположной стороны и передать её дальше
-					//Сколько грязьки мы возьмём с нашей клетки
-					//А ещё если мы конец, то мы ни чего не возьмём со стороны реки, но течение есть и значит грязьку мы отдадим!
-					siltStep();
-				} else if(!isWail){
-					//Мы простая заводь. Но надо поглядеь, может и мы можем с кем ни будь добром поделиться!
-					final var our_silt = silt();
-					Cell max = null;
-					var delta = HexPoint.Direction.values.length / 3d; //Сразу минимальная высота, которая только и может обвалиться.
-					for(final var c : neighbours.values()){
-						if(c == null) continue;
-						if((our_silt - c.silt()) > delta){
-							max = c;
-							delta = our_silt - c.silt();
-						}
-					}
-					if(max != null){
-						//Разравниваемся
-						final var ds = (silt() + max.silt()) / 2;
-						setParams(water() , ds * 2/3);
-						max.setParams(max.water() , ds * 1/3);
-					}
-				}
-				_flow_t = new HexVector(0.8 * _flow_t.que + 0.2 * _flow.que,0.8 * _flow_t.row + 0.2 * _flow.row);
-			} else {
-				//У нас сухой столб. Он может обвалиться, если будет слишком высоким
-				final var our_level = silt();
-				Cell max = null;
-				var delta = our_level * PILLAR_FALL; //Сразу минимальная высота, которая только и может обвалиться.
-				for(final var c : neighbours.values()){
-					if(c == null) continue;
-					final var effH = c.silt(); //Каждый мокрый слой подтачивает нас, а не удерживает
-					if((our_level - effH) > delta || effH <= 0){
-						max = c;
-						delta = our_level - effH;
-					}
-				}
-				if(max != null){
-					//Осыпаемся!
-					final var ds = (silt() + max.silt()) / 2;
-					setParams(water() , ds * 2/3);
-					max.setParams(max.water() , ds * 1/3);
-				}
-			}
-			isShip = false;
+		/**Добавляет к илу кусочек и возвращает новое значение*/
+		public double silt(double add){setParams(_water, _silt + add); return _silt;}
+		/**Обновляет значение клетки*/
+		public void update(){
+			setParams((1 - EVOLUTION_SPEED) * _water + EVOLUTION_SPEED * _water_next, _silt);
+			_water_next = 0;
+			flow = flow.scale((1 - EVOLUTION_SPEED)).add(flow_next.scale(EVOLUTION_SPEED));
+			flow_next.scale(0);
 		}
 		public void draw(Graphics2D g) {
 			final var tmpC = g.getColor();
@@ -339,11 +311,6 @@ public class River extends DefaultAnimation{
 				Utils.Utils.centeredText(g, (int) center.x, (int) center.y+0, 10, String.format("s%.1f", silt()));
 				Utils.Utils.centeredText(g, (int) center.x, (int) center.y+10, 10, String.format("l%.1f", maxLavel()));
 				//Utils.Utils.centeredText(g, (int) center.x, (int) center.y+6, 10, point.toString() + (isEnd != null ? "e" : "") + (isMouth > 0 ? isMouth : ""));
-				g.setColor(Color.white);
-				final var s = _flow_t.lenght();
-				final var x = s * (Math.sqrt(3) * _flow_t.que  +  Math.sqrt(3)/2d * _flow_t.row);
-				final var y = s * (                         3d/2d * _flow_t.row);
-				g.drawLine((int) center.x, (int) center.y, (int) (center.x + x), (int) (center.y + y));
 			} else if(isShip){
 				final var h = Math.max(1, radius / 2);
 				g.setColor(Color.white);
@@ -351,142 +318,41 @@ public class River extends DefaultAnimation{
 			}
 			g.setColor(tmpC);
 		}
-		private void waterStep(){
-			//Наш уровень воды, относительно мирового
-			final var our_level = maxLavel();
-			//Вспомогательный массив отфильтрованных занчений
-			final java.util.Map.Entry<HexPoint.Direction,Cell>[] filter = new java.util.Map.Entry[HexPoint.Direction.values.length];
-			var filterSize = 0;
-			//Найдём средний уровень, какой мы хотим иметь по итогу
-			var average_level = our_level;
-			var max_al = silt();
-			var count_target = 1;
-			for(final var e : neighbours.entrySet()){
-				if(e.getValue() == null) continue;
-				final var flow = e.getKey() == _flow.direction() ? _flow.lenght() : 0;
-				final var lv = e.getValue().maxLavel() - flow;
-				if(lv < our_level){
-					count_target++;
-					average_level += lv;
-					max_al = Math.max(max_al, e.getValue().silt() - flow);
-					filter[filterSize++] = e;
-				}
-			}
-			if(count_target > 1){
-				//Средний уровень не может быть ниже, чем высота ила где ни будь
-				average_level =  Math.max(average_level / count_target, max_al);					
-				var costD = 0d;	//Каков в сумме размер всех перепадов высот
-				//Узнаем, сколько нужно каждой клетке, чтобы её уровень стал как average_level
-				for (int i = 0; i < filterSize; i++) {
-					final var e = filter[i];
-					final var lv = e.getKey() != _flow.direction() ? e.getValue().maxLavel() : (e.getValue().maxLavel() - _flow.lenght());
-					costD += average_level - lv;
-				}
-				//А вот столько воды мы можем дать...
-				final var has_water = Math.min(water(), our_level - average_level);
-
-				var nextFlow = new HexVector();
-				if(costD > 0){
-					for (int i = 0; i < filterSize; i++) {
-						final var e = filter[i];
-						final var c = e.getValue();
-						final var lv = e.getKey() != _flow.direction() ? c.maxLavel() : (c.maxLavel() - _flow.lenght());
-						final var forse = (average_level - lv) / costD;
-						if(Math.abs(forse) < 1e-10) continue; //Если тут прибавочка на уровне погрешности вычислений, то не прибавляем
-						final var add = has_water * forse;
-						nextFlow.add(e.getKey().dq * forse,e.getKey().dr * forse);
-						c.setParams(c.water() + add, c.silt());
-						//c._flow.add(_flow.que * forse,_flow.row * forse);
-					}
-					setParams(water() - has_water, silt());
-				}
-				_flow = nextFlow;
-				if(isEnd != null && water() > 0){
-					//С последней клетки вода утекает на три следующие - в сторону реки
-					final var f = water() / 6;
-					_flow = new HexVector(isEnd.dq * f ,isEnd.dr * f);
-					setParams(water() / 2 , silt());
-				} else if(isEnd != null) {
-					_flow = new HexVector();
-					setParams(0, silt());
-				}
-			} else {
-				//Нет течения. Ни кому не отдаим нашу воду!
-				_flow = new HexVector();
-			}
-		}
-		private void siltStep(){
-			//Вспомогательный массив отфильтрованных занчений
-			final java.util.Map.Entry<HexPoint.Direction,Cell>[] filter = new java.util.Map.Entry[HexPoint.Direction.values.length];
-			var filterSize = 0;
-			final var our_silt = silt();
-			final var give = Math.min(our_silt,  _flow.lenght() * GET_SILT);
-			var hasStil = give;
-			var needStil = 0d;
-
-			final Function<HexPoint.Direction,Boolean> isContain = d -> {final var c = neighbours.get(d); return c != null && c.water() > 0;};
-			final var isUpFlow = isContain.apply(_flow.direction().next());
-			final var isDownFlow = isContain.apply(_flow.direction().prefur());
-			final var Kmain = isUpFlow && isDownFlow ? 0.5 : ((isUpFlow || isDownFlow) ? 2d/3d : 1.0);
-			final var Ksubmain = isUpFlow && isDownFlow ? 0.25 : 1d/3d;
-			final var breakColumn = our_silt * STANDING_PILLAR;
-			filterSize = 0;
-			for(final var e : neighbours.entrySet()){
-				if(e.getValue() == null) continue;
-				final var d = e.getKey();
-				final var c = e.getValue();
-				final var s = c.silt();
-				if(d.isNear(_flow.direction())){
-					if(c.water() == 0) continue; //Те, что по пути, мы их подпираем и не трогаем
-					final var flow = _flow.lenght() * (d == _flow.direction() ? Kmain : Ksubmain);
-					//По течению
-					if(s > breakColumn){
-						//У нас по курсу течения большой перепад высот. Это он хочет упасть к нам
-						final var delS = (s - breakColumn) / 3;
-						c.setParams(c.water(), s - delS);
-						hasStil += delS;
-					} else if(our_silt + flow * JUMP_SILT>= s){
-						needStil += Math.pow(flow, 4) * GET_SILT; //Переносная сила потока изменяется в 4й степени к скорости
-						filter[filterSize++] = e;
-					}
-				} else {
-					//Не по течению
-					final var flow = _flow.lenght() / 3;
-					if(s + flow * JUMP_SILT >= our_silt){
-						//С нами хотят поделиться землёй
-						final var delS = Math.min(s, Math.pow(flow, 4) * GET_SILT);
-						c.setParams(c.water(), s - delS);
-						hasStil += delS;
-					} else if(our_silt > s * STANDING_PILLAR){
-						//Мы на столько высокие, что падаем туда!
-						needStil += (our_silt - s * STANDING_PILLAR) / 3;
-						filter[filterSize++] = e;
-					} 
-				}
-			}
-			//Иногда нам отдавать ни чего не нужно, или нужно на столько мало, что скорее уж 0, чем число
-			if(needStil > 0){
-				//Коэффициент передачи. Показывает сколько мы реально можем отдать
-				final var hasK = hasStil / needStil;
-				for (int i = 0; i < filterSize; i++) {
-					final var e = filter[i];
-					final var d = e.getKey();
-					final var c = e.getValue();
-					var s = c.silt();
-					if(d.isNear(_flow.direction())){
-						s += Math.pow(_flow.lenght() * (d == _flow.direction() ? Kmain : Ksubmain), 4)  * GET_SILT * hasK;
-					} else {
-						s += (our_silt - s * STANDING_PILLAR) / 3 * hasK;
-					}
-					c.setParams(c.water(), s);
-				}
-			}
-			setParams(water(), silt() - give);
-		}
 		@Override
 		public String toString(){
 			return String.format("%s w;s;m%.1f;%.1f;%.1f", point,water(),silt(),maxLavel());
 		}
+	}
+	/**Частика, которая будет определять непосредственно форму рек*/
+	private static class Drop{
+		/** Максимальный возраст капли*/
+		public static int MAX_AGE = 0;
+		/** Минимальный запас воды в капле, прежде чем она исчезнет*/
+		public static final double MIN_WATER = 0.01;
+		/** Скорость испарения капли. [0,1)*/
+		public static final double EVAPORATION_RATE = 0.001;
+		/** Скорость забора ила на клетках при движении*/
+		public static final double SETTLING = 0.1;
+		/** Сила переноса ила с точки на точку*/
+		public static final double SILT_TRANSPORT = 10.0;
+		/** Сила гравитации*/
+		public static final double GRAVITY = 1.0;
+		/** Эффективность передачи импульса при движении*/
+		public static final double IMPULSE_TRANSFER = 1.0;
+		
+		/**Возраст катящейся капли*/
+		private int age = 0;
+		/**Позиция капли*/
+		private HexVector position ;
+		/**Скорость капли*/
+		private HexVector speed = new HexVector();
+		/**Количество воды в капле*/
+		private double water = 1;
+		/**Количество ила в капле*/
+		private double silt = 0;
+		
+		/**Создаёт клетку на нужной позиции*/
+		public Drop(HexPoint pos){position = new HexVector(pos.que, pos.row);}
 	}
 	/**Волна. Её один элемент*/
 	private static class Wave{
@@ -572,10 +438,6 @@ public class River extends DefaultAnimation{
 		private Cell[] call_cell = new Cell[0];
 		/**Сколько грязи мы потеряли за время моделирования*/
 		private double exitS = 0;
-		/**Какая максимальная высота земли на текущий момент*/
-		private double maxHeight = 0;
-		/**Какая максимальная высота земли будет на следующий ход*/
-		private double maxHeightNext = 0;
 		
 		/**Добавляет волны */
 		private void addWave(int newSize){
@@ -652,7 +514,7 @@ public class River extends DefaultAnimation{
 		 * @param index 
 		 */
 		public void updateRivers(int index, boolean isLeft){
-			final var i = call_cell.length - index % call_cell.length - 1; //У нас index идёт вверх. А i должен быть [0,map.length)
+			final var i = (call_cell.length - 1) - index % call_cell.length; //У нас index идёт вверх. А i должен быть [0,map.length)
 			final var t = call_cell[i];
 			final var j = Utils.Utils.random(0, i); // случайный индекс от 0 до i
 			//Меняем местами клетки, чтобы каждый раз вызывать их в разной последовательности
@@ -662,19 +524,18 @@ public class River extends DefaultAnimation{
 				c.setParams(c.water(), c.silt() + 1);
 				exitS -= 1;
 			}
-			//Источник всегда имеет на 1 выше воды, чем самая высокая гора
-			if(c.isMouth){
-				c.setParams(Math.max(0, (maxHeightNext + 1) - c.water() - c.silt()) , c.silt());
-				c.isShip = i % 2 == 0;
-			}
+			//Запоминаем грязьку и ходим
 			final var prefS = c.neighbours.values().stream().mapToDouble(lc -> lc == null ? 0 : lc.silt()).sum() + c.silt();
-			c.step();
+			{
+				final var d = new Drop(c.point);
+				while(moveDrop(d)){}
+			}
+			//c.step();
 			final var next = c.neighbours.values().stream().mapToDouble(lc -> lc == null ? 0 : lc.silt()).sum() + c.silt();
 			exitS += prefS - next;
-			maxHeightNext = Math.max(maxHeightNext, c.silt());
 			if(i == 0){
-				maxHeight = maxHeightNext;
-				maxHeightNext = 0;
+				//Нулевой шаг. Это самый конец. Надо запомнить все числа и начать с самого начала
+				forEach(с -> c.update());
 			}
 		}
 		/**Обновляет дополнительные реки
@@ -693,44 +554,13 @@ public class River extends DefaultAnimation{
 			final var Rs = height / 2; //Радиус реки изначально.
 			forEach(c -> {
 				final var p = c.point;
-				final var isM = (p.row == 0 && p.que == map.length / 2);// || (p.row == map.length-1 && p.que == 0);
 				final var isE = isLeft && (p.que + p.row / 2) == (map.length - 1) || !isLeft && (p.que + p.row / 2) == 0;
 				final var neighbours = new java.util.EnumMap<HexPoint.Direction,Cell>(HexPoint.Direction.class);
 				for(final var d : HexPoint.Direction.sides)
 					neighbours.put(d, get(p,d));
-				c.init(isM, isE ? (isLeft ? HexPoint.Direction.RIGHT : HexPoint.Direction.LEFT) : null, neighbours);
+				c.init(isE ? (isLeft ? HexPoint.Direction.RIGHT : HexPoint.Direction.LEFT) : null, neighbours);
 			});
-			maxHeight = Cell.SILT_LV_DEF;
-			
-			//А теперь прокопаем реку!
-			//Находим точку, удалённую от центра копания - то есть от верхнего угла, в одну из сторон
-			HexPoint point;
-			final var startD = HexPoint.Direction.sides[HexPoint.Direction.sides.length - 2];
-			if(isLeft)
-				point = (new HexPoint(startD, Rs)).add(new HexPoint(height-1,0));
-			else
-				point = (new HexPoint(startD, Rs)).add(new HexPoint());
-			//И копаем по кругу
-			for (final var d : HexPoint.Direction.sides) {
-				for (int j = 0; j < Rs; j++) {
-					if(isValid(point))
-						 get(point).setParams( 0, Cell.SILT_LV_DEF / 4);
-					point = point.next(d);
-				}
-			}
-			//А теперь с другой стороны копаем
-			if(isLeft)
-				point = (new HexPoint(startD, Rs)).add(new HexPoint(height/2,height-1));
-			else
-				point = (new HexPoint(startD, Rs)).add(new HexPoint(-height/2, height-1));
-			//И копаем по кругу
-			for (final var d : HexPoint.Direction.sides) {
-				for (int j = 0; j < Rs; j++) {
-					if(isValid(point))
-						 get(point).setParams( 0, Cell.SILT_LV_DEF / 4);
-					point = point.next(d);
-				}
-			}
+			Drop.MAX_AGE = height;
 		}
 		/**Проходит по всем клеткам мира*/
 		public void forEach(Consumer<Cell> action){
@@ -789,23 +619,123 @@ public class River extends DefaultAnimation{
 			return isValid(p.que, p.row);
 		}
 		/**Возвращает ячейку поля
+		 * @return 
+		 */
+		private Cell get(int que, int row){
+			assert isValid(que,row) : "Точка оказалась за границей! Точка (" + que + ";" + row + ") при поле " + map.length + "х"+ map.length;
+			return map[row][que + row / 2];
+		}
+		/**Возвращает ячейку поля
 		 * @param p
 		 * @return 
 		 */
 		private Cell get(HexPoint p){
 			assert isValid(p) : "Точка оказалась за границей! Точка " + p + " при поле " + map.length + "х"+ map.length;
-			return map[p.row][p.que + p.row / 2];
+			return get(p.que, p.row);
 		}
 		/**Возвращает клетку относительно*/
 		private Cell get(HexPoint p, HexPoint.Direction d){
 			final var q = p.que + d.dq;
 			final var r = p.row + d.dr;
 			if(isValid(q,r))
-				return map[r][q + r/2];
+				return get(q, r);
 			else
 				return null;
 		}
+		
+		/**Обрабатывает движение капельки по плато
+		 * @param d капелька
+		 * @return true, если движение своё капелька ещё не закончила
+		 */
+		private boolean moveDrop(Drop d) {
+			final var cell = get((int)d.position.que,(int)d.position.row);
+			if(d.age > Drop.MAX_AGE || d.water < Drop.MIN_WATER){
+				cell.silt(d.silt);
+				return false;
+			}
+			//Эффективность переноса ила
+			final var siltEff = Math.max(0.0, Drop.SETTLING * (1d - cell.roots));
+			final var f = new HexVector();
+			for(var c : cell.neighbours.values()){
+				final var del = cell.silt() - c.silt();
+				f.add((new HexVector(cell.point,c.point)).scale(del));
+			}
+			if(cell.isEnd != null){ //Крайние точки дополнительно утягивает за край
+				final var del = cell.silt();
+				final var n = cell.isEnd.next();
+				final var p = cell.isEnd.prefur();
+				f.add((new HexVector(cell.isEnd.dq, cell.isEnd.dr)).scale(del));
+				f.add((new HexVector(n.dq, n.dr)).scale(del));
+				f.add((new HexVector(p.dq, p.dr)).scale(del));
+			}
+			d.speed = d.speed.add(f.scale(Drop.GRAVITY / d.water)); //F=ma => a = F/m. V = V0+at
+			if(cell.flow.lenght() > 0 && d.speed.lenght() > 0){
+				final var fsnq = cell.flow.que / cell.flow.lenght();
+				final var fsnr = cell.flow.row / cell.flow.lenght();
+				final var dsnq = d.speed.que / d.speed.lenght();
+				final var dsnr = d.speed.row / d.speed.lenght();
+				//Сколярное произведение векторов...
+				//Ну вообще, если я правильно понял, то это действует для любых ситуаций...
+				//Но правильно ли я понял?
+				final var dot = fsnq * dsnq + fsnr * dsnr;
+				d.speed = d.speed.add(Drop.IMPULSE_TRANSFER * dot / (d.water + cell.water()) * cell.flow.lenght());
+			}
+			//Если у нас есть скорость, то мы должны сделать её такой, будто за ход клетка сразу совершила ТП на следующую клетку...
+			//Сложно? Сложно. А что делать? :)
+			//Можно рассматривать скорость не как непосредственно скорость, а как параметр замедления времени при моделировании
+			if(d.speed.lenght() > 0){
+				d.speed = d.speed.normalize();
+			}
+			d.position = d.position.add(d.speed);
+			//А теперь обновим данные для ячейки
+			cell._water_next += d.water;
+			cell.flow_next.add(d.speed.clone().scale(d.water));
+			
+			//И так. С этой клеткой закончили. Теперь перейдём к следующей!
+			final var h_next = isValid((int)d.position.que,(int)d.position.row) ? get((int)d.position.que,(int)d.position.row).silt() : 0;
+			
+			//Теперь перенесём массу пропорционально высоте и объёму воды!
+			final var c_eq = Math.max(0.0, (cell.silt() - h_next) * (1.0 + Drop.SILT_TRANSPORT * erf(0.4 * cell.water())));
+			final var del_c_eq = c_eq - d.silt;
+			
+			d.silt += siltEff * del_c_eq;
+			cell._silt -= siltEff * del_c_eq;
+			
+			//Теперь испаряем часть капельки
+			d.silt /= 1 - Drop.EVAPORATION_RATE;
+			d.water*= 1 - Drop.EVAPORATION_RATE;
+			
+			if(!isValid((int)d.position.que,(int)d.position.row)) return false;
+			
+			shoreCollapse(get((int)d.position.que,(int)d.position.row));
+			
+			d.age++;
+			return true;
+		}
+		/**Расчитывает функцию ошибок гауса. Делает это с точностью около 1.2 * 10 ^ -7. Правда около 0, конечно, всё идёт по одному месту
+		 * @param z
+		 * @return 
+		 */
+		private static double erf(double z) {
+			double t = 1.0 / (1.0 + 0.5 * Math.abs(z));
 
+			//Считаем по методу Горнера
+			double ans = 1 - t * Math.exp(-z * z - 1.26551223
+					+ t * (1.00002368
+					+ t * (0.37409196
+					+ t * (0.09678418
+					+ t * (-0.18628806
+					+ t * (0.27886807
+					+ t * (-1.13520398
+					+ t * (1.48851587
+					+ t * (-0.82215223
+					+ t * (0.17087277))))))))));
+			return z >= 0 ? ans : -ans;
+		}
+		/**Проверяет крутость берега вокруг точки и обрушивает его, если надо*/
+		private void shoreCollapse(Cell cell){
+			
+		}
 	}
 	/**Все статические переменные*/
 	private static class Static{
