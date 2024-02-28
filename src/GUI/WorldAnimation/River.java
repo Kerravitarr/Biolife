@@ -13,6 +13,7 @@ import java.awt.Graphics2D;
 import java.awt.geom.Path2D;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -205,7 +206,7 @@ public class River extends DefaultAnimation{
 	/**Одна клетка берега*/
 	private static class Cell extends java.awt.geom.Path2D.Double {
 		/**Сколько земли тут будет изначально +- 0,5*/
-		public static final int SILT_LV_DEF = 20;
+		public static final double SILT_LV_DEF = 0.5;
 		/**Сколлько сторон будет у полигона клеток*/
 		private static final int SIDES = 6;
 		/**Скорость перестройки ланшафта. Как быстро появляются реки и как быстро они исчезают*/
@@ -233,7 +234,7 @@ public class River extends DefaultAnimation{
 		/**Массив всех соседей клетки*/
 		private java.util.EnumMap<HexPoint.Direction,Cell> neighbours = null;
 		/**Наличие на клетке "кораблика"*/
-		private final boolean isShip = true;
+		private final boolean isShip = false;
 		
 		/**Течение на клетке. Куда и как сильно*/
 		private HexVector flow = new HexVector();
@@ -252,7 +253,8 @@ public class River extends DefaultAnimation{
 		public void init(HexPoint.Direction isEnd, java.util.EnumMap<HexPoint.Direction,Cell> neighbours){
 			this.isEnd = isEnd;
 			this.neighbours = neighbours;
-			setParams(0,Utils.Utils.random(SILT_LV_DEF / 2, SILT_LV_DEF + SILT_LV_DEF / 2));
+			final var lv = (int)(SILT_LV_DEF * 100);
+			setParams(0,Utils.Utils.random(lv / 2, lv + lv / 2) / 100d);
 		}
 		/**Сохраняет размеры клетки, перерисовывая её заодно
 		 * @param woffset смещение относительно 0х по ширине экрана
@@ -282,7 +284,7 @@ public class River extends DefaultAnimation{
 			_silt = silt;
 			_water = water;
 			final var s = silt+water;
-			final int wAlf = (int) Math.min(255, water*100);
+			final int wAlf = (int) Math.min(255, water*255);
 			final var cs = AllColors.toDark(AllColors.SAND, 255-wAlf);
 			final var cw = AllColors.toDark(AllColors.WATER_RIVER, wAlf);
 			color = AllColors.blendA(cs,cw);
@@ -339,6 +341,10 @@ public class River extends DefaultAnimation{
 		public static final double GRAVITY = 1.0;
 		/** Эффективность передачи импульса при движении*/
 		public static final double IMPULSE_TRANSFER = 1.0;
+		/** Коэффициент подвижности берегов. Показывает как много земельки идёт от клетки к клетке*/
+		public static final double COLLAPSE = 0.8;
+		/**Максимальная крутость берега. Круче быть не может уже*/
+		public static final double SILT_STEP = 0.01;
 		
 		/**Возраст катящейся капли*/
 		private int age = 0;
@@ -520,22 +526,22 @@ public class River extends DefaultAnimation{
 			//Меняем местами клетки, чтобы каждый раз вызывать их в разной последовательности
 			final var c = call_cell[i] = call_cell[j];
 			call_cell[j] = t;
-			if(exitS > 1){ //Как только накопится грязь - дарим её клетке
-				c.setParams(c.water(), c.silt() + 1);
+			if(exitS > Cell.SILT_LV_DEF){ //Как только накопится грязь - дарим её клетке
+				c.setParams(c.water(), c.silt() + Cell.SILT_LV_DEF);
 				exitS -= 1;
 			}
 			//Запоминаем грязьку и ходим
-			final var prefS = c.neighbours.values().stream().mapToDouble(lc -> lc == null ? 0 : lc.silt()).sum() + c.silt();
+			final var prefS = Arrays.stream(call_cell).mapToDouble(lc -> lc == null ? 0 : lc.silt()).sum() + c.silt();
 			{
 				final var d = new Drop(c.point);
 				while(moveDrop(d)){}
 			}
 			//c.step();
-			final var next = c.neighbours.values().stream().mapToDouble(lc -> lc == null ? 0 : lc.silt()).sum() + c.silt();
+			final var next = Arrays.stream(call_cell).mapToDouble(lc -> lc == null ? 0 : lc.silt()).sum() + c.silt();
 			exitS += prefS - next;
-			if(i == 0){
-				//Нулевой шаг. Это самый конец. Надо запомнить все числа и начать с самого начала
-				forEach(с -> c.update());
+			if(i % map.length == 0){
+				//Прошли одну сторону. Надо обновить всё поле.
+				forEach(update_c -> update_c.update());
 			}
 		}
 		/**Обновляет дополнительные реки
@@ -657,11 +663,12 @@ public class River extends DefaultAnimation{
 			final var siltEff = Math.max(0.0, Drop.SETTLING * (1d - cell.roots));
 			final var f = new HexVector();
 			for(var c : cell.neighbours.values()){
+				if(c == null) continue;
 				final var del = cell.silt() - c.silt();
 				f.add((new HexVector(cell.point,c.point)).scale(del));
 			}
 			if(cell.isEnd != null){ //Крайние точки дополнительно утягивает за край
-				final var del = cell.silt();
+				final var del = Drop.SILT_STEP;
 				final var n = cell.isEnd.next();
 				final var p = cell.isEnd.prefur();
 				f.add((new HexVector(cell.isEnd.dq, cell.isEnd.dr)).scale(del));
@@ -734,7 +741,40 @@ public class River extends DefaultAnimation{
 		}
 		/**Проверяет крутость берега вокруг точки и обрушивает его, если надо*/
 		private void shoreCollapse(Cell cell){
+			final var fields = new Cell[HexPoint.Direction.sides.length];
+			var snum = 0; //У крайнего поля всегда есть три соседа
+			if(cell.isEnd != null){
+				snum = 1;
+				if(cell.neighbours.get(cell.isEnd.next()) == null) snum++;
+				if(cell.neighbours.get(cell.isEnd.prefur()) == null) snum++;
+			}
+			var num = snum;
+			for(final var e : cell.neighbours.values())
+				if(e != null)
+					fields[num++] = e;
+			//Сортируем соседей по высоте, с учётом, что соседи за границей (null) всегда первые
+			Arrays.sort(fields, snum , num, (a,b) -> Double.compare(a.silt(),b.silt()));
 			
+			for (int i = 0; i < num; i++) {
+				Cell field = fields[i];
+				//Перепад высот
+				final var diff = field == null ? Drop.SILT_STEP : (cell.silt() - field.silt());
+				if(diff == 0) continue;
+				//Сумма "лишней" разницы. Что и должно обвалиться
+				final var excess = Math.abs(diff);
+				if(excess <= Drop.SILT_STEP) continue;
+				//Фактическая сумма уравновешивания
+				final var transfer = Drop.COLLAPSE * excess / 2d;
+				
+				//Переносим ил
+				if(diff > 0){
+					cell.silt(-transfer);
+					if(field != null) field.silt(transfer);
+				} else {
+					cell.silt(transfer);
+					if(field != null) field.silt(-transfer);
+				}
+			}
 		}
 	}
 	/**Все статические переменные*/
@@ -762,8 +802,8 @@ public class River extends DefaultAnimation{
 		}
 		/**Обновляет реки по берегам*/
 		public void updateRivers(){
-			for (int i = 0; i < left.call_cell.length; i++) {
-				left.updateRivers(cell, true);
+			for (int i = 0; i < 1; i++) {
+				//left.updateRivers(cell, true);
 				right.updateRivers(cell++, false);
 				if(cell < 0) cell = 0; //Если слишком много кадров отснимем, то не должно быть отрицательных чисел всё равно!
 			}
@@ -828,8 +868,8 @@ public class River extends DefaultAnimation{
 		leftBorder = transform.toScrinX(0);
 		rightBorder = transform.toScrinX(Configurations.getWidth()-1);
 		
-		final var count_cell = Configurations.getHeight();/**
-		final var count_cell = 15;/***/
+		//final var count_cell = Configurations.getHeight();/**
+		final var count_cell = 30;/***/
 		if(count_cell <= 0) {
 			scale = 1;
 			return;
