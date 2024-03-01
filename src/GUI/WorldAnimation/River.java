@@ -137,6 +137,10 @@ public class River extends DefaultAnimation{
 			a.row += b.row;
 			return a;
 		}
+		@Override
+		public HexPoint clone(){
+			return new HexPoint(que, row);
+		}
 		
 		@Override
 		public String toString(){return "q;r=" + que + ";" + row;}
@@ -144,7 +148,7 @@ public class River extends DefaultAnimation{
 	private static class HexVector{
 		private double que;
 		private double row;
-		private HexPoint.Direction direction = null;
+		private HexPoint.Direction _direction = null;
 		private double _lenght = -1;
 		public HexVector(){this(0,0);}
 		public HexVector(double q, double r){que = q; row = r;};
@@ -153,27 +157,25 @@ public class River extends DefaultAnimation{
 		 * @param to 
 		 */
 		public HexVector(HexPoint from, HexPoint to){this(to.que - from.que, to.row - from .row);};
-		/**Прибавляет число к вектору */
-		public HexVector add(double add){return add(add, add);}
 		/**Прибавляет вектор к вектору */
 		public HexVector add(HexVector add){return add(add.que, add.row);}
 		/**Прибавляет вектор к вектору */
 		public HexVector add(double q, double r){
-			direction = null;_lenght = -1;
+			_direction = null;_lenght = -1;
 			que += q;
 			row += r;
 			return this;
 		}
 		/**Увеличивает вектор на заданую велечину*/
 		public HexVector scale(double p){
-			direction = null;_lenght = -1;
+			_direction = null;_lenght = -1;
 			que *= p;
 			row *= p;
 			return this;
 		}
 		/**Уменьшает вектор на заданую велечину*/
 		public HexVector div(double p){
-			direction = null;_lenght = -1;
+			_direction = null;_lenght = -1;
 			que /= p;
 			row /= p;
 			return this;
@@ -189,12 +191,12 @@ public class River extends DefaultAnimation{
 			return this;
 		}
 		public HexPoint.Direction direction(){
-			if(direction == null){
+			if(_direction == null){
 				final var nq = que / lenght();
 				final var nr = row / lenght();
-				direction = HexPoint.Direction.valueOf((int)Math.round(nq),(int)Math.round(nr));
+				_direction = HexPoint.Direction.valueOf((int)Math.round(nq),(int)Math.round(nr));
 			}
-			return direction;
+			return _direction;
 		}
 		@Override
 		public HexVector clone(){
@@ -202,6 +204,33 @@ public class River extends DefaultAnimation{
 		}
 		@Override
 		public String toString(){return String.format("q;r=%.1f;%.1f%s", que , row, direction());}
+	}
+	/**Кораблик, который симулирует течение*/
+	private static class Ship {
+		/**Клетка, где кораблик находится*/
+		private Cell cell;
+		/**Позиция кораблика*/
+		private HexVector point;
+		
+		/**Проверяет - плывёт ещё кораблик или уже нет?*/
+		public boolean isActiv(){return cell != null;}
+		/**Начало кораблика*/
+		public void start(Cell c){
+			cell = c;
+			cell.isShip = true;
+			point = new HexVector(cell.point.que,cell.point.row);
+		}
+		/**Шаг кораблика*/
+		public void step(RiverBank bank){
+			cell.isShip = false;
+			point.add(cell.flow.direction().dq,cell.flow.direction().dr);
+			if(bank.isValid(point)){
+				cell = bank.get(point);
+				cell.isShip = true;
+			} else {
+				cell = null;
+			}
+		}
 	}
 	/**Одна клетка берега*/
 	private static class Cell extends java.awt.geom.Path2D.Double {
@@ -234,14 +263,12 @@ public class River extends DefaultAnimation{
 		/**Массив всех соседей клетки*/
 		private java.util.EnumMap<HexPoint.Direction,Cell> neighbours = null;
 		/**Наличие на клетке "кораблика"*/
-		private final boolean isShip = false;
+		private boolean isShip = false;
 		
 		/**Течение на клетке. Куда и как сильно*/
 		private HexVector flow = new HexVector();
 		/**Течение на клетке для следующего хода*/
 		private HexVector flow_next = new HexVector();
-		
-		
 		
 		public Cell(HexPoint p){
 			point = p;
@@ -283,15 +310,15 @@ public class River extends DefaultAnimation{
 			assert java.lang.Double.isFinite(water) && java.lang.Double.isFinite(silt) && water >= 0 && silt >= 0: "Вода " + water + " грязь " + silt;
 			_silt = silt;
 			_water = water;
-			final var s = silt+water;
-			final int wAlf = (int) Math.min(255, water*255);
-			final var cs = AllColors.toDark(AllColors.SAND, 255-wAlf);
-			final var cw = AllColors.toDark(AllColors.WATER_RIVER, wAlf);
-			color = AllColors.blendA(cs,cw);
 		}
 		/**Уровнь клетки, относительно нуля. Высота, на которой находится верхняя кромка поля*/
 		public double maxLavel(){return water() + silt();}
 		public double water(){return _water;}
+		/**Нужно понимать, что вода у нас будет на каждой клетке... 
+		 * Поэтому если нужно узнать "приведённое" значение воды. 
+		 * Вероятность, что на клетке есть вода, то обращаться нужно к этой функции
+		 * @return количество воды на экране[0,1]*/
+		public double waterNormalize(){return erf(0.4*water());}
 		public double silt(){return _silt;}
 		/**Добавляет к илу кусочек и возвращает новое значение*/
 		public double silt(double add){setParams(_water, _silt + add); return _silt;}
@@ -301,24 +328,70 @@ public class River extends DefaultAnimation{
 			_water_next = 0;
 			flow = flow.scale((1 - EVOLUTION_SPEED)).add(flow_next.scale(EVOLUTION_SPEED));
 			flow_next.scale(0);
+			
+			//final var s = silt+water;
+			final int wAlf = (int) Math.min(255, 255*waterNormalize());
+			Color sand;
+			{
+				final var bAlf = (int) Math.min(25, _silt*25);
+				final var cs = AllColors.toDark(Color.BLACK, bAlf);
+				final var cw = AllColors.toDark(AllColors.SAND, 255-bAlf);
+				sand = AllColors.blendA(cs,cw);
+			}
+			
+			final var cs = AllColors.toDark(sand, 255-wAlf);
+			final var cw = AllColors.toDark(AllColors.WATER_RIVER, wAlf);
+			final var cg = AllColors.toDark(Color.GREEN, (int) Math.min(25, roots*25));
+			color = AllColors.blendA(cs,cw,cg);
 		}
 		public void draw(Graphics2D g) {
 			final var tmpC = g.getColor();
 			g.setColor(color);
 			g.fill(this);
 			
-			if(radius > 20){
+			/*if(radius > 20){
 				g.setColor(Color.BLACK);
 				Utils.Utils.centeredText(g, (int) center.x, (int) center.y-10, 10, water() > 0 ? String.format("w%.1f", water()) : "");
 				Utils.Utils.centeredText(g, (int) center.x, (int) center.y+0, 10, String.format("s%.1f", silt()));
 				Utils.Utils.centeredText(g, (int) center.x, (int) center.y+10, 10, String.format("l%.1f", maxLavel()));
 				//Utils.Utils.centeredText(g, (int) center.x, (int) center.y+6, 10, point.toString() + (isEnd != null ? "e" : "") + (isMouth > 0 ? isMouth : ""));
-			} else if(isShip){
-				final var h = Math.max(1, radius / 2);
+			} else */if(isShip){
+				final var h = Math.max(1, radius/2 );
 				g.setColor(Color.white);
 				g.drawOval((int)(center.x - h/2), (int)(center.y - h/2), (int)h, (int)h);
 			}
+			{
+				g.setColor(Color.BLACK);
+				final var x1 = (int) center.x;
+				final var y1 = (int) center.y;
+				final var fx = radius * (Math.sqrt(3) * flow.que  +  Math.sqrt(3)/2d * flow.row);
+				final var fy = radius * (                         3d/2d * flow.row);
+				final var x2 = (int) (center.x + fx);
+				final var y2 = (int) (center.y + fy);
+				g.drawLine(x1, y1, x2, y2);
+			}
 			g.setColor(tmpC);
+		}
+		
+		/**Расчитывает функцию ошибок гауса. Делает это с точностью около 1.2 * 10 ^ -7. Правда около 0, конечно, всё идёт по одному месту
+		 * @param z
+		 * @return 
+		 */
+		private static double erf(double z) {
+			double t = 1.0 / (1.0 + 0.5 * Math.abs(z));
+
+			//Считаем по методу Горнера
+			double ans = 1 - t * Math.exp(-z * z - 1.26551223
+					+ t * (1.00002368
+					+ t * (0.37409196
+					+ t * (0.09678418
+					+ t * (-0.18628806
+					+ t * (0.27886807
+					+ t * (-1.13520398
+					+ t * (1.48851587
+					+ t * (-0.82215223
+					+ t * (0.17087277))))))))));
+			return z >= 0 ? ans : -ans;
 		}
 		@Override
 		public String toString(){
@@ -359,6 +432,70 @@ public class River extends DefaultAnimation{
 		
 		/**Создаёт клетку на нужной позиции*/
 		public Drop(HexPoint pos){position = new HexVector(pos.que, pos.row);}
+	}
+	/**Дерево, которое укрелпяет берег*/
+	private static class Plant{
+		/**Максимальный размер дерева*/
+		public final static double MAX_SIZE = 1.5;
+		/**Скорость роста*/
+		public final static double GROW_RATE = 0.05;
+		/**Максимальная крутость берега, на которой может вырасти дерево*/
+		public final static double MAX_STEP = 0.8;
+		/**Сколько может быть максимум воды на клетке, чтобы понять, что тут нам не рости*/
+		public final static double MAX_WATER = 0.3;
+		/**Максимальная высота, на которой может рости дерево*/
+		public final static double MAX_CELL_SILT = 0.8;
+		
+		/**Местоположение дерева*/
+		public Cell cell = null;
+		/**Размер дерева*/
+		private double size = 0;
+		
+		/**Проверить клетку на то, что на ней можно вырости*/
+		public static boolean isGoodCell(Cell c){
+			if(c.waterNormalize() >= MAX_WATER || c.silt() >= MAX_CELL_SILT)
+				return false;
+			//Это было самое простое. Теперь сложнее - перепад высот...
+			var min = Double.MAX_VALUE;
+			var max = Double.MIN_VALUE;
+			
+			for(var cell : c.neighbours.values()){
+				if(cell == null) continue;
+				min = Math.min(min, c.silt());
+				max = Math.max(max, c.silt());
+			}
+			return (max - min) < MAX_STEP;
+		}
+		/**Сохраняет местоположение деревца
+		 * @param cell клетка, на которой её создаём
+		 */
+		public void setPos(Cell cell) {
+			this.cell = cell;
+			editRoot( 1.0);
+		}
+		/**Проверка дерева на смерть. Если дерево умрёт, то оно само завершит работу*/
+		public boolean isDie(){
+			if(cell.waterNormalize() >= MAX_WATER || cell.silt() >= MAX_CELL_SILT || Utils.Utils.random(0, 1023) == 0){
+				editRoot( -1.0);
+				cell = null;
+				return true;
+			} else {
+				return false;
+			}
+		}
+		/**Рост дерева*/
+		public void grow(){
+			size += GROW_RATE * (MAX_SIZE - size);
+		}
+		/**Создаёт корневую систему
+		 * @param size сколкьо добавить (убавить) корней
+		 */
+		private void editRoot(double size){
+			cell.roots += size;
+			for(var c : cell.neighbours.values()){
+				if(c != null) c.roots += size * 0.5;
+			}
+		}
 	}
 	/**Волна. Её один элемент*/
 	private static class Wave{
@@ -423,14 +560,14 @@ public class River extends DefaultAnimation{
 		/**Непосредственно фигура, которую образуют волны этого берега*/
 		public final Path2D.Double figure = new Path2D.Double();
 		
-		private static final double minV = 0.00125;
-		private static final double maxV = 0.02;
+		private static final double MIN_V = 0.00125;
+		private static final double MAX_V = 0.02;
 		
 		/**Начальное положение самого первого элемента волн, радианы*/
 		private double angle1 = - Math.PI/2;
 		private double angle2 = - angle1;
 		/**Скорость, с которой волна колеблется. Радиан на кадр*/
-		private double speed1 = (minV + maxV) / 2;
+		private double speed1 = (MIN_V + MAX_V) / 2;
 		private double speed2 = speed1;
 		
 		/**Карта самого поля
@@ -444,6 +581,14 @@ public class River extends DefaultAnimation{
 		private Cell[] call_cell = new Cell[0];
 		/**Сколько грязи мы потеряли за время моделирования*/
 		private double exitS = 0;
+		
+		/**Все волны этого берега */
+		public final List<Plant> plants = new ArrayList<>();
+		/**Количество высаженных деревьев*/
+		private int plants_c = 0;
+		
+		/**Плавающий кораблик*/
+		private List<Ship> ships = new ArrayList<>();
 		
 		/**Добавляет волны */
 		private void addWave(int newSize){
@@ -476,12 +621,12 @@ public class River extends DefaultAnimation{
 				final var prefF = first.wave.H;
 				first.wave.H = 0.5 + Math.sin(angle1 += speed1)/2;
 				if(prefF >= 0.5 && first.wave.H < 0.5){
-					speed1 = Utils.Utils.betwin(minV, speed1 * Utils.Utils.random(90, 110) / 100d, maxV);
+					speed1 = Utils.Utils.betwin(MIN_V, speed1 * Utils.Utils.random(90, 110) / 100d, MAX_V);
 				}
 				final var prefL = last.wave.H;
 				last.wave.H = 0.5 + Math.sin(angle2 -= speed2)/2;
 				if(prefL >= 0.5 && last.wave.H < 0.5){
-					speed2 = Utils.Utils.betwin(minV, speed2 * Utils.Utils.random(90, 110) / 100d, maxV);
+					speed2 = Utils.Utils.betwin(MIN_V, speed2 * Utils.Utils.random(90, 110) / 100d, MAX_V);
 				}
 				first.wave.x = last.wave.x = border;
 			}
@@ -516,6 +661,17 @@ public class River extends DefaultAnimation{
 				}
 			}
 		}
+		/**Обновляет кораблик. Тип течение речушек*/
+		public void updateShip(){
+			for (int i = 0; i < ships.size(); i++) {
+				Ship ship = ships.get(i);
+				if(ship.isActiv()){
+					ship.step(this);
+				} else {
+					ship.start(call_cell[call_cell.length - 1 - i]);
+				}
+			}
+		}
 		/**Обновляет клетки рек
 		 * @param index 
 		 */
@@ -528,7 +684,7 @@ public class River extends DefaultAnimation{
 			call_cell[j] = t;
 			if(exitS > Cell.SILT_LV_DEF){ //Как только накопится грязь - дарим её клетке
 				c.setParams(c.water(), c.silt() + Cell.SILT_LV_DEF);
-				exitS -= 1;
+				exitS -= Cell.SILT_LV_DEF;
 			}
 			//Запоминаем грязьку и ходим
 			final var prefS = Arrays.stream(call_cell).mapToDouble(lc -> lc == null ? 0 : lc.silt()).sum() + c.silt();
@@ -542,6 +698,35 @@ public class River extends DefaultAnimation{
 			if(i % map.length == 0){
 				//Прошли одну сторону. Надо обновить всё поле.
 				forEach(update_c -> update_c.update());
+				//А ещё немного растительности добавим. Для улучшения моделирования эроозии
+				//Садим дерево
+				if(Plant.isGoodCell(c)){
+					addPlant(c);
+				}
+				//Обсчитываем все деревья
+				for(int plant_i = 0, plant_c = 0; plant_c < plants_c; plant_i++){
+					final var p = plants.get(plant_i);
+					if(p.cell == null) continue;
+					if(p.isDie()){
+						plants_c--;
+						continue;
+					}
+					plant_c++;
+					//Живые деревья ростут
+					p.grow();
+					//А ещё живые могут семечки скинуть!
+					if(Utils.Utils.random(0, 31) == 0){
+						//Новая позиция
+						final var npos = p.cell.point.clone().next(HexPoint.Direction.sides[Utils.Utils.random(0, HexPoint.Direction.sides.length - 1)]);
+						if(!isValid(npos.que,npos.row)) continue;
+						final var ncell = get(npos.que,npos.row);
+						if(!Plant.isGoodCell(ncell)) continue;
+						//Чем больше корней - тем больше шанс вырасти дереву нормальному
+						if(Utils.Utils.random(0, 1023) <= ncell.roots * 1023) continue;
+						addPlant(ncell);
+						plant_c++;
+					}
+				}
 			}
 		}
 		/**Обновляет дополнительные реки
@@ -566,7 +751,43 @@ public class River extends DefaultAnimation{
 					neighbours.put(d, get(p,d));
 				c.init(isE ? (isLeft ? HexPoint.Direction.RIGHT : HexPoint.Direction.LEFT) : null, neighbours);
 			});
+			//А теперь прокопаем реку!
+			//Находим точку, удалённую от центра копания - то есть от верхнего угла, в одну из сторон
+			HexPoint point;
+			final var startD = HexPoint.Direction.sides[HexPoint.Direction.sides.length - 2];
+			if(isLeft)
+				point = (new HexPoint(startD, Rs)).add(new HexPoint(height-1,0));
+			else
+				point = (new HexPoint(startD, Rs)).add(new HexPoint());
+			//И копаем по кругу
+			for (final var d : HexPoint.Direction.sides) {
+				for (int j = 0; j < Rs; j++) {
+					if(isValid(point))
+						 get(point).silt(-get(point).silt());
+					point = point.next(d);
+				}
+			}
+			//А теперь с другой стороны копаем
+			if(isLeft)
+				point = (new HexPoint(startD, Rs)).add(new HexPoint(height/2,height-1));
+			else
+				point = (new HexPoint(startD, Rs)).add(new HexPoint(-height/2, height-1));
+			//И копаем по кругу
+			for (final var d : HexPoint.Direction.sides) {
+				for (int j = 0; j < Rs; j++) {
+					if(isValid(point))
+						 get(point).silt(-get(point).silt());
+					point = point.next(d);
+				}
+			}
+			//Надо обновить всё поле.
+			forEach(update_c -> update_c.update());
+			
 			Drop.MAX_AGE = height;
+			ships = new ArrayList<>(height);
+			for (int i = 0; i < height; i++) {
+				ships.add(new Ship());
+			}
 		}
 		/**Проходит по всем клеткам мира*/
 		public void forEach(Consumer<Cell> action){
@@ -621,8 +842,12 @@ public class River extends DefaultAnimation{
 			return row >= 0 && row < map.length && col >= 0 && col < map.length;
 		}
 		/**Проверяет точку на принадлежность к полю*/
-		private boolean isValid(HexPoint p){
-			return isValid(p.que, p.row);
+		private boolean isValid(HexVector v){
+			return isValid((int)v.que, (int)v.row);
+		}
+		/**Проверяет точку на принадлежность к полю*/
+		private boolean isValid(HexPoint v){
+			return isValid(v.que, v.row);
 		}
 		/**Возвращает ячейку поля
 		 * @return 
@@ -635,9 +860,15 @@ public class River extends DefaultAnimation{
 		 * @param p
 		 * @return 
 		 */
-		private Cell get(HexPoint p){
-			assert isValid(p) : "Точка оказалась за границей! Точка " + p + " при поле " + map.length + "х"+ map.length;
-			return get(p.que, p.row);
+		private Cell get(HexVector v){
+			return get((int)v.que, (int)v.row);
+		}
+		/**Возвращает ячейку поля
+		 * @param p
+		 * @return 
+		 */
+		private Cell get(HexPoint v){
+			return get(v.que, v.row);
 		}
 		/**Возвращает клетку относительно*/
 		private Cell get(HexPoint p, HexPoint.Direction d){
@@ -662,30 +893,33 @@ public class River extends DefaultAnimation{
 			//Эффективность переноса ила
 			final var siltEff = Math.max(0.0, Drop.SETTLING * (1d - cell.roots));
 			final var f = new HexVector();
-			for(var c : cell.neighbours.values()){
-				if(c == null) continue;
-				final var del = cell.silt() - c.silt();
-				f.add((new HexVector(cell.point,c.point)).scale(del));
+			for(var e : cell.neighbours.entrySet()){
+				final var c = e.getValue();
+				if(c == null){
+					double del;
+					if(cell.isEnd == null){
+						del = -cell.silt();
+					} else {
+						del = cell.silt();
+					}
+					f.add((new HexVector(e.getKey().dq,e.getKey().dr)).scale(del));
+				} else {
+					final var del = cell.silt() - c.silt();
+					f.add((new HexVector(cell.point,c.point)).scale(del));
+				}
 			}
 			if(cell.isEnd != null){ //Крайние точки дополнительно утягивает за край
-				final var del = Drop.SILT_STEP;
-				final var n = cell.isEnd.next();
-				final var p = cell.isEnd.prefur();
-				f.add((new HexVector(cell.isEnd.dq, cell.isEnd.dr)).scale(del));
-				f.add((new HexVector(n.dq, n.dr)).scale(del));
-				f.add((new HexVector(p.dq, p.dr)).scale(del));
+				f.add((new HexVector(cell.isEnd.dq, cell.isEnd.dr)).scale(Drop.SILT_STEP));
 			}
 			d.speed = d.speed.add(f.scale(Drop.GRAVITY / d.water)); //F=ma => a = F/m. V = V0+at
 			if(cell.flow.lenght() > 0 && d.speed.lenght() > 0){
-				final var fsnq = cell.flow.que / cell.flow.lenght();
-				final var fsnr = cell.flow.row / cell.flow.lenght();
-				final var dsnq = d.speed.que / d.speed.lenght();
-				final var dsnr = d.speed.row / d.speed.lenght();
+				final var nslow = cell.flow.clone().normalize();
+				final var ndrop = d.speed.clone().normalize();
 				//Сколярное произведение векторов...
 				//Ну вообще, если я правильно понял, то это действует для любых ситуаций...
 				//Но правильно ли я понял?
-				final var dot = fsnq * dsnq + fsnr * dsnr;
-				d.speed = d.speed.add(Drop.IMPULSE_TRANSFER * dot / (d.water + cell.water()) * cell.flow.lenght());
+				final var dot = nslow.que * ndrop.que + nslow.row * ndrop.row;
+				d.speed = d.speed.add(cell.flow.clone().scale(Drop.IMPULSE_TRANSFER * dot / (d.water + cell.water()) * cell.flow.lenght()));
 			}
 			//Если у нас есть скорость, то мы должны сделать её такой, будто за ход клетка сразу совершила ТП на следующую клетку...
 			//Сложно? Сложно. А что делать? :)
@@ -699,82 +933,40 @@ public class River extends DefaultAnimation{
 			cell.flow_next.add(d.speed.clone().scale(d.water));
 			
 			//И так. С этой клеткой закончили. Теперь перейдём к следующей!
-			final var h_next = isValid((int)d.position.que,(int)d.position.row) ? get((int)d.position.que,(int)d.position.row).silt() : 0;
+			final var h_next = isValid(d.position) ? get(d.position).silt() : (cell.isEnd != null ? 0 : cell.silt() * 2);
 			
 			//Теперь перенесём массу пропорционально высоте и объёму воды!
-			final var c_eq = Math.max(0.0, (cell.silt() - h_next) * (1.0 + Drop.SILT_TRANSPORT * erf(0.4 * cell.water())));
+			final var c_eq = Math.max(0.0, (cell.silt() - h_next) * (1.0 + Drop.SILT_TRANSPORT * Cell.erf(0.4 * cell.waterNormalize())));
 			final var del_c_eq = c_eq - d.silt;
+			final var trans = Math.min(cell.silt(), siltEff * del_c_eq);
 			
-			d.silt += siltEff * del_c_eq;
-			cell._silt -= siltEff * del_c_eq;
+			d.silt += trans;
+			cell.silt(-trans);
 			
 			//Теперь испаряем часть капельки
 			d.silt /= 1 - Drop.EVAPORATION_RATE;
 			d.water*= 1 - Drop.EVAPORATION_RATE;
 			
-			if(!isValid((int)d.position.que,(int)d.position.row)) return false;
-			
-			shoreCollapse(get((int)d.position.que,(int)d.position.row));
+			if(!isValid(d.position)) return false;
 			
 			d.age++;
 			return true;
 		}
-		/**Расчитывает функцию ошибок гауса. Делает это с точностью около 1.2 * 10 ^ -7. Правда около 0, конечно, всё идёт по одному месту
-		 * @param z
-		 * @return 
-		 */
-		private static double erf(double z) {
-			double t = 1.0 / (1.0 + 0.5 * Math.abs(z));
-
-			//Считаем по методу Горнера
-			double ans = 1 - t * Math.exp(-z * z - 1.26551223
-					+ t * (1.00002368
-					+ t * (0.37409196
-					+ t * (0.09678418
-					+ t * (-0.18628806
-					+ t * (0.27886807
-					+ t * (-1.13520398
-					+ t * (1.48851587
-					+ t * (-0.82215223
-					+ t * (0.17087277))))))))));
-			return z >= 0 ? ans : -ans;
-		}
-		/**Проверяет крутость берега вокруг точки и обрушивает его, если надо*/
-		private void shoreCollapse(Cell cell){
-			final var fields = new Cell[HexPoint.Direction.sides.length];
-			var snum = 0; //У крайнего поля всегда есть три соседа
-			if(cell.isEnd != null){
-				snum = 1;
-				if(cell.neighbours.get(cell.isEnd.next()) == null) snum++;
-				if(cell.neighbours.get(cell.isEnd.prefur()) == null) snum++;
-			}
-			var num = snum;
-			for(final var e : cell.neighbours.values())
-				if(e != null)
-					fields[num++] = e;
-			//Сортируем соседей по высоте, с учётом, что соседи за границей (null) всегда первые
-			Arrays.sort(fields, snum , num, (a,b) -> Double.compare(a.silt(),b.silt()));
-			
-			for (int i = 0; i < num; i++) {
-				Cell field = fields[i];
-				//Перепад высот
-				final var diff = field == null ? Drop.SILT_STEP : (cell.silt() - field.silt());
-				if(diff == 0) continue;
-				//Сумма "лишней" разницы. Что и должно обвалиться
-				final var excess = Math.abs(diff);
-				if(excess <= Drop.SILT_STEP) continue;
-				//Фактическая сумма уравновешивания
-				final var transfer = Drop.COLLAPSE * excess / 2d;
-				
-				//Переносим ил
-				if(diff > 0){
-					cell.silt(-transfer);
-					if(field != null) field.silt(transfer);
-				} else {
-					cell.silt(transfer);
-					if(field != null) field.silt(-transfer);
+		/**Сажает дерево где скажут*/
+		private void addPlant(Cell c){
+			Plant p = null;
+			if(plants_c < plants.size()){
+				for(var plant_i = 0; plant_i < plants.size(); plant_i++){
+					p = plants.get(plant_i);
+					if(p.cell == null) break;
 				}
+				assert p != null;
+			} else {
+				p = new Plant();
+				plants.add(p);
 			}
+			plants_c++;
+			p.setPos(c);
 		}
 	}
 	/**Все статические переменные*/
@@ -800,11 +992,16 @@ public class River extends DefaultAnimation{
 			left.updateWaves(leftBorder, true);
 			right.updateWaves(rightBorder, false);
 		}
+		/**Обновляет кораблики*/
+		public void updateShip(){
+			left.updateShip();
+			right.updateShip();
+		}
 		/**Обновляет реки по берегам*/
 		public void updateRivers(){
-			for (int i = 0; i < 1; i++) {
-				//left.updateRivers(cell, true);
-				right.updateRivers(cell++, false);
+			for (int i = 0; i < right.map.length; i++) {
+				right.updateRivers(cell, true);
+				left.updateRivers(cell++, false);
 				if(cell < 0) cell = 0; //Если слишком много кадров отснимем, то не должно быть отрицательных чисел всё равно!
 			}
 		}
@@ -869,7 +1066,7 @@ public class River extends DefaultAnimation{
 		rightBorder = transform.toScrinX(Configurations.getWidth()-1);
 		
 		//final var count_cell = Configurations.getHeight();/**
-		final var count_cell = 30;/***/
+		final var count_cell = 64;h = h * 9 / 10;/***/
 		if(count_cell <= 0) {
 			scale = 1;
 			return;
@@ -883,25 +1080,22 @@ public class River extends DefaultAnimation{
 			state.regenerateRiver(count_cell);
 		state.setSize((int)(leftBorder - scale * Math.sqrt(3) * (count_cell)), (int) (rightBorder + scale * 2/3), scale);
 	}
-		
 	@Override
 	protected void nextFrame(){
 		if(countWave <= 0) return;
 		if(state.countWave != countWave)
 			state.setCountWaves(countWave);
 		state.updateWaves(leftBorder, rightBorder);
+		state.updateShip();
 	}
-	
 	@Override
 	protected void nextStep(long step){
 		state.updateRivers();
 	}
-
 	@Override
 	public void water(Graphics2D g) {
 		water.paint(g);
 	}
-
 	@Override
 	public void world(Graphics2D g) {
 		left.paint(g);
