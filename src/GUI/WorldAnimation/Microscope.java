@@ -10,6 +10,7 @@ import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ColorRec;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 
 /**
@@ -125,7 +126,7 @@ public class Microscope extends DefaultAnimation{
 	}
 
 	@Override
-	public void world(Graphics2D g) {
+	public void world(Graphics2D g, Rectangle visible) {
 		table0.paint(g);
 		table1.paint(g);
 	}

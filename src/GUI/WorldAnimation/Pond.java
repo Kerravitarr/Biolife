@@ -551,7 +551,7 @@ public class Pond extends DefaultAnimation{
 	}
 
 	@Override
-	public void world(Graphics2D g) {
+	public void world(Graphics2D g, Rectangle visible) {
 		sky.paint(g);
 		dirt.paint(g);
 		forEachVisibleCloud(c -> c.paint(g, transform));

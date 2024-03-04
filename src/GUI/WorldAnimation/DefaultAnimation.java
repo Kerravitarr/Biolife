@@ -6,6 +6,7 @@ package GUI.WorldAnimation;
 
 import Calculations.Configurations;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 
 /**
  * Базовый класс для всех анимаций
@@ -39,8 +40,9 @@ public abstract class DefaultAnimation {
 	protected abstract void water(Graphics2D g);
 	/** Вырисовывает на холсте мир - всё, что вокруг игрового поля
 	 * @param g холст, на котором будет риосвание
+	 * @param visible квадрат, описывающий видимую область. Где правда надо рисовать
 	 */
-	public abstract void world(Graphics2D g);
+	public abstract void world(Graphics2D g, Rectangle visible);
 	/**Сменился шаг мира, надо пересчитать нас 
 	 * @param step текущий шаг мира
 	 */
