@@ -163,6 +163,12 @@ public class WorldView extends javax.swing.JPanel {
 					RD.y = h * (1 - getDborder());
 					LU.y = RD.y - wh * scalePxPerCell;
 				}
+				case RECTANGLE -> {
+					LU.x = (w - (ww - 1) * scalePxPerCell) * (1d-getRborder());
+					RD.x = LU.x + ww * scalePxPerCell;
+					LU.y = (h - (wh - 1) * scalePxPerCell) * (1d-getDborder());
+					RD.y = LU.y + wh * scalePxPerCell;
+				}
 				default -> {
 					LU.x = (w - (ww - 1) * scalePxPerCell) / 2;
 					RD.x = LU.x + ww * scalePxPerCell;
