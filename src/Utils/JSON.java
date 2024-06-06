@@ -1,5 +1,5 @@
 package Utils;
-//Версия 2.8 от 8 февраля 2023 года!
+//Версия 3.0 от 31 мая 2024 года!
 
 
 
@@ -9,10 +9,8 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
 
 
@@ -43,16 +41,15 @@ public final class JSON{
 			this.type=type;
 			this.value=value;
 		}
-		public JSON_TOKEN type;
-		public Object value;
+		public final JSON_TOKEN type;
+		public final Object value;
 		@Override
 		public String toString() {return type + " " + value;}
 	}
-	
 	/**Чтец токенов*/
 	private static class TokenReader {
 		/**Поток, из которого читаем*/
-		Reader stream;
+		private final Reader stream;
 		/**Текущая позиция чтения*/
 		long pos = 0;
 		/**Последний символ, который прочитали из потока*/
@@ -75,19 +72,19 @@ public final class JSON{
 					return new Token(JSON_TOKEN.END_DOCUMENT, null);
 				ch = read();
 			} while (isWhiteSpace(ch));
-			switch (ch) { // Не пробел, а что?
-				case '{' -> {return new Token(JSON_TOKEN.BEGIN_OBJECT, "{");}
-				case '}' -> {return new Token(JSON_TOKEN.END_OBJECT, "}");}
-				case '[' -> {return new Token(JSON_TOKEN.BEGIN_ARRAY, "[");}
-				case ']' -> {return new Token(JSON_TOKEN.END_ARRAY, "]");}
-				case ',' -> {return new Token(JSON_TOKEN.SEP_COMMA, ",");}
-				case ':' -> {return new Token(JSON_TOKEN.SEP_COLON, ":");}
-				case 'n' -> {return readNull();}
-				case 't', 'f' -> {return readBoolean(ch);}
-				case '"' -> {return readString();}
-				//case '-' -> {return readNumber(ch);} - входит в def
-				default -> {return readNumber(ch);}
-			}
+			return switch (ch) { // Не пробел, а что?
+				case '{' -> new Token(JSON_TOKEN.BEGIN_OBJECT, "{");
+				case '}' -> new Token(JSON_TOKEN.END_OBJECT, "}");
+				case '[' -> new Token(JSON_TOKEN.BEGIN_ARRAY, "[");
+				case ']' -> new Token(JSON_TOKEN.END_ARRAY, "]");
+				case ',' -> new Token(JSON_TOKEN.SEP_COMMA, ",");
+				case ':' -> new Token(JSON_TOKEN.SEP_COLON, ":");
+				case 'n' -> readNull();
+				case 't', 'f' -> readBoolean(ch);
+				case '"' -> readString();
+				//case '-' -> readNumber(ch);// - входит в def
+				default -> readNumber(ch);
+			};
 		}
 		/**
 		 * Читает число из входного потока
@@ -99,30 +96,30 @@ public final class JSON{
 		private Token readNumber(char ch) throws IOException, JSON.ParseException{
 			boolean isNegativ = ch == '-';
 			if(isNegativ) ch = read();
-			StringBuilder sb = new StringBuilder();
 			
 			if(ch == '0') { 
 				ch = read();
 				if(ch == '.') { //Десятичное число 0.ххх
 					if(isNegativ)
-						return new Token(JSON_TOKEN.NUMBER, -readFracAndExp(ch));
+						return new Token(JSON_TOKEN.NUMBER, -readFracAndExp(new StringBuilder("0"),ch));
 					else
-						return new Token(JSON_TOKEN.NUMBER, readFracAndExp(ch));
+						return new Token(JSON_TOKEN.NUMBER, readFracAndExp(new StringBuilder("0"),ch));
 				}else { //Это просто нуль и ни чего более
 					back();
 					return new Token(JSON_TOKEN.NUMBER, 0);	
 				}
 			} else if (isDigit(ch)) {
+				var sb = new StringBuilder();
 				do {
 					sb.append(ch);
 					ch = read();
 				} while (isDigit(ch));
-				Long long_ = Long.valueOf(sb.toString());
 				if(ch == '.') { // Если это не число, то может точка?
-					Double val = long_.doubleValue() + readFracAndExp(ch);
+					double val = readFracAndExp(sb,ch);
 					return new Token(JSON_TOKEN.NUMBER, isNegativ ? -val: val);
 				} else {
 					back();
+					Long long_ = Long.valueOf(sb.toString());
 					if(long_ < Integer.MAX_VALUE)
 						return new Token(JSON_TOKEN.NUMBER, isNegativ ? -long_.intValue() : long_.intValue());
 					else
@@ -145,13 +142,11 @@ public final class JSON{
 		        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
 			}
 		}
-		/**
-		 * Вычитывает число с плавающей точкой. Но только дробную часть!
+		/** Вычитывает число с плавающей точкой. Но только дробную часть!
+		 * @param sb буффер, в котором содержится первая часть числа без точки
 		 * @return
 		 */
-		private Double readFracAndExp(char ch) throws IOException, JSON.ParseException{
-			StringBuilder sb = new StringBuilder();
-			sb.append('0');
+		private double readFracAndExp(StringBuilder sb, char ch) throws IOException, JSON.ParseException{
 			if (ch == '.') {
 				sb.append(ch);
 				ch = read();
@@ -171,9 +166,8 @@ public final class JSON{
 			} else {
 		        throw new ParseException(pos,ERROR.UNEXPECTED_CHAR,ch);
 			}
-			return Double.valueOf(sb.toString());
-		}
-		
+			return Double.parseDouble(sb.toString());
+		}		
 		/**
 		 * Читает из потока экспоненту
 		 * @return Число, представляющще собой экспоненту
@@ -206,8 +200,7 @@ public final class JSON{
 			}
 			return Long.valueOf(sb.toString());
 		}
-		/**
-		 * Вычитывает строку из потока
+		/** Вычитывает строку из потока
 		 * @return
 		 * @throws IOException
 		 * @throws JSON.ParseException
@@ -274,7 +267,7 @@ public final class JSON{
 		}
 		/**
 		 * Вычитывает значение null
-		 * @return токен, который вычитает - токен null
+		 * @return токен, который вычитывает - токен null
 		 * @throws IOException
 		 * @throws JSON.ParseException
 		 */
@@ -286,40 +279,15 @@ public final class JSON{
 			else
 				return new Token(JSON_TOKEN.NULL, "null");
 		}
-		
 		/**Првоеряет, что символ является числом*/
-		private boolean isDigit(char ch) {
-			return ch >= '0' && ch <= '9';
-		}
-		/**
-		 * Проверяет, что символ относится к экспоненциальной записи числа
-		 * @param ch
-		 * @return
-		 * @throws IOException
-		 */
-	    private boolean isExp(char ch) {
-	        return ch == 'e' || ch == 'E';
-	    }
-		/**
-		 * Проверяет, что символ относится к хексам
-		 * @param ch
-		 * @return
-		 */
-		private boolean isHex(char ch) {
-	        return ((ch >= '0' && ch <= '9') || ('a' <= ch && ch <= 'f') || ('A' <= ch && ch <= 'F'));
-		}
-		/**
-		 * Показывает, является-ли введённый символ пробелом (таблом, ентером и т.д.)
-		 * @param ch
-		 * @return
-		 */
-		private boolean isWhiteSpace(char ch) {
-			return (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n');
-		}
-		/**
-		 * Показывает, можно-ли ещё вычитать из буфера что либо
-		 * @return
-		 */
+		private boolean isDigit(char ch) {return ch >= '0' && ch <= '9';}
+		/** Проверяет, что символ относится к экспоненциальной записи числа */
+	    private boolean isExp(char ch) {return ch == 'e' || ch == 'E';}
+		/**Проверяет, что символ относится к хексам*/
+		private boolean isHex(char ch) {return ((ch >= '0' && ch <= '9') || ('a' <= ch && ch <= 'f') || ('A' <= ch && ch <= 'F'));}
+		/**Показывает, является-ли введённый символ пробелом (таблом, ентером и т.д.)*/
+		private boolean isWhiteSpace(char ch) {return (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n');}
+		/**Показывает, можно-ли ещё вычитать из буфера что либо*/
 		public boolean hasNext() {
 			try {
 				return stream.ready();
@@ -327,51 +295,34 @@ public final class JSON{
 				return false;
 			}
 		}
-		
-		/**
-		 * Читает символ из потока. Запоминает прочитанный символ во временный буфер
-		 * @return
-		 * @throws IOException
-		 */
+		/**Читает символ из потока. Запоминает прочитанный символ во временный буфер*/
 		private char read() throws IOException {
-			if(!isBack)
-				lastChar = (char) stream.read();
-			else
-				isBack = false;
+			if(!isBack) lastChar = (char) stream.read();
+			else isBack = false;
 			pos++;
 			return lastChar;
 		}
 		/**Сдвинуть курсор чтения на одну позицию назад*/
 		private void back() {isBack = true;pos--;};
-		
 	}
-
-	/**
-	 * Разные ошибки, возникающие при парсинге файла
-	 *
-	 */
+	/**Разные ошибки, возникающие при парсинге файла*/
 	public static class ParseException extends RuntimeException {
+		/**Что за ошибка?*/
 		private ERROR errorType;
+		/**Какой объект мы не ожидали?*/
 		private Object unexpectedObject;
+		/**Какая позиция в тексте*/
 		private long position;
-
+		
 		public ParseException(long position, ERROR errorType, Object unexpectedObject) {
 			this.position = position;
 			this.errorType = errorType;
 			this.unexpectedObject = unexpectedObject;
 		}
 
-		public ERROR getErrorType() {
-			return errorType;
-		}
-
-		public long getPosition() {
-			return position;
-		}
-		
-		public Object getUnexpectedObject() {
-			return unexpectedObject;
-		}
+		public ERROR getErrorType() {return errorType;}
+		public long getPosition() {return position;}
+		public Object getUnexpectedObject() {return unexpectedObject;}
 
 		@Override
 		public String getMessage() {
@@ -385,15 +336,20 @@ public final class JSON{
 			}
 			return sb.toString();
 		}
-	}
-	
+	}	
 	/**Интерфейс для любого параметра JSON*/
-	private interface JSON_par{
-		public void write(Writer writer, String tabs) throws IOException;
-		
-		public static <T> String getVal(T value_o) {
+	private class Serializer{
+		/**
+		 * Записывает красиво форматированный объект в поток.
+		 * @param value_o объект, который надо записать
+		 * @param writer - цель, куда записывается объект
+		 * @param tabs - специальная переменная, позволяет сделать красивое форматирование.
+		 * 				Если она null, то форматирования не будет
+		 * @throws IOException - следует учитывать возможность выброса исключения при работе с файлом
+		 */
+		public static <T> void write(T value_o, Writer writer, String tabs) throws IOException {
 			if(value_o == null)
-				return "null";
+				writer.write("null");
 			else if(value_o instanceof String s) {
 				final var sb = new StringBuffer();
 				sb.append("\"");
@@ -425,195 +381,144 @@ public final class JSON{
 					}
 				}//for	
 				sb.append("\"");			
-				return sb.toString();
+				writer.write(sb.toString());
 			} else if(value_o instanceof Enum e) {
-				return "\"" + e.name() + "\"";
-			} else {
-				return String.valueOf(value_o);
-			}
-		}
-	}
-
-	/**Специальный класс, который хранит только значение*/
-	private class JSON_O<T> implements JSON_par{
-		/**Вариант, когда значение - простой тип*/
-		T value_o;
-		/**
-		 * Создаёт параметр
-		 * @param value - значение
-		 */
-		public JSON_O(T value) {
-			this.value_o = value;
-		}
-		/**
-		 * Записывает красиво форматированный объект в поток.
-		 * @param writer - цель, куда записывается объект
-		 * @param tabs - специальная переменная, позволяет сделать красивое форматирование.
-		 * 				Если она null, то форматирования не будет
-		 * @throws IOException - следует учитывать возможность выброса исключения при работе с файлом
-		 */
-		@Override
-		public void write(Writer writer, String tabs) throws IOException {
-			if (value_o != null && value_o instanceof JSON) {
+				writer.write("\"" + e.name() + "\"");
+			} else if(value_o.getClass().isPrimitive() || value_o instanceof Number || value_o instanceof Boolean) {
+				writer.write(String.valueOf(value_o));
+			} else if(value_o instanceof JSON json) {
 				if (tabs != null) {
-					((JSON) value_o).toBeautifulJSONString(writer, tabs);
+					json.toBeautifulJSONString(writer, tabs);
 				} else {
-					((JSON) value_o).toBeautifulJSONString(writer, null);
+					json.toBeautifulJSONString(writer, null);
 				}
-			} else {
-				writer.write(JSON_par.getVal(value_o));
-			}
-		}
-		
-		@Override
-		public String toString() {
-			return  value_o != null ? value_o.toString() : "null";
-		}
-	}
-	/**Специальный класс, который хранит только список значений*/
-	private class JSON_A<T> implements JSON_par{
-		/**Массив простых типов*/
-		List<T> value_mo = null;
-		/**
-		 * Создаёт параметр
-		 * @param value - значение
-		 */
-		public JSON_A(List<T> value) {
-			this.value_mo = value;
-		}
-		public JSON_A(T[] value) {
-			this(Arrays.asList(value));
-		}
+			} else if(value_o instanceof List list) {
+				if(list.isEmpty()){
+					writer.write("[]");
+				} else {
+					var fcl = list.get(0).getClass();
+					if(!isBase(list.get(0)) || list.stream().filter(v -> !v.getClass().equals(fcl)).findAny().isPresent()){
+						//У нас сложные или разноплановые объекты
+						writer.write("[");
+						if (tabs != null) writer.write("\n");
+						boolean isFirst = true;
+						for(var value : list) {
+							if(isFirst) isFirst = false;
+							else if (tabs != null) writer.write(",\n");
+							else writer.write(",");
 
-		/**
-		 * Создаёт параметр из массива примитивов
-		 * Не проивзодится проверка на null,
-		 * 	тот факт, что T - примитивный тип
-		 * 	Всё это может вызвать ошибки!
-		 * @param value - значение
-		 */
-		@SuppressWarnings("unchecked")
-		public JSON_A(T value) {
-			final int length = java.lang.reflect.Array.getLength(value);
-			if(length == 0) {
-				this.value_mo = new ArrayList<>();
-			}else {
-				final Object first = java.lang.reflect.Array.get(value, 0);
-				Object[] arr = (Object[]) java.lang.reflect.Array.newInstance(first.getClass(), length);
-				arr[0] = first;
-				for (int i = 1; i < length; i++)
-					arr[i] = java.lang.reflect.Array.get(value, i);
-				this.value_mo = (List<T>) Arrays.asList(arr);
-			}
-		}
-
-		/**
-		 * Записывает красиво форматированный объект в поток.
-		 * @param writer - цель, куда записывается объект
-		 * @param tabs - специальная переменная, позволяет сделать красивое форматирование.
-		 * 				Если она null, то форматирования не будет
-		 * @throws IOException - следует учитывать возможность выброса исключения при работе с файлом
-		 */
-		@Override
-		public void write(Writer writer, String tabs) throws IOException {
-			write(value_mo,writer, tabs);
-		}
-		/**
-		 * Записывает красиво форматированный объект в поток.
-		 * @param list массив объектов, которых мы и запишем в поток
-		 * @param writer - цель, куда записывается объект
-		 * @param tabs - специальная переменная, позволяет сделать красивое форматирование.
-		 * 				Если она null, то форматирования не будет
-		 * @throws IOException - следует учитывать возможность выброса исключения при работе с файлом
-		 */
-		private void write(List<T> list, Writer writer, String tabs) throws IOException{
-			if(list == null){
-				writer.write("null");
-			} else if(list.isEmpty()){
-				writer.write("[]");
-			} else if(list.get(0) instanceof JSON) {
-				writer.write("[");
-				if (tabs != null)
-					writer.write("\n");
-				boolean isFirst = true;
-				for(T i : list) {
-					final var json = (JSON) i;
-					if(isFirst)
-						isFirst = false;
-					else if (tabs != null)
-						writer.write(",\n");
-					else
-						writer.write(",");
-					if (tabs != null) {
-						writer.write(tabs + "\t");
-						json.toBeautifulJSONString(writer, tabs + "\t");
+							if (tabs != null) {
+								writer.write(tabs + "\t");
+								write(value, writer, tabs + "\t");
+							} else {
+								write(value, writer, null);
+							}
+						}
+						if (tabs != null) writer.write("\n" + tabs + "]");
+						else writer.write("]");
 					} else {
-						json.toBeautifulJSONString(writer, null);
+						//У нас однородные примитивы
+						writer.write("[");
+						boolean isFirst = true;
+						for (var value : list) {
+							if(isFirst) isFirst = false;
+							else writer.write(",");
+							write(value, writer, null);
+						}
+						writer.write("]");
 					}
 				}
-				if (tabs != null)
-					writer.write("\n" + tabs + "]");
-				else
-					writer.write("]");
-			} else if(list.get(0) instanceof List) {
-				writer.write("[");
-				if (tabs != null)
-					writer.write("\n");
-				boolean isFirst = true;
-				for(T i : list) {
-					final var par = (List) i;
-					if(isFirst)
-						isFirst = false;
-					else if (tabs != null)
-						writer.write(",\n");
-					else
-						writer.write(",");
-					if (tabs != null) {
-						writer.write(tabs + "\t");
-						write(par,writer, tabs + "\t");
-					} else {
-						write(par,writer, null);
-					}
-				}
-				if (tabs != null)
-					writer.write("\n" + tabs + "]");
-				else
-					writer.write("]");
 			} else {
-				StringBuilder vals = new StringBuilder();
-				for (T i : list) {
-					if (!vals.isEmpty())
-						vals.append(",");
-					vals.append(JSON_par.getVal(i));
-				}
-				writer.write("[");
-				writer.write(vals.toString());
-				writer.write("]");
+				throw new IllegalArgumentException("Невозможно вывести объект типа" + value_o.getClass() + " -> " + value_o);
 			}
 		}
-		
-		@Override
-		public String toString() {
-			return  value_mo != null ? value_mo.toString() : "null";
+		/**Проверяет входящий тип на допустимость
+		 * @param <T>
+		 * @param value_o 
+		 * @throws IllegalArgumentException если такой тип недопустим
+		 */
+		public static <T> Object box(T value_o){
+			if(isBase(value_o)
+					|| value_o instanceof JSON){
+				return value_o;
+			}
+			else if(value_o instanceof List list) {
+				return list.stream().map(value -> box(value)).toList();
+			} else if(value_o.getClass().isArray()){
+				final int length = java.lang.reflect.Array.getLength(value_o);
+				return java.util.stream.IntStream.range(0,length).boxed().map(i -> box(java.lang.reflect.Array.get(value_o, i))).toList();
+			} else {
+				throw new IllegalArgumentException("Невозможно превести к JSON объект типа [" + value_o.getClass() + "] = " + value_o);
+			}
 		}
-	}
-	
-	
-	/**
-	 * Создаёт объект JSON в который будут заносится значения для серелизации
-	 */
+		/**Осуществляет преобразование из класса в класс
+		 * @param <T> итоговый класс
+		 * @param cls класс, который описывает то, к чему мы стремимся
+		 * @param o входной объект
+		 * @return объект, нужного типа
+		 * @throws ClassCastException когда не смогли преобразовать один тип к другому
+		 */
+		public static <T> List<T> unboxl(Class<T> cls, Object o) throws ClassCastException{
+			if(o == null) return null;
+			else if(o instanceof List list) return (List<T>) list.stream().map(v -> unbox(cls,v)).toList();
+			else throw new IllegalArgumentException("Нельзя преобразовать значение к массиву");
+		}
+		/**Осуществляет преобразование из класса в класс
+		 * @param <T> итоговый класс
+		 * @param cls класс, который описывает то, к чему мы стремимся
+		 * @return объект, нужного типа
+		 * @throws ClassCastException когда не смогли преобразовать один тип к другому
+		 */
+		public static <T> T unbox(Class<T> cls, Object o) throws ClassCastException{
+			if (o == null) {
+				return null;
+			} else if(cls.isAssignableFrom(o.getClass())){
+				return (T) o;
+			} else if(cls.isEnum() && o instanceof String rets){
+				return (T) (Enum.valueOf((Class<Enum>) cls, rets));
+			} else if(cls.equals(Byte.class) || cls.equals(byte.class)){
+				return (T) Byte.valueOf(((Number)o).byteValue());
+			} else if(cls.equals(Double.class) || cls.equals(double.class)){
+				return (T) Double.valueOf(((Number)o).doubleValue());
+			} else if(cls.equals(Float.class) || cls.equals(float.class)){
+				return (T) Float.valueOf(((Number)o).floatValue());
+			} else if(cls.equals(Integer.class) || cls.equals(int.class)){
+				return (T) Integer.valueOf(((Number)o).intValue());
+			} else if(cls.equals(Long.class) || cls.equals(long.class)){
+				return (T) Long.valueOf(((Number)o).longValue());
+			} else if(cls.equals(Short.class) || cls.equals(short.class)){
+				return (T) Short.valueOf(((Number)o).shortValue());
+			} else if(cls.equals(Boolean.class) || cls.equals(boolean.class)){
+				return (T) Boolean.valueOf(((Boolean)o).booleanValue());
+			} else {
+				throw new ClassCastException("Невозможно привести " + o.getClass() + " к " + cls);
+			}
+		}
+		private static <T> boolean isBase(T value_o){
+			return value_o == null 
+					|| value_o instanceof String
+					|| value_o instanceof Enum
+					|| value_o.getClass().isPrimitive() 
+					|| value_o instanceof Number 
+					|| value_o instanceof Boolean;
+		}
+	}	
+	/** Создаёт пустой объект JSON */
 	public JSON(){
 		parametrs = new LinkedHashMap<>();
 	}
-	/**Парсинг JSON строки и заполнение соответствующих объектов
+	/**Парсинг JSON строки
 	 * @param parseStr строка, которую разбираем
 	 * @throws JSON.ParseException ошибка разбора, синтаксическая
-	 * @throws IOException ошибка разбора, ошибка устройства чтения
 	 */
-	public JSON(String parseStr) throws JSON.ParseException, IOException {
-		this(new StringReader(parseStr));
+	public JSON(String parseStr) throws JSON.ParseException {
+		try {
+			parse(new StringReader(parseStr));
+		} catch (IOException ex) { //Быть не может! Стркоу нельзя так прочитать!
+			throw new RuntimeException(ex);
+		}
 	}
-	/**Парсинг JSON потока и заполнение соответствующих объектов
+	/**Парсинг JSON потока
 	 * @param in поток чтения
 	 * @throws JSON.ParseException ошибка разбора, синтаксическая
 	 * @throws IOException ошибка разбора, ошибка устройства чтения
@@ -621,14 +526,156 @@ public final class JSON{
 	public JSON(Reader in) throws JSON.ParseException, IOException {
 		parse(in);
 	}
-	/**Парсинг JSON строки и заполнение соответствующих объектов
+	/**Парсинг JSON строки в массив
+	 * @param <T>
+	 * @param cls класс, который мы хотим получить
 	 * @param parseStr строка, которую разбираем
 	 * @return массив разобранных объектов. 
 	 * @throws JSON.ParseException ошибка разбора, синтаксическая
-	 * @throws IOException ошибка разбора, ошибка устройства чтения
+	 * @throws ClassCastException возникает, когда возвращаемое значение довольно сильно отличается от желаемого
 	 */
-	public static List<Object> JSONA(String parseStr) throws JSON.ParseException, IOException {
-		return JSONA(new StringReader(parseStr));
+	public static <T> List<T> parse(Class<T> cls,String parseStr) throws JSON.ParseException {
+		try {
+			return parse(cls, new StringReader(parseStr));
+		} catch (IOException ex) { //Быть не может! Стркоу нельзя так прочитать!
+			throw new RuntimeException(ex);
+		}
+	}
+	/**Парсинг JSON строки в массив
+	 * @param <T>
+	 * @param cls класс, который мы хотим получить
+	 * @param in поток чтения
+	 * @return массив разобранных объектов. 
+	 * @throws JSON.ParseException ошибка разбора, синтаксическая
+	 * @throws IOException ошибка разбора, ошибка устройства чтения
+	 * @throws ClassCastException возникает, когда возвращаемое значение довольно сильно отличается от желаемого
+	 */
+	public static <T> List<T> parse(Class<T> cls,Reader in) throws JSON.ParseException, IOException {
+		TokenReader reader = new TokenReader(in);
+		if(!reader.hasNext()) { // Пустой файл
+			return new ArrayList<>();
+		} else {
+			Token token = reader.next();
+			if(token.type == JSON_TOKEN.BEGIN_ARRAY)
+				return Serializer.unboxl(cls, parseA(reader));
+			else
+				throw new ParseException(reader.pos, ERROR.UNEXPECTED_TOKEN, token.value);
+		}
+	}
+	
+	/** Добавить новую пару ключ-значение в объект
+	 * @param <T>
+	 * @param key ключ
+	 * @param value значение
+	 * @return текущий объект для возможности создания цепочек
+	 */
+	public <T> JSON add(String key, T value) {
+		parametrs.put(key, Serializer.box(value));
+		return this;
+	}
+	/**Получает значение по ключу
+	 * @param <T>
+	 * @param cls ожидаемый класс
+	 * @param key ключ
+	 * @return значение, или null, если значение не найдено
+	 * @throws ClassCastException возникает, когда возвращаемое значение довольно сильно отличается от желаемого
+	 */
+	public <T> T get(Class<T> cls, String key) throws IllegalArgumentException {
+		return Serializer.unbox(cls,parametrs.get(key));
+	}
+	/**Получает значение массива по ключу
+	 * @param <T>
+	 * @param cls - ожидаемый класс элементов
+	 * @param key - ключ
+	 * @return - значение, или null, если значение не найдено
+	 * @throws IllegalArgumentException возникает, если элемент представляет единственное значение и вернуть как массив его нельзя
+	 * @throws ClassCastException возникает, когда возвращаемое значение довольно сильно отличается от желаемого
+	 */
+	public <T> List<T> getA(Class<T> cls, String key) {
+		return Serializer.unboxl(cls,parametrs.get(key));
+	}
+	/**Получает массив JSON по ключу
+	 * @param key - ключ
+	 * @return - значение, или null, если значение не найдено
+	 * @throws IllegalArgumentException возникает, если массив не состоит только из JSON
+	 */
+	public List<JSON> getAJ(String key) {
+		return getA(JSON.class, key);
+	}
+	/**Получает значение по ключу
+	 * @param key - ключ
+	 * @return - значение, или null, если значение не найдено
+	 * @throws IllegalArgumentException возникает, если элемент не состоит из JSON
+	 */
+	public JSON getJ(String key) {
+		return get(JSON.class, key);
+	}
+	/**Приводит JSON объект к строке
+	 * @return Одна простая и длинная строка без форматирвоания
+	 */
+	public String toJSONString() {
+		try {
+			StringWriter sw = new StringWriter();
+			toJSONString(sw);		
+			return sw.toString();
+		} catch (IOException e) {throw new RuntimeException(e);} // Быть такого не может! Не должен SW давать ошибки IO
+	}
+	/** Приводит JSON объект к строке - простой и длинной строке без форматирвоания.И дописывает её в конец
+	 * @param writer
+	 * @throws IOException 
+	 */
+	public void toJSONString(Writer writer) throws IOException {
+		toBeautifulJSONString(writer,null);
+		writer.flush();
+	}
+	/** Приводит JSON объект к строке
+	 * @return строка, форматированная согласно правилам составления JSON объектов, с табами и подобным
+	 */
+	public String toBeautifulJSONString() {
+		try {
+			StringWriter sw = new StringWriter();
+			toBeautifulJSONString(sw);
+			return sw.toString();
+		} catch (IOException e) {throw new RuntimeException(e);} // Быть такого не может! Не должен SW давать ошибки IO
+	}
+	/** Приводит JSON объект к строке, форматированной согласно правилам составления JSON объектов, с табами и подобным.Дописывает в конец документа
+	 * @param writer
+	 * @throws IOException 
+	 */
+	public void toBeautifulJSONString(Writer writer) throws IOException {
+		toBeautifulJSONString(writer,"");
+		writer.flush();
+	}
+	/**Проверяет наличие ключа в объекте
+	 * @param key ключ
+	 * @return true, если ключ тут есть
+	 */
+	public boolean containsKey(String key) { return parametrs.containsKey(key);}
+
+	/**Очищает все элементы объекта*/
+	public void clear() { parametrs.clear(); }
+	/**Возвращает список всех ключей объекта
+	 * @return список со всеми ключами
+	 */
+	public Set<String> getKeys(){ return parametrs.keySet(); }
+	@Override
+	public String toString() { return toJSONString(); }
+	
+	
+	
+	
+	/**Парсинг JSON строки
+	 * @param parseStr строка, которую разбираем
+	 * @return массив разобранных объектов. 
+	 * @throws JSON.ParseException ошибка разбора, синтаксическая
+	 */
+	@Deprecated
+	public static List<Object> JSONA(String parseStr) throws JSON.ParseException {
+		try {
+			return JSONA(new StringReader(parseStr));
+		} catch (IOException ex) { //Быть не может! Стркоу нельзя так прочитать!
+			throw new RuntimeException(ex);
+		}
 	}
 	/**Парсинг JSON строки и заполнение соответствующих объектов
 	 * @param in поток чтения
@@ -636,6 +683,7 @@ public final class JSON{
 	 * @throws JSON.ParseException ошибка разбора, синтаксическая
 	 * @throws IOException ошибка разбора, ошибка устройства чтения
 	 */
+	@Deprecated
 	public static List<Object> JSONA(Reader in) throws JSON.ParseException, IOException {
 		TokenReader reader = new TokenReader(in);
 		if(!reader.hasNext()) { // Пустой файл
@@ -648,13 +696,102 @@ public final class JSON{
 				throw new ParseException(reader.pos, ERROR.UNEXPECTED_TOKEN, token.value);
 		}
 	}
+	
+	/**
+	 * Возвращает массив состоящий из лонгов
+	 * @param key - ключ
+	 * @return - значение, или null, если значение не найдено
+	 */
+	@Deprecated
+	public List<Long> getAL(String key) {
+		return getA(Long.class, key);
+	}
+	/**
+	 * Получает значение по ключу. Заглушка, потому что во
+	 * 	время исполнения не определить запрашиваемый тип
+	 * @param key - ключ
+	 * @return - значение, или null, если значение не найдено
+	 */
+	@Deprecated
+	public int getI(String key) {
+		return get(int.class, key);
+	}
+	/**
+	 * Получает значение по ключу. Заглушка, потому что во
+	 * 	время исполнения не определить запрашиваемый тип
+	 * @param key - ключ
+	 * @return - значение, или null, если значение не найдено
+	 */
+	@Deprecated
+	public long getL(String key) {
+		return get(long.class, key);
+	}
+	/**
+	 * Получает значение по ключу. Заглушка, потому что во
+	 * 	время исполнения не определить запрашиваемый тип
+	 * @param key - ключ
+	 * @return - значение, или null, если значение не найдено
+	 */
+	@Deprecated
+	public double getD(String key) {
+		return get(double.class, key);
+	}
+	/**
+	 * Получает значение по ключу
+	 * @param <T>
+	 * @param key - ключ
+	 * @deprecated теперь надо пользоваться методами с указанием класса объекта
+	 * @return - значение, или null, если значение не найдено или значение не является единственным, а, например, это массив
+	 */
+	@SuppressWarnings("unchecked")
+	@Deprecated
+	public <T> T get(String key) {
+		return (T) parametrs.get(key);
+	}
+	/**
+	 * Получает любые векторные значения по ключу
+	 * @param <T>
+	 * @param key - ключ
+	 * @deprecated теперь надо пользоваться фукнцией с указанием класса объектов
+	 * @return - значение, или null, если значение не найдено
+	 */
+	@SuppressWarnings("unchecked")
+	@Deprecated
+	public <T> List<T> getA(String key) {
+		return (List<T>) parametrs.get(key);
+	}
+
+	/**Внутренний метод для печати объекта. Объект состоит из открывающей табы ну и дальше по тексту*/
+	private void toBeautifulJSONString(Writer writer,String tabs) throws IOException {
+		writer.write("{");
+		if(tabs != null)
+			writer.write("\n");
+		boolean isFirst = true;
+		for (var param : parametrs.entrySet()) {
+			if(isFirst) isFirst = false;
+			else if(tabs != null) writer.write(",\n");
+			else writer.write(",");
+			if(tabs != null) {
+				writer.write(tabs + "\t");
+				writer.write("\"" + param.getKey() + "\": ");
+				Serializer.write(param.getValue(), writer, tabs + "\t");
+			} else {
+				writer.write("\"" + param.getKey() + "\":");
+				Serializer.write(param.getValue(), writer, null);
+			}
+		}
+		if(tabs != null)
+			writer.write("\n" + tabs);
+		writer.write("}");
+	}
+	
 	/**
 	 * Разбирает поток в формат JSON
 	 * @param in поток чтения
 	 * @throws JSON.ParseException ошибка разбора, синтаксическая
 	 * @throws IOException ошибка разбора, ошибка устройства чтения
 	 */
-	public void parse(Reader in) throws IOException, JSON.ParseException{
+	private void parse(Reader in) throws IOException, JSON.ParseException{
 		TokenReader reader = new TokenReader(in);
 		if(!reader.hasNext()) { // Пустой файл
 			parametrs.clear();
@@ -666,7 +803,6 @@ public final class JSON{
 				throw new ParseException(reader.pos, ERROR.UNEXPECTED_TOKEN, token.value);
 		}
 	}
-	
 	/**
 	 * Парсит объект JSON, первый символ { уже получили
 	 * @param reader
@@ -724,7 +860,6 @@ public final class JSON{
 		}
 		throw new ParseException(reader.pos, ERROR.UNEXPECTED_EXCEPTION, "Неожиданный конец документа");
 	}
-
 	/**
 	 * Парсит массив JSON, первый символ [ уже получили
 	 * @param reader
@@ -736,28 +871,17 @@ public final class JSON{
 		List<Object> array = new ArrayList<>();
 		int expectToken = JSON_TOKEN.BEGIN_ARRAY.value | JSON_TOKEN.END_ARRAY.value | JSON_TOKEN.BEGIN_OBJECT.value
 				 | JSON_TOKEN.NUMBER.value | JSON_TOKEN.BOOLEAN.value | JSON_TOKEN.STRING.value | JSON_TOKEN.NULL.value; // Массив чего у нас там?
-		Object sample = null;
 		while (reader.hasNext()) {
 			Token token = reader.next();
 			if ((expectToken & token.type.value) == 0)
 				throw new ParseException(reader.pos, ERROR.UNEXPECTED_TOKEN, token.value);
 			switch (token.type) {
 				case BEGIN_ARRAY -> {
-					if(sample == null || sample instanceof List) {
-						sample = parseA(reader);
-						array.add(sample);
-					} else {
-						throw new ParseException(reader.pos, ERROR.UNKNOW, "Массив содержит значения разных типов");
-					}
+					array.add(parseA(reader));
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_ARRAY.value; // Или следующий объект или мы всё
 				}
 				case BEGIN_OBJECT -> {
-					if(sample == null || sample instanceof JSON) {
-						sample = parseO(reader);
-						array.add(sample);
-					} else {
-						throw new ParseException(reader.pos, ERROR.UNKNOW, "Массив содержит значения разных типов");
-					}
+					array.add(parseO(reader));
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_ARRAY.value; // Или следующий объект или мы всё
 				}
 				case END_ARRAY -> {
@@ -770,12 +894,7 @@ public final class JSON{
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_ARRAY.value; // Или следующий объект или мы всё
 				}
 				case BOOLEAN, NUMBER, STRING -> {
-					if(sample == null || sample.getClass() == token.value.getClass()) {
-						sample = token.value;
-						array.add(sample);
-					} else {
-						throw new ParseException(reader.pos, ERROR.UNKNOW, "Массив содержит значения разных типов");
-					}
+					array.add(token.value);
 					expectToken = JSON_TOKEN.SEP_COMMA.value | JSON_TOKEN.END_ARRAY.value; // Или следующий объект или мы всё
 				}
 				case SEP_COMMA -> expectToken = JSON_TOKEN.NULL.value | JSON_TOKEN.NUMBER.value | JSON_TOKEN.BOOLEAN.value
@@ -784,289 +903,9 @@ public final class JSON{
 		}
 		throw new ParseException(reader.pos, ERROR.UNEXPECTED_EXCEPTION, "Неожиданный конец документа");
 	}
-	/**
-	 * Добавить новую пару ключ-значение в объект.Поддерживает не только добавление простых значений,
-	 * но и векторов простых типов!
-	 * @param <T>
-	 * @param key - ключ
-	 * @param value - значение
-	 */
-	public <T> void add(String key, T value) {
-		if(value != null && value.getClass().isArray()) // Массивы
-			parametrs.put(key, new JSON_A<>(value));
-		else
-			parametrs.put(key, new JSON_O<>(value));
-	}
-	/**
-	 * Добавить новую пару ключ-значение в объект
-	 * @param <T>
-	 * @param key - ключ
-	 * @param value - значение
-	 */
-	public <T> void add(String key, T[] value) {
-		parametrs.put(key, new JSON_A<>(value));
-	}
-	/**
-	 * Добавить новую пару ключ-значение в объект
-	 * @param <T>
-	 * @param key - ключ
-	 * @param value - значение
-	 */
-	public <T> void add(String key, List<T> value) {
-		parametrs.put(key, new JSON_A<>(value));
-	}
-	/**
-	 * Получает любые векторные значения по ключу
-	 * @param <T>
-	 * @param key - ключ
-	 * @deprecated теперь надо пользоваться фукнцией с указанием класса объектов
-	 * @return - значение, или null, если значение не найдено
-	 */
-	@SuppressWarnings("unchecked")
-	@Deprecated
-	public <T> List<T> getA(String key) {
-		var par = parametrs.get(key);
-		if (par instanceof JSON_A)
-			return ((JSON_A<T>) par).value_mo;
-		else
-			return null;
-	}
-	/**
-	 * Возвращает массив состоящий из лонгов
-	 * @param key - ключ
-	 * @return - значение, или null, если значение не найдено
-	 */
-	@SuppressWarnings("unchecked")
-	public List<Long> getAL(String key) {
-		var par = parametrs.get(key);
-		if (par instanceof JSON_A) {
-			var ret = new ArrayList<Long>(((JSON_A<Number>) par).value_mo.size());
-			for(var l : ((JSON_A<Number>) par).value_mo)
-				ret.add(l.longValue());
-			return ret;
-		} else {
-			return null;
-		}
-	}
-	/**
-	 * Получает любые векторные значения по ключу
-	 * @param key - ключ
-	 * @return - значение, или null, если значение не найдено
-	 */
-	public List<JSON> getAJ(String key) {
-		return getA(key);
-	}
-	/**
-	 * Получает значение по ключу
-	 * @param key - ключ
-	 * @return - значение, или null, если значение не найдено
-	 */
-	public JSON getJ(String key) {
-		return get(key);
-	}
-	/**
-	 * Получает значение по ключу. Заглушка, потому что во
-	 * 	время исполнения не определить запрашиваемый тип
-	 * @param key - ключ
-	 * @return - значение, или null, если значение не найдено
-	 */
-	public Integer getI(String key) {
-		Number val = get(key);
-		if(val == null) return null;
-		else if(val instanceof Double) throw new java.lang.ClassCastException("Невозможно тип Double преобразовать к Integer");
-		return val.intValue();
-	}
-	/**
-	 * Получает значение по ключу. Заглушка, потому что во
-	 * 	время исполнения не определить запрашиваемый тип
-	 * @param key - ключ
-	 * @return - значение, или null, если значение не найдено
-	 */
-	public Long getL(String key) {
-		Number val = get(key);
-		if(val == null) return null;
-		else if(val instanceof Double) throw new java.lang.ClassCastException("Невозможно тип Double преобразовать к Integer");
-		return val.longValue();
-	}
-	/**
-	 * Получает значение по ключу. Заглушка, потому что во
-	 * 	время исполнения не определить запрашиваемый тип
-	 * @param key - ключ
-	 * @return - значение, или null, если значение не найдено
-	 */
-	public Double getD(String key) {
-		Number val = get(key);
-		if(val == null) return null;
-		else if(val instanceof Long) throw new java.lang.ClassCastException("Невозможно тип Long преобразовать к Double");
-		return val.doubleValue();
-	}
-	/**
-	 * Получает значение по ключу
-	 * @param <T>
-	 * @param key - ключ
-	 * @deprecated теперь надо пользоваться методами с указанием класса объекта
-	 * @return - значение, или null, если значение не найдено или значение не является единственным, а, например, это массив
-	 */
-	@SuppressWarnings("unchecked")
-	@Deprecated
-	public <T> T get(String key) {
-		var par = parametrs.get(key);
-		if (par instanceof JSON_O) {
-			return ((JSON_O<T>) par).value_o;
-		}else {
-			return null;
-		}
-	}
-	/**
-	 * Получает значение по ключу
-	 * @param <T>
-	 * @param cls ожидаемый класс
-	 * @param key ключ
-	 * @return значение, или null, если значение не найдено
-	 * @throws IllegalArgumentException возникает, если элемент представляет собой массив, а мы хотим вернуть единственное значение
-	 */
-	public <T> T get(Class<T> cls, String key) throws IllegalArgumentException {
-		if(!parametrs.containsKey(key)) return null;
-		final var par = parametrs.get(key);
-		if (par instanceof JSON_O o) {
-			final var ret = o.value_o;
-			if(Number.class.isAssignableFrom(cls)){
-				final var nret = (Number)ret;
-				if(cls.equals(Byte.class) || cls.equals(byte.class)) return (T) Byte.valueOf(nret.byteValue());
-				else if(cls.equals(Double.class) || cls.equals(double.class)) return (T) Double.valueOf(nret.doubleValue());
-				else if(cls.equals(Float.class) || cls.equals(float.class)) return (T) Float.valueOf(nret.floatValue());
-				else if(cls.equals(Integer.class) || cls.equals(int.class)) return (T) Integer.valueOf(nret.intValue());
-				else if(cls.equals(Long.class) || cls.equals(long.class)) return (T) Long.valueOf(nret.longValue());
-				else return (T) Short.valueOf(nret.shortValue());
-			} else {
-				return (T) ret;
-			}
-		} else {
-			throw new IllegalArgumentException("Ключ " + key + " представлен типом массива, а не элемента");
-		}
-	}
 	
-	/**
-	 * Получает значение массива по ключу
-	 * @param <T>
-	 * @param cls - ожидаемый класс элементов
-	 * @param key - ключ
-	 * @return - значение, или null, если значение не найдено
-	 * @throws IllegalArgumentException возникает, если элемент представляет единственное значение и вернуть как массив его нельзя
-	 */
-	public <T> List<T> getA(Class<T> cls, String key) {
-		if(!parametrs.containsKey(key)) return null;
-		final var par = parametrs.get(key);
-		if (par instanceof JSON_A a) {
-			final var ret = a.value_mo;
-			if(Number.class.isAssignableFrom(cls)){
-				final var nret = (List<Number>)ret;
-				if(cls.equals(Byte.class)) return (List<T>) nret.stream().map(v -> Byte.valueOf(v.byteValue())).toList();
-				else if(cls.equals(Double.class)) return (List<T>) nret.stream().map(v -> Double.valueOf(v.doubleValue())).toList();
-				else if(cls.equals(Float.class)) return (List<T>) nret.stream().map(v -> Float.valueOf(v.floatValue())).toList();
-				else if(cls.equals(Integer.class)) return (List<T>) nret.stream().map(v -> Integer.valueOf(v.intValue())).toList();
-				else if(cls.equals(Long.class)) return (List<T>) nret.stream().map(v -> Long.valueOf(v.longValue())).toList();
-				else if(cls.equals(Short.class)) return (List<T>) nret.stream().map(v -> Short.valueOf(v.shortValue())).toList();
-				else if(cls.equals(byte.class)) return (List<T>) nret.stream().map(v -> v.byteValue()).toList();
-				else if(cls.equals(double.class)) return (List<T>) nret.stream().map(v -> v.doubleValue()).toList();
-				else if(cls.equals(float.class)) return (List<T>) nret.stream().map(v -> v.floatValue()).toList();
-				else if(cls.equals(int.class)) return (List<T>) nret.stream().map(v -> v.intValue()).toList();
-				else if(cls.equals(long.class)) return (List<T>) nret.stream().map(v -> v.longValue()).toList();
-				else return (List<T>) nret.stream().map(v -> v.shortValue()).toList();
-			} else {
-				return (List<T>) ret;
-			}
-		} else {
-			throw new IllegalArgumentException("Ключ " + key + " представлен типом массива, а не элемента");
-		}
-	}
-
-	/**
-	 * Приводит JSON объект к строке
-	 * @return Одна простая и длинная строка без форматирвоания
-	 */
-	public String toJSONString() {
-		StringWriter sw = new StringWriter();
-		try {
-			toJSONString(sw);
-		} catch (IOException e) {} // Быть такого не может! Не должен SW давать ошибки IO
-		return sw.toString();
-	}
-	/**
-	 * Приводит JSON объект к строке - простой и длинной строке без форматирвоания.И дописывает её в конец
-	 * @param writer
-	 * @throws IOException 
-	 */
-	public void toJSONString(Writer writer) throws IOException {
-		toBeautifulJSONString(writer,null);
-	}
-	/**
-	 * Приводит JSON объект к строке
-	 * @return строка, форматированная согласно правилам составления JSON объектов, с табами и подобным
-	 */
-	public String toBeautifulJSONString() {
-		StringWriter sw = new StringWriter();
-		try {
-			toBeautifulJSONString(sw);
-		} catch (IOException e) {}
-		return sw.toString();
-	}
-	/**
-	 * Приводит JSON объект к строке, форматированной согласно правилам составления JSON объектов, с табами и подобным.Дописывает в конец документа
-	 * @param writer
-	 * @throws IOException 
-	 */
-	public void toBeautifulJSONString(Writer writer) throws IOException {
-		toBeautifulJSONString(writer,"");
-		writer.flush();
-	}
-	/**Внутренний метод для печати объекта. Объект состоит из открывающей табы ну и дальше по тексту*/
-	private void toBeautifulJSONString(Writer writer,String tabs) throws IOException {
-		writer.write("{");
-		if(tabs != null)
-			writer.write("\n");
-		boolean isFirst = true;
-		for (Entry<String, JSON.JSON_par> param : parametrs.entrySet()) {
-			if(isFirst)
-				isFirst = false;
-			else if(tabs != null)
-				writer.write(",\n");
-			else
-				writer.write(",");
-			if(tabs != null) {
-				writer.write(tabs + "\t");
-				writer.write("\"" + param.getKey() + "\": ");
-				param.getValue().write(writer, tabs + "\t");
-			} else {
-				writer.write("\"" + param.getKey() + "\":");
-				param.getValue().write(writer, null);
-			}
-		}
-		if(tabs != null)
-			writer.write("\n" + tabs);
-		writer.write("}");
-	}
-	
-	@Override
-	public String toString() {
-		return toJSONString();
-	}
-	public boolean containsKey(String key) {
-		return parametrs.containsKey(key);
-	}
-
-	/**Очищает все элементы объекта*/
-	public void clear() {
-		parametrs.clear();
-	}
-	/**Возвращает список всех ключей объекта
-	 * @return список со всеми ключами
-	 */
-	public Set<String> getKeys(){
-		return parametrs.keySet();
-	}
 	
 	
 	/**Это список всех параметров объекта. Используется лист пар потому что было важное условие - сохранить порядок данных*/
-	private LinkedHashMap<String,JSON_par> parametrs;
+	private LinkedHashMap<String,Object> parametrs;
 }
