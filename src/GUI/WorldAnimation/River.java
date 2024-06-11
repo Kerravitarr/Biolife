@@ -221,15 +221,14 @@ public class River extends DefaultAnimation{
 		/**Счётчик кораблика. Нужен для того, чтобы каждый раз спавниться в новом месте*/
 		public int index;
 		
-		public Ship(int i){index = i;}
+		public Ship(int i){setIndex(i);}
 		
 		/**Проверяет - плывёт ещё кораблик или уже нет?*/
 		public boolean isActiv(){return cell != null;}
 		/**Начало кораблика*/
 		public void start(Cell c){
 			if(c.isEnd != null || c.flow.lenght() == 0) {
-				index++;
-				if(index < 0) index = 0;
+				setIndex(index + 1);
 				return;
 			}
 			cell = c;
@@ -242,12 +241,14 @@ public class River extends DefaultAnimation{
 			final var isEnd = cell.isEnd != null || cell.flow.lenght() == 0 || !bank.isValid(point.add(cell.flow.direction().dq,cell.flow.direction().dr));
 			if(isEnd){
 				cell = null;
-				index++;
-				if(index < 0) index = 0;
+				setIndex(index + 1);
 			} else {
 				cell = bank.get(point);
 				cell.isShip = true;
 			}
+		}
+		private void setIndex(int i){
+			index = Math.abs(i);
 		}
 	}
 	/**Одна клетка берега*/
