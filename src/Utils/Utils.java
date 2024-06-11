@@ -13,9 +13,18 @@ import java.util.Map.Entry;
 import java.util.concurrent.locks.LockSupport;
 import Calculations.Configurations;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Utils {
-
+	/**
+	 * Округляет число до ближайшего целого
+	 * @param d округляемое число
+	 * @return ближайшее целое
+	 */
+	public static int round(double d) {
+		return (int) Math.round(d);
+	}
 	/**
 	 * Метод получения псевдослучайного целого числа [min,max];
 	 * @param min минимальное значение, включительно
@@ -442,5 +451,33 @@ public class Utils {
 			return (target_max + target_min) / 2;
 		else
 			return ((value - min) * (target_max - target_min)) / (max - min) + target_min;
+	}
+	/**Автоматически генерирует строку описания объекта
+	 * @param o
+	 * @return 
+	 */
+	public static <T> String toString(T o){
+		try {
+			if(o == null) return "null";
+			var sb = new StringBuilder();
+			var cls = o.getClass();
+			sb.append(cls.getTypeName()).append("(");
+			var isFirst = true;
+			for(var f : cls.getDeclaredFields()){
+				if(java.lang.reflect.Modifier.isStatic(f.getModifiers()) && java.lang.reflect.Modifier.isFinal(f.getModifiers())) continue;
+				var obj = java.lang.reflect.Modifier.isStatic(f.getModifiers()) ? null : o;
+				var isAccess = f.canAccess(obj);
+				if(!isAccess) f.setAccessible(true);
+				if(isFirst) isFirst = false;
+				else sb.append(", ");
+				sb.append(f.getName()).append("=").append(f.get(obj));
+				if(!isAccess) f.setAccessible(false);
+			}
+			sb.append(')');
+			return sb.toString();
+		} catch (IllegalArgumentException | IllegalAccessException ex) {
+			Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, null, ex);
+			return ex.toString();
+		}
 	}
 }

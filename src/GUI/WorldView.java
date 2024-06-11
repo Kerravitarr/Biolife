@@ -22,6 +22,7 @@ import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -352,7 +353,9 @@ public class WorldView extends javax.swing.JPanel {
 	 * @param isAll рисовать всё или только то, что видно на экране?
 	 */
 	public void paintComponent(Graphics2D g, boolean isAll) {
-		//super.paintComponent(g);		
+		//super.paintComponent(g);
+		g.translate(getWidth() / 2, getHeight() / 2);
+		g.scale(0.5, 0.5);
 		
 		paintField(g);
 		paintCells(g, isAll);
@@ -419,7 +422,7 @@ public class WorldView extends javax.swing.JPanel {
 		if(Configurations.confoguration.world_type != Configurations.WORLD_TYPE.FIELD_R)
 			animation.world(g,visibleRec);
 		//Вспомогательное построение
-		//Utils.DeprecatedMetods.paintCells(g);
+		//Utils.DeprecatedMetods.paintCells(g, transforms);
 	}
 	/**Рисует на холсте клетки
 	 * @param g холст
