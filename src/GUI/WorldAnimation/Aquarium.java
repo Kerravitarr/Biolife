@@ -11,7 +11,6 @@ import Utils.ColorRec;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
-import java.awt.geom.Point2D;
 import java.util.ArrayList;
 
 /**
@@ -30,6 +29,29 @@ import java.util.ArrayList;
  * @author Kerravitarr
  */
 public class Aquarium extends DefaultAnimation{
+	private static class DynamicColor{
+		/**Функция создания прямоугольника в зависимости от освещённости*/
+		private java.util.function.Function<Integer,ColorRec> colorGenerator;
+		/**Текущее состояние*/
+		private ColorRec now;
+		
+		public DynamicColor(java.util.function.Function<Integer,ColorRec> gen){
+			colorGenerator = gen;
+			setLight(1000);
+		}
+		/**Устанавливает освещённость
+		 * @param sunState освещёность [0,1000]. Где 0 - солнца нет, а 1000 - солнце светит на всю катушку
+		 */
+		public void setLight(int sunState){
+			var alf = Utils.Utils.normalize_value(sunState, 0, 1000, 0, 128);
+			now = colorGenerator.apply(alf);
+		}
+		
+		
+		public void paint(Graphics2D g) {
+			now.paint(g);
+		}
+	}
 	
 	/**Все статические переменные*/
 	private static class Static{
@@ -92,7 +114,7 @@ public class Aquarium extends DefaultAnimation{
 		var winW = Math.max(fieldW * 2, w);
 		var winSize = (int) Math.max(winH,winW);
 		var border = (int)Math.max(w - transform.toDScrinX(Configurations.getWidth()-1), h - transform.toDScrinY(Configurations.getHeight()-1));
-		var widthCenter = winSize / 14;
+		var widthCenter = winSize / 14; //Ширина центральной части окна
 		var x1 = transform.toScrinX(Configurations.getWidth()-1); //Конец поля. Для рисунка это максимальная координата
 		var y1 = transform.toScrinY(Configurations.getHeight()-1);
 		var x0 = x1 - winSize; //Начало поля. Для рисунка это минимальная координата
@@ -105,12 +127,13 @@ public class Aquarium extends DefaultAnimation{
 		var yr1 = y1 + border;
 		var cx = x1 - winSize/2; //Середина поля
 		
-		var figures = new ArrayList<ColorRec>();
-		
+		var figures = new ArrayList<ColorRec>(this.staticColor.length);
+		var dynfigures = new ArrayList<DynamicColor>(this.dinamicColor.length);
+		//figures.add(rectangle(-1000,-1000,xr1,yr1,Color.BLACK));
 		
 		//Стекло
 		{
-			var glassColor = new Color(0x80cde8ff, true);
+			var glassColor = new Color(0x60cde8ff, true);
 			final int xg[] = new int[6];
 			final int yg[] = new int[6];
 			xg[0] = xg[5] = x0;
@@ -124,8 +147,6 @@ public class Aquarium extends DefaultAnimation{
 		
 		//Рамка по краям
 		figures.add(rectangle(x1,yr0,xr1,yr1,Color.BLACK));
-		figures.add(rectangle(xr0, yr0, x0, yr1,Color.BLACK));
-		figures.add(rectangle(xr0,y0,xr1,yr0,Color.BLACK));
 		figures.add(rectangle(xr0,y1,xr1,yr1,Color.BLACK));
 		
 		//Рамка под стёкла. Тут только две рамки, потому что левый и верхний края не видны
@@ -149,8 +170,6 @@ public class Aquarium extends DefaultAnimation{
 		
 		//Разделение створок
 		figures.add(rectangle(cx-widthCenter/4,y0,cx,y1,Color.BLACK));
-		//figures.add(rectangle(cx,y0,cx+border/4,yf0,Color.BLACK));
-		//figures.add(rectangle(cx,yf0,Math.min(cx+border/4,xf0),y1,Color.BLACK));
 		
 		//Лампа
 		var lampW = (winSize / 2) / 3;
@@ -172,19 +191,42 @@ public class Aquarium extends DefaultAnimation{
 		figures.add(new ColorRec(new int[]{xleg,x1-winSize/4-lampW/6-legw, x1-winSize/4-lampW/6-legw, xleg},new int[]{yleg,legyUp,legyUp + legw,yleg+legw},Color.BLACK));
 		figures.add(rectangle(x1-winSize/4-lampW/6-legw,legyUp,x1-winSize/4-lampW/6,legyUp + legw,Color.BLACK));
 		
-		//Конус света
-		var colorLamp = (java.util.function.Function<Integer,java.awt.GradientPaint>)(alf) -> new java.awt.GradientPaint(
-			new java.awt.geom.Point2D.Double((lampx2+lampx1)/2, lampy2), AllColors.toDark(new Color(0x80ffb46b, true), alf),
-			new java.awt.geom.Point2D.Double((lampx2+lampx1)/2, y1), new Color(0x00ffb46b, true));
-		if(Utils.Utils.normalize_value(yf0, y1, rucy+lampW/2, cx, lampx2) < xf0){
-			//Свет лампы достреливает до пола
-			lampGenerator = (alf) -> new ColorRec(new int[]{lampx2, lampx1, x1,xf0,xf0,cx},new int[]{lampy2,lampy2,yf0,yf0,y1,y1},colorLamp.apply(alf));
-		} else {
-			lampGenerator = (alf) -> new ColorRec(new int[]{lampx2, lampx1, x1,xf0},new int[]{lampy2,lampy2,yf0,yf0},colorLamp.apply(alf));
+		//А теперь стёкла аквариума.
+		var w_glass_a = Math.min(widthCenter/4,xr1-x1)/2;
+		{
+			var glassColor = new Color(0xF0a8ccd7, true);
+			figures.add(rectangle(xf0-w_glass_a,yf0-w_glass_a,xf0,y1+w_glass_a,glassColor));
+			figures.add(rectangle(x1,yf0-w_glass_a,x1+w_glass_a,y1+w_glass_a,glassColor));
+			figures.add(rectangle(xf0-w_glass_a,y1,x1+w_glass_a,y1+w_glass_a,glassColor));
 		}
-		lamp = lampGenerator.apply(128);
 		
-		this.border = figures.toArray(ColorRec[]::new);
+		//Затемнение помещения ночью
+		{
+			dynfigures.add(new DynamicColor((alf) -> rectangle(x1-widthCenter,y0,x1,yf0,AllColors.toDark(Color.BLACK, alf))));
+			if(fieldW < widthCenter)
+				dynfigures.add(new DynamicColor((alf) -> rectangle(x1-widthCenter,yf0,xf0,y1,AllColors.toDark(Color.BLACK, alf))));
+			dynfigures.add(new DynamicColor((alf) -> rectangle(x0,y1,xf0,y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
+			if(fieldH < widthCenter)
+				dynfigures.add(new DynamicColor((alf) -> rectangle(xf0,y1 - widthCenter,x1,yf0,AllColors.toDark(Color.BLACK, alf))));
+			dynfigures.add(new DynamicColor((alf) -> rectangle(cx-widthCenter,y0,cx,y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
+			dynfigures.add(new DynamicColor((alf) -> rectangle(cx,y0,cx+widthCenter,yf0,AllColors.toDark(Color.BLACK, alf))));
+			dynfigures.add(new DynamicColor((alf) -> rectangle(cx,yf0,Math.min(cx+widthCenter,xf0),y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
+		}
+		//Конус света
+		{
+			var colorLamp = (java.util.function.Function<Integer,java.awt.GradientPaint>)(alf) -> new java.awt.GradientPaint(
+				new java.awt.geom.Point2D.Double((lampx2+lampx1)/2, lampy2), AllColors.toDark(new Color(0x80ffb46b, true), alf),
+				new java.awt.geom.Point2D.Double((lampx2+lampx1)/2, y1), new Color(0x00ffb46b, true));
+			if(Utils.Utils.normalize_value(yf0, y1, rucy+lampW/2, cx, lampx2) < xf0){
+				//Свет лампы достреливает до пола
+				dynfigures.add(new DynamicColor((alf) -> new ColorRec(new int[]{lampx2, lampx1, x1,xf0,xf0,cx},new int[]{lampy2,lampy2,yf0,yf0,y1,y1},colorLamp.apply(alf))));
+			} else {
+				dynfigures.add(new DynamicColor((alf) -> new ColorRec(new int[]{lampx2, lampx1, x1,xf0},new int[]{lampy2,lampy2,yf0,yf0},colorLamp.apply(alf))));
+			}
+		}
+		
+		this.staticColor = figures.toArray(ColorRec[]::new);
+		this.dinamicColor = dynfigures.toArray(DynamicColor[]::new);
 	}
 	private ColorRec rectangle(int x0, int y0, int x1, int y1, Color color){
 		final int xrb[] = new int[4];
@@ -210,9 +252,10 @@ public class Aquarium extends DefaultAnimation{
 		state.elevation = Math.toDegrees(Math.asin(state.sinDF - state.cosDF * Math.cos(sangle)));
 		System.out.println(((state.second / 3600) % 24) +" " + state);
 		if(state.second == 0 || 0 < state.elevation && state.elevation < 6){
-			var alf = Utils.Utils.normalize_value(Utils.Utils.round(state.elevation * 100), 0, 600, 128, 0);
-			alf = Utils.Utils.betwin(0, alf, 128);
-			lamp = lampGenerator.apply(alf);
+			var alf = Utils.Utils.normalize_value(Utils.Utils.round(state.elevation * 100), 0, 600, 1000, 0);
+			alf = Utils.Utils.betwin(0, alf, 1000);
+			for(var c : dinamicColor)
+				c.setLight(alf);
 		}
 	}
 
@@ -225,9 +268,10 @@ public class Aquarium extends DefaultAnimation{
 	public void world(Graphics2D g, Rectangle visible) {
 		air.paint(g);
 		table.paint(g);
-		for(var c : border)
+		for(var c : staticColor)
 			c.paint(g);
-		lamp.paint(g);
+		for(var c : dinamicColor)
+			c.paint(g);
 	}
 	
 	/***/
@@ -238,10 +282,8 @@ public class Aquarium extends DefaultAnimation{
 	private ColorRec water;
 	/**стол*/
 	private ColorRec table;
-	/**Боковая рамка*/
-	private ColorRec[] border;
-	/**Лампа*/
-	private ColorRec lamp;
-	/**Функция создания лампы в зависимости от освещённости*/
-	private java.util.function.Function<Integer,ColorRec> lampGenerator;
+	/**Раскраска под статик*/
+	private ColorRec[] staticColor = new ColorRec[0];
+	/**Динамические раскраски*/
+	private DynamicColor[] dinamicColor = new DynamicColor[0];
 }

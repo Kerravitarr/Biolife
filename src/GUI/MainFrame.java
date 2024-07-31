@@ -263,6 +263,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 				if(ret == JOptionPane.OK_OPTION){
 					final var  dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
 					Configurations.makeDefaultWord(dc.world_type, dc.MAP_CELLS.width, dc.MAP_CELLS.height);
+					wv.recalculate();
 					Configurations.world.start();
 				}
 			}
