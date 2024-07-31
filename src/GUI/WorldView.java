@@ -165,9 +165,9 @@ public class WorldView extends javax.swing.JPanel {
 					LU.y = RD.y - wh * scalePxPerCell;
 				}
 				case RECTANGLE -> {
-					LU.x = (w - (ww - 1) * scalePxPerCell) * (1d-getRborder());
+					LU.x = (w - (ww - 1) * scalePxPerCell) * (1d-getRborder()*5);
 					RD.x = LU.x + ww * scalePxPerCell;
-					LU.y = (h - (wh - 1) * scalePxPerCell) * (1d-getDborder());
+					LU.y = (h - (wh - 1) * scalePxPerCell) * (1d-getDborder()*5);
 					RD.y = LU.y + wh * scalePxPerCell;
 				}
 				default -> {
@@ -354,8 +354,9 @@ public class WorldView extends javax.swing.JPanel {
 	 */
 	public void paintComponent(Graphics2D g, boolean isAll) {
 		//super.paintComponent(g);
-		g.translate(getWidth() / 2, getHeight() / 2);
-		g.scale(0.5, 0.5);
+		//TODO УДАЛИТЬ!!!!
+		/*												g.translate(getWidth() / 2, getHeight() / 2);
+														g.scale(0.5, 0.5);/***/
 		
 		paintField(g);
 		paintCells(g, isAll);

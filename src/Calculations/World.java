@@ -250,38 +250,30 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		//А потому это не более, чем научная гипотеза. Нужны опыты. Сколько по хорошему должно быть клеток на поток. Тогда
 		//Можно весь мир разбить не на столбы, а на блоки... Но исследований нет - поэтому пока это лишь теория
 		//И, естественно, этапы должны идти в случайном порядке. Главное, чтобы они были независимы
-		
-		//А теперь вся магия!
-		//Дело в том, что клетка может походить в сторону на 1 клетку.
-		//А ещё на 1 клетку она может походить из-за течения!
-		//Что до объёмного разбиения - клетка может походить вверх на ещё одну бонусную клетку из-за плавучести.
-		//Итого. В горизонтале нам нужно не |ХХ|**|ХХ|**|, а |ХХХХ|****|ХХХХ|****|. Так как клетке нужна дополнительная "защитная" линия в случае сдувания потоком.
-		//Для вертикали ещё больше - там понадобится 2 защитные клетки
-		//И да... Если течения наложатся... То всё пойдёт по звезде
-		//Конечно. Клетка будет толкаться течением и плавучестью после своего хода
-		//Но всё равно - как только она подойдёт слишком близко к краю другого потока - ошибка - это вопрос времени
-		final var columnPerPc = 4;
-		final var columnPerPc2 = columnPerPc * 2;
-		//Сколько нужно дать каждой клетке, чтобы сойтись по итогу
-		double insert = (vaxX - (vaxX/columnPerPc2)*columnPerPc2) / ((double)vaxX);
+	
+		final var columnPerPc = 4;					//Колонок в одном потоке
+		final var columnPerPc2 = columnPerPc * 2;	//Колонок в двух соседних потоках
+		//Сколько нужно дать каждой клетке, чтобы сойтись по итогу. Если ширина не делится нацело на число линий в одном потоке
+		final double insert = (vaxX - (vaxX/columnPerPc2)*columnPerPc2) / ((double)vaxX);
 		cellsTask = new ArrayList<>(vaxX / columnPerPc2 + columnPerPc);
-		//Собственно сами точки для клетки
-		ArrayList<Point> firstList = new ArrayList<>();
-		List<Point> secondList = new ArrayList<>();
+		//Собственно сами точки для текущего потока
+		final var firstList = new ArrayList<>();
+		final var secondList = new ArrayList<>();
 		for (int x = 0; x < vaxX; x++) {
-			var difX = Math.round(x  - insert*x);
-			if(x != 0 && difX % columnPerPc2 == 0 && !secondList.isEmpty()) {
+			var column = Math.round(x  - insert*x) % columnPerPc2; //Номер колонки для текущей пары столбцов
+			if(x != 0 && (column == 0 && !secondList.isEmpty())) {
+				//Если мы в самом начале новой пары колонок, то мы завершили предыдущие две. Если у нас, конечно, не нулевой шаг
 				cellsTask.add(new WorldTask(firstList.toArray(Point[]::new),secondList.toArray(Point[]::new)));
 				firstList.clear();
 				secondList.clear();
 			}
-			boolean isF = difX % columnPerPc2 < columnPerPc;
-			for (int y = 0; y < Configurations.getHeight(); y++) {
-				Point point = Point.create(x, y);
-				if (isF)firstList.add(point);
-				else 	secondList.add(point);
-			}
+			boolean isF = column < columnPerPc; //Первый или второй столбик?
+			//Добавляем все клетки столбика в эту колонку.
+			var list = isF ? firstList : secondList;
+			for (int y = 0; y < Configurations.getHeight(); y++)
+				list.add( Point.create(x, y));
 		}
+		//И последний столбик. Вдруг ему тоже достанется несколько клеток
 		cellsTask.add(new WorldTask(firstList.toArray(Point[]::new),secondList.toArray(Point[]::new)));
 	}
 	/**Оперции, которые должны быть выполнены до совершения шага мира*/
