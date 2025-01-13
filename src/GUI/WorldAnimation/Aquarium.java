@@ -11,6 +11,7 @@ import Utils.ColorRec;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.geom.Area;
 import java.util.ArrayList;
 
 /**
@@ -29,13 +30,15 @@ import java.util.ArrayList;
  * @author Kerravitarr
  */
 public class Aquarium extends DefaultAnimation{
-	private static class DynamicColor{
+
+	private static class DynamicColor extends ColorRec{
 		/**Функция создания прямоугольника в зависимости от освещённости*/
 		private java.util.function.Function<Integer,ColorRec> colorGenerator;
 		/**Текущее состояние*/
 		private ColorRec now;
 		
 		public DynamicColor(java.util.function.Function<Integer,ColorRec> gen){
+			super(0, 0, 0, 0, null);
 			colorGenerator = gen;
 			setLight(1000);
 		}
@@ -46,10 +49,9 @@ public class Aquarium extends DefaultAnimation{
 			var alf = Utils.Utils.normalize_value(sunState, 0, 1000, 0, 128);
 			now = colorGenerator.apply(alf);
 		}
-		
-		
-		public void paint(Graphics2D g) {
-			now.paint(g);
+		@Override
+		public void paint(Graphics2D g, java.awt.geom.Area field) {
+			now.paint(g,field);
 		}
 	}
 	
@@ -59,18 +61,31 @@ public class Aquarium extends DefaultAnimation{
 		private static final int DAY_LONG = 24 * 60 * 60;
 		/**Продолжительность года в секундах*/
 		private static final int YEAR_LONG = 365 * DAY_LONG;
-		/**Широта точки для исследования*/
+		/**Широта точки, где находится дом*/
 		private static final double LATITUDE = Math.toRadians(59+57/60d);
-		/**Косинус угла в искомой точки*/
+		/**Косинус угла в точке, где находится дом*/
 		private static final double COS_LATITUDE = Math.cos(LATITUDE);
-		/**Синус угла в искомой точки*/
+		/**Синус угла в точке, где находится дом*/
 		private static final double SIN_LATITUDE = Math.sin(LATITUDE);
 		/**Синус угла наклона планеты*/
 		private static final double SIN_EARTH_AXIS = Math.sin(Math.toRadians(23+26/60d));
+		/**Возвращате угол наклона солнца над горизонтом
+		 * @return угол наклона солнца, градусы
+		 */
+		public double getElevaion(){
+			var sangle = Math.toRadians(second / (4 * 60d)); //Местное солнцечное время
+			return Math.toDegrees(Math.asin(sinDF - cosDF * Math.cos(sangle)));
+		}
+		/**Возвращате угол наклона солнца над горизонтом
+		 * @return угол наклона солнца, градусы
+		 */
+		public double getMaxElevaion(){
+			return Math.toDegrees(Math.asin(sinDF + cosDF));
+		}
 		
 		@Override public String toString(){return Utils.Utils.toString(this);}
 		/**Текущая секунда года*/
-		private int second = -1;
+		private int second = 3 * 30 * 24 * 60 * 60;
 		/**Текущий день года*/
 		private int day = -1;
 		/**Произведение синуса склонения на синус широты*/
@@ -80,31 +95,20 @@ public class Aquarium extends DefaultAnimation{
 		/**Угол солнца над горизонтом*/
 		private double elevation;
 	}
-	
+	private static double fourier(double val, int mount){
+		var angle = 360 * val;
+		var ret = 0;
+		for (int i = 1; i < 5; i++) {
+			var ds = Utils.Utils.randomByHash(mount + i * 1, -100,100);
+			var dc = Utils.Utils.randomByHash(mount + i * 2, -100,100);
+			var as = Utils.Utils.randomByHash(mount + i * 3, 1,3);
+			var ac = Utils.Utils.randomByHash(mount + i * 4, 1,3);
+			ret += ds * Math.sin(Math.toRadians(as*angle)) + dc * Math.cos(Math.toRadians(ac*angle));
+		}
+		return 0.03 * ret;
+	}
 	public Aquarium(WorldView.Transforms transform, int w, int h){
-		//Нижняя часть поля
-		final int xd[] = new int[8];
-		final int yd[] = new int[8];
 		//Поле, вода
-		final int xw[] = new int[4];
-		final int yw[] = new int[4];
-		//Верхняя часть поля
-		final int yu[] = new int[8];
-		final var startPos = -1000; //Чисто отладочное число. Тут должно быть 0!!!
-		xd[0] = xd[1] = startPos;
-		xd[6] = xd[7] = xw[0] = xw[3] = transform.toScrinX(0);
-		xd[4] = xd[5] = xw[1] = xw[2] = transform.toScrinX(Configurations.getWidth()-1);
-		xd[2] = xd[3] = w;
-
-		yd[1] = yd[2] = startPos;
-		yw[0] = yw[1] = yd[5] = yd[6] = transform.toScrinY(0);
-		yd[0] = yd[3] = yd[4] = yd[7] = yu[0] = yu[3] = yu[4] = yu[7] = transform.toScrinY(Configurations.getHeight()-3); //Место сшивания полей
-		yw[2] = yw[3] = yu[5] = yu[6] = transform.toScrinY(Configurations.getHeight()-1);
-		yu[1] = yu[2] = h;
-
-
-		air = new ColorRec(xd,yd,Color.WHITE);
-		table = new ColorRec(xd,yu, Color.WHITE);
 		water = rectangle(transform.toScrinX(0), transform.toScrinY(0), transform.toScrinX(Configurations.getWidth()-1),transform.toScrinY(Configurations.getHeight()-1), AllColors.WATER_AQUARIUM );
 		
 		if(state == null) state = new Static();
@@ -126,42 +130,174 @@ public class Aquarium extends DefaultAnimation{
 		var xr1 = x1 + border; //А это конец окна. Игровое поле находится в рамке - это вот рамка
 		var yr1 = y1 + border;
 		var cx = x1 - winSize/2; //Середина поля
+		var mount_ys = (int)(y1 - winSize * 0.3); //С какой высоты начинаются горы
+		var mount_ye = (int)(y1 - winSize * 0.25); //Куда нижняя часть гор стремится
+		var mount_xs = x0 + widthCenter;
 		
 		var figures = new ArrayList<ColorRec>(this.staticColor.length);
-		var dynfigures = new ArrayList<DynamicColor>(this.dinamicColor.length);
-		//figures.add(rectangle(-1000,-1000,xr1,yr1,Color.BLACK));
 		
+		//Рисовать мы будем с заднего фона, постепенно пробираясь вперёд.
+		//Фон. 
+		figures.add(rectangle(x0,y0,x1,y1,new Color(0xE8DFFE)));
+		//Солнце. Обязательно в этом месте!!!
+		{
+			var sun_h = (mount_ys - yr0); //Максимальная высота солнца над горизонтом
+			var sun_r = widthCenter;
+			figures.add(new DynamicColor((alfa) -> {
+				var maxE = state.getMaxElevaion();
+				var sy = mount_ys - sun_h * state.elevation / 56d;
+				var sx = cx + 1.5 * (sun_h * maxE / 56d) * ((state.second % 86400 - 43200) / 86400d);
+				return new ColorRec(0, 0, 0,0,null){
+					@Override
+					public void paint(Graphics2D g, java.awt.geom.Area field) {
+						if(sy > mount_ys) return;
+						var rectangle = new java.awt.geom.Ellipse2D.Double(sx-sun_r/2,sy-sun_r/2,sun_r,sun_r);
+						var area = new java.awt.geom.Area(rectangle);
+						area.subtract(field);
+						g.setColor(AllColors.SUN);
+						g.fill(area);
+					}
+				};
+			}));
+		}
+		
+		
+		//Болото
+		figures.add(rectangle(xr0, mount_ys, xr1, yr1, new Color(0x56412E)));
+		//Озеро на карте
+		{
+			var widtw = (x1-mount_xs) * 0.7;
+			figures.add(new ColorRec(0, 0, 0, 0, null){
+				@Override
+				public void paint(Graphics2D g, java.awt.geom.Area field) {
+					g.setColor(new Color(0xAB9DC1));
+					g.fillOval((int)(mount_xs-widtw/2), mount_ys, (int)widtw, mount_ye-mount_ys);
+				}
+			});
+		}
+		//А теперь рисуем горы
+		{
+			var colors = new Color[]{new Color(0xC2B5E0),new Color(0x897A99),new Color(0x645069)};
+			for (int m = 0, my = mount_ys, mx = mount_xs; m < colors.length; m++) {
+				var m_color = colors[m];
+				var m_angle = Math.atan2(y0 - my, x1 - mx);
+				var down_angl = Math.atan2(mount_ye - my, x1 - mx);
+				var m_lenght = Math.hypot(y0 - my, x1 - mx);
+				var down_lenght = Math.hypot(mount_ye - my, x1 - mx);
+				var hash = m * Configurations.getHeight() + Configurations.getWidth();
+				
+				//Рисуем гору вправо
+				{
+					final int[] xm = new int[100];
+					final int[] ym = new int[xm.length];
+					var ul = (m_lenght / (xm.length - 2));
+					var dl = (down_lenght / (xm.length - 2));
+					xm[0] = mx;
+					ym[0] = my;
+					for (int i = 1; i < xm.length - 1; i++) {
+						var fy = fourier(((double)i) / (xm.length - 2),hash);
+						xm[i] = (int)(mx + i * ul * Math.cos(m_angle));
+						var up_y = my + ul * (i * Math.sin(m_angle) + fy);
+						var down_y = my + dl * (i * Math.sin(down_angl));
+						ym[i] = (int)(Math.min(up_y, down_y));
+					}
+					xm[xm.length - 1] = x1;
+					ym[xm.length - 1] = mount_ye;
+					figures.add(new ColorRec(xm,ym, m_color));
+				}
+				//А теперь тоже самое, но влево
+				{
+					final int[] xm = new int[100];
+					final int[] ym = new int[xm.length];
+					var ul = (m_lenght / (xm.length - 2));
+					var dl = (down_lenght / (xm.length - 2));
+					xm[0] = mx;
+					ym[0] = my;
+					for (int i = 1; i < xm.length - 1; i++) {
+						var fy = fourier(((double)i) / (xm.length - 2),hash);
+						xm[i] = (int)(mx - i * ul * Math.cos(m_angle));
+						var up_y = my + ul * (i * Math.sin(m_angle) + fy);
+						var down_y = my + dl * (i * Math.sin(down_angl));
+						ym[i] = (int)(Math.min(up_y, down_y));
+					}
+					xm[xm.length - 1] = (int)(mx - m_lenght);
+					ym[xm.length - 1] = mount_ye;
+					figures.add(new ColorRec(xm,ym, m_color));
+				}
+				//А теперь перейдём к следующей гОре горЕ
+				var delta = Utils.Utils.randomByHash(hash - 1, -10,10) / 100d;
+				my += (mount_ye - mount_ys) * delta;
+				mx += (x1 - mount_xs) * delta;
+			}
+			//А это ближайшая, тёмная гора с речкой
+			var delta = 0.25;
+			var my = (int)(mount_ys + (mount_ye - mount_ys) * delta);
+			var mx = (int)(mount_xs + (x1 - mount_xs) * delta);
+			var m_color = new Color(0x452C41);
+			var m_angle = Math.atan2((y0+yf0)/2 - my, x1 - mx);
+			var m_lenght = Math.hypot((y0+yf0)/2 - my, x1 - mx);
+			var down_angl = Math.atan2(mount_ye - my, x1 - mx);
+			var down_lenght = Math.hypot(mount_ye - my, x1 - mx);
+			var hash = 100 * Configurations.getHeight() + Configurations.getWidth();
+
+			//Рисуем гору вправо
+			final int[] xm = new int[100];
+			final int[] ym = new int[xm.length];
+			var ul = (m_lenght / (xm.length - 2));
+			var dl = (down_lenght / (xm.length - 2));
+			xm[0] = mx;
+			ym[0] = my;
+			for (int i = 1; i < xm.length - 1; i++) {
+				var fy = fourier(((double)i) / (xm.length - 2),hash);
+				xm[i] = (int)(mx + i * ul * Math.cos(m_angle));
+				var up_y = my + ul * (i * Math.sin(m_angle) + fy);
+				var down_y = my + dl * (i * Math.sin(down_angl));
+				ym[i] = (int)(Math.min(up_y, down_y));
+			}
+			xm[xm.length - 1] = x1;
+			ym[xm.length - 1] = mount_ye;
+			figures.add(new ColorRec(xm,ym, m_color));
+		}
+		//Травка под окном
+		{
+			var yaxis = (yf0 + y1) / 2;
+			var height = (yf0 - y1) / 8;
+			final int[] xd = new int[100];
+			final int[] yd = new int[xd.length];
+			xd[0] = xd[xd.length - 1] = x0;
+			yd[0] = yd[yd.length - 3] = yaxis;
+			var elements = xd.length - 4 - 1;
+			var width = cx - x0;
+			for (int i = 1; i < xd.length - 3; i++) {
+				xd[i] = x0 + i * width / elements;
+				yd[i] = (int)(yaxis - height * Math.sin(Math.toRadians(180 * i / elements)));
+			}
+			xd[xd.length - 3] = xd[xd.length - 2] = cx;
+			yd[yd.length - 2] = yd[yd.length - 1] = yr1;
+			
+			figures.add(new ColorRec(xd,yd, new Color(0x2D1925)));
+			//figures.add(rectangle(x0, yaxis, cx, yr1, new Color(0x2D1925)));
+		}
+		
+		
+		//А теперь серый фильтр, который будет символизировать ночь
+		figures.add(new DynamicColor((alf) -> rectangle(x0,y0,x1,y1,AllColors.toDark(Color.BLACK, alf*2))));
 		//Стекло
 		{
 			var glassColor = new Color(0x60cde8ff, true);
-			final int xg[] = new int[6];
-			final int yg[] = new int[6];
-			xg[0] = xg[5] = x0;
-			xg[1]=xg[2] = x1;
-			xg[3]=xg[4] = xf0;
-			yg[0]=yg[1] = y0;
-			yg[2]=yg[3]=yf0;
-			yg[4]=yg[5]=y1;
-			figures.add(new ColorRec(xg,yg,glassColor));
+			figures.add(rectangle(x0,y0,x1,y1,glassColor));
 		}
-		
-		//Рамка по краям
+		//Поверх стелка - рамка по краям, рама стекла
 		figures.add(rectangle(x1,yr0,xr1,yr1,Color.BLACK));
 		figures.add(rectangle(xr0,y1,xr1,yr1,Color.BLACK));
 		
 		//Рамка под стёкла. Тут только две рамки, потому что левый и верхний края не видны
 		final var colorWin = new Color(0xFFFAFA);
-		figures.add(rectangle(x1-widthCenter,y0,x1,yf0,colorWin));
-		if(fieldW < widthCenter) //Если у нас слшиокм узкое поле, надо надорисовать рамку сбоку от него
-			figures.add(rectangle(x1-widthCenter,yf0,xf0,y1,colorWin));
-		figures.add(rectangle(x0,y1,xf0,y1 - widthCenter,colorWin));
-		if(fieldH < widthCenter) //Если у нас слшиокм узкое поле, надо надорисовать рамку сбоку от него
-			figures.add(rectangle(xf0,y1 - widthCenter,x1,yf0,colorWin));
+		figures.add(rectangle(x1-widthCenter,y0,x1,y1,colorWin));
+		figures.add(rectangle(x0,y1,x1,y1 - widthCenter,colorWin));
 		
 		//Вертикальная перекладина
-		figures.add(rectangle(cx-widthCenter,y0,cx,y1,colorWin));
-		figures.add(rectangle(cx,y0,cx+widthCenter,yf0,colorWin));
-		figures.add(rectangle(cx,yf0,Math.min(cx+widthCenter,xf0),y1,colorWin));
+		figures.add(rectangle(cx-widthCenter,y0,cx+widthCenter,y1,colorWin));
 		
 		//Ручка
 		final var colorHand = new Color(0xE8E8EF);
@@ -202,31 +338,22 @@ public class Aquarium extends DefaultAnimation{
 		
 		//Затемнение помещения ночью
 		{
-			dynfigures.add(new DynamicColor((alf) -> rectangle(x1-widthCenter,y0,x1,yf0,AllColors.toDark(Color.BLACK, alf))));
-			if(fieldW < widthCenter)
-				dynfigures.add(new DynamicColor((alf) -> rectangle(x1-widthCenter,yf0,xf0,y1,AllColors.toDark(Color.BLACK, alf))));
-			dynfigures.add(new DynamicColor((alf) -> rectangle(x0,y1,xf0,y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
-			if(fieldH < widthCenter)
-				dynfigures.add(new DynamicColor((alf) -> rectangle(xf0,y1 - widthCenter,x1,yf0,AllColors.toDark(Color.BLACK, alf))));
-			dynfigures.add(new DynamicColor((alf) -> rectangle(cx-widthCenter,y0,cx,y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
-			dynfigures.add(new DynamicColor((alf) -> rectangle(cx,y0,cx+widthCenter,yf0,AllColors.toDark(Color.BLACK, alf))));
-			dynfigures.add(new DynamicColor((alf) -> rectangle(cx,yf0,Math.min(cx+widthCenter,xf0),y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
+			figures.add(new DynamicColor((alf) -> rectangle(x1-widthCenter,y0,x1,y1,AllColors.toDark(Color.BLACK, alf))));
+			figures.add(new DynamicColor((alf) -> rectangle(x0,y1,x1,y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
+			figures.add(new DynamicColor((alf) -> rectangle(cx-widthCenter,y0,cx+widthCenter,y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
 		}
 		//Конус света
 		{
 			var colorLamp = (java.util.function.Function<Integer,java.awt.GradientPaint>)(alf) -> new java.awt.GradientPaint(
 				new java.awt.geom.Point2D.Double((lampx2+lampx1)/2, lampy2), AllColors.toDark(new Color(0x80ffb46b, true), alf),
 				new java.awt.geom.Point2D.Double((lampx2+lampx1)/2, y1), new Color(0x00ffb46b, true));
-			if(Utils.Utils.normalize_value(yf0, y1, rucy+lampW/2, cx, lampx2) < xf0){
-				//Свет лампы достреливает до пола
-				dynfigures.add(new DynamicColor((alf) -> new ColorRec(new int[]{lampx2, lampx1, x1,xf0,xf0,cx},new int[]{lampy2,lampy2,yf0,yf0,y1,y1},colorLamp.apply(alf))));
-			} else {
-				dynfigures.add(new DynamicColor((alf) -> new ColorRec(new int[]{lampx2, lampx1, x1,xf0},new int[]{lampy2,lampy2,yf0,yf0},colorLamp.apply(alf))));
-			}
-		}
-		
+			figures.add(new DynamicColor((alf) -> new ColorRec(new int[]{lampx2, lampx1, x1,xf0,xf0,cx},new int[]{lampy2,lampy2,yf0,yf0,y1,y1},colorLamp.apply(alf))));
+		}/**/
 		this.staticColor = figures.toArray(ColorRec[]::new);
-		this.dinamicColor = dynfigures.toArray(DynamicColor[]::new);
+		
+		
+		var bass = new java.awt.geom.Rectangle2D.Double(xf0, yf0, x1-xf0, y1-yf0);
+		this.gameField = new java.awt.geom.Area(bass);
 	}
 	private ColorRec rectangle(int x0, int y0, int x1, int y1, Color color){
 		final int xrb[] = new int[4];
@@ -239,7 +366,7 @@ public class Aquarium extends DefaultAnimation{
 	}	
 	@Override
 	protected void nextFrame(){
-		state.second = (state.second + 1 * 60 ) % Static.YEAR_LONG;
+		state.second = (state.second + 10 * 60 ) % Static.YEAR_LONG;
 		var day = state.second / Static.DAY_LONG;
 		if(day != state.day){
 			state.day = day;
@@ -248,15 +375,16 @@ public class Aquarium extends DefaultAnimation{
 			state.sinDF = Static.SIN_LATITUDE * sinDec;
 			state.cosDF = Static.COS_LATITUDE * Math.cos(Dec);
 		}
-		var sangle = Math.toRadians(state.second / (4 * 60d)); //Местное солнцечное время
-		state.elevation = Math.toDegrees(Math.asin(state.sinDF - state.cosDF * Math.cos(sangle)));
-		System.out.println(((state.second / 3600) % 24) +" " + state);
+		state.elevation = state.getElevaion();
+		//System.out.println(((state.second / 3600) % 24) + " " + state);
 		if(state.second == 0 || 0 < state.elevation && state.elevation < 6){
 			var alf = Utils.Utils.normalize_value(Utils.Utils.round(state.elevation * 100), 0, 600, 1000, 0);
 			alf = Utils.Utils.betwin(0, alf, 1000);
-			for(var c : dinamicColor)
-				c.setLight(alf);
+			for(var c : staticColor)
+				if(c instanceof DynamicColor dc)
+					dc.setLight(alf);
 		}
+		((DynamicColor)staticColor[1]).setLight(Utils.Utils.round(state.elevation));
 	}
 
 	@Override
@@ -266,24 +394,16 @@ public class Aquarium extends DefaultAnimation{
 
 	@Override
 	public void world(Graphics2D g, Rectangle visible) {
-		air.paint(g);
-		table.paint(g);
 		for(var c : staticColor)
-			c.paint(g);
-		for(var c : dinamicColor)
-			c.paint(g);
+			c.paint(g,this.gameField);
 	}
 	
 	/***/
 	private static Static state;
-	/**Воздух*/
-	private ColorRec air;
 	/**водичка*/
 	private ColorRec water;
-	/**стол*/
-	private ColorRec table;
+	/**Игровое поле, бассейн. Этот кусок надо вырезать, чтобы не заслонять собой полюшко*/
+	private final Area gameField;
 	/**Раскраска под статик*/
 	private ColorRec[] staticColor = new ColorRec[0];
-	/**Динамические раскраски*/
-	private DynamicColor[] dinamicColor = new DynamicColor[0];
 }
