@@ -14,7 +14,7 @@ import MapObjects.CellObject;
  */
 public class CreatePoison extends CommandDo {
 	/**Столько энергии тратит бот на выделение яда*/
-	public static final long HP_FOR_POISON = 20;
+	public static final long HP_FOR_POISON = 10;
 	/**Логорифмическая прогрессия тягучести яда*/
 	private static final int MAX_STREAM = (int) Math.round(Math.log(Poison.MAX_STREAM));
 	
