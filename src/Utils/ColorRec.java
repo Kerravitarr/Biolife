@@ -4,7 +4,9 @@ import java.awt.Color;
 import java.awt.Paint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
-
+/**Класс, представляющий собой объединение рисовательного объекта и цвета рисования
+ * @author Kerravitarr
+ */
 public class ColorRec{
 	/**Монотонный цвет*/
 	private final Color color;
@@ -81,7 +83,33 @@ public class ColorRec{
 		else
 			g.fillRect(x, y, width, height);
 	}
-
+	/**Позволяет нарисовать прямоугольник, вырезав из него часть
+	 * @param g холст
+	 * @param field поле, которое надо вырезать из заливки
+	 */
+	public void paint(Graphics2D g, java.awt.geom.Area field) {
+		if(field == null){
+			paint(g);
+			return;
+		}
+		if (color != null)
+			g.setColor(color);
+		else
+			g.setPaint(gradientColor);
+		
+		if (xp != null) {
+			var poligon = new java.awt.Polygon(xp, yp, xp.length);
+			var area = new java.awt.geom.Area(poligon);
+			area.subtract(field);
+			g.fill(area);
+		} else {
+			var rectangle = new java.awt.Rectangle.Double(x, y, width, height);
+			var area = new java.awt.geom.Area(rectangle);
+			area.subtract(field);
+			g.fill(area);
+		}
+	}
+	
 	private static int[] createX(int x0, int w) {
 		int[] r = { x0, x0, x0 + w, x0 + w };
 		return r;

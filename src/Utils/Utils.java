@@ -26,6 +26,24 @@ public class Utils {
 		return (int) Math.round(d);
 	}
 	/**
+	 * Округляет число до нужного количества занчащих цифр
+	 * @param d округляемое число
+	 * @param digits сколько ЗНАЧАЩИХ цифр должно быть в числе
+	 * @return ближайшее целое
+	 */
+	public static double round(double d, int digits) {
+		if(d == 0) return 0;
+		else if(d > 0){
+			var pow = digits - Math.ceil(Math.log10(d));
+			var m = Math.pow(10, pow);
+			return Math.round(d*m)/((double)m);
+		} else {
+			var pow = digits - Math.ceil(Math.log10(-d));
+			var m = Math.pow(10, pow);
+			return -Math.round(-d*m)/((double)m);
+		}
+	}
+	/**
 	 * Метод получения псевдослучайного целого числа [min,max];
 	 * @param min минимальное значение, включительно
 	 * @param max максимальное значение, включительно

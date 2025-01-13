@@ -54,7 +54,7 @@ public class AllColors {
 	
 	/**Преобразует цвет в его более прозрачный вариант
 	 * @param from какой цвет
-	 * @param alfa какая у него теперь будет альфа
+	 * @param alfa какая у него теперь будет альфа. Чем выше число, тем менее прозрачный цвет получается
 	 * @return цвет с установленной альфой
 	 */
 	public static Color toDark(Color from, int alfa){

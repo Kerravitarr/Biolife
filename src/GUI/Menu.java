@@ -231,6 +231,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	 * @param o тип объектов, подлежащих удалению
 	 */
 	private void remove(REMOVE_O o) {
+		final var vw = Configurations.getViewer().get(WorldView.class);
 		if(o == REMOVE_O.CLEAR){
 			Configurations.world.awaitStop();
 			for(var x = 0 ; x < Configurations.getWidth() ; x++){
@@ -243,11 +244,11 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			}
 		} else {
 			Configurations.world.stop();
-			final var vw = Configurations.getViewer().get(WorldView.class);
 			select_mode = o;
 			select = MENU_SELECT.REMOVE;
 			vw.setCursor(new Cursor(Cursor.CROSSHAIR_CURSOR));
 		}
+		vw.recalculate();
 	}
 	/**Сбрасывает курсор и пункт меню в положение по умолчанию*/
 	private void toDefault() {
@@ -260,6 +261,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	 */
 	public void setCell(List<CellObject> cellObjects) {
 		if(cellObjects == null) return;
+		final var vw = Configurations.getViewer().get(WorldView.class);
 		switch (select) {
 			case REMOVE -> {
 				for(var cellObject : cellObjects){
@@ -339,6 +341,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			}
 			default -> throw new AssertionError();
 		}
+		vw.recalculate();
 	}
 	/**Режим выбора клеток для меню?
 	 * @return true, если мы должны нарисовать квадратик и выбрать некоторые клетки
@@ -430,6 +433,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		select_mode = mode;
 		final var vw = Configurations.getViewer().get(WorldView.class);
 		vw.setCursor(new Cursor(Cursor.HAND_CURSOR));
+		vw.recalculate();
 	}
 	/**Активирует режим сохранения клетки
 	 * @param mode сопосб сохранения
@@ -441,6 +445,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		final var vw = Configurations.getViewer().get(WorldView.class);
 		vw.setCursor(new Cursor(Cursor.HAND_CURSOR));
 		vw.addMouseListener(loadListener);
+		vw.recalculate();
 	}
 	
 	/**Активирует режим редактирования клетки

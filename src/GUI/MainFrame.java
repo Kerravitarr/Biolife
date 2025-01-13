@@ -247,8 +247,8 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		final var menu = v.get(Menu.class);
 		final var bi = v.get(BotInfo.class);
 		
-		String title = MessageFormat.format(Configurations.getProperty(MainFrame.class,"title"), wv.fps.FPS(), world.step,
-				world.pps.FPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
+		String title = MessageFormat.format(Configurations.getProperty(MainFrame.class,"title"), wv.fps(), world.step,
+				world.pps.dFPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
 				world.getCount(CellObject.LV_STATUS.LV_POISON), world.getCount(CellObject.LV_STATUS.LV_WALL), world.isActiv() ? ">" : "||");
 		setTitle(title);
 		wv.repaint();
@@ -264,6 +264,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 					final var  dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
 					Configurations.makeDefaultWord(dc.world_type, dc.MAP_CELLS.width, dc.MAP_CELLS.height);
 					wv.recalculate();
+					wv.setVisible(Calculations.Point.create(0, 0), Calculations.Point.create(Configurations.getWidth() - 1, Configurations.getHeight() - 1));
 					Configurations.world.start();
 				}
 			}

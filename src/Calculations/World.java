@@ -41,8 +41,6 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	private final CellObject [][] _WORLD_MAP;
 	/**Симуляция запущена?*/
 	private STATUS _status = STATUS.STOP;
-	/**Фабрика создания потоков обсчёта мира*/
-	private final ForkJoinWorkerThreadFactory factory;
 	/**Шаги мира*/
 	public long step = 0;
 	/**Всего точек по процессорам - сколько процессоров, в каждом ряду есть у*/
@@ -114,7 +112,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 */
 	public World(Dimension MAP_CELLS) {
 		_WORLD_MAP = new CellObject[MAP_CELLS.width][MAP_CELLS.height];
-		factory = new ForkJoinWorkerThreadFactory() {
+		var factory = new ForkJoinWorkerThreadFactory() {
 			private final AtomicInteger branshCount = new AtomicInteger(0);
 			@Override
 			public ForkJoinWorkerThread newThread(ForkJoinPool pool) {

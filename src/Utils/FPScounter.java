@@ -7,7 +7,7 @@ import java.util.TimerTask;
 
 public class FPScounter {
 	int counterFrame = 0;
-	double k = 0.5;  // коэффициент фильтрации, 0.0-1.0
+	double k = 0.25;  // коэффициент фильтрации, 0.0-1.0
 	private double FPS = 0;	
 	private static List<FPScounter> listeners = new ArrayList<>();
 	
@@ -38,12 +38,16 @@ public class FPScounter {
 		FPS += (counterFrame - FPS) * k;
 		counterFrame = 0;
 	}
-	/**Сколько действий в секунду*/
+	/**@return Сколько действий в секунду*/
 	public long FPS() {
 		return Math.round(FPS);
 	}
-	/**Сколько действий в минуту*/
+	/**@return Сколько действий в минуту*/
 	public long FPM() {
 		return Math.round(FPS*60);
+	}
+	/**@return Сколько действий в секунду*/
+	public double dFPS() {
+		return Utils.round(FPS, 2);
 	}
 }
