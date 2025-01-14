@@ -635,15 +635,15 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @throws Calculations.GenerateClassException может вылететь, когда у нас ошибка разбора открытого файла
 	 */
 	public static void load(String filePatch) throws IOException, GenerateClassException {
-		boolean oldStateWorld = world.isActiv();			
-		world.awaitStop();
+		boolean oldStateWorld = world == null ? true : world.isActiv();	
+		if(world != null) world.awaitStop();
 
 		var js = SaveAndLoad.load(filePatch);     
 		js.addActionListener( e-> logger.log(Level.INFO, String.format("Загрузка %d из %d. Осталось %.2fc",e.now,e.all,e.getTime()/1000)));
 		confoguration = js.load(confoguration);
 		tree = js.load(tree);
-		world.destroy();
-		world = js.load((j,v) -> new World(j, v, confoguration.MAP_CELLS), world.getName());	
+		if(world != null) world.destroy();
+		world = js.load((j,v) -> new World(j, v, confoguration.MAP_CELLS), new World(new Dimension(1,1)).getName());	
 		confoguration.lastSaveCount = world.step;	
 		
 		if (oldStateWorld)

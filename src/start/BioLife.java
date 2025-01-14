@@ -7,7 +7,10 @@ import Calculations.Configurations;
 import Calculations.GenerateClassException;
 import GUI.MainFrame;
 import GUI.WithoutGUI;
+import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class BioLife{	
 	/**Точка входа в приложение
@@ -57,11 +60,22 @@ public class BioLife{
 		}
 		//Рефлексия нужна, чтобы отработали статические методы даже в тех классах, на которые нет пути отсюда, из этой точки старта.
 		Utils.Reflector.getClassesByClasses(BioLife.class);
-		//Создаём случайный мир
-		final var defType = Configurations.WORLD_TYPE.values[Utils.Utils.random(0, Configurations.WORLD_TYPE.length - 1)];
 		final var isGUI = !_opts.get('V').get(Boolean.class); //Наличие графического окна
-		//final var defType = Configurations.WORLD_TYPE.values[Utils.Utils.random(0, Configurations.WORLD_TYPE.length - 1)];
-		final var load = _opts.get('L').get(String.class);
+		var defType = Configurations.WORLD_TYPE.values[Utils.Utils.random(0, Configurations.WORLD_TYPE.length - 1)];
+		assert (defType = Configurations.WORLD_TYPE.FIELD_R) != null; //TODO На время отладки мне нужен конкретный мир
+		var load = _opts.get('L').get(String.class);
+		if(load.isEmpty()){//Если не задано, то подгружаем последний сохранённый мир
+			var f = new File(System.getProperty("user.dir"));
+			File old = null;
+			for(var file : f.listFiles()){
+				if(file.getName().endsWith(".zbmap") && (old == null || old.lastModified() <= file.lastModified()) )
+					old = file;
+			}
+			if(old != null){
+				load = old.getAbsolutePath();
+				assert (load = "") != null; //TODO На время отладки не надо загружать миры
+			}
+		}
 		if(!load.isEmpty()){
 			Configurations.load(load);
 		} else if(isGUI){//Создаём случайный мир
