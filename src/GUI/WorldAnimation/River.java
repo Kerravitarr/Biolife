@@ -327,9 +327,11 @@ public class River extends DefaultAnimation{
 		private final HexVector flow_next = new HexVector();
 		/**Размер дерева на клеточке*/
 		private double size_tree = 0;
+		/**Показывает, что эта клетка находится на экране*/
+		public boolean inScrean = false;
 		
 		/**Внешний вид клетки*/
-		private java.awt.geom.Path2D.Double poligon = new java.awt.geom.Path2D.Double();
+		private final java.awt.geom.Path2D.Double poligon = new java.awt.geom.Path2D.Double();
 		
 		public Cell(HexPoint p){
 			point = p;
@@ -407,7 +409,12 @@ public class River extends DefaultAnimation{
 		 * Поэтому если нужно узнать "приведённое" значение воды. 
 		 * Вероятность, что на клетке есть вода, то обращаться нужно к этой функции
 		 * @return количество воды на экране[0,1]*/
-		public double waterNormalize(){return erf(0.4*water());}
+		public double waterNormalize(){return waterNormalize(water());}
+		/**Нужно понимать, что вода у нас будет на каждой клетке... 
+		 * Поэтому если нужно узнать "приведённое" значение воды. 
+		 * Вероятность, что на клетке есть вода, то обращаться нужно к этой функции
+		 * @return количество воды на экране[0,1]*/
+		private double waterNormalize(double water){return erf(0.4*water);}
 		public double silt(){return _silt;}
 		/**Добавляет к илу кусочек и возвращает новое значение*/
 		public double silt(double add){setParams(_water, _silt + add); return _silt;}
@@ -452,12 +459,14 @@ public class River extends DefaultAnimation{
 			}
 		}
 		/**Обновляет значение клетки*/
-		public void update(){
-			//Обновляем параметры
-			setParams((1 - EVOLUTION_SPEED) * _water + EVOLUTION_SPEED * _water_next, _silt);
-			_water_next = 0;
-			flow.scale((1 - EVOLUTION_SPEED)).add(flow_next.scale(EVOLUTION_SPEED));
-			flow_next.scale(0);
+		public void update(boolean isReset){
+			if(isReset){
+				//Обновляем параметры
+				setParams((1 - EVOLUTION_SPEED) * _water + EVOLUTION_SPEED * _water_next, _silt);
+				_water_next = 0;
+				flow.scale((1 - EVOLUTION_SPEED)).add(flow_next.scale(EVOLUTION_SPEED));
+				flow_next.scale(0);
+			}
 			
 			//Обновляем деревья
 			if(size_tree > 0 && !isDieTree()){
@@ -474,15 +483,21 @@ public class River extends DefaultAnimation{
 					}
 				}
 			}
-			
 			//Обновляем цвета
-			color = COLORS[Math.min(COLORS.length-1, (int)(waterNormalize() * 100))][Math.min(COLORS[0].length-1, (int)(silt()* 100))][Math.min(COLORS[0][0].length-1, (int)(roots * 100))];
+			if(isReset){
+				color = COLORS[Math.min(COLORS.length-1, (int)(waterNormalize() * 100))][Math.min(COLORS[0].length-1, (int)(silt()* 100))][Math.min(COLORS[0][0].length-1, (int)(roots * 100))];
+			} else {
+				var w = (1 - EVOLUTION_SPEED) * _water + EVOLUTION_SPEED * _water_next;
+				color = COLORS[Math.min(COLORS.length-1, (int)(waterNormalize(w) * 100))][Math.min(COLORS[0].length-1, (int)(silt()* 100))][Math.min(COLORS[0][0].length-1, (int)(roots * 100))];
+			}
 		}
 		public Rectangle getBounds(){return poligon.getBounds();}
-		public void draw(Graphics2D g) {
+		public void draw(Graphics2D g, java.awt.geom.Area field) {
 			final var tmpC = g.getColor();
 			g.setColor(color);
-			g.fill(poligon);
+			var area = new java.awt.geom.Area(poligon);
+			area.subtract(field);
+			g.fill(area);
 			
 			/*if(radius > 20){
 				g.setColor(Color.BLACK);
@@ -656,6 +671,9 @@ public class River extends DefaultAnimation{
 		/**Плавающий кораблик*/
 		private List<Ship> ships = new ArrayList<>();
 		
+		/**Индекс клетки береговой реки, которая будет обновлена за выбранный кадр*/
+		private int cell_index = 0;
+		
 		/**Добавляет волны */
 		private void addWave(int newSize){
 			realCW = newSize + 3; //Дополнительные нужны, чтобы колебания выглядели натурально, хотя часть волн не могут колебаться сами по себе
@@ -738,34 +756,42 @@ public class River extends DefaultAnimation{
 				}
 			}
 		}
-		/**Обновляет клетки рек
+		/**Моделируем осадки на поле
 		 * @param index 
 		 */
-		public void updateRivers(int index, boolean isLeft){
+		public boolean precipitation(boolean isLeft){
+			var index = Math.abs(cell_index++);
 			final var i = (call_cell.length - 1) - index % call_cell.length; //У нас index идёт вверх. А i должен быть [0,map.length)
 			final var t = call_cell[i];
+			if(!t.inScrean && i % map.length != 0) return false; //Зачем нам эту клетку мешать, если она пустая?
 			final var j = Utils.Utils.random(0, i); // случайный индекс от 0 до i
 			//Меняем местами клетки, чтобы каждый раз вызывать их в разной последовательности
 			final var c = call_cell[i] = call_cell[j];
 			call_cell[j] = t;
-			//Сколько у нас должно быть грязьки на поле минус сколько у нас есть грязьки на поле
-			var delSilt = (call_cell.length * Cell.SILT_LV_DEF) - Arrays.stream(call_cell).mapToDouble(lc -> lc.silt()).sum();
-			if(delSilt > Cell.SILT_LV_DEF*0.1){ //Как только накопится грязь - дарим её клетке
-				c.silt(Cell.SILT_LV_DEF*0.1);
-			}
-			//Катим капельку 
-			{
-				final var d = new Drop(c.point);
-				while(moveDrop(d)){}
+			if(c.inScrean){//Вода выпадает только на клетки, что на экране. Как и грязь с них
+				//Сколько у нас должно быть грязьки на поле минус сколько у нас есть грязьки на поле
+				var delSilt = (call_cell.length * Cell.SILT_LV_DEF) - Arrays.stream(call_cell).mapToDouble(lc -> lc.silt()).sum();
+				if(delSilt > Cell.SILT_LV_DEF*0.1){ //Как только накопится грязь - дарим её клетке
+					c.silt(Cell.SILT_LV_DEF*0.1);
+				}
+				//Катим капельку 
+				{
+					final var d = new Drop(c.point);
+					while(moveDrop(d)){}
+				}
 			}
 			if(i % map.length == 0){
 				//Обновим клеточки
-				forEach(cell -> cell.update());
+				//System.err.println("u" + (isLeft? 'l':'r') + (i));
+				forEach(cell -> cell.update(i == 0));
 				//Немного растительности добавим. Для улучшения моделирования эроозии
 				//Садим дерево
 				if(c.isGoodCell()){
 					c.editTree(true);
 				}
+				return true; //Этот всегда возвращает правду, ибо мы обновили поле и больше ничего считать не надо!
+			} else {
+				return c.inScrean;
 			}
 		}
 		/**Обновляет дополнительные реки
@@ -820,7 +846,7 @@ public class River extends DefaultAnimation{
 				}
 			}
 			//Надо обновить всё поле.
-			forEach(update_c -> update_c.update());
+			forEach(update_c -> update_c.update(true));
 			
 			Drop.MAX_AGE = height;
 			ships = new ArrayList<>(height);
@@ -1001,9 +1027,6 @@ public class River extends DefaultAnimation{
 		/**Правый берег реки*/
 		public final RiverBank right = new RiverBank();
 		
-		/**Индекс клетки береговой реки, которая будет обновлена за выбранный кадр*/
-		private int cell = 0;
-		
 		/**Установить количество волн на обоих берегах*/
 		public void setCountWaves(int newSize){
 			left.setCountWaves(newSize);
@@ -1020,12 +1043,11 @@ public class River extends DefaultAnimation{
 			left.updateShip();
 			right.updateShip();
 		}
-		/**Обновляет реки по берегам*/
-		public void updateRivers(){
+		/**Моделируем осадки на игровом поле*/
+		public void precipitation(){
 			for (int i = 0; i < 1; i++) {
-				right.updateRivers(cell, true);
-				left.updateRivers(cell++, false);
-				if(cell < 0) cell = 0; //Если слишком много кадров отснимем, то не должно быть отрицательных чисел всё равно!
+				while(!right.precipitation(true)){}
+				while(!left.precipitation(false)){}
 			}
 		}
 		/**Обновляет дополнительные реки
@@ -1049,11 +1071,9 @@ public class River extends DefaultAnimation{
 	/**Состояние анимации*/
 	private static Static state;
 	/**Берег левый*/
-	private final ColorRec left;
+	private final ColorRec sand;
 	/**водичка*/
 	private final ColorRec water;
-	/**Берег правый*/
-	private final ColorRec right;
 	
 	/**Количество волн для текущей анимации*/
 	private final int countWave;
@@ -1065,24 +1085,17 @@ public class River extends DefaultAnimation{
 	private final double scale;
 	
 	public River(WorldView.Transforms transform, int w, int h){
-		//Левый песочек
-		int xl[] = new int[4];
+		super(transform);
 		//Поле, вода
 		int xw[] = new int[4];
 		int yw[] = new int[4];
-		//Правый песочек
-		int xr[] = new int[4];
 
-		xl[0] = xl[3] = 0;
-		xl[1] = xl[2] = xw[0] = xw[3] = transform.toScrinX(0);
-		xw[1] = xw[2] = xr[0] = xr[3] = transform.toScrinX(Configurations.getWidth()-1);
-		xr[1] = xr[2] = w;
-
+		xw[0] = xw[3] = transform.getZScrinX();
+		xw[1] = xw[2] = transform.getMScrinX();
 		yw[0] = yw[1] = 0;
 		yw[2] = yw[3] = h;
-		left = new ColorRec(xl,yw,AllColors.SAND);
-		water = new ColorRec(xw,yw, AllColors.WATER_RIVER);
-		right = new ColorRec(xr,yw, AllColors.SAND);
+		sand = ColorRec.rectangle(0, 0, w, h, AllColors.SAND);
+		water = ColorRec.rectangle(0, 0, w, h, AllColors.WATER_RIVER);
 		
 		countWave = (int) Math.ceil(h / Wave.WIDTH);
 		leftBorder = transform.toScrinX(0);
@@ -1101,6 +1114,16 @@ public class River extends DefaultAnimation{
 		if(state.left.map.length != count_cell)
 			state.regenerateRiver(count_cell);
 		state.setSize((int)(leftBorder - scale * Math.sqrt(3) * (count_cell - 0.5)), (int) (rightBorder), scale);
+		
+		//А теперь помечаем те клетки, которые отображаются на экране. Хоть капельку
+		state.left.forEach(c -> {
+			var b = c.getBounds();
+			c.inScrean = b.x + b.getWidth() > 0 && b.x < w;
+		});
+		state.right.forEach(c -> {
+			var b = c.getBounds();
+			c.inScrean = b.x + b.getWidth() > 0 && b.x < w;
+		});
 	}
 	@Override
 	protected void nextFrame(){
@@ -1112,24 +1135,23 @@ public class River extends DefaultAnimation{
 	}
 	@Override
 	protected void nextStep(long step){
-		state.updateRivers();
+		state.precipitation();
 	}
 	@Override
 	public void water(Graphics2D g) {
 		water.paint(g);
 	}
 	@Override
-	public void world(Graphics2D g, Rectangle visible) {
-		left.paint(g);
-		right.paint(g);
+	public void world(Graphics2D g, Rectangle visible, java.awt.geom.Area field) {
+		sand.paint(g,field);
 		
 		state.left.forEach(c -> {
 			if(visible.intersects(c.getBounds()))
-				c.draw(g);
+				c.draw(g,field);
 		});
 		state.right.forEach(c -> {
 			if(visible.intersects(c.getBounds()))
-				c.draw(g);
+				c.draw(g,field);
 		});
 		
 		g.setColor(AllColors.WATER_RIVER);

@@ -39,16 +39,23 @@ import java.util.logging.Logger;
 public class WorldView extends javax.swing.JPanel {
 	/**Класс для всех преобразований из размеров мира в размеры пиксеелй на экране*/
 	public class Transforms{
-		/**Масштаб - количество пикселей на 1 ячейку мира*/
-		private double scalePxPerCell = 1d;
 		/**Верхний и нижний бордюр. Нужен, чтобы мир не упиралдся прям в потолок, а имел небольшой зазор сверху и снизу*/
 		private static final java.awt.geom.Point2D UP_DOWN_border = new java.awt.Point.Double(0.02, 0.02);
 		/**Верхний и нижний бордюр. Нужен, чтобы мир не упиралдся прям в края, а имел небольшой зазор слева и справа*/
 		private static final java.awt.geom.Point2D LEFT_RIGHT_border = new java.awt.Point.Double(0.02, 0.02);
+		
 		/**Верхняя левая точка, ограничивающая игровое поле. Если там х = 10, значит поле начинается только с 10ого пикселя*/
 		private final java.awt.Point.Double LU = new java.awt.Point.Double();
 		/**Нижняя правая точка, ограничивающая игровое поле. Если там х = 10, значит поле после 10ого пикселя не существует*/
 		private final java.awt.Point.Double RD = new java.awt.Point.Double();
+		/**Начало игрового поля, пиксель этой позиции*/
+		private final java.awt.Point.Double screenLU = new java.awt.Point.Double();
+		/**Конец игрового поля, пиксель этой позиции*/
+		private final java.awt.Point.Double screenRD = new java.awt.Point.Double();
+		
+		/**Масштаб - количество пикселей на 1 ячейку мира*/
+		private double scalePxPerCell = 1d;
+		
 		
 		/**
 		* Переводит координаты мира в координаты экрана
@@ -68,6 +75,16 @@ public class WorldView extends javax.swing.JPanel {
 		* @return x координата в масштабе окна, пк
 		*/
 		public int toScrinX(Point point) {return toScrinX(point.getX());}
+		/**
+		* Возвращает пиксель начала окна
+		* @return x координата в масштабе окна, пк
+		*/
+		public int getZScrinX() {return (int) Math.round(screenLU.x);}
+		/**
+		* Возвращает пиксель конца окна
+		* @return x координата в масштабе окна, пк
+		*/
+		public int getMScrinX() {return (int) Math.round(screenRD.x);}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param y координата в масштабах клетки
@@ -86,6 +103,16 @@ public class WorldView extends javax.swing.JPanel {
 		* @return y координата в масштабе окна, пк
 		*/
 		public int toScrinY(Point point) {return toScrinY(point.getY());}
+		/**
+		* Возвращает пиксель начала окна
+		* @return y координата в масштабе окна, пк
+		*/
+		public int getZScrinY() {return (int) Math.round(screenLU.y);}
+		/**
+		* Возвращает пиксель конца окна
+		* @return y координата в масштабе окна, пк
+		*/
+		public int getMScrinY() {return (int) Math.round(screenRD.y);}
 	   /**
 		* Переводит координаты мира в координаты экрана
 		* @param point объект с координатами мира
@@ -98,6 +125,14 @@ public class WorldView extends javax.swing.JPanel {
 		* @return радиус объекта в пикселях
 		*/
 		public int toScrin(double r) {return (int) Math.round(toDScrin(r));}
+	   /**Возвращает размер единичного объекта
+		* @return радиус объекта в пикселях
+		*/
+		public int getZScrin() {return toScrin(1);}
+	   /**Возвращает размер единичного объекта
+		* @return радиус объекта в пикселях
+		*/
+		public double getDZScrin() {return toDScrin(1);}
 	   /**Возвращает размеры мира в пикселях
 		* @param r размер объекта в клетках мира
 		* @return радиус объекта в пикселях
@@ -188,6 +223,10 @@ public class WorldView extends javax.swing.JPanel {
 					RD.y = LU.y + wh * scalePxPerCell;
 				}
 			}
+			screenLU.x = toDScrinX(0);
+			screenLU.y = toDScrinY(0);
+			screenRD.x = toDScrinX(Configurations.getWidth()-1);
+			screenRD.y = toDScrinY(Configurations.getHeight()-1);
 		}
 	}
 	
@@ -484,7 +523,7 @@ public class WorldView extends javax.swing.JPanel {
 	public void paintComponent(Graphics2D g, boolean isAll) {
 		//super.paintComponent(g);
 		//TODO УДАЛИТЬ!!!!
-		/**/												g.translate(getWidth() / 2, getHeight() / 2);
+		/*												g.translate(getWidth() / 2, getHeight() / 2);
 														g.scale(0.5, 0.5);/***/
 		
 		paintField(g);
@@ -504,8 +543,6 @@ public class WorldView extends javax.swing.JPanel {
 		//Рисуем игровое поле
 		animation.water(g, frame);
 		//И рисуем бордюр когда он должен быть под объектами
-		if(Configurations.confoguration.world_type == Configurations.WORLD_TYPE.FIELD_R)
-			animation.world(g,visibleRec);
 		{ //Теперь рисуем звёзды, минералы и прочее
 			final var oldC = g.getComposite();
 			g.setComposite(AlphaComposite.getInstance( AlphaComposite.SRC_OVER, 0.6f ));
@@ -537,8 +574,7 @@ public class WorldView extends javax.swing.JPanel {
 			g.setComposite(oldC);
 		}
 		//Рисуем всё остальное
-		if(Configurations.confoguration.world_type != Configurations.WORLD_TYPE.FIELD_R)
-			animation.world(g,visibleRec);
+		animation.world(g,visibleRec);
 		//Вспомогательное построение
 		//Utils.DeprecatedMetods.paintCells(g, transforms);
 	}
@@ -555,7 +591,7 @@ public class WorldView extends javax.swing.JPanel {
 		final var menu = Configurations.getViewer().get(Menu.class);
 		
 		if (!settings.isEdit()) {
-			int r = transforms.toScrin(1);
+			int r = transforms.getZScrin();
 			if (r > 2) {
 				//Если у нас радиус больше 2пк, то тут можно рисовать что угодно - от кругов до детальной проработки
 				for (int x = x0; x < x1; x++) {
