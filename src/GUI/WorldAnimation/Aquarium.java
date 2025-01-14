@@ -108,8 +108,9 @@ public class Aquarium extends DefaultAnimation{
 		return 0.03 * ret;
 	}
 	public Aquarium(WorldView.Transforms transform, int w, int h){
+		super(transform);
 		//Поле, вода
-		water = rectangle(transform.toScrinX(0), transform.toScrinY(0), transform.toScrinX(Configurations.getWidth()-1),transform.toScrinY(Configurations.getHeight()-1), AllColors.WATER_AQUARIUM );
+		water = ColorRec.rectangle(transform.toScrinX(0), transform.toScrinY(0), transform.toScrinX(Configurations.getWidth()-1),transform.toScrinY(Configurations.getHeight()-1), AllColors.WATER_AQUARIUM );
 		
 		if(state == null) state = new Static();
 		var fieldH = transform.toDScrin(Configurations.getHeight());
@@ -138,23 +139,26 @@ public class Aquarium extends DefaultAnimation{
 		
 		//Рисовать мы будем с заднего фона, постепенно пробираясь вперёд.
 		//Фон. 
-		figures.add(rectangle(x0,y0,x1,y1,new Color(0xE8DFFE)));
+		figures.add(ColorRec.rectangle(x0,y0,x1,y1,new Color(0xE8DFFE)));
 		//Солнце. Обязательно в этом месте!!!
 		{
 			var sun_h = (mount_ys - yr0); //Максимальная высота солнца над горизонтом
 			var sun_r = widthCenter;
 			figures.add(new DynamicColor((alfa) -> {
+				if(sun_r == 0) return new ColorRec(0, 0, 0,0,null);
+				
 				var maxE = state.getMaxElevaion();
 				var sy = mount_ys - sun_h * state.elevation / 56d;
 				var sx = cx + 1.5 * (sun_h * maxE / 56d) * ((state.second % 86400 - 43200) / 86400d);
+				var rectangle = new java.awt.geom.Ellipse2D.Double(sx-sun_r,sy-sun_r,sun_r * 2,sun_r * 2);
+				var area = new java.awt.geom.Area(rectangle);
+				var gradient = new java.awt.RadialGradientPaint(new java.awt.geom.Point2D.Double(sx,sy), sun_r, new float[]{0.0f, 1.0f}, new Color[]{AllColors.SUN,AllColors.toDark(AllColors.SUN, 0)},java.awt.RadialGradientPaint.CycleMethod.NO_CYCLE);
 				return new ColorRec(0, 0, 0,0,null){
 					@Override
 					public void paint(Graphics2D g, java.awt.geom.Area field) {
 						if(sy > mount_ys) return;
-						var rectangle = new java.awt.geom.Ellipse2D.Double(sx-sun_r/2,sy-sun_r/2,sun_r,sun_r);
-						var area = new java.awt.geom.Area(rectangle);
 						area.subtract(field);
-						g.setColor(AllColors.SUN);
+						g.setPaint(gradient);
 						g.fill(area);
 					}
 				};
@@ -163,7 +167,7 @@ public class Aquarium extends DefaultAnimation{
 		
 		
 		//Болото
-		figures.add(rectangle(xr0, mount_ys, xr1, yr1, new Color(0x56412E)));
+		figures.add(ColorRec.rectangle(xr0, mount_ys, xr1, yr1, new Color(0x56412E)));
 		//Озеро на карте
 		{
 			var widtw = (x1-mount_xs) * 0.7;
@@ -281,42 +285,42 @@ public class Aquarium extends DefaultAnimation{
 		
 		
 		//А теперь серый фильтр, который будет символизировать ночь
-		figures.add(new DynamicColor((alf) -> rectangle(x0,y0,x1,y1,AllColors.toDark(Color.BLACK, alf*2))));
+		figures.add(new DynamicColor((alf) -> ColorRec.rectangle(x0,y0,x1,y1,AllColors.toDark(Color.BLACK, alf*2))));
 		//Стекло
 		{
 			var glassColor = new Color(0x60cde8ff, true);
-			figures.add(rectangle(x0,y0,x1,y1,glassColor));
+			figures.add(ColorRec.rectangle(x0,y0,x1,y1,glassColor));
 		}
 		//Поверх стелка - рамка по краям, рама стекла
-		figures.add(rectangle(x1,yr0,xr1,yr1,Color.BLACK));
-		figures.add(rectangle(xr0,y1,xr1,yr1,Color.BLACK));
+		figures.add(ColorRec.rectangle(x1,yr0,xr1,yr1,Color.BLACK));
+		figures.add(ColorRec.rectangle(xr0,y1,xr1,yr1,Color.BLACK));
 		
 		//Рамка под стёкла. Тут только две рамки, потому что левый и верхний края не видны
 		final var colorWin = new Color(0xFFFAFA);
-		figures.add(rectangle(x1-widthCenter,y0,x1,y1,colorWin));
-		figures.add(rectangle(x0,y1,x1,y1 - widthCenter,colorWin));
+		figures.add(ColorRec.rectangle(x1-widthCenter,y0,x1,y1,colorWin));
+		figures.add(ColorRec.rectangle(x0,y1,x1,y1 - widthCenter,colorWin));
 		
 		//Вертикальная перекладина
-		figures.add(rectangle(cx-widthCenter,y0,cx+widthCenter,y1,colorWin));
+		figures.add(ColorRec.rectangle(cx-widthCenter,y0,cx+widthCenter,y1,colorWin));
 		
 		//Ручка
 		final var colorHand = new Color(0xE8E8EF);
-		figures.add(rectangle(cx+widthCenter/5,y0 + winSize/2 - widthCenter*2,cx+widthCenter*4/5,y0 + winSize/2 - widthCenter,colorHand));
-		figures.add(rectangle(cx+widthCenter*2/5,y0 + winSize/2 - widthCenter,cx+widthCenter*3/5,y0 + winSize/2,colorHand));
+		figures.add(ColorRec.rectangle(cx+widthCenter/5,y0 + winSize/2 - widthCenter*2,cx+widthCenter*4/5,y0 + winSize/2 - widthCenter,colorHand));
+		figures.add(ColorRec.rectangle(cx+widthCenter*2/5,y0 + winSize/2 - widthCenter,cx+widthCenter*3/5,y0 + winSize/2,colorHand));
 		
 		//Разделение створок
-		figures.add(rectangle(cx-widthCenter/4,y0,cx,y1,Color.BLACK));
+		figures.add(ColorRec.rectangle(cx-widthCenter/4,y0,cx,y1,Color.BLACK));
 		
 		//Лампа
 		var lampW = (winSize / 2) / 3;
 		//Подошва
-		figures.add(rectangle(x0+lampW,y1,x0+lampW+lampW,y1-border,Color.BLACK));
+		figures.add(ColorRec.rectangle(x0+lampW,y1,x0+lampW+lampW,y1-border,Color.BLACK));
 		//Люстра
 		var rucy = y0+winSize/4;
 		var lampx1 = x1-winSize/4+lampW/2;
 		var lampx2 = x1-winSize/4-lampW/2;
 		var lampy2 = rucy+lampW/2;
-		figures.add(rectangle(x1-winSize/4-lampW/6,rucy-lampW/2,x1-winSize/4+lampW/6,rucy,Color.BLACK));
+		figures.add(ColorRec.rectangle(x1-winSize/4-lampW/6,rucy-lampW/2,x1-winSize/4+lampW/6,rucy,Color.BLACK));
 		figures.add(new ColorRec(new int[]{x1-winSize/4-lampW/6,x1-winSize/4+lampW/6, lampx1, lampx2},new int[]{rucy,rucy,lampy2,lampy2},Color.BLACK));
 		//Нога
 		var xleg = x0-border;
@@ -325,22 +329,22 @@ public class Aquarium extends DefaultAnimation{
 		var legyUp = rucy - legw*2;
 		figures.add(new ColorRec(new int[]{xleg,xleg+legw, x0+lampW+legw*2, x0+lampW+legw*1},new int[]{yleg,yleg,y1,y1},Color.BLACK));
 		figures.add(new ColorRec(new int[]{xleg,x1-winSize/4-lampW/6-legw, x1-winSize/4-lampW/6-legw, xleg},new int[]{yleg,legyUp,legyUp + legw,yleg+legw},Color.BLACK));
-		figures.add(rectangle(x1-winSize/4-lampW/6-legw,legyUp,x1-winSize/4-lampW/6,legyUp + legw,Color.BLACK));
+		figures.add(ColorRec.rectangle(x1-winSize/4-lampW/6-legw,legyUp,x1-winSize/4-lampW/6,legyUp + legw,Color.BLACK));
 		
 		//А теперь стёкла аквариума.
 		var w_glass_a = Math.min(widthCenter/4,xr1-x1)/2;
 		{
 			var glassColor = new Color(0xF0a8ccd7, true);
-			figures.add(rectangle(xf0-w_glass_a,yf0-w_glass_a,xf0,y1+w_glass_a,glassColor));
-			figures.add(rectangle(x1,yf0-w_glass_a,x1+w_glass_a,y1+w_glass_a,glassColor));
-			figures.add(rectangle(xf0-w_glass_a,y1,x1+w_glass_a,y1+w_glass_a,glassColor));
+			figures.add(ColorRec.rectangle(xf0-w_glass_a,yf0-w_glass_a,xf0,y1+w_glass_a,glassColor));
+			figures.add(ColorRec.rectangle(x1,yf0-w_glass_a,x1+w_glass_a,y1+w_glass_a,glassColor));
+			figures.add(ColorRec.rectangle(xf0-w_glass_a,y1,x1+w_glass_a,y1+w_glass_a,glassColor));
 		}
 		
 		//Затемнение помещения ночью
 		{
-			figures.add(new DynamicColor((alf) -> rectangle(x1-widthCenter,y0,x1,y1,AllColors.toDark(Color.BLACK, alf))));
-			figures.add(new DynamicColor((alf) -> rectangle(x0,y1,x1,y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
-			figures.add(new DynamicColor((alf) -> rectangle(cx-widthCenter,y0,cx+widthCenter,y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
+			figures.add(new DynamicColor((alf) -> ColorRec.rectangle(x1-widthCenter,y0,x1,y1,AllColors.toDark(Color.BLACK, alf))));
+			figures.add(new DynamicColor((alf) -> ColorRec.rectangle(x0,y1,x1,y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
+			figures.add(new DynamicColor((alf) -> ColorRec.rectangle(cx-widthCenter,y0,cx+widthCenter,y1 - widthCenter,AllColors.toDark(Color.BLACK, alf))));
 		}
 		//Конус света
 		{
@@ -350,20 +354,7 @@ public class Aquarium extends DefaultAnimation{
 			figures.add(new DynamicColor((alf) -> new ColorRec(new int[]{lampx2, lampx1, x1,xf0,xf0,cx},new int[]{lampy2,lampy2,yf0,yf0,y1,y1},colorLamp.apply(alf))));
 		}/**/
 		this.staticColor = figures.toArray(ColorRec[]::new);
-		
-		
-		var bass = new java.awt.geom.Rectangle2D.Double(xf0, yf0, x1-xf0, y1-yf0);
-		this.gameField = new java.awt.geom.Area(bass);
 	}
-	private ColorRec rectangle(int x0, int y0, int x1, int y1, Color color){
-		final int xrb[] = new int[4];
-		final int yrb[] = new int[4];
-		xrb[0] = xrb[3] = x0;
-		xrb[1] = xrb[2] = x1;
-		yrb[0] = yrb[1] = y0;
-		yrb[2] = yrb[3] = y1;
-		return new ColorRec(xrb,yrb, color);
-	}	
 	@Override
 	protected void nextFrame(){
 		state.second = (state.second + 10 * 60 ) % Static.YEAR_LONG;
@@ -393,17 +384,15 @@ public class Aquarium extends DefaultAnimation{
 	}
 
 	@Override
-	public void world(Graphics2D g, Rectangle visible) {
+	public void world(Graphics2D g, Rectangle visible, java.awt.geom.Area field) {
 		for(var c : staticColor)
-			c.paint(g,this.gameField);
+			c.paint(g,field);
 	}
 	
 	/***/
 	private static Static state;
 	/**водичка*/
 	private ColorRec water;
-	/**Игровое поле, бассейн. Этот кусок надо вырезать, чтобы не заслонять собой полюшко*/
-	private final Area gameField;
 	/**Раскраска под статик*/
 	private ColorRec[] staticColor = new ColorRec[0];
 }
