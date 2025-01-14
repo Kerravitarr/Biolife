@@ -123,7 +123,7 @@ public class SettingsPoint extends javax.swing.JPanel {
 	}
    
    
-	private SettingsPoint(Class<?> nameCl, String nameS, String xLabel, String yLabel, Integer minX, Integer defX, Integer maxX, Integer nowX, Integer minY, Integer defY, Integer maxY, Integer nowY, AdjustmentListener<?> list, boolean isP) {
+	private SettingsPoint(Class<?> nameCl, String nameS, String xLabel, String yLabel, Integer minX, Integer defX, Integer maxX, int nowX, Integer minY, Integer defY, Integer maxY, int nowY, AdjustmentListener<?> list, boolean isP) {
 		initComponents();
 		listener = e -> {};
 		
@@ -132,8 +132,8 @@ public class SettingsPoint extends javax.swing.JPanel {
 		labelX.setText(xLabel);
 		labelY.setText(yLabel);
 		
-        spinnerX.setModel(new javax.swing.SpinnerNumberModel(nowX, minX, maxX, Integer.valueOf(1)));
-        spinnerY.setModel(new javax.swing.SpinnerNumberModel(nowY, minY, maxY, Integer.valueOf(1)));
+        spinnerX.setModel(new javax.swing.SpinnerNumberModel(Integer.valueOf(nowX), minX == null ? minX : Integer.valueOf(Math.min(nowX,minX)), maxX == null ? maxX : Integer.valueOf(Math.max(nowX,maxX)), Integer.valueOf(1)));
+        spinnerY.setModel(new javax.swing.SpinnerNumberModel(Integer.valueOf(nowY),  minY == null ? minY : Integer.valueOf(Math.min(nowY,minY)), maxY == null ? maxY : Integer.valueOf(Math.max(nowY,maxY)), Integer.valueOf(1)));
 		
 		Configurations.setIcon(reset, "reset");
 		reset.addActionListener(e -> setValue(Point.Vector.create(defX,defY)));

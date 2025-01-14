@@ -25,6 +25,7 @@ import javax.swing.text.PlainDocument;
  * 
  * 
  * @author Kerravitarr
+ * @param <NumberT> тип числового значения
  */
 public class SettingsSlider<NumberT extends Number & Comparable<NumberT>> extends javax.swing.JPanel {
 	/**Все классы, которые описывают целочисленные значения*/
