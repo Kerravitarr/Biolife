@@ -5,9 +5,13 @@
 package GUI.WorldAnimation;
 
 import Calculations.Configurations;
+import Calculations.Point;
 import GUI.AllColors;
+import GUI.Legend;
+import GUI.Menu;
 import GUI.WorldView;
 import Utils.ColorRec;
+import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 
@@ -19,47 +23,131 @@ import java.awt.Rectangle;
  */
 public class Ocean extends DefaultAnimation{
 	/**водичка*/
-	private ColorRec water0;
-	/**водичка*/
-	private ColorRec water;
-	/**водичка*/
-	private ColorRec water1;
+	private final ColorRec water;
+	/**трансформатор*/
+	private final WorldView.Transforms transformer;
+	/**стартовая точка по оси x*/
+	private final int sx;
+	/**конечная точка по оси x*/
+	private final int ex;
+	/**стартовая точка по оси y*/
+	private final int sy;
+	/**конечная точка по оси y*/
+	private final int ey;
 	
 	public Ocean(WorldView.Transforms transform, int w, int h){
-		//Поле, вода
-		final int xw[] = new int[4];
-		final int yw[] = new int[4];
-		//Верхний прямоугольник
-		final int xu[] = new int[4];
-		final int yu[] = new int[4];
-		//Нижний блок
-		final int xd[] = new int[8];
-		final int yd[] = new int[8];
-
-		xu[0] = xu[3] = xd[0] = xd[7] = 0;
-		xd[1] = xd[2] = xw[0] = xw[3] = transform.toScrinX(0);
-		xd[3] = xd[4] = xw[1] = xw[2] = transform.toScrinX(Configurations.getWidth()-1);
-		xd[5] = xd[6] = xu[1] = xu[2] = w;
-
-		yu[0] = yu[1] = 0;
-		yd[0] = yd[0] = yd[1] = yd[4] = yd[5] = yu[2] = yu[3] = yw[0] = yw[1] = transform.toScrinY(0);
-		yd[2] = yd[3] = yw[2] = yw[3] = transform.toScrinY(Configurations.getHeight()-1);
-		yd[6] = yd[7] = h;
-
-		water0 = new ColorRec(xu,yu, AllColors.WATER_OCEAN);
-		water = new ColorRec(xw,yw, AllColors.WATER_OCEAN);
-		water1 = new ColorRec(xd,yd, AllColors.WATER_OCEAN);	
+		super(transform);
+		water = ColorRec.rectangle(0,0,w,h, AllColors.WATER_OCEAN);
+		transformer = transform;
+		var x = 0;
+		while(transformer.toDScrinX(x)+transformer.getZScrin() > 0){
+			x--;
+		}
+		this.sx = x;
+		x = Configurations.getWidth() - 1;
+		while(transformer.toDScrinX(x)-transformer.getZScrin() < w){
+			x++;
+		}
+		ex = x;
+		
+		
+		var y = 0;
+		while(transformer.toDScrinY(y)+transformer.getZScrin() > 0){
+			y--;
+		}
+		this.sy = y;
+		y = Configurations.getHeight()- 1;
+		while(transformer.toDScrinY(y)-transformer.getZScrin() < h){
+			y++;
+		}
+		ey = y;
 	}
 
 	@Override
 	public void water(Graphics2D g) {
 		water.paint(g);
 	}
-
-	@Override
-	public void world(Graphics2D g, Rectangle visible) {
-		water0.paint(g);
-		water1.paint(g);
+	private int toField(int xy, int lenght){
+		if(xy < 0){
+			while(xy < 0) xy+= lenght; //Пододвигаем X к ближайшему квадрату
+			return xy;
+		} else if(xy < lenght) {
+			return xy;
+		} else {
+			while(xy > lenght) xy -= lenght; //Пододвигаем X к ближайшему квадрату
+			return xy;
+		}
+		/*var lenght2 = lenght * 2;
+		if(xy < 0){
+			while(xy < -lenght2) xy+= lenght2; //Пододвигаем X к ближайшей паре квадратов
+			if(xy < -lenght){
+				//х оказался в дальнем квадрате. Там копия поля
+				return xy + lenght2;
+			} else {
+				return xy + lenght;
+			}
+		} else if(xy < lenght) {
+			return xy;
+		} else {
+			while(xy > lenght + lenght2) xy -= lenght2; //Пододвигаем X к ближайшей паре квадратов
+			if(xy < lenght2){
+				//х оказался в ближнем квадрате. Там копия поля
+				return xy - lenght;
+			} else {
+				return lenght2+lenght - xy;
+			}
+		}*/
 	}
-	
+	@Override
+	public void world(Graphics2D g, Rectangle visible, java.awt.geom.Area field) {
+		var width = Configurations.getWidth() - 1;
+		var height = Configurations.getHeight()- 1;
+		var r = transformer.getZScrin();
+		var world = Configurations.world;
+		final var legend = Configurations.getViewer().get(Legend.class);
+		final var menu = Configurations.getViewer().get(Menu.class);
+		if(r > 2){
+			for(var x = sx; x < ex; x++){
+				var px = toField(x,width);
+				for(var y = sy; y < ey; y++){
+					if(0 <= x && x <= width && 0 <= y && y <= height) continue;
+					var py = toField(y,height);
+					var cell = world.get(Point.create(px,py));
+					if(cell == null || !menu.isVisibleCell(cell)) continue;
+					g.setColor(cell.getPaintColor(legend));
+					cell.paint(g, transformer.toScrinX(x), transformer.toScrinY(y), r);
+				}
+			}
+		} else {
+			//А если меньше, то рисовать мы будем самыми общими чертами
+			final var dr = transformer.getDZScrin();
+			if (dr <= 0) return;
+			final var step = (int)Math.ceil(4d/dr); //4 - потому что рисуем квадратиками 2х2 пк
+			final var nr = transformer.toScrin(step);
+			final var ritangleColor = new Color[step * step];
+			for (int x = sx; x < ex; x+=step) {
+				var px = toField(x,width);
+				for (int y = sy; y < ey; y+=step) {
+					if(0 <= x && x <= width && 0 <= y && y <= height) continue;
+					var lendhtC = 0;
+					var py = toField(y,height);
+					for(var dx = 0 ; dx < step; dx++){
+						for(var dy = 0 ; dy < step; dy++){
+							final var pos = Point.create(px+dx, py+dy);		
+							final var cell = world.get(pos);
+							if(cell != null && menu.isVisibleCell(cell)){
+								ritangleColor[lendhtC++] = cell.getPaintColor(legend);
+							}
+						}
+					}
+					if(lendhtC > 0){
+						g.setColor(AllColors.blend(lendhtC, ritangleColor));
+						int cx = transformer.toScrinX(x);
+						int cy = transformer.toScrinY(y);
+						g.fillRect(cx, cy, nr, nr);
+					}
+				}
+			}
+		}
+	}
 }

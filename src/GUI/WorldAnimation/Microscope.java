@@ -28,6 +28,7 @@ public class Microscope extends DefaultAnimation{
 	private ColorRec table1;
 	
 	public Microscope(WorldView.Transforms transform, int w, int h){
+		super(transform);
 		final var a2 = Configurations.getWidth();
 		final var b2 = Configurations.getHeight();
 		final var a = a2/2d;
@@ -126,7 +127,7 @@ public class Microscope extends DefaultAnimation{
 	}
 
 	@Override
-	public void world(Graphics2D g, Rectangle visible) {
+	public void world(Graphics2D g, Rectangle visible, java.awt.geom.Area field) {
 		table0.paint(g);
 		table1.paint(g);
 	}

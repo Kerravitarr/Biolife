@@ -399,6 +399,7 @@ public class Pond extends DefaultAnimation{
 	private ColorRec dirt;
 	
 	public Pond(WorldView.Transforms transform, int w, int h){
+		super(transform);
 		//Верхнее небо
 		int xs[] = new int[4];
 		int ys[] = new int[4];
@@ -551,7 +552,7 @@ public class Pond extends DefaultAnimation{
 	}
 
 	@Override
-	public void world(Graphics2D g, Rectangle visible) {
+	public void world(Graphics2D g, Rectangle visible, java.awt.geom.Area field) {
 		sky.paint(g);
 		dirt.paint(g);
 		forEachVisibleCloud(c -> c.paint(g, transform));

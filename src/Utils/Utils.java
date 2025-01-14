@@ -50,8 +50,7 @@ public class Utils {
 	 * @return [min,max]
 	 */
 	public static int random(int min, int max) {
-		max -= min;
-		return min + Configurations.rnd.nextInt(max+1);
+		return Configurations.rnd.nextInt(min, max+1);
 	}
 	/**Превращает число в степенную форму.
 	 * (-10_000,10_000) = x

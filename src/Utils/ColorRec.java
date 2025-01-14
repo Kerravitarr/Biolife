@@ -25,6 +25,9 @@ public class ColorRec{
 	/**Координаты для рисования полинома*/
 	private final int yp[];
 	
+	protected ColorRec(){
+		this(0,0,0,0,null);
+	}
 	public ColorRec(int x0, int y0, int w, int h, Color c) {
 		x = x0;
 		y = y0;
@@ -62,7 +65,26 @@ public class ColorRec{
 		if(xp.length != yp.length)
 			throw new IllegalArgumentException("Длина вектора х и у различны!");
 	}
-
+	/**Создаёт обычный квадрта, заданный координатами, а не размерами
+	 * @param x0
+	 * @param y0
+	 * @param x1
+	 * @param y1
+	 * @param color
+	 * @return 
+	 */
+	public static ColorRec rectangle(int x0, int y0, int x1, int y1, Color color){
+		final int xrb[] = new int[4];
+		final int yrb[] = new int[4];
+		xrb[0] = xrb[3] = x0;
+		xrb[1] = xrb[2] = x1;
+		yrb[0] = yrb[1] = y0;
+		yrb[2] = yrb[3] = y1;
+		return new ColorRec(xrb, yrb, color);
+	}
+	/**Рисует многоугольник на поле
+	 * @param g холст
+	 */
 	public void paint(Graphics g) {
 		if (g instanceof Graphics2D g2d) {
 			paint(g2d);

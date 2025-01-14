@@ -5,8 +5,10 @@
 package GUI.WorldAnimation;
 
 import Calculations.Configurations;
+import GUI.WorldView;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.geom.Area;
 
 /**
  * Базовый класс для всех анимаций
@@ -17,6 +19,19 @@ public abstract class DefaultAnimation {
 	private int frame = 0;
 	/**Шаг мира. Нужен чтобы понять - поменялся у нас шаг мира или нет*/
 	private long step = -1;
+	/**Игровое поле, бассейн. Этот кусок надо вырезать, чтобы не заслонять собой полюшко*/
+	private final Area gameField;
+	
+	protected DefaultAnimation(WorldView.Transforms transform){
+		var xf0 = transform.getZScrinX(); //А это начало игрового поля
+		var yf0 = transform.getZScrinY();
+		var x1 = transform.getMScrinX(); //Конец поля. Для рисунка это максимальная координата
+		var y1 = transform.getMScrinY();
+		var r =  transform.getZScrin();
+		
+		var bass = new java.awt.geom.Rectangle2D.Double(xf0 - r/2, yf0 - r/2, x1-xf0 + r, y1-yf0 + r);
+		this.gameField = new java.awt.geom.Area(bass);
+	}
 	
 	/** Вырисовывает на холсте только воду, подложку игрового поля
 	 * @param g холст, на котором будет отрисована вода
@@ -42,7 +57,15 @@ public abstract class DefaultAnimation {
 	 * @param g холст, на котором будет риосвание
 	 * @param visible квадрат, описывающий видимую область. Где правда надо рисовать
 	 */
-	public abstract void world(Graphics2D g, Rectangle visible);
+	public void world(Graphics2D g, Rectangle visible){
+		world(g,visible, gameField);
+	}
+	/** Вырисовывает на холсте мир - всё, что вокруг игрового поля
+	 * @param g холст, на котором будет риосвание
+	 * @param visible квадрат, описывающий видимую область. Где правда надо рисовать
+	 * @param field игровое поле, которое нужно вырезать из своего художества
+	 */
+	protected abstract void world(Graphics2D g, Rectangle visible, java.awt.geom.Area field);
 	/**Сменился шаг мира, надо пересчитать нас 
 	 * @param step текущий шаг мира
 	 */
