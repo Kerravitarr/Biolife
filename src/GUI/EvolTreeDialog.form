@@ -110,7 +110,9 @@
             <DimensionLayout dim="0">
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" alignment="1" attributes="0">
-                      <EmptySpace pref="486" max="32767" attributes="0"/>
+                      <EmptySpace pref="368" max="32767" attributes="0"/>
+                      <Component id="widthPropCells" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
                       <Component id="curcle" min="-2" pref="40" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="_timeLineButton" min="-2" max="-2" attributes="0"/>
@@ -127,6 +129,7 @@
                       <Group type="103" groupAlignment="3" attributes="0">
                           <Component id="curcle" alignment="3" min="-2" max="-2" attributes="0"/>
                           <Component id="_timeLineButton" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="widthPropCells" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
                   </Group>
               </Group>
@@ -166,6 +169,11 @@
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="_timeLineButtonActionPerformed"/>
               </Events>
+            </Component>
+            <Component class="javax.swing.JToggleButton" name="widthPropCells">
+              <Properties>
+                <Property name="text" type="java.lang.String" value="jToggleButton1"/>
+              </Properties>
             </Component>
           </SubComponents>
         </Container>

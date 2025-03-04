@@ -35,7 +35,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	/**Ключевой узел, от которого рисуем. Если null, то тут как пойдёт - или корневой узел (если он один) или все корневые узлы*/
 	private EvolutionTree.Node nodeInCenter = null;
 	/**Пара чисел, для вычисления количества детей и узлов*/
-	private static class Pair{	private int countAllChild,countChildCell; Pair(int cac, int ccc){countAllChild = cac; countChildCell = ccc;}}
+	private static class Pair{private int countAllChild,countChildCell; Pair(int cac, int ccc){countAllChild = cac; countChildCell = ccc;}}
 	/**Круглая диаграмма времени или плоская?*/
 	private boolean isCurcleDiagram = false;
 	/**Пропорционально времени отображать или нет?*/
@@ -377,16 +377,19 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			final var childs = root.getChild();
 			if(childs.isEmpty() || (xEnd - xStart) < TEXT_SIZE * 2) return deep;
 			
-			final var step = ((double) delX) / childs.size();
+			var step = getStep(delX,childs);
 			var maxD = deep;
 			EvolutionTree.Node child = null;
+			double pref = 0;
 			for(int i = 0 ; i < childs.size() ; i++) {
 				child = next(childs,child);
+				var now = getNowStep(pref,child);
 				final var d = addLinearNode(child, 
-						(int) Math.round(xStart + step * i), 
-						(int) Math.round(xStart + step * (i + 1)), 
+						(int) Math.round(xStart + step * pref), 
+						(int) Math.round(xStart + step * now), 
 						(int) (isTimeLine ? getMaxY() - (child.getTimeFounder()-startTimeOffset) * timeline : yPos - timeline),
 						startTimeOffset, deep + 1);
+				pref = now;
 				maxD = Math.max(maxD, d);
 			}
 			return maxD;
@@ -404,27 +407,30 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			if(childs.isEmpty()) return;
 			final var delX = (xEnd - xStart);
 			final var delColor = (colorEnd - colorStart);
-			final var stepXPerChild = ((double) delX) / childs.size();
-			final var stepColor = delColor / childs.size();
+			final var stepXPerChild = getStep(delX,childs);
+			final var stepColor = getStep(delColor,childs);
 			final var centerX = xStart + delX / 2;
 			
 			EvolutionTree.Node child = null;
+			double pref = 0;
 			for(int i = 0 ; i < childs.size() ; i++) {
 				child = next(childs,child);
-				var cx = (xStart + stepXPerChild * i) + ((xStart + stepXPerChild * (i + 1)) - (xStart + stepXPerChild * i)) / 2;
+				var now = getNowStep(pref,child);
+				var cx = (xStart + stepXPerChild * pref) + ((xStart + stepXPerChild * now) - (xStart + stepXPerChild * pref)) / 2;
 				if(delColor > 0.5)
 					g.setColor(Color.WHITE);
 				else
-					g.setColor(Utils.getHSBColor(colorStart + stepColor * (i + 0.5), 1.0, 1.0, 1.0));
+					g.setColor(Utils.getHSBColor(colorStart + stepColor * (now + pref)/2, 1.0, 1.0, 1.0));
 				final var cy = (int) (isTimeLine ? getMaxY() - (child.getTimeFounder()-startTimeOffset) * timeline : yPos - timeline);
 				g.drawLine(centerX, yPos, (int) cx, cy + TEXT_SIZE);
 				paintLineNode(g,child, 
-						(int) Math.round(xStart + stepXPerChild * i), 
-						(int) Math.round(xStart + stepXPerChild * (i + 1)), 
+						(int) Math.round(xStart + stepXPerChild * pref), 
+						(int) Math.round(xStart + stepXPerChild * now), 
 						cy, 
-						colorStart + stepColor * i, 
-						colorStart + stepColor * (i + 1),
+						colorStart + stepColor * pref, 
+						colorStart + stepColor * now,
 						startTimeOffset);
+				pref = now;
 			}
 		}
 		/**Выстраивает узлы круглого дерева эволюции
@@ -447,19 +453,22 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			final var lenght = r * delAngle;
 			if(childs.isEmpty() || lenght < TEXT_SIZE && r > 0) return;
 			
-			final double stepAnglePerChild = delAngle / childs.size();
+			final double stepAnglePerChild = getStep(delAngle,childs);
 			
 			EvolutionTree.Node child = null;
+			double pref = 0;
 			for(int i = 0 ; i < childs.size() ; i++) {
 				child = next(childs,child);
+				var now = getNowStep(pref,child);
 				final var cr = (int) (isTimeLine? timeline * (child.getTimeFounder() - startTimeOffset) : r + timeline);
-				final var csa = startAngle + stepAnglePerChild * i;
-				final var cea = startAngle + stepAnglePerChild * (i + 1);
+				final var csa = startAngle + stepAnglePerChild * pref;
+				final var cea = startAngle + stepAnglePerChild * now;
 				addCircleNode(child,
 						cx,cy,
 						csa, 
 						cea, 
 						cr, startTimeOffset);
+				pref = now;
 			}
 		}
 		/**Рисует линии между узлами в круглой диаграмме
@@ -476,8 +485,8 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			if(childs.isEmpty()) return;
 			final double delAngle = (endAngle - startAngle);
 			final double delColor = (colorEnd - colorStart);
-			final double stepAnglePerChild = delAngle / childs.size();
-			final double stepColor = delColor / childs.size();
+			final double stepAnglePerChild = getStep(delAngle,childs);;
+			final double stepColor = getStep(delColor,childs);
 			//final double centerAngle = Math.toRadians(startAngle + delAngle / 2);
 			//final int fromX = (int) Math.round(cx + r * Math.cos(centerAngle));
 			//final int fromY = getMaxY() - (int) Math.round(cy + r * Math.sin(centerAngle));
@@ -486,13 +495,15 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			}		
 			
 			EvolutionTree.Node child = null;
+			double pref = 0;
 			for(int i = 0 ; i < childs.size() ; i++) {
 				child = next(childs,child);
+				var now = getNowStep(pref,child);
 				if(delColor > 0.5) g.setColor(Color.WHITE);
-				else			   g.setColor(Utils.getHSBColor(colorStart + stepColor * (i + 0.5), 1.0, 1.0, 1.0));
+				else			   g.setColor(Utils.getHSBColor(colorStart + stepColor * (now+pref)/2, 1.0, 1.0, 1.0));
 				final var cr = (int) (isTimeLine? timeline * (child.getTimeFounder()-startTimeOffset) : r + timeline);
-				final var csa = startAngle + stepAnglePerChild * i;
-				final var cea = startAngle + stepAnglePerChild * (i + 1);
+				final var csa = startAngle + stepAnglePerChild * pref;
+				final var cea = startAngle + stepAnglePerChild * now;
 				final var cangle = Math.toRadians((csa + cea) / 2);
 				final var cos = Math.cos(cangle);
 				final var sin = Math.sin(cangle);
@@ -504,12 +515,12 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 						csa, 
 						cea, 
 						cr, 
-						colorStart + stepColor * i, 
-						colorStart + stepColor * (i + 1),
+						colorStart + stepColor * pref, 
+						colorStart + stepColor * now,
 						startTimeOffset);
+				pref = now;
 			}
 		}
-		
 		/**Возвращает самый нижний край, на котором мы можем рисовать
 		 * @return 
 		 */
@@ -531,6 +542,9 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 		_timeLineButton.setToolTipText(Configurations.getHProperty(EvolTreeDialog.class,"timelineB"));
 		Configurations.setIcon(curcle,"cycleFilogen");
 		curcle.setToolTipText(Configurations.getHProperty(EvolTreeDialog.class,"cycle"));
+		Configurations.setIcon(widthPropCells,"evo_cells");
+		widthPropCells.setToolTipText(Configurations.getHProperty(EvolTreeDialog.class,"rb_cells"));
+		
 		Configurations.addTask(this);
 		restart();
 	}
@@ -572,14 +586,14 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 				colorNode(nodeInCenter.getPerrent());
 			colorNode(nodeInCenter,0.0,0.8);
 		} else {
-			forEach(EvolTreeDialog::colorNode);
+			forEach(this::colorNode);
 		}
 	}
 	/**
 	 * Раскрашивает дерево потомков в цвета, согласно их дереву эволюции
 	 * @param root сам изображаемый узел
 	 */
-	private static void colorNode(EvolutionTree.Node root, double colorStart, double colorEnd) {
+	private void colorNode(EvolutionTree.Node root, double colorStart, double colorEnd) {
 		var delColor = (colorEnd - colorStart);
 		if(delColor > 0.5)
 			root.setColor(Color.WHITE);
@@ -696,10 +710,11 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	 * @param paramDelta вся велечина параметра, отпущеного на всех потомков
 	 * @param function функция, которая будет вызывана для каждого потомка
 	 */
-	private static void forEach(EvolutionTree.Node root, double paramDelta, ForChild function){
+	private void forEach(EvolutionTree.Node root, double paramDelta, ForChild function){
 		final var childs = root.getChild();
-		final var step = paramDelta / childs.size();
+		var step = getStep(paramDelta,childs);
 		EvolutionTree.Node child = null;
+		double pref = 0;
 		for(int i = 0 ; i < childs.size() ; i++) {
 			if (child == null) {
 				child = childs.stream().min((a, b) -> (int) (a.getGeneration() - b.getGeneration())).orElse(null);
@@ -714,33 +729,51 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 				}
 				child = ret;
 			}
-			function.next(child,step * i, step * (i+1));
+			var now = getNowStep(pref,child);
+			function.next(child,step * pref, step * now);
+			pref = now;
 		}
 	}
 	/** Проходит по всем корням дерева эволюции
 	 * @param function 
 	 */
-	private static void forEach(ForRoot function){
-		final var tree = Configurations.tree;
-		var stepColor = 0.8 / tree.size();
-		for(int i = 0 ; i < tree.size() ; i++) {
-			final var node = tree.getRoot(i);
-			function.next(node, stepColor * i,stepColor * (i + 1));
-		}
+	private void forEach(ForRoot function){
+		forEach(0, (node, c1,c2,s1,s2) -> function.next(node,c1,c2));
 	}
 	/** Проходит по всем корням дерева эволюции
 	 * 
 	 * @param paramDelta вся велечина параметра, отпущеного на всех корней
 	 * @param function 
 	 */
-	private static void forEach(double paramDelta, ForRootWidthparams function){
+	private void forEach(double paramDelta, ForRootWidthparams function){
 		final var tree = Configurations.tree;
-		var stepColor = 0.8 / tree.size();
-		final var step = paramDelta / tree.size();
+		var stepColor = getStep(0.8,tree.getRoots());
+		final var step = getStep(paramDelta,tree.getRoots());
+		double pref = 0;
 		for(int i = 0 ; i < tree.size() ; i++) {
 			final var node = tree.getRoot(i);
-			function.next(node, stepColor * i,stepColor * (i + 1), step * i,step * (i + 1));
+			var now = getNowStep(pref,node);
+			function.next(node, stepColor * pref,stepColor * now, step * pref,step * now);
+			pref = now;
 		}
+	}
+	/**Величина шага для расчёта расстояния между узлами в ширину
+	 * @param maxWidth максимальная ширина в пк или градусах
+	 * @param childs дети
+	 * @return сколько на шаг даётся измерителя
+	 */
+	private double getStep(double maxWidth, List<EvolutionTree.Node> childs){
+		if(widthPropCells.isSelected()) return maxWidth / childs.stream().mapToDouble(c -> countPair(c).countChildCell).sum();
+		else return maxWidth / childs.size();
+	}
+	/**Возращает текущее значение для каждого шага
+	 * @param index текущий номер ребёнка
+	 * @param child текущий ребёнок
+	 * @return пропорциональная величина шага
+	 */
+	private double getNowStep(double prefure, EvolutionTree.Node child){
+		if(widthPropCells.isSelected()) return prefure+countPair(child).countChildCell;
+		else return prefure+1;
 	}
 
 
@@ -762,6 +795,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
         resetButton = new javax.swing.JButton();
         curcle = new javax.swing.JToggleButton();
         _timeLineButton = new javax.swing.JToggleButton();
+        widthPropCells = new javax.swing.JToggleButton();
 
         jScrollPane1.setViewportView(jEditorPane1);
 
@@ -837,12 +871,16 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
             }
         });
 
+        widthPropCells.setText("jToggleButton1");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(486, Short.MAX_VALUE)
+                .addContainerGap(368, Short.MAX_VALUE)
+                .addComponent(widthPropCells)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(curcle, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(_timeLineButton)
@@ -856,7 +894,8 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
                 .addGap(0, 0, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(curcle)
-                    .addComponent(_timeLineButton)))
+                    .addComponent(_timeLineButton)
+                    .addComponent(widthPropCells)))
         );
 
         mainP.add(jPanel1, java.awt.BorderLayout.SOUTH);
@@ -919,5 +958,6 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JPanel mainP;
     private javax.swing.JButton resetButton;
+    private javax.swing.JToggleButton widthPropCells;
     // End of variables declaration//GEN-END:variables
 }
