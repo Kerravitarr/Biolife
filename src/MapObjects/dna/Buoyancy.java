@@ -12,7 +12,7 @@ import Utils.MyMessageFormat;
  */
 public class Buoyancy extends CommandDo {
 	/**Цена операции*/
-	private final int HP_COST = 1;
+	private final double HP_COST = DEF_COAST;
 	/**На сколько меняется плавучесть*/
 	private final int DEL = 1;
 	private final MyMessageFormat valueFormat = new MyMessageFormat("HP -= {0} W ={1}{2}");

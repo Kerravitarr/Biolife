@@ -13,7 +13,7 @@ import Calculations.Point.DIRECTION;
  */
 public class FindNear extends CommandExplore {
 	/**Сколкьо мы можем найти объектов. -1, так как param() возвращает включительно последнее число*/
-	final int COUNT_FIND = OBJECT.lenght - 1;
+	private final int COUNT_FIND = OBJECT.lenght - 1;
 
 	public FindNear() {super(1,2);}
 	

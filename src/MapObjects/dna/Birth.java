@@ -12,10 +12,10 @@ import Calculations.Point;
  *
  */
 public class Birth extends CommandDo {
-	/**Сколько ХП стоит скопировать каждый кадон ДНК*/
-	private static final double HP_FOR_KADON = 0.1;
 	/**Сколько ХП стоит поделиться в целом*/
-	private static final double HP_FOR_DIV = 150;
+	public static final double HP_FOR_DIV = AliveCell.MIN_HP;
+	/**Сколько ХП стоит скопировать каждый кадон ДНК*/
+	public static final double HP_FOR_KADON = HP_FOR_DIV / AliveCell.MAX_MINDE_SIZE;
 
 	public Birth() {this(1);};
 	protected Birth(int countParams) {super(countParams);};

@@ -12,14 +12,12 @@ import Calculations.Point.DIRECTION;
 import MapObjects.CellObject;
 import MapObjects.ConnectiveTissue;
 
-/**
- * Присасывается, объединясь, с ближайшей клеткой
+/** Присасывается, объединясь, с ближайшей клеткой
  * @author Kerravitarr
- *
  */
 public class Cling extends CommandDoInterupted {
 	/**Цена энергии на ход*/
-	private final int HP_COST = 1;
+	private final double HP_COST = DEF_COAST;
 	
 	/**Присасывается к чему-то относительно МСК*/
 	public Cling(boolean isA) {

@@ -11,7 +11,7 @@ import Calculations.Point.DIRECTION;
  */
 public class Step extends CommandDo {
 	/**Цена энергии на ход*/
-	protected final int HP_COST = 1;
+	protected final double HP_COST = DEF_COAST;
 
 	public Step(boolean isA) {
 		super(isA, 1);

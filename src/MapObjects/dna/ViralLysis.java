@@ -15,7 +15,7 @@ import MapObjects.CellObject;
  */
 public class ViralLysis extends CommandDo {
 	/**Сколько бот тратит здоровья на каждую инструкцию передаваймой ДНК*/
-	private static final long HP_PER_CODON = 1;
+	private static final double HP_PER_CODON = Birth.HP_FOR_KADON;
 
 	public ViralLysis() {super(4);};
 	

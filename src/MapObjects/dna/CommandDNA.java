@@ -11,7 +11,10 @@ import MapObjects.CellObject;
  * @author Kerravitarr
  *
  */
-public abstract class CommandDNA {	
+public abstract class CommandDNA {
+	/**Цена для любой операции, базовая*/	
+	protected final static double DEF_COAST = AliveCell.HP_PER_STEP;
+	
 	/**Возможность функции уйти в прерывание*/
 	protected boolean isInterrupt = false;
 	/**Количество параметров у этой функции (сколько следующий кодонов будут кодировать параметры)*/

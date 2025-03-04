@@ -21,7 +21,7 @@ import static MapObjects.CellObject.OBJECT.FILLING;
  */
 public class DNAWallBreak extends CommandDo {
 	/**Цена энергии на ход*/
-	private final int HP_COST = 1;
+	private final double HP_COST = DEF_COAST;
 	/**Ломает ДНК того, на кого смотрит*/
 	public DNAWallBreak() {super(); isInterrupt = true;};
 	@Override

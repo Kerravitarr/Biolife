@@ -19,7 +19,7 @@ import Calculations.Point.DIRECTION;
  */
 public class Pull extends CommandDo {
 	/**Цена энергии на ход*/
-	private final int HP_COST = 2;
+	private final double HP_COST = DEF_COAST * 2;
 	
 	/**Толкает объект относительно МСК*/
 	public Pull(boolean isA) {

@@ -28,7 +28,7 @@ import Calculations.Point;
  */
 public class DNABreak extends CommandDo {
 	/**Цена энергии на ход, только для вставки одного значения*/
-	private final int HP_COST = 100;
+	private final double HP_COST = Birth.HP_FOR_KADON;
 	
 	/**Операция вставки? Или обновления*/
 	private final boolean isInsert;

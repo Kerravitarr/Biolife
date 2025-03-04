@@ -12,7 +12,7 @@ import java.awt.Graphics2D;
 
 public class Poison extends CellObject {
 	/**Максимальная токсичность яда*/
-	public static final int MAX_TOXIC = 2000;
+	public static final double MAX_TOXIC = AliveCell.MAX_HP * 2;
 	/**Максимальная вязкость яда.*/
 	public static final int MAX_STREAM = 20_000;
 	

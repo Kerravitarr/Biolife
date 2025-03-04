@@ -12,7 +12,7 @@ import Utils.MyMessageFormat;
  */
 public class Photosynthesis extends CommandDo {
 	/**Цена энергии на ход. Да, фотосинтез тоже требует энергии!*/
-	private final int HP_COST = 2;
+	private final double HP_COST = DEF_COAST * 2;
 
 	protected Photosynthesis() {super();}
 
@@ -21,8 +21,8 @@ public class Photosynthesis extends CommandDo {
         var hlt = cell.sunAround();
 		if (hlt > 0) {
 			if (cell.getMineral() > 0)
-				cell.addMineral(-1);
-        	cell.addHealth(Math.round(hlt));   // прибавляем полученную энергия к энергии бота
+				cell.setMineral(Math.max(0, cell.getMineral() - 1));
+        	cell.addHealth(hlt);   // прибавляем полученную энергия к энергии бота
         	cell.color(AliveCell.ACTION.EAT_SUN,hlt);
         }
 		cell.addHealth(-HP_COST);

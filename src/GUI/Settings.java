@@ -159,7 +159,7 @@ public class Settings extends javax.swing.JPanel {
 		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.mutagenicity",
 				0d, dc.AGGRESSIVE_ENVIRONMENT, 100d,
 				0d, Configurations.confoguration.AGGRESSIVE_ENVIRONMENT, 100d, e -> Configurations.confoguration.AGGRESSIVE_ENVIRONMENT = e));
-		configuationsNorm.add( new SettingsSlider<>(Settings.class,"configuations.timeLifeOrg", 0, dc.TIK_TO_EXIT, 100, 0, Configurations.confoguration.TIK_TO_EXIT,null, e -> Configurations.confoguration.TIK_TO_EXIT = e));
+		configuationsNorm.add( new SettingsSlider<>(Settings.class,"configuations.timeLifeOrg", 0d, dc.TIK_TO_EXIT, 1000d, 0d, Configurations.confoguration.TIK_TO_EXIT,1000d, e -> Configurations.confoguration.TIK_TO_EXIT = e / 1000d));
 		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.dirtiness",
 				0, (int)(dc.DIRTY_WATER * 100), 1000,
 				0, (int)(Configurations.confoguration.DIRTY_WATER * 100), null, e -> {Configurations.confoguration.DIRTY_WATER = e / 100d; Configurations.suns.updateMatrix();}));

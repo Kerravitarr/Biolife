@@ -33,6 +33,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
         color_DO = new Color(255, 255, 255);
         evolutionNode = Configurations.tree.setAdam(this);
         specialization = new Specialization();
+		setHealth(START_HP);
     }
 
     /**
@@ -221,11 +222,11 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
      */
     private void clingFriends() {
         // Колония безвозмездно делится всем, что имеет
-        double allHp = getHealth();
-        long allMin = getMineral();
+        var allHp = getHealth();
+        var allMin = getMineral();
         int allDNA_wall = DNA_wall;
         int friendCount = 1;
-        int maxToxic = poisonPower;
+        var maxToxic = poisonPower;
         for (final var comrad : getComrades()) {
 			if(comrad instanceof AliveCell cell){
 				allHp += cell.getHealth();
@@ -470,7 +471,7 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
             case 7 -> { // Смена типа яда на который мы отзываемся
                 poisonType = TYPE.toEnum(Utils.random(0, TYPE.size()));
                 if (poisonType != TYPE.UNEQUIPPED) {
-                    poisonPower = Utils.random(1, (int) (CreatePoison.HP_FOR_POISON * 2 / 3));
+                    poisonPower = Utils.random(1, (int) (Math.max(2, CreatePoison.HP_FOR_POISON * 2 / 3)));
                 } else {
                     poisonPower = 0; //К этому у нас защищённости ни какой
                 }

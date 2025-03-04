@@ -9,7 +9,7 @@ import Utils.MyMessageFormat;
  */
 public class Mucosa extends CommandDo {
 	/**Цена энергии на ход*/
-	private final int HP_COST = 1;
+	private final double HP_COST = DEF_COAST;
 	/**Тип команды*/
 	private final boolean isUp;
 	

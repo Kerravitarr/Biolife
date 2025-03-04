@@ -24,11 +24,11 @@ public abstract class AliveCellProtorype extends CellObject {
 		/**@return Возваращет сколько ХП у объекта */
 		public double getHealth();
 		/**@return Возваращет сколько минералов у объекта */
-		public long getMineral();
+		public double getMineral();
 		/**@param h Сколько добавить энергии объекту*/
 		public void addHealth(double h);
 		/** @param mineral новый кусочек минералов (отрицательный, если отнимаем)*/
-		public void addMineral(long mineral);
+		public void addMineral(double mineral);
 		/**@return количество слизи. Если слизь есть - это затрудняет присасывание к клетке*/
 		public int getMucosa();
 		/**Сохраняет связь между текущим объектом и другой живой клеткой
@@ -43,18 +43,18 @@ public abstract class AliveCellProtorype extends CellObject {
 	public static final int DEF_MINDE_SIZE = 64;
 	/**Размер мозга максимальный, чтобы небыло взрывного роста и поедания памяти*/
 	public static final int MAX_MINDE_SIZE = 1024;
+	/**Сколько нужно жизней для размножения, по умолчанию*/
+	public static final double MAX_HP = 10_000;
+	/**Сколько можно сохранить минералов*/
+	public static final double MAX_MP = MAX_HP;
 	/**Минимальный уровень здоровья, меньше которого живая клетка переходит в не живую*/
 	public static final double MIN_HP = 100;
 	/**Начальный уровень здоровья клеток*/
-	public static final double START_HP = MIN_HP + 5;
+	public static final double START_HP = MIN_HP * 1.1;
 	/**Начальный уровень минералов клеток*/
-	public static final long START_MP = 500;
-	/**Сколько нужно жизней для размножения, по умолчанию*/
-	public static final double MAX_HP = 9999;
-	/**Сколько можно сохранить минералов*/
-	public static final long MAX_MP = 9999;
-	/**Столько здоровья требуется клетке для жизни на ход*/
-	public static final long HP_PER_STEP = 4;
+	public static final double START_MP = MIN_HP * 1.1;
+	/**Столько здоровья требуется клетке для жизни на ход. Клетка сможет прожить 10к шагов*/
+	public static final double HP_PER_STEP = MAX_HP * 0.0001;
 	/**Для изменения цвета*/
 	public enum ACTION {
 		/**Съесть органику - красный*/
@@ -70,7 +70,7 @@ public abstract class AliveCellProtorype extends CellObject {
 		/**Сломать мою ДНК - чёрный*/
 		BREAK_DNA(0,0,0,0.1), 
 		/**Ничего не делать - серый*/
-		NOTHING(128,128,128,0.01);
+		NOTHING(128,128,128,0.001);
 		public static final ACTION[] staticValues = ACTION.values();
 		public static int size() {return staticValues.length;}
 		/**Описание цвета действия
@@ -161,7 +161,7 @@ public abstract class AliveCellProtorype extends CellObject {
 			for(var i : map)
 				summ += i;
 			put(TYPE.PHOTOSYNTHESIS, get(TYPE.PHOTOSYNTHESIS) + (MAX_SPECIALIZATION - summ));
-			set(TYPE.PHOTOSYNTHESIS,70);//Потому что тут эффективность фотосинтеза примено 0,5
+			set(TYPE.PHOTOSYNTHESIS,100);//Потому что тут эффективность фотосинтеза примено 0,5
 			updateColor();
 		}
 		
@@ -291,7 +291,7 @@ public abstract class AliveCellProtorype extends CellObject {
     /**Жизни*/
 	protected double health = START_HP;
     /**Минералы*/
-	protected long mineral = START_MP;
+	protected double mineral = START_MP;
     /**Направление движения*/
     public Point.DIRECTION direction = Point.DIRECTION.UP;
     /**Защитный покров ДНК, он мешает изменить Нашу ДНК*/
@@ -299,7 +299,7 @@ public abstract class AliveCellProtorype extends CellObject {
     /**Тип яда к которому клетка устойчива*/
     protected Poison.TYPE poisonType = Poison.TYPE.UNEQUIPPED;
     /**Сила устойчивости к яду*/
-    protected int poisonPower = 0;
+    protected double poisonPower = 0;
     /**Плавучесть. Меняется от -100 до 100 Где -100 - тонуть каждый ход, 100 - всплывать каждый ход, 1 - тонуть каждые 100 ходов*/
     protected int buoyancy = 0;
     /**Показывает, сколько ходов клетка должна спать*/
@@ -372,24 +372,21 @@ public abstract class AliveCellProtorype extends CellObject {
 		Generation = generation;
 	}
 
-	/**
-	 * @return the mineral
-	 */
-	public long getMineral() {
+	/**@return the mineral */
+	public double getMineral() {
 		return mineral;
 	}
 
-	/**
-	 * Добавляет или отнимает минералы у клетки
+	/**Добавляет или отнимает минералы у клетки
 	 * @param mineral новый кусочек минералов (отрицательный, если отнимаем)
 	 */
-	public void addMineral(long mineral) {
+	public void addMineral(double mineral) {
 		setMineral(getMineral() + mineral);
 	}
-	/**
-	 * @param mineral the mineral to set
-	 */
-	public void setMineral(long mineral) {
+	/** @param mineral the mineral to set*/
+	public void setMineral(double mineral) {
+		if(mineral < 0)
+			mineral = 0;
 		this.mineral = Math.min(mineral, MAX_MP);
 	}
 	/**
@@ -411,10 +408,10 @@ public abstract class AliveCellProtorype extends CellObject {
 	/**
 	 * @return на сколько много очков урона клетка может игнорировать
 	 */
-	public int getPosionPower() {
+	public double getPosionPower() {
 		return poisonPower;
 	}
-	public void setPosionPower(int poisonPower) {
+	public void setPosionPower(double poisonPower) {
 		this.poisonPower = Math.min(Poison.MAX_TOXIC * 100, poisonPower);
 	}
 	/**

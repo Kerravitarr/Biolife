@@ -14,7 +14,7 @@ import Calculations.Configurations;
  */
 public class Swap extends CommandDoInterupted {
 	/**Цена энергии на ход больше, так как мы не просто двигаемся, а должны ещё подвинуть и соседа*/
-	protected final int HP_COST = 2;
+	protected final double HP_COST = DEF_COAST * 2;
 
 	public Swap(boolean isA) {
 		super(isA, WALL,OWALL);

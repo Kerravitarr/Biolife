@@ -12,9 +12,9 @@ import Utils.MyMessageFormat;
  */
 public class TankFood extends CommandDo {
 	/**Цена операции. А вы думали, бесплатно всё будет?*/
-	private static final int HP_COST = 1;
+	public static final double HP_COST = DEF_COAST;
 	/**Максимальный размер желудка*/
-	static final int TANK_SIZE = (int) Math.round(10 * AliveCell.MAX_HP);
+	static final int TANK_SIZE = (int) Math.round(2 * AliveCell.MAX_HP);
 	/**Функция добавки или убавки*/
 	private final boolean isAdd;
 

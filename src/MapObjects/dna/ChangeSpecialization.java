@@ -14,7 +14,7 @@ public class ChangeSpecialization extends CommandDo {
 	/**Максимальный возраст для смены специализации*/
 	private final int MAX_AGE = 100;
 	/**Цена энергии на действие*/
-	private final int HP_COST = 1;
+	private final double HP_COST = DEF_COAST;
 	private final MyMessageFormat valueFormat = new MyMessageFormat("HP -= {0, number, #.#}");
 
 	public ChangeSpecialization() {super(2);};

@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import GUI.Viewers;
+import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import java.awt.Toolkit;
 import java.io.IOException;
@@ -60,7 +61,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	/**Переводчик для всех названий. В теории*/
 	private static ResourceBundle bundle = ResourceBundle.getBundle("locales/locale", Locale.getDefault());
 	/**Размер карты высчитывается на основе размера экрана. А эта переменная определяет, сколько пикселей будет каждая клетка*/
-	public static final double PIXEL_PER_CELL = 10;
+	public static final double PIXEL_PER_CELL = 4;
 	
 	/**Версия приложения. Нужна на тот случай, если вдруг будет загружаться старое приложение*/
 	public static final long VERSION = 8;
@@ -95,8 +96,8 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public double AGGRESSIVE_ENVIRONMENT;
 	/**Вязкость воды. На сколько, дополнительно, снижается импульс объекта после каждого хода. Предпочтительно [0,1)*/
 	public double VISCOSITY;
-	/**Как часто органика теряет своё ХП. Если 1 - на каждый ход. Если 2 - каждые 2 хода и т.д.*/
-	public int TIK_TO_EXIT;
+	/**Как много органики уходит за один ход. В процентах*/
+	public double TIK_TO_EXIT;
 	/**Степень загрязнённости воды. На сколько падает уровень освещения за каждую клетку от источника света*/
 	public double DIRTY_WATER;
 	
@@ -120,6 +121,10 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	public static java.awt.Font defaultFont = null; 
 	/**Уменьешнный размер шрифта для необходимых элементов*/
 	public static java.awt.Font smalFont = null; 
+	/**Сколько энергии даёт фотосинтез в максимальной своей точке*/
+	private static final double DEF_SUN_POWER = AliveCell.HP_PER_STEP * 20;
+	/**Сколько энергии даёт минеральная жила в максимальной своей точке*/
+	private static final double DEF_MIN_POWER = DEF_SUN_POWER  / MapObjects.dna.Minerals2Energy.MIN_PER_HP;
 	
 	/**Задача, выплоняемая примерно раз в секунду, но без жёсткого ограничения*/
 	public interface EvrySecondTask{
@@ -173,13 +178,13 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		//Мутагенность воды
 		AGGRESSIVE_ENVIRONMENT = 20;
 		//Скорость разложения органики. За сколько шагов уходит 1 единица энергии
-		TIK_TO_EXIT = 10_000;
+		TIK_TO_EXIT = 0;
 		 //Чтобы освещалось только 33 % мира при силе света в 30 единиц
 		 switch (type) {
-			case LINE_H,LINE_V -> DIRTY_WATER =  30d / (height * 0.33);
-			case RECTANGLE -> DIRTY_WATER =  30d / (Math.min(height, width) * 0.5); //Чтобы освещалась половина мира
-			case FIELD_R -> DIRTY_WATER = 30d / (Math.min(height, width) * 0.2); //Чтобы освещалась пятая часть мира
-			case CIRCLE -> DIRTY_WATER = 30d / (Math.min(height, width) * 0.25); //В два раза больше, потому что у нас солнце со всех сторон мира
+			case LINE_H,LINE_V -> DIRTY_WATER =  DEF_SUN_POWER / (height * 0.33);
+			case RECTANGLE -> DIRTY_WATER =  DEF_SUN_POWER / (Math.min(height, width) * 0.5); //Чтобы освещалась половина мира
+			case FIELD_R -> DIRTY_WATER = DEF_SUN_POWER / (Math.min(height, width) * 0.2); //Чтобы освещалась пятая часть мира
+			case CIRCLE -> DIRTY_WATER = DEF_SUN_POWER / (Math.min(height, width) * 0.25); //В два раза больше, потому что у нас солнце со всех сторон мира
 			default -> throw new AssertionError();
 		}
 		VISCOSITY = 0.1;
@@ -258,7 +263,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			}
 			buildMap(this, mapG);
 			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
-			TIK_TO_EXIT = configWorld.get("TIK_TO_EXIT");
+			TIK_TO_EXIT = configWorld.get(double.class,"TIK_TO_EXIT");
 			DIRTY_WATER = configWorld.get("DIRTY_WATER");
 			VISCOSITY = configWorld.get("VISCOSITY");
 			SAVE_PERIOD = configWorld.getL("SAVE_PERIOD");
@@ -325,16 +330,17 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		switch (type) {
 			case LINE_H -> {
 				buildMap(new Configurations(type, width, height), new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(20, Gravitation.Direction.DOWN));}});
-				suns.add(new SunRectangle(30, new Trajectory(Point.create(width/2, 0)), (int) (width* 0.77), 1, false,"Постоянное"));
+				suns.add(new SunRectangle(DEF_SUN_POWER, new Trajectory(Point.create(width/2, 0)), (int) (width* 0.77), 1, false,"Постоянное"));
 				suns.add(new SunEllipse(
-						30, 
-						new TrajectoryPolyLine(50,false, Point.create(width/2, 0), Point.create(width-1, 0), Point.create(0, 0), Point.create(width/2-1, 0)), 
+						DEF_SUN_POWER, 
+						new TrajectoryPolyLine(Utils.Utils.round(AliveCell.MAX_HP / DEF_SUN_POWER / (width/8)),false, Point.create(width/2, 0), Point.create(width-1, 0), Point.create(0, 0), Point.create(width/2-1, 0)), 
 						width/8,height/2, 
 						false,"Движущееся"));
+				var DIRTY_WATERBY_MYNERAL = DEF_MIN_POWER / (height * 0.33);
 				//Эти минералы будут занимать только 33% мира
-				minerals.add(new MineralRectangle(20,confoguration.DIRTY_WATER, new Trajectory(Point.create(0, height-1)),width/2, 1, false,"Постоянная"));
+				minerals.add(new MineralRectangle(DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL, new Trajectory(Point.create(0, height-1)),width/2, 1, false,"Постоянная"));
 				//А эти будут иногда подниматься достаточно высоко
-				minerals.add(new MineralEllipse(20,confoguration.DIRTY_WATER, 
+				minerals.add(new MineralEllipse(DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL, 
 						new TrajectoryEllipse(2000, Point.create(width / 2, height * 7 / 8), -Math.PI, 1, height * 3 / 8)
 						,width * 1 / 4, height * 1 / 8, true,"Движущееся"));
 				//А теперь два потока воды - вверх и вниз
@@ -351,21 +357,22 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				buildMap(new Configurations(type, width, height), null);
 				//Будет одно солнышко, которое будет двигаться сверху вниз линией
 				suns.add(new SunRectangle(
-						30, 
+						DEF_SUN_POWER, 
 						new TrajectoryPolyLine(401, false, Point.create(width/2, (int) (height/2)), Point.create(width/2, (int) (height-1)), Point.create(width/2, (int) (1))), 
 						width,1, 
 						false,"Движущееся"));
+				var DIRTY_WATERBY_MYNERAL = DEF_MIN_POWER / (height * 0.33);
 				//Четыре куска минералов движущихся наискось
-				minerals.add(new MineralEllipse(30,confoguration.DIRTY_WATER * 2, new TrajectoryPolyLine(199,false, Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1), Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1)),
+				minerals.add(new MineralEllipse(DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL, new TrajectoryPolyLine(199,false, Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1), Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 1"));
-				minerals.add(new MineralEllipse(30,confoguration.DIRTY_WATER * 2, new TrajectoryPolyLine(227,false, Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1), Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1)),
+				minerals.add(new MineralEllipse(DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL, new TrajectoryPolyLine(227,false, Point.create(width/2, height/2), Point.create(width-1, 0), Point.create(width-1, height-1), Point.create(width/2, height/2), Point.create(0, 0), Point.create(0, height-1)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 2"));
-				minerals.add(new MineralEllipse(30,confoguration.DIRTY_WATER * 2, new TrajectoryPolyLine(193,false, Point.create(width/2, height/2), Point.create(width-1, height-1), Point.create(width-1, 0), Point.create(width/2, height/2), Point.create(0, height-1), Point.create(0, 0)),
+				minerals.add(new MineralEllipse(DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL, new TrajectoryPolyLine(193,false, Point.create(width/2, height/2), Point.create(width-1, height-1), Point.create(width-1, 0), Point.create(width/2, height/2), Point.create(0, height-1), Point.create(0, 0)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 3"));
-				minerals.add(new MineralEllipse(30,confoguration.DIRTY_WATER * 2, new TrajectoryPolyLine(233,false, Point.create(width/2, height/2), Point.create(0, height-1), Point.create(0, 0), Point.create(width/2, height/2), Point.create(width-1, height-1), Point.create(width-1, 0)),
+				minerals.add(new MineralEllipse(DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL, new TrajectoryPolyLine(233,false, Point.create(width/2, height/2), Point.create(0, height-1), Point.create(0, 0), Point.create(width/2, height/2), Point.create(width-1, height-1), Point.create(width-1, 0)),
 						width/10, height/10, 
 						true,"Путешествующий эллипс 4"));
 				//Ну и течении в реке
@@ -375,23 +382,24 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				buildMap(new Configurations(type, width, height), null);
 				//Будет четыре солнца, которые будут то "закатываться" то "выкатываться"
 				final var offset = Math.min(width, height) / 3;
+				var DIRTY_WATERBY_MYNERAL = DEF_MIN_POWER / (Math.min(height, width) * 0.5);
 				suns.add(new SunRectangle(
-						30, 
+						DEF_SUN_POWER, 
 						new TrajectoryPolyLine(1000, false, Point.create(width/2, 0), Point.create(width/2, -offset)), 
 						width,1, 
 						true,"Верхнее"));
 				suns.add(new SunRectangle(
-						30, 
+						DEF_SUN_POWER, 
 						new TrajectoryPolyLine(1000, false, Point.create(width/2, height), Point.create(width/2, height+offset)), 
 						width,1, 
 						true,"Нижнее"));
 				suns.add(new SunRectangle(
-						30, 
+						DEF_SUN_POWER, 
 						new TrajectoryPolyLine(1000, false, Point.create(0, height/2), Point.create(-offset, height/2)), 
 						1,height, 
 						true,"Левое"));
 				suns.add(new SunRectangle(
-						30, 
+						DEF_SUN_POWER, 
 						new TrajectoryPolyLine(1000, false, Point.create(width, height/2), Point.create(width+offset, height/2)), 
 						1,height, 
 						true,"Правое"));
@@ -399,22 +407,22 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				
 				//Четыре нычки минералов двигающихся в противофазе с солнцем
 				minerals.add(new MineralRectangle(
-						30,confoguration.DIRTY_WATER,
+						DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL,
 						new TrajectoryPolyLine(1000, false, Point.create(width/2, -offset), Point.create(width/2, 0)), 
 						width,1, 
 						true,"Верхняя"));
 				minerals.add(new MineralRectangle(
-						30,confoguration.DIRTY_WATER,
+						DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL,
 						new TrajectoryPolyLine(1000, false, Point.create(width/2, height+offset), Point.create(width/2, height)), 
 						width,1, 
 						true,"Нижняя"));
 				minerals.add(new MineralRectangle(
-						30,confoguration.DIRTY_WATER,
+						DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL,
 						new TrajectoryPolyLine(1000, false, Point.create(-offset, height/2), Point.create(0, height/2)), 
 						1,height, 
 						true,"Левая"));
 				minerals.add(new MineralRectangle(
-						30,confoguration.DIRTY_WATER,
+						DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL,
 						new TrajectoryPolyLine(1000, false, Point.create(width+offset, height/2), Point.create(width, height/2)), 
 						1,height, 
 						true,"Правая"));
@@ -435,10 +443,10 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				final var ht = new TrajectoryPolyLine(100,false,Point.create(1, height/2),Point.create(width-1, height/2),Point.create(width/2, height/2));
 				streams.add(new StreamHorizontal( ht.clone(),width/5,height, -3,"Вал"));
 				
-				final var Power = 40; //Сколько энергии у солнца и минералов
+				final var sPower = DEF_SUN_POWER; //Сколько энергии у солнца и минералов
 				final var atten = Configurations.confoguration.DIRTY_WATER;
-				final var size = Math.min(height, width) / Power;
-				final var SD =  (int) Math.round(size + Power * atten);
+				final var size = (int) Math.round(Math.min(height, width) / sPower);
+				final var SD =  (int) Math.round(size + sPower * atten);
 				//Скорости течений будем задавать простыми числами. Это нужно, чтобы создать большую вариативность
 				//Среди потоков
 				//А вот тут функция нахождения простого числа
@@ -488,9 +496,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 					final var SA = i % 4 < 2 ? new StreamAttenuation.PowerFunctionStreamAttenuation(minSA, maxSA,4) : new StreamAttenuation.PowerFunctionStreamAttenuation(-minSA, -maxSA,4);
 					final var name = "№"+i;
 					if(i % 2 == 0){
-						suns.add(new SunEllipse(Power,T.clone(), size, false,name));
+						suns.add(new SunEllipse(DEF_SUN_POWER,T.clone(), size, false,name));
 					} else {
-						minerals.add(new MineralEllipse(Power,atten,T.clone(), size, false,name));
+						minerals.add(new MineralEllipse(DEF_MIN_POWER,atten,T.clone(), size, false,name));
 					}
 					streams.add(new StreamEllipse(T.clone(), SD,SA,name));
 					streams.add(new StreamSwirl(T.clone(),  SD, SA,name));
@@ -500,17 +508,17 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				//Органика падает в центр
 				buildMap(new Configurations(type, width, height), new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(2, Gravitation.Direction.CENTER));}});
 				//Светящяся кромка
-				suns.add(new SunEllipse(30, new Trajectory(Point.create(width/2, height/2)), width,height, 	true,"Кромка"));
+				suns.add(new SunEllipse(DEF_SUN_POWER, new Trajectory(Point.create(width/2, height/2)), width,height, 	true,"Кромка"));
 				//Путешествующая капля
 				suns.add(new SunEllipse(
-						30, 
+						DEF_SUN_POWER, 
 						new TrajectoryEllipse(50,Point.create(width/2, height/2), 0, width, height), 
 						Math.min(width, height)/5, 
 						false,"Движущаяся"));
-				minerals.add(new MineralEllipse(30,confoguration.DIRTY_WATER, new Trajectory(Point.create(width/2, height/2)),width/10, height/10, false,"Центральная залеж"));	
+				minerals.add(new MineralEllipse(AliveCell.HP_PER_STEP * 10,confoguration.DIRTY_WATER, new Trajectory(Point.create(width/2, height/2)),width/10, height/10, false,"Центральная залеж"));	
 				//Путешествующая залеж
 				minerals.add(new MineralEllipse(
-						30, confoguration.DIRTY_WATER,
+						AliveCell.HP_PER_STEP * 10, confoguration.DIRTY_WATER,
 						new TrajectoryEllipse(-60,Point.create(width/2, height/2), 0, (int)(width/20 + 15 * confoguration.DIRTY_WATER), (int)(height/20 + 15 * confoguration.DIRTY_WATER)), 
 						Math.min(width, height)/5, 
 						false,"Движущаяся"));	

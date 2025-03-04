@@ -304,8 +304,8 @@ public class ConnectiveTissue extends CellObject implements AliveCellProtorype.A
 		if(countFriends < 2 || countAliveCell < 2) destroy(); //Если у нас нет связей, то мы удаляемся
 		
 		//Тогда делимся всем, что имеем со всеми
-		double allHp = getHealth() / countAliveCell;
-        long allMin = getMineral() / countAliveCell;
+		var allHp = getHealth() / countAliveCell;
+        var allMin = getMineral() / countAliveCell;
         for (var comrad : _friends) {
 			if(comrad instanceof AliveCell cell){
 				if (allHp > cell.getHealth()) {
@@ -378,7 +378,7 @@ public class ConnectiveTissue extends CellObject implements AliveCellProtorype.A
 	@Override
 	public double getHealth() {return Arrays.stream(_friends).mapToDouble(f -> (f == null || f instanceof ConnectiveTissue) ? 0 : f.getHealth()).sum();}
 	@Override
-	public long getMineral() {return Arrays.stream(_friends).mapToLong(f -> (f == null || f instanceof ConnectiveTissue) ? 0 : ((AliveCell)f).getMineral()).sum();}
+	public double getMineral() {return Arrays.stream(_friends).mapToDouble(f -> (f == null || f instanceof ConnectiveTissue) ? 0 : ((AliveCell)f).getMineral()).sum();}
 	@Override
 	public int getMucosa() {return Arrays.stream(_friends).mapToInt(f -> (f == null || f instanceof ConnectiveTissue) ? 0 : ((AliveCell)f).getMucosa()).sum();}
 	@Override
@@ -395,9 +395,9 @@ public class ConnectiveTissue extends CellObject implements AliveCellProtorype.A
 		}
 	}
 	@Override
-	public void addMineral(long m){
+	public void addMineral(double m){
 		if(countAliveCell > 0 && m > countAliveCell){
-			final var addM = (long)(m / countAliveCell);
+			final var addM = (m / countAliveCell);
 			for(final var f : _friends)
 				if(f != null && f instanceof AliveCell ac)
 					ac.addMineral(addM);

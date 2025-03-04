@@ -2,12 +2,10 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 
-/**
- * Укрепляет ДНК клетки, защищая её от вирусных атак
- */
+/**Укрепляет ДНК клетки, защищая её от вирусных атак*/
 public class DNAStrengthen extends CommandDo {
 	/**Цена энергии на ход*/
-	private final int HP_COST = 2;
+	private final double HP_COST = DEF_COAST;
 	
 	protected DNAStrengthen() {super();}
 

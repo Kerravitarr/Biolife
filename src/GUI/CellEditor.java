@@ -99,11 +99,11 @@ public class CellEditor extends javax.swing.JDialog {
 					0d, AliveCellProtorype.START_HP, AliveCellProtorype.MAX_HP, 0d, object.getHealth(), null, 
 				e->object.setHealth(e)));
 		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.MP",
-					0L, AliveCellProtorype.START_MP, AliveCellProtorype.MAX_MP, 0L, object.getMineral(), null, 
+					0d, AliveCellProtorype.START_MP, AliveCellProtorype.MAX_MP, 0d, object.getMineral(), null, 
 				e->object.setMineral(e)));
 		final var PT = Poison.TYPE.vals;
 		final var poisonPower = new SettingsSlider<>(CellEditor.class, "settingsPanel.poisonPower",
-					0, 0, Poison.MAX_TOXIC, 0, object.getPosionPower(), null, 
+					0d, 0d, Poison.MAX_TOXIC, 0d, object.getPosionPower(), null, 
 				e->object.setPosionPower(e));
 		poisonPower.setVisible(object.getPosionType() != Poison.TYPE.UNEQUIPPED);
 		final var PoiosnTypeS = new SettingsSelect<>(CellEditor.class, "settingsPanel.poisonType", PT, Poison.TYPE.UNEQUIPPED, object.getPosionType(), e -> {

@@ -11,9 +11,9 @@ import Utils.MyMessageFormat;
  */
 public class Minerals2Energy extends CommandDo {
 	/**Цена энергии на ход. Да, на периваривание минералов тоже нужна энергия!*/
-	private final int HP_COST = 2;
+	private final double HP_COST = DEF_COAST;
 	/**Сколько ХП дадут за 1 минерал*/
-	private static final long MIN_PER_HP = 10;
+	public static final long MIN_PER_HP = 10;
 	/**Сколько максимально минералов можно переработать. 1/4 от полных жизней*/
 	private static final double MAX_MIN = (AliveCellProtorype.MAX_HP / MIN_PER_HP) / 4;
 	

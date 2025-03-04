@@ -48,7 +48,7 @@ public class Give extends CommandDoInterupted {
 
 				var min0 = cell.getMineral();  // бот отдает четверть своих минералов
 				if (min0 > 3) {                 // только если их у него не меньше 4
-					long min = min0 / 4;
+					var min = min0 / 4;
 					cell.color(AliveCell.ACTION.GIVE,min);
 					if(target instanceof AliveCell ac) ac.color(AliveCell.ACTION.RECEIVE,min);
 					cell.addMineral(- min);

@@ -50,7 +50,7 @@ public class Care extends CommandDoInterupted {
 					target.addHealth(hlt);
 				}
 				if (min0 > min1) {              // если у бота больше минералов, чем у соседа
-					long min = (min0 - min1) / 2;   // то распределяем их поровну
+					var min = (min0 - min1) / 2;   // то распределяем их поровну
 					cell.color(AliveCell.ACTION.GIVE,min);
 					cell.addMineral(- min);
 					target.addMineral(+ min);

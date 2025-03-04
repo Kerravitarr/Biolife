@@ -1,7 +1,6 @@
 package MapObjects;
 
 import java.awt.Color;
-import java.awt.Graphics;
 
 import MapObjects.Poison.TYPE;
 import Utils.JSON;
@@ -10,7 +9,6 @@ import java.awt.BasicStroke;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
 import Calculations.Configurations;
-import Calculations.Point;
 import Calculations.Point.DIRECTION;
 import GUI.AllColors;
 import GUI.Legend;
@@ -49,10 +47,8 @@ public class Organic extends CellObject {
 
 	@Override
 	public void step() {
-		if(Configurations.confoguration.TIK_TO_EXIT != 0)
-			energy -= 1.0/Configurations.confoguration.TIK_TO_EXIT;
-		else
-			energy = 0;
+		var de = energy * Configurations.confoguration.TIK_TO_EXIT;
+		energy -= de;
 		if(poison != Poison.TYPE.UNEQUIPPED) {
 			if (getAge() >= nextDouble) { // Вязкость яда
 				DIRECTION dir = DIRECTION.toEnum(Utils.random(0, DIRECTION.size()-1));
@@ -66,7 +62,7 @@ public class Organic extends CellObject {
 	 				poison = Poison.TYPE.UNEQUIPPED;
 			} else {
 				//Так как мы ядовиты, то по чуть чуть растворяемся, то есть становимся ещё более ядовиты
-				poisonCount += 1.0/Configurations.confoguration.TIK_TO_EXIT;
+				poisonCount += de;
 			}
 		}
 		if(energy <= 1){

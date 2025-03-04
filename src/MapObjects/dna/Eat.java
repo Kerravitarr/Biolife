@@ -25,7 +25,7 @@ import MapObjects.ConnectiveTissue;
  */
 public class Eat extends CommandDoInterupted {
 	/**Цена энергии на ход*/
-	private final int HP_COST = 4;
+	private final double HP_COST = DEF_COAST * 2;
 
 	public Eat(boolean isA) {
 		super(isA,CLEAN, NOT_POISON, POISON, WALL, OWALL);
@@ -54,7 +54,7 @@ public class Eat extends CommandDoInterupted {
 				var hpInOrg = Math.min(target.getHealth(), maxEat); //Сколько можем съесть
 				//Мы умеем переваривать органику - мы перевариваем органику!
 				if(target.getPoison() != Poison.TYPE.YELLOW)
-					hpInOrg /= 2; //Если яд не жёлтый, то пища не такая вкусная
+					hpInOrg /= 1.25; //Если яд не жёлтый, то пища не такая вкусная
 				hpInOrg = cell.specMaxVal(hpInOrg, AliveCellProtorype.Specialization.TYPE.DIGESTION); //Сколько из съеденного получили энергии
 				cell.addHealth(hpInOrg);    //здоровье увеличилось
 				cell.color(AliveCell.ACTION.EAT_ORG,hpInOrg);
@@ -96,7 +96,7 @@ public class Eat extends CommandDoInterupted {
 							}
 						}
 					} else {
-						//Не смогли прокусить панцирь. Животинка сама нас победила
+						//Не смогли прокусить панцирь. Только погрызли
 						cell.setMineral(0);
 						target.addMineral(-(long)ourF); //И только зубки сточила
 						tarMP = target.getMineral();
@@ -128,8 +128,9 @@ public class Eat extends CommandDoInterupted {
 							}
 						}
 					} else {
-						//У нас достойный противник
-						cell.bot2Organic();  // здоровье уходит в ноль
+						//У нас достойный противник. Его мы не смогли одолеть. И поранились сами об себя
+						cell.addHealth(-target.specMaxVal(maxF, ASSASSINATION));
+						//cell.bot2Organic();  // здоровье уходит в ноль
 						return;
 					}
 				}

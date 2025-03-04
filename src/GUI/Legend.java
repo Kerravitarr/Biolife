@@ -188,7 +188,7 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 		double summHP_ = 0d;
 		double maxHP_ = 0;
 		long summMP_ = 0l;
-		long maxMP_ = 0l;
+		double maxMP_ = 0d;
 		long maxAge_ = 0l;
 		long maxGen_ = 0l;
 		long minGen_ = Long.MAX_VALUE;
@@ -210,7 +210,7 @@ public class Legend extends JPanel implements Configurations.EvrySecondTask{
 			}
 		}
 		maxHP = (long) maxHP_;
-		maxMP = maxMP_;
+		maxMP = (long) maxMP_;
 		maxAge = (long) (maxAge_ * 1.4); //Увеличиваем на 40%, чтобы избавиться от фиолетового и розового в цветах и отдать их для стен и прочего
 		maxGenDef = maxGen_;
 		minGenDef = minGen_;

@@ -12,7 +12,7 @@ import Utils.MyMessageFormat;
  */
 public class TankMineral extends CommandDo {
 	/**Цена операции. А вы думали, бесплатно всё будет?*/
-	private static final int HP_COST = 1;
+	private static final double HP_COST = TankFood.HP_COST;
 	/**Размер желудка*/
 	static final int TANK_SIZE = (int) Math.round(10 * AliveCell.MAX_MP);
 	/**Функция добавки или убавки*/
