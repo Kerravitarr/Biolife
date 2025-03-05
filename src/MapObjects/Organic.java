@@ -28,7 +28,8 @@ public class Organic extends CellObject {
 		super(cell.getStepCount(), LV_STATUS.LV_ORGANIC);
 		setPos(cell.getPos());
 		setImpuls(cell.getImpuls().x, cell.getImpuls().y);
-		energy = Math.abs(cell.getHealth()) + cell.getFoodTank() + (cell.getMineral() + cell.getMineralTank()) * 10; //Превращается в органику всё, что только может
+		//Превращается в органику всё, что только может
+		energy = Math.abs(cell.getHealth()) + cell.getFoodTank() + (cell.getMineral() + cell.getMineralTank()) * MapObjects.dna.Minerals2Energy.MIN_PER_HP;
 	    nextDouble = getTimeToNextDouble();
 	}
 	/**

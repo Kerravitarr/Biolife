@@ -172,6 +172,10 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
 		if (sleepCounter > 0) {
 			sleepCounter--;
             addHealth(-HP_PER_STEP/100d);//Спать куда эффективнее
+			//Если мало жизней, достаём заначку!
+			if (getHealth() < MIN_HP) {
+				TankFood.sub(this, (int)MIN_HP);
+			}
         } else {
 			//Работа ДНК
 			for (int cyc = 0; (cyc < 15); cyc++) {
@@ -197,13 +201,9 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
 				clingFriends();
 			}
 			//Если мало минералов, достаём заначку!
-			if (getMineral() < 100) {
+			/*if (getMineral() < 100) {
 				TankMineral.sub(this, 100);
-			}
-		}
-		//Если мало жизней, достаём заначку!
-		if (getHealth() < 100) {
-			TankFood.sub(this, 100);
+			}*/
 		}
 		//Меняем цвет, если бездельничаем
 		if (getAge() % 50 == 0) {
