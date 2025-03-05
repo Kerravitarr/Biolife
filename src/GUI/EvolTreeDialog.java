@@ -579,7 +579,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	/**Обновляет цвета узлов*/
 	private void updateColor(){
 		final var tree = Configurations.tree;
-		tree.resetColor();
+		//tree.resetColor();
 		if(tree.size() == 1 || nodeInCenter != null){ 
 			//У нас один основатель или мы на ветке дерева
 			if(nodeInCenter.getPerrent() != null)
