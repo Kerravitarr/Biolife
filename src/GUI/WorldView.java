@@ -594,8 +594,8 @@ public class WorldView extends javax.swing.JPanel {
 			int r = transforms.getZScrin();
 			if (r > 2) {
 				//Если у нас радиус больше 2пк, то тут можно рисовать что угодно - от кругов до детальной проработки
-				for (int x = x0; x < x1; x++) {
-					for (int y = y0; y < y1; y++) {
+				for (int x = x0; x <= x1; x++) {
+					for (int y = y0; y <= y1; y++) {
 						final var pos = Point.create(x, y);
 						if(!pos.valid()) continue;					
 						final var cell = Configurations.world.get(pos);
@@ -617,8 +617,8 @@ public class WorldView extends javax.swing.JPanel {
 				final var step = (int)Math.ceil(4d/dr); //4 - потому что рисуем квадратиками 2х2 пк
 				final var nr = transforms.toScrin(step);
 				final var ritangleColor = new Color[step * step];
-				for (int x = x0; x < x1; x+=step) {
-					for (int y = y0; y < y1; y+=step) {
+				for (int x = x0; x <= x1; x+=step) {
+					for (int y = y0; y <= y1; y+=step) {
 						var lendhtC = 0;
 						for(var dx = 0 ; dx < step; dx++){
 							for(var dy = 0 ; dy < step; dy++){
