@@ -131,8 +131,8 @@ public class StreamVertical extends StreamAbstract {
 	@Override
 	protected void paint(Graphics2D g, WorldView.Transforms transform, int posX, int posY, int frame){
 		
-		final var x0 = transform.toScrinX(posX - width/2);
-		final var y0 = transform.toScrinY(posY - height/2);
+		final var x0 = transform.toScrinX(posX - width/2) - transform.getDZScrin()/2;
+		final var y0 = transform.toScrinY(posY - height/2) - transform.getDZScrin()/2;
 		
 		final var w = transform.toScrin(width);
 		final var h = transform.toScrin(height);
