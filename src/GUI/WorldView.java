@@ -14,16 +14,14 @@ import Calculations.Trajectories.Trajectory;
 import GUI.WorldAnimation.DefaultAnimation;
 import MapObjects.CellObject;
 import Utils.ColorRec;
-import Utils.FPScounter;
+import Utils.UPScounter;
 import Utils.Variant;
 import java.awt.AlphaComposite;
 import java.awt.Color;
-import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -459,9 +457,10 @@ public class WorldView extends javax.swing.JPanel {
 				buffers.clear();
 				buffers.add(new PrintTask(null, new java.awt.Point(Configurations.getWidth()-1, Configurations.getHeight()-1)));
 				var step = 10;
+                var r = transforms.getDZScrin();
 				for(var x = 0 ; x < Configurations.getWidth()-1 + step; x += step){
 					for(var y = 0 ; y < Configurations.getHeight()-1 + step; y += step){
-						buffers.add(new PrintTask(new java.awt.Point(x,y), new java.awt.Point(x+step, y + step)));
+						buffers.add(new PrintTask(new java.awt.Point(x-1,y-1), new java.awt.Point(x+step+1, y + step+1)));
 					}
 				}
 			}
@@ -470,13 +469,14 @@ public class WorldView extends javax.swing.JPanel {
 			}
 			fps_buffer.interapt();
 		}
-		Configurations.addOnceTask(this::rebuildField, (int)Math.max(0, (fps_buffer.dFPS() - 25) / 100));
+        //System.out.println(fps_buffer.dUPS());
+		Configurations.addOnceTask(this::rebuildField, fps_buffer.UPS() > 25 ? 100 : 0);
 	}
 	
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
-		/*final var cms = System.currentTimeMillis();
+		/**/final var cms = System.currentTimeMillis();
 		var del = cms - lastUpdate;
 		if(del > 0){
 			lastUpdate = cms + 1000/25; //25 кадров в секунду
@@ -495,8 +495,8 @@ public class WorldView extends javax.swing.JPanel {
 		} catch(Exception ex){ //Вообще не ожидаются такие события... Но кто мы такие, чтобы спорить с фактами?
 			Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 		}
-		repaint((int)Math.max(0, (fps_repaint.dFPS() - 25) / 100));
-		/**/
+		repaint(fps_repaint.UPS() > 25 ? 100 : 0);
+		/*
 		
 		final var cms = System.currentTimeMillis();
 		if(cms > lastUpdate){
@@ -780,7 +780,8 @@ public class WorldView extends javax.swing.JPanel {
 	public void setSelect(Trajectory select){
 		this.select.set(select);
 	}
-	public double fps(){return Math.min(fps_repaint.dFPS(), fps_buffer.dFPS());}
+    /*Возвращает ФПС изображения**/
+	public double fps(){return Math.min(fps_repaint.dUPS(), fps_buffer.dUPS());}
 	
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -793,9 +794,9 @@ public class WorldView extends javax.swing.JPanel {
 	/**Координаты выделения клеток при использовании мыши в качестве выделителя*/
 	private final Point[] selectPoint = new Point[2];
 	/**Счётчик шагов. Puls Per Second*/
-	private final FPScounter fps_repaint = new FPScounter();
+	private final UPScounter fps_repaint = new UPScounter();
 	/**Счётчик шагов. Puls Per Second*/
-	private final FPScounter fps_buffer = new FPScounter();
+	private final UPScounter fps_buffer = new UPScounter();
 	/**Класс, отвечающий за красивое поле и его окружение*/
 	private DefaultAnimation animation = null;
 	/**Все цвета, которые мы должны отобразить на поле*/
