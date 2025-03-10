@@ -299,7 +299,7 @@ public class WithoutGUI {
 	}
 	private String getTitle(){
 		return MessageFormat.format(Configurations.getProperty(WithoutGUI.class,"title"), world.step,
-				world.pps.dFPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
+				world.pps.dUPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
 				world.getCount(CellObject.LV_STATUS.LV_POISON), world.getCount(CellObject.LV_STATUS.LV_WALL), world.isActiv() ? ">" : "||");
 	}
 	/**Функция будет вызвана, когда приложению следует завершиться в режиме без GUI*/

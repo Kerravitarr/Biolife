@@ -18,20 +18,16 @@ import java.io.IOException;
 import java.util.List;
 import javax.swing.JMenuItem;
 import Calculations.Configurations;
-import static Calculations.Configurations.getViewer;
 import Calculations.GenerateClassException;
 import Calculations.Point;
 import Utils.JSON;
 import Utils.SaveAndLoad;
 import java.awt.Cursor;
-import java.io.File;
 import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.filechooser.FileNameExtensionFilter;
 
 public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	/**Какая из кнопок выбрана*/

@@ -248,7 +248,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		final var bi = v.get(BotInfo.class);
 		
 		String title = MessageFormat.format(Configurations.getProperty(MainFrame.class,"title"), wv.fps(), world.step,
-				world.pps.dFPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
+				world.pps.dUPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
 				world.getCount(CellObject.LV_STATUS.LV_POISON), world.getCount(CellObject.LV_STATUS.LV_WALL), world.isActiv() ? ">" : "||");
 		setTitle(title);
 		wv.repaint();

@@ -23,7 +23,7 @@ import MapObjects.ConnectiveTissue;
 import MapObjects.Fossil;
 import MapObjects.Organic;
 import MapObjects.Poison;
-import Utils.FPScounter;
+import Utils.UPScounter;
 import Utils.JSON;
 import Utils.SaveAndLoad;
 import Utils.Utils;
@@ -50,7 +50,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	/**Очередь потоков, которая будет обсчитывать мир*/
 	private final ExecutorService maxExecutor;
 	/**Счётчик шагов. Puls Per Second*/
-	public final FPScounter pps = new FPScounter();
+	public final UPScounter pps = new UPScounter();
 	/**Это мы, наш поток, в нём мы и считаем всё, что должны*/
 	private final Thread worldThread;
 	/**Сумма всех живых объектов на начало текущего шага*/
@@ -194,7 +194,6 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		awaitStop();
 		maxExecutor.shutdown();
 		_status = STATUS.ERROR;
-		pps.close();
 	}
 	/**Создаёт стартовую клетку на поле*/
 	public void makeAdam(){
