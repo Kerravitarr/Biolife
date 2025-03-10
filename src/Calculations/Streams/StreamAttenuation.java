@@ -258,7 +258,7 @@ public abstract class StreamAttenuation {
 	 */
 	public double frame(int frame, boolean isRevers, double dist){
 		assert 0 <= dist && dist <= 1 : "Проблемка - вышли за границу диапазона: " + dist;
-		final var F = (int) (100 - (100 - 10) * transform(dist));
+		final var F = Math.max(1, (int) ((100 - 10) * transform(dist)));
 		final double step = (isRevers ? (F - (frame % F)) : (frame % F));
 		return step / F;
 	}

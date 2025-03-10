@@ -40,16 +40,12 @@ public abstract class StreamAbstract implements Trajectory.HasTrajectory{
 	/**Флаг необходимости пересчитать матрицу потока*/
 	private boolean isNeedRecalculateEnergy = true;
 	
-	protected class Action{
-		private final Point.DIRECTION _d;
-		private final double _dist;
-		/**
-		 * Указывает как именно следует сдвинуться клетке
-		 * @param d направление движения
-		 * @param dist удалённость от центра потока
-		 */
-		public Action(Point.DIRECTION d, double dist){_d = d; _dist=dist;}
-	}
+    /**
+     * Указывает как именно следует сдвинуться клетке
+     * @param d направление движения
+     * @param dist удалённость от центра потока
+     */
+    protected record Action(Point.DIRECTION _d,double _dist){}
 	
 	/**Создание гейзера
 	 * @param move форма движения
