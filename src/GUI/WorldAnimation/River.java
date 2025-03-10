@@ -213,13 +213,14 @@ public class River extends DefaultAnimation{
 	}
 	/**Кораблик, который симулирует течение*/
 	private static class Ship {
-		
 		/**Клетка, где кораблик находится*/
 		private Cell cell;
 		/**Позиция кораблика*/
 		private HexVector point;
 		/**Счётчик кораблика. Нужен для того, чтобы каждый раз спавниться в новом месте*/
 		public int index;
+        /**Возраст кораблика. Кораблики тоже умирают.*/
+        private int age = 0;
 		
 		public Ship(int i){setIndex(i);}
 		
@@ -227,10 +228,11 @@ public class River extends DefaultAnimation{
 		public boolean isActiv(){return cell != null;}
 		/**Начало кораблика*/
 		public void start(Cell c){
-			if(c.isEnd != null || c.flow.lenght() == 0) {
+			if(c.isEnd != null || c.flow.lenght() == 0 || !c.inScrean) {
 				setIndex(index + 1);
 				return;
 			}
+            age = 0;
 			cell = c;
 			cell.isShip = true;
 			point = new HexVector(cell.point.que,cell.point.row);
@@ -238,7 +240,11 @@ public class River extends DefaultAnimation{
 		/**Шаг кораблика*/
 		public void step(RiverBank bank){
 			cell.isShip = false;
-			final var isEnd = cell.isEnd != null || cell.flow.lenght() == 0 || !bank.isValid(point.add(cell.flow.direction().dq,cell.flow.direction().dr));
+            age++;
+			final var isEnd = cell.isEnd != null 
+                || cell.flow.lenght() == 0 || !bank.isValid(point.add(cell.flow.direction().dq,cell.flow.direction().dr)) 
+                || age > Drop.MAX_AGE * 2
+                || !cell.inScrean;
 			if(isEnd){
 				cell = null;
 				setIndex(index + 1);
@@ -329,6 +335,9 @@ public class River extends DefaultAnimation{
 		private double size_tree = 0;
 		/**Показывает, что эта клетка находится на экране*/
 		public boolean inScrean = false;
+		/**Размер мира. Этот покзаатель нужен, потому что на большой карте будет много капель, а на значит и много воды. А на маленькой карте
+         Капель мало, а значит и воды меньше. Не удоабно*/
+		public static int wWigth = 1;
 		
 		/**Внешний вид клетки*/
 		private final java.awt.geom.Path2D.Double poligon = new java.awt.geom.Path2D.Double();
@@ -414,7 +423,7 @@ public class River extends DefaultAnimation{
 		 * Поэтому если нужно узнать "приведённое" значение воды. 
 		 * Вероятность, что на клетке есть вода, то обращаться нужно к этой функции
 		 * @return количество воды на экране[0,1]*/
-		private double waterNormalize(double water){return erf(0.4*water);}
+		private double waterNormalize(double water){return erf(water/wWigth);}
 		public double silt(){return _silt;}
 		/**Добавляет к илу кусочек и возвращает новое значение*/
 		public double silt(double add){setParams(_water, _silt + add); return _silt;}
@@ -501,11 +510,12 @@ public class River extends DefaultAnimation{
 			
 			/*if(radius > 20){
 				g.setColor(Color.BLACK);
-				Utils.Utils.centeredText(g, (int) center.x, (int) center.y-10, 10, water() > 0 ? String.format("w%.1f", water()) : "");
-				Utils.Utils.centeredText(g, (int) center.x, (int) center.y+0, 10, String.format("s%.1f", silt()));
-				Utils.Utils.centeredText(g, (int) center.x, (int) center.y+10, 10, String.format("l%.1f", maxLavel()));
+                Utils.Utils.centeredText(g, (int) center.x, (int) center.y-10, 10,point.toString());
+				//Utils.Utils.centeredText(g, (int) center.x, (int) center.y-10, 10, water() > 0 ? String.format("w%.1f", water()) : "");
+				//Utils.Utils.centeredText(g, (int) center.x, (int) center.y+0, 10, String.format("s%.1f", silt()));
+				//Utils.Utils.centeredText(g, (int) center.x, (int) center.y+10, 10, String.format("l%.1f", maxLavel()));
 				//Utils.Utils.centeredText(g, (int) center.x, (int) center.y+6, 10, point.toString() + (isEnd != null ? "e" : "") + (isMouth > 0 ? isMouth : ""));
-			} */
+			}*/
 			/*{
 				g.setColor(Color.BLACK);
 				final var x1 = (int) center.x;
@@ -524,7 +534,6 @@ public class River extends DefaultAnimation{
 			}
 			g.setColor(tmpC);
 		}
-		
 		/**Расчитывает функцию ошибок гауса. Делает это с точностью около 1.2 * 10 ^ -7. Правда около 0, конечно, всё идёт по одному месту
 		 * @param z
 		 * @return 
@@ -554,22 +563,24 @@ public class River extends DefaultAnimation{
 	private static class Drop{
 		/** Максимальный возраст капли*/
 		public static int MAX_AGE = 0;
+		/**Сколько изначально воды в капле*/
+		public static final double START_WATER = 1;
 		/** Минимальный запас воды в капле, прежде чем она исчезнет*/
 		public static final double MIN_WATER = 0.01;
 		/** Скорость испарения капли. [0,1)*/
 		public static final double EVAPORATION_RATE = 0.001;
 		/** Скорость забора ила на клетках при движении*/
 		public static final double SETTLING = 0.1;
-		/** Сила переноса ила с точки на точку*/
-		public static final double SILT_TRANSPORT = 10.0;
+		/** Сила переноса ила с точки на точку. Определяет скорость эволюции рек*/
+		public static final double SILT_TRANSPORT = 10;
 		/** Сила гравитации*/
 		public static final double GRAVITY = 1.0;
 		/** Эффективность передачи импульса при движении*/
 		public static final double IMPULSE_TRANSFER = 1.0;
 		/** Коэффициент подвижности берегов. Показывает как много земельки идёт от клетки к клетке*/
 		public static final double COLLAPSE = 0.8;
-		/**Максимальная крутость берега. Круче быть не может уже*/
-		public static final double SILT_STEP = 0.01;
+		/**Сколько ила переносится за границу экрана за раз*/
+		public static final double SILT_STEP = SILT_TRANSPORT / 3;
 		
 		/**Возраст катящейся капли*/
 		private int age = 0;
@@ -578,7 +589,7 @@ public class River extends DefaultAnimation{
 		/**Скорость капли*/
 		private HexVector speed = new HexVector();
 		/**Количество воды в капле*/
-		private double water = 1;
+		private double water = 1d;
 		/**Количество ила в капле*/
 		private double silt = 0;
 		
@@ -786,7 +797,7 @@ public class River extends DefaultAnimation{
 				forEach(cell -> cell.update(i == 0));
 				//Немного растительности добавим. Для улучшения моделирования эроозии
 				//Садим дерево
-				if(c.isGoodCell()){
+				if(c.inScrean && c.isGoodCell()){
 					c.editTree(true);
 				}
 				return true; //Этот всегда возвращает правду, ибо мы обновили поле и больше ничего считать не надо!
@@ -801,6 +812,7 @@ public class River extends DefaultAnimation{
 		public void regenerateRiver(int height, boolean isLeft) {
 			map = new Cell[height][height];
 			call_cell = new Cell[height * height];
+            Cell.wWigth = height;
 			for (int r = 0; r < height; r++) {
 				for (int c = 0; c < height; c++) {
 					final var q = c - r / 2;
@@ -943,8 +955,7 @@ public class River extends DefaultAnimation{
 				return get(q, r);
 			else
 				return null;
-		}
-		
+		}	
 		/**Обрабатывает движение капельки по плато
 		 * @param d капелька
 		 * @return true, если движение своё капелька ещё не закончила
@@ -960,7 +971,7 @@ public class River extends DefaultAnimation{
 			final var f = new HexVector();
 			for(var e : cell.neighbours.entrySet()){
 				final var c = e.getValue();
-				if(c == null){
+				if(c == null || !c.inScrean){
 					double del;
 					if(cell.isEnd == null){
 						del = -cell.silt();
@@ -974,7 +985,7 @@ public class River extends DefaultAnimation{
 				}
 			}
 			if(cell.isEnd != null){ //Крайние точки дополнительно утягивает за край
-				f.add((new HexVector(cell.isEnd.dq, cell.isEnd.dr)).scale(Drop.SILT_STEP));
+				f.add((new HexVector(cell.isEnd.dq, cell.isEnd.dr)).scale(Drop.SILT_STEP * 3));
 			}
 			d.speed = d.speed.add(f.scale(Drop.GRAVITY / d.water)); //F=ma => a = F/m. V = V0+at
 			if(cell.flow.lenght() > 0 && d.speed.lenght() > 0){
@@ -998,10 +1009,11 @@ public class River extends DefaultAnimation{
 			cell.flow_next.add(d.speed.clone().scale(d.water));
 			
 			//И так. С этой клеткой закончили. Теперь перейдём к следующей!
-			final var h_next = isValid(d.position) ? get(d.position).silt() : (cell.isEnd != null ? 0 : cell.silt() * 2);
+            var has_next = isValid(d.position) && get(d.position).inScrean;
+			final var h_next = has_next ? get(d.position).silt() : (cell.isEnd != null ? 0 : cell.silt() * 2);
 			
 			//Теперь перенесём массу пропорционально высоте и объёму воды!
-			final var c_eq = Math.max(0.0, (cell.silt() - h_next) * (1.0 + Drop.SILT_TRANSPORT * Cell.erf(0.4 * cell.waterNormalize())));
+			final var c_eq = Math.max(0.0, (cell.silt() - h_next) * (1.0 + Drop.SILT_TRANSPORT * cell.waterNormalize()));
 			final var del_c_eq = c_eq - d.silt;
 			final var trans = Math.min(cell.silt(), siltEff * del_c_eq);
 			
@@ -1012,7 +1024,7 @@ public class River extends DefaultAnimation{
 			d.silt /= 1 - Drop.EVAPORATION_RATE;
 			d.water*= 1 - Drop.EVAPORATION_RATE;
 			
-			if(!isValid(d.position)) return false;
+			if(!has_next) return false;
 			
 			d.age++;
 			return true;
@@ -1045,7 +1057,7 @@ public class River extends DefaultAnimation{
 		}
 		/**Моделируем осадки на игровом поле*/
 		public void precipitation(){
-			for (int i = 0; i < 1; i++) {
+			for (int i = 0; i < 1; i++) {//right.map.length
 				while(!right.precipitation(true)){}
 				while(!left.precipitation(false)){}
 			}
@@ -1087,19 +1099,19 @@ public class River extends DefaultAnimation{
 	public River(WorldView.Transforms transform, int w, int h){
 		super(transform);
 		//Поле, вода
-		int xw[] = new int[4];
+		/*int xw[] = new int[4];
 		int yw[] = new int[4];
 
 		xw[0] = xw[3] = transform.getZScrinX();
 		xw[1] = xw[2] = transform.getMScrinX();
 		yw[0] = yw[1] = 0;
-		yw[2] = yw[3] = h;
+		yw[2] = yw[3] = h;*/
 		sand = ColorRec.rectangle(0, 0, w, h, AllColors.SAND);
 		water = ColorRec.rectangle(0, 0, w, h, AllColors.WATER_RIVER);
 		
 		countWave = (int) Math.ceil(h / Wave.WIDTH);
-		leftBorder = transform.toScrinX(0);
-		rightBorder = transform.toScrinX(Configurations.getWidth()-1);
+		leftBorder = (int)(transform.getZScrinX() - transform.getDZScrin()/2 + 1);
+		rightBorder = (int)(transform.getMScrinX() + transform.getDZScrin()/2 - 1);
 		
 		final var count_cell = Configurations.getHeight();
 		if(count_cell <= 0) {
@@ -1116,6 +1128,7 @@ public class River extends DefaultAnimation{
 		state.setSize((int)(leftBorder - scale * Math.sqrt(3) * (count_cell - 0.5)), (int) (rightBorder), scale);
 		
 		//А теперь помечаем те клетки, которые отображаются на экране. Хоть капельку
+        Cell.wWigth = 1;
 		state.left.forEach(c -> {
 			var b = c.getBounds();
 			c.inScrean = b.x + b.getWidth() > 0 && b.x < w;
@@ -1123,6 +1136,7 @@ public class River extends DefaultAnimation{
 		state.right.forEach(c -> {
 			var b = c.getBounds();
 			c.inScrean = b.x + b.getWidth() > 0 && b.x < w;
+            if(c.inScrean && c.point.row == 1) Cell.wWigth = Math.max(Cell.wWigth,c.point.que + 1);
 		});
 	}
 	@Override
@@ -1143,6 +1157,10 @@ public class River extends DefaultAnimation{
 	}
 	@Override
 	public void world(Graphics2D g, Rectangle visible, java.awt.geom.Area field) {
+        var areal = new java.awt.geom.Area(state.left.figure);
+        var arear = new java.awt.geom.Area(state.right.figure);
+        field.add(areal);
+        field.add(arear);
 		sand.paint(g,field);
 		
 		state.left.forEach(c -> {
@@ -1154,9 +1172,9 @@ public class River extends DefaultAnimation{
 				c.draw(g,field);
 		});
 		
-		g.setColor(AllColors.WATER_RIVER);
-		g.fill(state.left.figure);
-		g.fill(state.right.figure);		
+		//g.setColor(AllColors.WATER_RIVER);
+        //g.fill(state.left.figure);
+        //g.fill(state.right.figure);
 	}
 	
 }
