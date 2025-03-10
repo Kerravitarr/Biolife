@@ -5,7 +5,6 @@
 package GUI;
 
 import Utils.MyMessageFormat;
-import Utils.SameStepCounter;
 import Utils.Utils;
 import java.awt.Color;
 import java.awt.Frame;
@@ -13,9 +12,7 @@ import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.text.MessageFormat;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import javax.swing.GroupLayout;
 import javax.swing.JPanel;
 import javax.swing.JToolTip;
@@ -417,9 +414,9 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 				child = next(childs,child);
 				var now = getNowStep(pref,child);
 				var cx = (xStart + stepXPerChild * pref) + ((xStart + stepXPerChild * now) - (xStart + stepXPerChild * pref)) / 2;
-				if(delColor > 0.5)
-					g.setColor(Color.WHITE);
-				else
+				//if(root == nodeInCenter)
+				//	g.setColor(Color.WHITE);
+				//else
 					g.setColor(Utils.getHSBColor(colorStart + stepColor * (now + pref)/2, 1.0, 1.0, 1.0));
 				final var cy = (int) (isTimeLine ? getMaxY() - (child.getTimeFounder()-startTimeOffset) * timeline : yPos - timeline);
 				g.drawLine(centerX, yPos, (int) cx, cy + TEXT_SIZE);
@@ -499,8 +496,8 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 			for(int i = 0 ; i < childs.size() ; i++) {
 				child = next(childs,child);
 				var now = getNowStep(pref,child);
-				if(delColor > 0.5) g.setColor(Color.WHITE);
-				else			   g.setColor(Utils.getHSBColor(colorStart + stepColor * (now+pref)/2, 1.0, 1.0, 1.0));
+				/*if(root == nodeInCenter) g.setColor(Color.WHITE);
+				else*/			   g.setColor(Utils.getHSBColor(colorStart + stepColor * (now+pref)/2, 1.0, 1.0, 1.0));
 				final var cr = (int) (isTimeLine? timeline * (child.getTimeFounder()-startTimeOffset) : r + timeline);
 				final var csa = startAngle + stepAnglePerChild * pref;
 				final var cea = startAngle + stepAnglePerChild * now;
@@ -872,6 +869,11 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
         });
 
         widthPropCells.setText("jToggleButton1");
+        widthPropCells.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                widthPropCellsActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -936,18 +938,22 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 
     private void curcleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_curcleActionPerformed
         isCurcleDiagram = curcle.isSelected();
-		 ((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
+		((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
     }//GEN-LAST:event_curcleActionPerformed
 
     private void _timeLineButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event__timeLineButtonActionPerformed
         isTimeLine = _timeLineButton.isSelected();
-		 ((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
+		((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
     }//GEN-LAST:event__timeLineButtonActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
         if(!isFirstStart) restart();
 		isFirstStart = true;
     }//GEN-LAST:event_formWindowOpened
+
+    private void widthPropCellsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_widthPropCellsActionPerformed
+        ((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
+    }//GEN-LAST:event_widthPropCellsActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JToggleButton _timeLineButton;
