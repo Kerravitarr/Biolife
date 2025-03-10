@@ -590,6 +590,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @return сколько в единицах HP энергии тут
 	 */
 	public static double getSunPower(Point pos){
+        if(!pos.valid()) return 0;
 		return suns.getE(pos);
 	}
 	/**Возвращает концентрацию минералов вокруг клетки
@@ -597,6 +598,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @return сколько в единицах MP энергии тут
 	 */
 	public static double getConcentrationMinerals(Point pos){
+        if(!pos.valid()) return 0;
 		return minerals.getE(pos);
 	}
 	/**Сохраняет текущий вид графического отображения

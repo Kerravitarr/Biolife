@@ -2,6 +2,7 @@ package MapObjects.dna;
 
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
+import java.awt.GradientPaint;
 
 /**
  * Специальный класс, по фатку представляющий доступ к массиву со всеми возможными функциями из ДНК
@@ -65,6 +66,8 @@ public class CommandList {
 			case BLOCK_2 + 7 -> new Swap(true);
 			case BLOCK_2 + 8 -> new Swap(false);
 
+			case BLOCK_3_1 - 2 -> new WhatGradient("Mineral", false, (c,p) -> c.mineralAround(p));
+			case BLOCK_3_1 - 1 -> new WhatGradient("Sun", false, (c,p) -> c.sunAround(p));
 			case BLOCK_3_1 -> new HowMuch("HP", false,cell -> cell.getHealth(),  AliveCellProtorype.MAX_HP);
 			case BLOCK_3_1 + 1 -> new HowMuch("MP", false, cell -> cell.getMineral(), AliveCellProtorype.MAX_MP);
 			case BLOCK_3_1 + 2 -> new HowMuch("Mucosa", false, cell -> cell.getMucosa());

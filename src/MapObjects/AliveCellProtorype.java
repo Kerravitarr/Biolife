@@ -579,26 +579,34 @@ public abstract class AliveCellProtorype extends CellObject {
 	public void addMineralTank(int add) {
 		mineralTank += add;
 	}
-	/**
-	 * Возвращает количество солнца вокруг
+	/** Возвращает количество солнца вокруг
 	 * @return количество солнца, которое может получить клетка. [0, Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER + 5]
 	 */
-	public double sunAround() {
+	public double sunAround() {return sunAround(getPos());}
+	/** Возвращает количество солнца вокруг
+     * @param pos Точка, в которй надо вернуть значение параметра
+	 * @return количество солнца, которое может получить клетка. [0, Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER + 5]
+	 */
+	public double sunAround(Point pos) {
 		if(getMineral() > 0){
 			//+100% света при наличии миниралов
 			final var t = 100 + 100 * getMineral() / AliveCell.MAX_MP;	
 			//Ну и энергию от солнца не забываем
-			return specMaxVal(Configurations.getSunPower(getPos()) * t / 100, Specialization.TYPE.PHOTOSYNTHESIS);
+			return specMaxVal(Configurations.getSunPower(pos) * t / 100, Specialization.TYPE.PHOTOSYNTHESIS);
 		} else {
-			return specMaxVal(Configurations.getSunPower(getPos()), Specialization.TYPE.PHOTOSYNTHESIS);
+			return specMaxVal(Configurations.getSunPower(pos), Specialization.TYPE.PHOTOSYNTHESIS);
 		}
 	}
-	/**
-	 * Возвращает количество минералов вокруг
+	/** Возвращает количество минералов вокруг
 	 * @return количество солнца, которое может получить клетка. [0, Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER + 5]
 	 */
-	public double mineralAround() {
-		return specMaxVal(Configurations.getConcentrationMinerals(getPos()), Specialization.TYPE.MINERALIZATION);
+	public double mineralAround() {return mineralAround(getPos());}
+	/**Возвращает количество минералов вокруг
+     * @param pos Точка, в которй надо вернуть значение параметра
+	 * @return количество солнца, которое может получить клетка. [0, Configurations.BASE_SUN_POWER + Configurations.ADD_SUN_POWER + 5]
+	 */
+	public double mineralAround(Point pos) {
+		return specMaxVal(Configurations.getConcentrationMinerals(pos), Specialization.TYPE.MINERALIZATION);
 	}
 
 	/** @return количество слизи у бота. Слизь защищает бота от присасывания других к нему*/

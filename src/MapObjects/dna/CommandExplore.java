@@ -31,6 +31,7 @@ public abstract class CommandExplore extends CommandDNA {
 	protected CommandExplore(int countParams, int countBranch) {super(countParams, countBranch);}
 	protected CommandExplore(int countParams, int countBranch, String propName) {super(countParams, countBranch,propName);}
 	protected CommandExplore(boolean isAbsolute,int countParams, int countBranch) {super(isAbsolute,countParams, countBranch);}
+	protected CommandExplore(boolean isAbsolute,int countParams, int countBranch, String propName) {super(isAbsolute,countParams, countBranch,propName);}
 
 	
 	@Override

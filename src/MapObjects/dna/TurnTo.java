@@ -4,7 +4,6 @@ import Calculations.Configurations;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.OBJECT;
-import Utils.MyMessageFormat;
 import Calculations.Point.DIRECTION;
 
 /**
