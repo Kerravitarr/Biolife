@@ -1,0 +1,116 @@
+package Utils;
+
+import java.util.ArrayDeque;
+import java.util.Iterator;
+
+/**
+ *Буфер сжатия. Его основная фишка в работе, постараюсь объяснить:
+ * Шаг 1: Пришла 1 и заняла своё место {1,0}→1 [1,0]. В буфере 2 пока добавляется сумма {1,0}→1 [1,0]
+Шаг 2: Пришла 2 и сдвинула 1 на следующее место {2,1}→3 [3,0]. В буфере 2 обновляется сумма {3,0}→3 [3,0]
+Шаг 3: Пришла 3. В буфере уже два числа 2 и 1, поэтому их сумма 3 переходит дальше, а буфер сдвигается и записывается 3 {3,2}→5 [5,3]. В буфере 2 сумма переходит дальше, а в начало встаёт новая сумма {5,3}→8 [8,0]
+Шаг 4: Пришла 4. 4 опять записывается в первую ячейку {4,3}→7 [7,3]. В буфере 2 пока меняется только первое число {7,3}→10 [10,0]
+Шаг 5: Пришла 5. Обновляем значения и записываем 5 в своё место {5,4}→9 [9,7]. В буфере 2 тоже сдвигаем данные  {9,7}→16 [16,10]
+* Таким образом, набирая эти буферы в цепочку, в последнем буффере всегда будут все значения, при этом каждый следующий буффер в масштабе меньше предыдущего
+ * @author Илья
+ */
+public class ZipBuffer{
+    /**Большое кольцо, которое хранит значения*/
+    private final ArrayDeque<Long> bigRing;
+    /**Малое кольцо, которое хранит значения только для малой суммы*/
+    private final ArrayDeque<Long> miniRing;
+    /**Размер буфера*/
+    private final int size;
+    /**На сколько надо сжимать входные значения*/
+    private final int zip;
+    /**Следующий буфер в цепочке*/
+    private final ZipBuffer next;
+    
+    /**Сколько элементов в малом кольце*/
+    private long minRingSize = 0;
+    /**Сумма элементов в малом кольце*/
+    private long minRingSum = 0;
+    
+    /**Создаёт элемент буффера
+     * @param size количество элементов в этом буфере
+     * @param zip на сколько сжимать входящие значения
+     * @param next следующий буфер
+     */
+    public ZipBuffer(int size, int zip, ZipBuffer next){
+        bigRing = new ArrayDeque<>(Math.max(1,size));
+        miniRing = new ArrayDeque<>(Math.max(0,zip));
+        for (int i = 0; i < size; i++) {bigRing.add(0l);}
+        for (int i = 0; i < zip; i++) {miniRing.add(0l);}
+        this.zip = zip;
+        this.size = size;
+        this.next = next;
+    }
+    /**Создаёт элемент буффера
+     * @param size количество элементов в этом буфере
+     * @param zip на сколько сжимать входящие значения
+     */
+    public ZipBuffer(int size, int zip){this(size,zip,null);}
+    /**Создаёт элемент буффера
+     * @param size количество элементов в этом буфере
+     */
+    public ZipBuffer(int size){this(size,1);}
+    /**Создаёт буфер суммы. В нём будет только один элемент, который хранит все возможные значения*/
+    public ZipBuffer(){this(-1);}
+    /**Добавляет элемент в буфер
+     * @param element 
+     */
+    public void add(long element){
+        if(size < 1){
+            bigRing.removeFirst();
+            bigRing.addFirst(minRingSum+=element);
+        } else {
+            if(minRingSize++ % zip == 0){
+                bigRing.removeLast();
+                bigRing.addFirst(minRingSum);
+                if(next != null){
+                    next.add(minRingSum);
+                    next.readd(0);
+                }
+            }
+            minRingSum += element - miniRing.removeLast();
+            miniRing.addFirst(element);
+            bigRing.removeFirst();
+            bigRing.addFirst(minRingSum);
+            if(next != null)
+                next.readd(minRingSum);
+        }
+    }
+    /**Внутренний метод, нужен, чтобы изменить значение внутреннего буфера, пока остальные значения не изменились
+     * @param element 
+     */
+    private void readd(long element){
+        minRingSum += element - miniRing.getFirst();
+        miniRing.removeFirst();
+        miniRing.addFirst(element);
+        bigRing.removeFirst();
+        bigRing.addFirst(minRingSum);
+    }
+
+    @Override
+    public String toString() {
+        var sb = new StringBuffer();
+        sb.append('[');
+        sb.append('{');
+        var isFirst = true;
+        for (Iterator iterator = miniRing.iterator(); iterator.hasNext();) {
+            if(isFirst) isFirst = false;
+            else sb.append(',');
+            sb.append(iterator.next());
+        }
+        sb.append("}->");
+        isFirst = true;
+        for (Iterator iterator = bigRing.iterator(); iterator.hasNext();) {
+            if(isFirst) isFirst = false;
+            else sb.append(',');
+            sb.append(iterator.next());
+        }
+        sb.append(']');
+        if(next != null)
+            sb.append(next);
+        return sb.toString();
+    }
+}
