@@ -155,7 +155,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	/**Панель, на которой  рисуется дерево эволюции*/
 	public class DrawPanelEvoTree extends JPanel {
 		/**Нужно пересчитать дерево*/
-		static boolean isNeedUpdate = false;
+		private static boolean isNeedUpdate = false;
 		/**Максимальная глубина, на которую могружается дерево. Количество ветвей по оси Y (по R), которые ещё имеют цифровое обозначение*/
 		private int maxDeep = 0;
 		/**Сколько у нас будет засечек времени при отображении диограммы в хронологическом порядке*/
@@ -642,7 +642,12 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	 */
 	private void setRootNode(EvolutionTree.Node newNode){
 		final var tree = Configurations.tree;
-		tree.resetColor();
+        while(true){
+            try{
+                tree.resetColor();
+                break;
+            }catch(Exception _){}
+        }
 		nodeInCenter = newNode;
 		updateColor();
 		DrawPanelEvoTree.isNeedUpdate = true;
@@ -868,6 +873,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
             }
         });
 
+        widthPropCells.setSelected(true);
         widthPropCells.setText("jToggleButton1");
         widthPropCells.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -917,7 +923,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
     }// </editor-fold>//GEN-END:initComponents
 
     private void jPanelTreeComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_jPanelTreeComponentResized
-        ((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
+        DrawPanelEvoTree.isNeedUpdate = true;
     }//GEN-LAST:event_jPanelTreeComponentResized
 
     private void formKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyReleased
@@ -938,12 +944,12 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 
     private void curcleActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_curcleActionPerformed
         isCurcleDiagram = curcle.isSelected();
-		((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
+		DrawPanelEvoTree.isNeedUpdate = true;
     }//GEN-LAST:event_curcleActionPerformed
 
     private void _timeLineButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event__timeLineButtonActionPerformed
         isTimeLine = _timeLineButton.isSelected();
-		((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
+		DrawPanelEvoTree.isNeedUpdate = true;
     }//GEN-LAST:event__timeLineButtonActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
@@ -952,7 +958,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
     }//GEN-LAST:event_formWindowOpened
 
     private void widthPropCellsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_widthPropCellsActionPerformed
-        ((DrawPanelEvoTree)jPanelTree).isNeedUpdate = true;
+        DrawPanelEvoTree.isNeedUpdate = true;
     }//GEN-LAST:event_widthPropCellsActionPerformed
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

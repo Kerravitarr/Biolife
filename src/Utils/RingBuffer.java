@@ -4,9 +4,6 @@
  */
 package Utils;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
 /**
  *Колцевой буефер с перезаписью элементов!!!
  * То есть, когда в нём заканчивается место, он просто удаляет последний элемент и на его места заносит новый!
@@ -52,7 +49,7 @@ public class RingBuffer<T> {
 	/**Кладёт новый элемент в буфер. Если в буфере нет места - то перезаписывает хвост
 	 * @param item элемент, который будет положен в голову буфера
 	 */
-	public void push(T item) throws IndexOutOfBoundsException {
+	public void push(T item){
 		if (isFull()) readSequence++;
         data[++writeSequence % capacity] = item;
 	}

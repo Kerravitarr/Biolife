@@ -357,7 +357,7 @@ public class Aquarium extends DefaultAnimation{
 	}
 	@Override
 	protected void nextFrame(){
-		state.second = (state.second + 10 * 60 ) % Static.YEAR_LONG;
+		state.second = (state.second + 60) % Static.YEAR_LONG;
 		var day = state.second / Static.DAY_LONG;
 		if(day != state.day){
 			state.day = day;
