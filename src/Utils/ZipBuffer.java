@@ -66,17 +66,13 @@ public class ZipBuffer{
             if(minRingSize++ % zip == 0){
                 bigRing.removeLast();
                 bigRing.addFirst(minRingSum);
-                if(next != null){
-                    next.add(minRingSum);
-                    next.readd(0);
-                }
+                if(next != null) next.add(minRingSum);
             }
             minRingSum += element - miniRing.removeLast();
             miniRing.addFirst(element);
             bigRing.removeFirst();
             bigRing.addFirst(minRingSum);
-            if(next != null)
-                next.readd(minRingSum);
+            if(next != null) next.readd(minRingSum);
         }
     }
     /**Внутренний метод, нужен, чтобы изменить значение внутреннего буфера, пока остальные значения не изменились
