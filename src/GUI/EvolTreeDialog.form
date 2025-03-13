@@ -172,6 +172,7 @@
             </Component>
             <Component class="javax.swing.JToggleButton" name="widthPropCells">
               <Properties>
+                <Property name="selected" type="boolean" value="true"/>
                 <Property name="text" type="java.lang.String" value="jToggleButton1"/>
               </Properties>
               <Events>

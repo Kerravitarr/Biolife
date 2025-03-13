@@ -153,7 +153,7 @@ public abstract class CellObject {
 				case LV_ALIVE -> {
 					final var acp = ((AliveCellProtorype)this);
 					//Воздействие источников минералов на живую клетку
-					acp.addMineral((long) acp.mineralAround());
+					acp.addMineral(acp.mineralAround());
 					//Всплытие/погружение
 					if (acp.getBuoyancy() != 0) {
 						if(acp.getBuoyancy() < 0) move(DIRECTION.DOWN, 1d/(acp.getBuoyancy() + 101d));
