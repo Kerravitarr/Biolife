@@ -262,13 +262,14 @@ public class WorldView extends javax.swing.JPanel {
 					buffer[bi] = new java.awt.image.BufferedImage(w, h, java.awt.image.BufferedImage.TYPE_INT_ARGB);
 					step[bi] = 0;
 				}
-				if(!isStep || step[bi] != Configurations.world.step){
+				if(!isStep || step[bi] != Configurations.world.step || !Configurations.world.isActiv()){
 					//Если мы неотмеряем шаги или у нас изменился шаг, то перерисовываем
 					step[bi] = Configurations.world.step;
 					try{
-						var g = (Graphics2D)buffer[bi].getGraphics();
+						var g = (Graphics2D)buffer[bi].createGraphics();
 						g.setBackground(ALF_COLOR);
 						print.accept(g);
+                        g.dispose();
 					} catch(Exception ex){ //Вообще не ожидаются такие события... Но кто мы такие, чтобы спорить с фактами?
 						Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 					} finally {
@@ -296,7 +297,10 @@ public class WorldView extends javax.swing.JPanel {
 		private final java.awt.Point to;
 		/**Буффер в который мы и рисуем эту часть поля*/
 		private final Buffer buffer;
-		
+		/**Входные точки - это клетки мирового поля, определяющие границы рисовательного кубика
+         * @param f
+         * @param t 
+         */
 		public PrintTask(java.awt.Point f, java.awt.Point t){
 			from = f; to=t;
 			if(from == null){
@@ -309,13 +313,13 @@ public class WorldView extends javax.swing.JPanel {
 							var x1 = (int)to.getX();
 							var y0 = (int)from.getY();
 							var y1 = (int)to.getY();
-							if(Configurations.world.isActiv()){
+							//if(Configurations.world.isActiv()){
 								x0 = Math.max(x0, visible[0].getX());
 								x1 = Math.min(x1, visible[1].getX()+1);
 								y0 = Math.max(y0, visible[0].getY());
 								y1 = Math.min(y1, visible[1].getY()+1);
 								if(x0 > x1 || y0 > y1) return;
-							}
+							//}
 							var sw = transforms.toScrin(x1 - x0);
 							var sh = transforms.toScrin(y1 - y0);
 							g.translate(-transforms.toDScrinX(from.getX()-0.5), -transforms.toDScrinY(from.getY()-0.5));
@@ -456,11 +460,10 @@ public class WorldView extends javax.swing.JPanel {
 			if(buffers.isEmpty() || buffers.get(0).to.getX() != Configurations.getWidth()-1 ||  buffers.get(0).to.getY() != Configurations.getHeight()-1){
 				buffers.clear();
 				buffers.add(new PrintTask(null, new java.awt.Point(Configurations.getWidth()-1, Configurations.getHeight()-1)));
-				var step = 10;
-                var r = transforms.getDZScrin();
+				var step = 10; //Сколько клеток у нас будет в одном буффере
 				for(var x = 0 ; x < Configurations.getWidth()-1 + step; x += step){
 					for(var y = 0 ; y < Configurations.getHeight()-1 + step; y += step){
-						buffers.add(new PrintTask(new java.awt.Point(x-1,y-1), new java.awt.Point(x+step+1, y + step+1)));
+						buffers.add(new PrintTask(new java.awt.Point(x-1,y-1), new java.awt.Point(x+step+2, y + step+2)));
 					}
 				}
 			}
@@ -469,14 +472,13 @@ public class WorldView extends javax.swing.JPanel {
 			}
 			fps_buffer.interapt();
 		}
-        //System.out.println(fps_buffer.dUPS());
-		Configurations.addOnceTask(this::rebuildField, fps_buffer.UPS() > 25 ? 100 : 0);
+		//Configurations.addOnceTask(this::rebuildField, fps_buffer.UPS() > 25 ? 100 : 0);
 	}
 	
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
-		/**/final var cms = System.currentTimeMillis();
+		/*final var cms = System.currentTimeMillis();
 		var del = cms - lastUpdate;
 		if(del > 0){
 			lastUpdate = cms + 1000/25; //25 кадров в секунду
@@ -496,7 +498,7 @@ public class WorldView extends javax.swing.JPanel {
 			Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 		}
 		repaint(fps_repaint.UPS() > 25 ? 100 : 0);
-		/*
+		/*/
 		
 		final var cms = System.currentTimeMillis();
 		if(cms > lastUpdate){
@@ -512,6 +514,7 @@ public class WorldView extends javax.swing.JPanel {
 		} catch(Exception ex){ //Вообще не ожидаются такие события... Но кто мы такие, чтобы спорить с фактами?
 			Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 		}
+        fps_buffer.interapt();
 		fps_repaint.interapt();
 
 		repaint();/**/
