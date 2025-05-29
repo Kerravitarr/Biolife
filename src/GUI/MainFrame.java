@@ -120,11 +120,28 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		contentPane.add(makeWorldPanel(Configurations.getViewer().get(WorldView.class)), BorderLayout.CENTER);
 		contentPane.add(makePanel(Configurations.getViewer().get("Menu"), BorderLayout.NORTH), BorderLayout.NORTH);
 		
-		t = ((WorldView) Configurations.getViewer().get("World")).createToolTip();
+		t = Configurations.getViewer().get(WorldView.class).createToolTip();
 		t.setTipText(Configurations.getProperty(MainFrame.class,"autosave"));
 		popupFactory = PopupFactory.getSharedInstance();
 		
 		Configurations.addTask(this);
+        
+        
+        Utils.Utils.isAssert(() -> {
+            Configurations.world.stop();
+            var f = Utils.Utils.random(0, Configurations.world.getCount(CellObject.LV_STATUS.LV_ALIVE));
+            for(var x = 0; x < Configurations.getWidth(); x++){
+                for(var y = 0; y < Configurations.getHeight(); y++){
+                    if(Configurations.world.get(Calculations.Point.create(x, y)) instanceof MapObjects.AliveCell ac){
+                        if(--f > 0) continue;
+                        Configurations.getViewer().get(BotInfo.class).setVisible(true);
+                        Configurations.getViewer().get(BotInfo.class).setCell(ac);
+                        Configurations.getViewer().get(Menu.class).editCell(Menu.EDIT_T.FROM_FIELD);
+                        return;
+                    }
+                }
+            }
+        });
 	}
 
 	/** This method is called from within the constructor to

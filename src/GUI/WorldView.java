@@ -444,13 +444,15 @@ public class WorldView extends javax.swing.JPanel {
     }//GEN-LAST:event_formMouseDragged
 
     private void formMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseClicked
-        if ( Configurations.getViewer() instanceof DefaultViewer df) {
+        if (Configurations.getViewer() instanceof DefaultViewer df) {
 			final var info = df.getBotInfo();
 			if(info.isVisible()) {
 				Point point = transforms.toWorldPoint(evt);
 				if(point != null && point.valid())
 					info.setCell(Configurations.world.get(point));
 			}
+            //System.out.println("S = " + Configurations.getSunPower(transforms.toWorldPoint(evt)));
+            //System.out.println("M = " + Configurations.getConcentrationMinerals(transforms.toWorldPoint(evt)));
 		}
     }//GEN-LAST:event_formMouseClicked
 

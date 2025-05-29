@@ -184,7 +184,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			case LINE_H,LINE_V -> DIRTY_WATER =  DEF_SUN_POWER / (height * 0.33);
 			case RECTANGLE -> DIRTY_WATER =  DEF_SUN_POWER / (Math.min(height, width) * 0.5); //Чтобы освещалась половина мира
 			case FIELD_R -> DIRTY_WATER = DEF_SUN_POWER / (Math.min(height, width) * 0.2); //Чтобы освещалась пятая часть мира
-			case CIRCLE -> DIRTY_WATER = DEF_SUN_POWER / (Math.min(height, width) * 0.25); //В два раза больше, потому что у нас солнце со всех сторон мира
+			case CIRCLE -> DIRTY_WATER = DEF_SUN_POWER / (Math.min(height, width) * 0.5); //В два раза больше, потому что у нас солнце со всех сторон мира
 			default -> throw new AssertionError();
 		}
 		VISCOSITY = 0.1;
@@ -262,10 +262,10 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				mapG.put(CellObject.LV_STATUS.valueOf(type), new Gravitation(gj.get(type), version));
 			}
 			buildMap(this, mapG);
-			AGGRESSIVE_ENVIRONMENT = configWorld.get("AGGRESSIVE_ENVIRONMENT");
+			AGGRESSIVE_ENVIRONMENT = configWorld.get(double.class,"AGGRESSIVE_ENVIRONMENT");
 			TIK_TO_EXIT = configWorld.get(double.class,"TIK_TO_EXIT");
 			DIRTY_WATER = configWorld.get("DIRTY_WATER");
-			VISCOSITY = configWorld.get("VISCOSITY");
+			VISCOSITY = configWorld.get(double.class,"VISCOSITY");
 			SAVE_PERIOD = configWorld.getL("SAVE_PERIOD");
 			COUNT_SAVE = configWorld.get("COUNT_SAVE");
 			for(final var j : configWorld.getAJ("SUNS")){
@@ -330,7 +330,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		switch (type) {
 			case LINE_H -> {
 				buildMap(new Configurations(type, width, height), new EnumMap<CellObject.LV_STATUS, Gravitation>(CellObject.LV_STATUS.class){{put(CellObject.LV_STATUS.LV_ORGANIC, new Gravitation(20, Gravitation.Direction.DOWN));}});
-				suns.add(new SunRectangle(DEF_SUN_POWER, new Trajectory(Point.create(width/2, 0)), (int) (width* 0.77), 1, false,"Постоянное"));
+                suns.add(new SunRectangle(DEF_SUN_POWER, new Trajectory(Point.create(width/2, 0)), (int) (width* 0.77), 1, false,"Постоянное"));
 				suns.add(new SunEllipse(
 						DEF_SUN_POWER, 
 						new TrajectoryPolyLine(Utils.Utils.round(AliveCell.MAX_HP / DEF_SUN_POWER / (width/8)),false, Point.create(width/2, 0), Point.create(width-1, 0), Point.create(0, 0), Point.create(width/2-1, 0)), 
@@ -440,13 +440,9 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				buildMap(new Configurations(type, width, height), null);
 				//В этом мире буйства воды будет множество водоворотов. Какие-то с минералами, какие-то с солнцами. Одни будут двигаться очень медленно, другие очень быстро.
 				//Какие-то будут засасываться. Какие-то будут выталкиваться. Выталкивающие вкуснее!
-				final var ht = new TrajectoryPolyLine(100,false,Point.create(1, height/2),Point.create(width-1, height/2),Point.create(width/2, height/2));
-				streams.add(new StreamHorizontal( ht.clone(),width/5,height, -3,"Вал"));
-				
-				final var sPower = DEF_SUN_POWER; //Сколько энергии у солнца и минералов
-				final var atten = Configurations.confoguration.DIRTY_WATER;
-				final var size = (int) Math.round(Math.min(height, width) / sPower);
-				final var SD =  (int) Math.round(size + sPower * atten);
+				final var ht = new TrajectoryPolyLine(200,false,Point.create(1, height/2),Point.create(width-1, height/2),Point.create(width/2, height/2));
+                var def_stream = 5;
+				streams.add(new StreamHorizontal( ht.clone(),width/5,height, -def_stream,"Вал"));
 				//Скорости течений будем задавать простыми числами. Это нужно, чтобы создать большую вариативность
 				//Среди потоков
 				//А вот тут функция нахождения простого числа
@@ -480,9 +476,18 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 						return true;
 					}
 				};
-				while(primeClass.getNext() < 100){} //Отматываем до тех пор, пока не будет число больше 100. Просто 100 - медленно
+				while(primeClass.getNext() < 200){} //Отматываем до тех пор, пока не будет число больше 100. Просто 100 - слишком быстро
 				
-				for(var i = 0 ; i < 16 ; i++){
+				final var wsize = (Math.min(height, width) * 0.2);
+				final var sPower = DEF_SUN_POWER; //Сколько энергии у солнца и минералов
+				final var sAtten = Configurations.confoguration.DIRTY_WATER;
+				final var SUN_R = (int) Math.round(wsize / sPower);
+				final var SUN_FULL_R =  (int) Math.round(SUN_R + sPower / sAtten);
+                
+				final var mPower = DEF_MIN_POWER; //Сколько энергии у солнца и минералов
+				final var mAtten = mPower / (SUN_FULL_R - SUN_R);
+                
+				for(var i = 0 ; i < 32; i++){
 					final var speed = primeClass.getNext();
 					final var T = switch(i % 8){
 						case 0 -> new TrajectoryRandom(speed,i, Point.create(width-1, height-1),Point.create(0, 0),width*2, height*2);
@@ -491,17 +496,20 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 						case 5 -> new TrajectoryRandom(speed,i, Point.create(0, 0),Point.create(0, 0),width*2, height*2);
 						default /*case 2, 3, 6, 7*/ -> new TrajectoryRandom(speed,i, Point.create(width/2, height/2),Point.create(0, 0),width*2, height*2);
 					};
-					final var minSA = i+1;
-					final var maxSA = (int)Math.pow(i+1, 2);
-					final var SA = i % 4 < 2 ? new StreamAttenuation.PowerFunctionStreamAttenuation(minSA, maxSA,4) : new StreamAttenuation.PowerFunctionStreamAttenuation(-minSA, -maxSA,4);
+					final var minSA = i+def_stream;
+					final var maxSA = (int)Math.pow(minSA, 2);
+					final var SA = switch(i % 4){
+                        case 0,1 -> new StreamAttenuation.PowerFunctionStreamAttenuation(minSA, maxSA,4);
+                        default -> new StreamAttenuation.PowerFunctionStreamAttenuation(-minSA, -maxSA,4);
+                    };
 					final var name = "№"+i;
 					if(i % 2 == 0){
-						suns.add(new SunEllipse(DEF_SUN_POWER,T.clone(), size, false,name));
+						suns.add(new SunEllipse(sPower,T.clone(), SUN_R, false,name));
 					} else {
-						minerals.add(new MineralEllipse(DEF_MIN_POWER,atten,T.clone(), size, false,name));
+						minerals.add(new MineralEllipse(mPower,mAtten,T.clone(), SUN_R, false,name));
 					}
-					streams.add(new StreamEllipse(T.clone(), SD,SA,name));
-					streams.add(new StreamSwirl(T.clone(),  SD, SA,name));
+                    streams.add(new StreamEllipse(T.clone(), SUN_FULL_R*2, SA,name));
+                    streams.add(new StreamSwirl(T.clone(),  SUN_FULL_R*2, SA,name));
 				}
 			}
 			case CIRCLE -> {
@@ -513,14 +521,15 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 				suns.add(new SunEllipse(
 						DEF_SUN_POWER, 
 						new TrajectoryEllipse(50,Point.create(width/2, height/2), 0, width, height), 
-						Math.min(width, height)/5, 
+						Math.min(width, height)/4, 
 						false,"Движущаяся"));
-				minerals.add(new MineralEllipse(AliveCell.HP_PER_STEP * 10,confoguration.DIRTY_WATER, new Trajectory(Point.create(width/2, height/2)),width/10, height/10, false,"Центральная залеж"));	
+				var DIRTY_WATERBY_MYNERAL = DEF_MIN_POWER / (Math.min(height, width) * 0.5);
+				minerals.add(new MineralEllipse(DEF_MIN_POWER,DIRTY_WATERBY_MYNERAL, new Trajectory(Point.create(width/2, height/2)),width/10, height/10, false,"Центральная залеж"));	
 				//Путешествующая залеж
 				minerals.add(new MineralEllipse(
-						AliveCell.HP_PER_STEP * 10, confoguration.DIRTY_WATER,
+						DEF_MIN_POWER, DIRTY_WATERBY_MYNERAL,
 						new TrajectoryEllipse(-60,Point.create(width/2, height/2), 0, (int)(width/20 + 15 * confoguration.DIRTY_WATER), (int)(height/20 + 15 * confoguration.DIRTY_WATER)), 
-						Math.min(width, height)/5, 
+						Math.min(width, height)/4, 
 						false,"Движущаяся"));	
 			}
 			default -> throw new AssertionError();

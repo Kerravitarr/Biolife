@@ -5,26 +5,36 @@
 package GUI;
 
 import Calculations.Configurations;
+import Calculations.Point.PointD;
 import MapObjects.AliveCell;
 import MapObjects.AliveCellProtorype;
 import MapObjects.CellObject;
 import MapObjects.Poison;
 import MapObjects.dna.CommandDNA;
+import MapObjects.dna.CommandExplore;
 import MapObjects.dna.DNA;
 import Utils.JSON;
 import Utils.RingBuffer;
 import Utils.SaveAndLoad;
+import Utils.drawsUtil.alignmentX;
+import Utils.drawsUtil.alignmentY;
+
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Point;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseWheelEvent;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.IntStream;
@@ -43,221 +53,250 @@ public class CellEditor extends javax.swing.JDialog {
 	private enum POPUP_STATUS {
 		UNDEF, INC, DEC, REM, REM_GEN,ADD,COPY
 	}
-
-	/** Creates new form CellEditor */
-	public CellEditor(AliveCell edit) {
-		super();
-		CommandDNA.setFullMod(false);
-		initComponents();
-		setAlwaysOnTop(true);
-		centralPanel.add(new PaintJPanel(), java.awt.BorderLayout.CENTER);
-		
-		setButtonParam(decrement);
-		setButtonParam(increment);
-		setButtonParam(jampBack);
-		
-		
-		setObject(edit);
-		
-	}
-	/**Делает кнопочки покрасивее
-	 * @param button 
-	 */
-	private void setButtonParam(JButton button) {
-		button.setContentAreaFilled(false);
-		button.setFocusable(false);
-	}
-	/** @param o новый объет, который мы описываем*/
-	private void setObject(AliveCell o){
-		object = o.clone();
-		makeSettingsPanel();
-		makeInterraptPanel();
-		updateHeaderPanel();
-		
-		nextDNA(0);
-		while(!history.isEmpty())history.pop();
-	}
-	
-	
-	/**Создаёт панель настроек*/
-	private void makeSettingsPanel() {
-		settingsPanel.removeAll();
-		final var ST = AliveCellProtorype.Specialization.TYPE.values;
-		
-		final var spec = new ArrayList<SettingsSlider>(ST.length);
-		for(final var s : ST){
-			final var slider = new SettingsSlider<>(CellEditor.class, "specialization."+s.name(),
-					0, 50, 100, 0, object.getSpecialization().get(s), 100, e->{
-						object.getSpecialization().set(s, e);
-						for (int i = 0; i < spec.size(); i++)
-							spec.get(i).setValue(object.getSpecialization().get(ST[i]));
-					});
-			spec.add(slider);
-			settingsPanel.add(slider);
-		}
-		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.HP",
-					0d, AliveCellProtorype.START_HP, AliveCellProtorype.MAX_HP, 0d, object.getHealth(), null, 
-				e->object.setHealth(e)));
-		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.MP",
-					0d, AliveCellProtorype.START_MP, AliveCellProtorype.MAX_MP, 0d, object.getMineral(), null, 
-				e->object.setMineral(e)));
-		final var PT = Poison.TYPE.vals;
-		final var poisonPower = new SettingsSlider<>(CellEditor.class, "settingsPanel.poisonPower",
-					0d, 0d, Poison.MAX_TOXIC, 0d, object.getPosionPower(), null, 
-				e->object.setPosionPower(e));
-		poisonPower.setVisible(object.getPosionType() != Poison.TYPE.UNEQUIPPED);
-		final var PoiosnTypeS = new SettingsSelect<>(CellEditor.class, "settingsPanel.poisonType", PT, Poison.TYPE.UNEQUIPPED, object.getPosionType(), e -> {
-			object.setPosionType(e);
-			poisonPower.setValue(object.getPosionPower());
-			poisonPower.setVisible(e != Poison.TYPE.UNEQUIPPED);
-		});
-		settingsPanel.add(PoiosnTypeS);
-		settingsPanel.add(poisonPower);
-		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.buoyancy",
-					-100, 0, 100, -100, object.getBuoyancy(), 100, 
-				e->object.setBuoyancy(e)));
-		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.hp_by_div",
-					0, (int)AliveCellProtorype.MAX_HP/10, (int)AliveCellProtorype.MAX_HP, 0, object.getHp_by_div(), null, 
-				e->object.setHp_by_div(e)));
-		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.tolerance",
-					0, 2, AliveCellProtorype.DEF_MINDE_SIZE, 0, object.getTolerance(), null, 
-				e->object.setTolerance(e)));
-		settingsPanel.add(javax.swing.Box.createVerticalGlue()); //Чтобы кнопки были внизу
-		
-		final var panelSL = new javax.swing.JPanel();
-		panelSL.setLayout(new javax.swing.BoxLayout(panelSL, javax.swing.BoxLayout.X_AXIS));
-		{
-			final var load = new javax.swing.JButton();
-			Configurations.setIcon(load,"loadCell");
-			load.addActionListener(e -> {
-				LoadSaveFactory.load("BioLife", "zbcell", filename -> {
-					var js = SaveAndLoad.load(filename);
-					try{
-						final var c = js.load((j, version)-> {
-							final var node = Configurations.tree.makeTree();
-							j.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
-							final var acell = new AliveCell(j, Configurations.tree, version);
-							node.remove();
-							return acell;
-						},"cell");
-						setObject(c);
-					} catch (Exception ex){
-						Logger.getLogger(CellEditor.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-						JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
+    ///Узел ДНК на графе
+    private static class DNA_node{
+        private final static int sizeCMDS = (int)(Math.log10(MapObjects.dna.CommandList.list.length)+1);
+        private final static int sizeDNA = (int)(Math.log10(MapObjects.AliveCellProtorype.MAX_MINDE_SIZE)+1);
+        ///Адрес команды в ДНК
+        public final int index;
+        ///Сама команда
+        public final CommandDNA cmd;
+        ///Описание параметров, если они, конечно, есть
+        public final List<String> params = new ArrayList<>();
+        ///Описание ветвей, если они есть
+        public final List<String> branchs = new ArrayList<>();
+        ///Все предыдущие команды
+        public final List<Integer> prefure;
+        ///Все следующие команды
+        public final List<Integer> next = new ArrayList<>();
+        ///Все связи этой команды - объединение векторов предыдущих и следующих
+        private List<Integer> _connection;
+        
+        ///Местоположение узла
+        public PointD center = new PointD(Math.random()*2 - 1, Math.random()*2 - 1);
+        /**Скорость*/
+        public PointD speed = new PointD(0, 0);
+        /**Сила, действующая на него*/
+        public PointD forse = new PointD(0, 0);
+        ///Указатель, что узел является корнем
+        public boolean isRoot = false;
+        
+        public DNA_node(int index,CommandDNA cmd,List<Integer> prefure){
+            this.index = index;
+            this.cmd = cmd;
+            this.prefure = prefure;
+        }
+        ///Заверешно построение дерева, надо зафиксировать результаты
+        public void end(){
+            _connection = java.util.stream.Stream.concat(prefure.stream(), next.stream()).distinct().toList();
+        }
+        ///@return список всех узлов, с которыми мы связаны
+        public List<Integer> getConnection(){return _connection;}
+        /**Обновляте значение центральной точки в зависимости от скорости
+        * @param cx центр экрана по x
+        * @param cy центр экрана по y
+        */
+       public void updateCenter(double cx, double cy){
+           if(isRoot) speed = new PointD(0,0);
+           if(!isRoot)
+               center = center.add(speed);
+       }
+        @Override
+        public String toString() {
+            /*return String.format("%0"+sizeDNA+"d: %s F: [%s] T: [%s]", index,cmd.toString(),
+                    String.join(",", prefure.stream().map(v -> String.format("%0"+sizeCMDS+"d", v)).toArray(String[]::new)),
+                    String.join(",", next.stream().map(v -> String.format("%0"+sizeCMDS+"d", v)).toArray(String[]::new))
+                );*/
+            if(cmd.getCountParams() == 0){
+                return String.format("[%d]\\n%s",index, cmd.getLongName());
+            } else {
+                var sb = new StringBuffer();
+                for (int i = 0; i < params.size(); i++) {
+                    String p = params.get(i);
+                    sb.append("\\n").append("П").append(i+1).append(": ").append(p.replaceAll("\"", "'"));
+                }
+                return String.format("[%d]\\n%s%s",index, cmd.getLongName(),sb);
+            }
+        }
+    }
+    ///Графф, построенный на основе ДНК
+    private static class DNA_Tree{
+		/**Гравитация*/
+		private static final double G = 1;
+		/**Сила пружинки, на которую навешена связь*/
+		private static final double K = 1e-3;
+		/**Сопротивление движению*/
+		private static final double FRICTION = 0.3;
+		/**Сопротивление движению для связей*/
+		private static final double FRICTION_CON = FRICTION;
+		/**Масса панелек*/
+		private static final double MASS = 10;
+        
+        ///Основное дерево
+        public Map<Integer, DNA_node> main = new HashMap<>();
+        ///Деревья прерываний
+        public Map<Integer, DNA_node>[] interrupts = new Map[CellObject.OBJECT.lenght];
+        ///Корень, куда у нас указывает PC
+        private DNA_node root;
+        ///Какое дерево мы рассматриваем
+        private Map<Integer, DNA_node> selectTree;
+        
+        public DNA_Tree(AliveCell cell, int width, int height){
+            var dna = cell.getDna();
+			final var PC = dna.getPC();
+            ///Граф, построенный на основе ДНК
+            makeGraph(main,cell, dna,PC, -1,false);
+            main.forEach((k,v) -> v.end());
+            setRoot(root = main.get(PC));
+            selectTree = main;
+            for (int i = 0; i < interrupts.length; i++) {
+                makeGraph(interrupts[i] = new HashMap<>(), cell,dna,dna.interrupts[i], -1,true);
+                interrupts[i].forEach((k,v) -> v.end());
+            }
+			dna.next(PC - dna.getPC()); //Возращаем всё взад
+            System.out.println("Мозг бота");
+            main.values()
+                .stream()
+                .sorted((n1,n2) -> n1.index - n2.index)
+                .forEach(node -> {
+                    for(var i = 0; i < node.next.size() ; i++){
+                        var sb = new StringBuffer();
+                        sb.append("\t\"").append(node.toString()).append("\" -> ");
+                        var next = main.get(node.next.get(i));
+                        sb.append("\"").append(next.toString()).append("\"");
+                        if(!node.branchs.isEmpty()){
+                            sb.append("[label=\"").append(node.branchs.get(i)).append("\"]");
+                        }
+                        sb.append(";");
+                        System.out.println(sb);
+                    }
+                    System.out.println();
+                });
+			//Ждём, пока гравитация не стабилизируется
+			var ehyp = 0d;
+			while(true){
+				var h = gravitation(width, height, 1);
+				if(ehyp == 0) ehyp = h;
+				else {
+					ehyp = ehyp *(1 - 0.01) + h * 0.01;
+					if(h == 0 || ehyp <= h) {
+						break;
 					}
-				});
-			});
-			load.setToolTipText(Configurations.getHProperty(CellEditor.class, "load"));
-			load.setFocusable(false);
-			panelSL.add(load);
-		}
-		{
-			final var save = new javax.swing.JButton();
-			Configurations.setIcon(save,"saveCell");
-			save.addActionListener(e -> {
-				final var cell = object;
-				LoadSaveFactory.save("BioLife", "zbcell", name -> {
-					var js = SaveAndLoad.save(name, Configurations.VERSION);
-					js.save(new SaveAndLoad.Serialization() {
-						@Override public String getName() { return "cell";}
-						@Override public JSON getJSON() {return cell.toJSON();}
-					});
-				}, false);
-			});
-			save.setToolTipText(Configurations.getHProperty(CellEditor.class, "save"));
-			save.setFocusable(false);
-			panelSL.add(save);
-		}
-		{
-			final var copy = new javax.swing.JButton();
-			Configurations.setIcon(copy,"clipboardCopy");
-			copy.addActionListener(e -> {
-				final var j = object.toJSON();
-				final var stringSelection = new java.awt.datatransfer.StringSelection(j.toJSONString());
-				final var clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
-				clipboard.setContents(stringSelection, null);
-			});
-			copy.setToolTipText(Configurations.getHProperty(CellEditor.class, "copy"));
-			copy.setFocusable(false);
-			panelSL.add(copy);
-		}
-		{
-			final var close = new javax.swing.JButton();
-			Configurations.setIcon(close,"close");
-			close.addActionListener(e -> closeDialog(null));
-			close.setToolTipText(Configurations.getHProperty(CellEditor.class, "close"));
-			close.setFocusable(false);
-			panelSL.add(close);
-		}
-		panelSL.setBorder(javax.swing.BorderFactory.createLineBorder(Color.BLACK));
-		settingsPanel.add(panelSL);
-	}
-	/**Создаёт панель со всеми прерываниями*/
-	private void makeInterraptPanel(){
-		interaptPanel.removeAll();
-		final var dna = object.getDna();
-		final var interrupts = dna.interrupts;
-		final var objects = CellObject.OBJECT.values;
-		final var ints = IntStream.range(0, dna.size).boxed().toArray(Integer[]::new);
-		for (int i = 0; i < interrupts.length; i++) {
-			final var index = i;
-			final var aInt = interrupts[index];
-			final var o = objects[index];
-			interaptPanel.add(new SettingsSelect<>(CellEditor.class,"interraptPanel."+o.name(),ints,i % dna.size, aInt, e -> {
-				interrupts[index] = e;
-				centralPanel.repaint();
-			}));
-		}
-	}
-	/**Создаёт заголовок страницы*/
-	private void updateHeaderPanel(){
-		final var dna = object.getDna();
-		PClabel.setText("PC: " + dna.getPC());
-		jampBack.setEnabled(!history.isEmpty());
-		
-		nextCmdPanel.removeAll();
-		final var cmd = dna.get();
-		if(cmd.getClass().equals(MapObjects.dna.Jump.class)){
-			final var j = ((MapObjects.dna.Jump) cmd).JAMP;
-			final var next = new JButton(Configurations.getProperty(CellEditor.class,"JAMP.L", j));
-			next.setToolTipText(Configurations.getProperty(CellEditor.class,"JAMP.T"));
-			setButtonParam(next);
-			next.addActionListener( e-> nextDNA(j));
-			nextCmdPanel.add(next);
-		} else if(cmd.getClass().equals(MapObjects.dna.Loop.class)){
-			final var j = ((MapObjects.dna.Loop) cmd).LOOP;
-			final var next = new JButton(Configurations.getProperty(CellEditor.class,"LOOP.L", j));
-			next.setToolTipText(Configurations.getProperty(CellEditor.class,"LOOP.T"));
-			setButtonParam(next);
-			next.addActionListener( e-> nextDNA(-j));
-			nextCmdPanel.add(next);
-		} else if(cmd.getCountBranch() > 0) {
-			for(var j = 0 ; j < cmd.getCountBranch() ; j++){
-				var nPC = dna.get(1 + cmd.getCountParams() + j, false); //Индекс того гена, куда мы прыгнем
-				final var color = Utils.Utils.getHSBColor(((double)j)/cmd.getCountBranch(), 1, 1, 0.5);
-				final var next = new JButton(Configurations.getProperty(CellEditor.class,"BRANCH.L", j,nPC)){
-					@Override public void paintComponent(Graphics g){
-						super.paintComponent(g);
-						g.setColor(color);
-						g.fillRect(0, 0, getWidth(), getHeight());
-					}
-				};
-				next.setToolTipText(Configurations.getHProperty(CellEditor.class,"BRANCH.T",j,cmd.getLongName(),cmd.getBranch(object, j, dna).replaceAll("<", "&#60;")));
-				setButtonParam(next);
-				next.addActionListener( e-> nextDNA(+nPC));
-				nextCmdPanel.add(next);
+				}
 			}
+        }
+        ///Создать графф на оснве ДНК и текущей команды
+        ///@param graph граф, в который будут набиваться команды и их связи
+        ///@param dna ДНК, откуда мы берём данные
+        ///@param index индекс текущей команды, абсолютное значение
+        ///@param prefure индекс предыдущей команды. Или -1, если предыдущей команды нет
+        ///@param isInterapt это прерывание? У прерываний графы другие
+        private static void makeGraph(Map<Integer, DNA_node> graph,AliveCell cell, DNA dna, int index, int prefure, boolean isInterapt){
+            //Тут приходится не реально крутиться, так как параметры команды вычитываются относительно PC!
+            //Поэтому каждый раз приходится докручивать ДНК до нужного нам значения РС
+            dna.next(index - dna.getPC());
+            var PC = dna.getPC();
+            final var cmd = dna.get();
+            if(graph.containsKey(PC)){
+                var node = graph.get(PC);
+                //if(!node.prefure.contains(prefure))
+                    node.prefure.add(prefure);
+            } else {
+                var node = new DNA_node(PC, cmd, new ArrayList<>(){{ if(prefure != -1) add(prefure);}});
+                graph.put(PC, node);
+                if(isInterapt && cmd.isDoing()) return; //Прерывания заканчиваются на активной команде
+                if(cmd.getCountBranch() > 0){
+                    for(var j = 0 ; j < cmd.getCountBranch() ; j++){
+                        node.branchs.add(cmd.getBranch(cell, j, dna));
+                    }
+                }
+                if(cmd.getCountParams()> 0){
+                    for(var j = 0 ; j < cmd.getCountParams() ; j++){
+                        node.params.add(cmd.getParam(cell, j, dna));
+                    }
+                }
+                if(cmd.getCountBranch() > 0) {
+                    for(var j = 0 ; j < cmd.getCountBranch() ; j++){
+                        var nPC = dna.normalization(PC + dna.get(dna.getPC() + 1 + cmd.getCountParams() + j, true)); //Индекс того гена, куда мы прыгнем
+                        node.next.add(nPC);
+                        makeGraph(graph,cell,dna,nPC,PC,isInterapt);
+                        dna.next(PC - dna.getPC());
+                    }
+                } else {
+					var jamp = cmd.nextCMD();
+					if(jamp != null){
+						var nPC = dna.normalization(PC + jamp);
+						node.next.add(nPC);
+						makeGraph(graph,cell,dna,nPC,PC,isInterapt);
+					}
+                }
+            }
+        }
+		/**Установить команду для центрального узла*/
+        private void setPC(int pc) {
+            setRoot(root = main.get(pc));
+        }
+        public void setRoot(DNA_node root){
+            this.root.isRoot = false;
+            root.isRoot = true;
+            this.root = root;
+        }
+        
+        ///Обработать воздействие графитации
+        private double gravitation(int width, int height, double scale){
+            var area = scale * width * height / 4; //На 4, чтобы график укладывался в половину этого размера
+            var k = Math.sqrt(area / selectTree.size());
+            final var nodes = selectTree.values().toArray(DNA_node[]::new);
+			for (int i = 0; i < nodes.length; i++) {
+				final var first = nodes[i];
+                first.forse = new PointD(0,0);
+				for (int j = 0 ; j < nodes.length; j++) {
+                    if(i == j) continue;
+                    final var second = nodes[j];
+                    var dist = first.center.sub(second.center);
+                    if(dist.getHypotenuse() == 0) continue;
+                    first.forse = first.forse.add(dist.normalize().multiply(fr(dist.getHypotenuse(), k)));
+                }
+            }
+			for (int i = 0; i < nodes.length; i++) {
+				final var first = nodes[i];
+				for(var j : first.next){
+                    final var second = selectTree.get(j);
+                    var dist = first.center.sub(second.center);
+                    if(dist.getHypotenuse() == 0) continue;
+                    first.forse = first.forse.sub(dist.normalize().multiply(fa(dist.getHypotenuse(), k)));
+                    second.forse = second.forse.add(dist.normalize().multiply(fa(dist.getHypotenuse(), k)));
+                }
+            }
+            var tmp = Math.random() * 5;
+			var maxHypotenuse = 0.0;
+			for (int i = 0; i < nodes.length; i++) {
+				final var first = nodes[i];
+                if(first.forse.getHypotenuse() == 0) continue;
+                if(first == root){
+                    if(first.center.getHypotenuse() != 0)
+                        first.center = new PointD(0, 0);
+                } else {
+					var hypotenuse = first.forse.getHypotenuse();
+					if(Math.abs(hypotenuse) < 5) continue;
+					maxHypotenuse = Math.max(maxHypotenuse, hypotenuse);
+                    first.center = first.center.add(first.forse.normalize().multiply(Math.min(hypotenuse, tmp)));
+                }
+            }
+			return maxHypotenuse;
 		}
-		if(nextCmdPanel.getComponentCount() == 0){
-			final var next = new JButton(Configurations.getProperty(CellEditor.class,"NEXT.L", cmd.size()));
-			next.setToolTipText(Configurations.getProperty(CellEditor.class,"NEXT.T"));
-			setButtonParam(next);
-			next.addActionListener( e-> nextDNA(cmd.size()));
-			nextCmdPanel.add(next);
-		}
-	}
-	
-	private class PaintJPanel extends javax.swing.JPanel{
+        ///Вычисляет силу отталкивания между двумя узлами
+        private static double fr(double dist, double k) {
+            return Math.pow(k, 2) / dist;
+        }
+        ///Вычисляет силу притягивания между двумя узлами
+        private static double fa(double dist, double k) {
+            return Math.pow(dist, 2) / k;
+        }
+
+    }
+    ///Основная панель, где происходит рисование
+    private class PaintJPanel extends javax.swing.JPanel{
 		/**Цвета прерываний*/
 		private final Color[] I_COLOR;
 		/**Радиус нарисованной ДНК*/
@@ -278,13 +317,18 @@ public class CellEditor extends javax.swing.JDialog {
 		private final JToolTip DnaToolTip;
 		/**Выделение жирненьким по умолчанию*/
 		private final static java.awt.BasicStroke DASHED = new java.awt.BasicStroke(3);
+        //Точка, с которой начинается перемещение
+        private Point startPoint = null;
+        //Смещение центральной точки	
+        private PointD centralPointOffset = new PointD(0,0);
+        ///Масштаб отображения графика
+        private double scale = 1;
 		
 		PaintJPanel(){
 			I_COLOR = new Color[CellObject.OBJECT.lenght];
 			for (int i = 0; i < I_COLOR.length; i++) {
 				I_COLOR[i] = Utils.Utils.getHSBColor(((double)i)/I_COLOR.length, 1, 0.7, 0.5);
 			}
-			
 			final var mouseListener = new java.awt.event.MouseAdapter(){
 				@Override public void mouseMoved(MouseEvent e){
 					final var h = getHeight();
@@ -341,6 +385,23 @@ public class CellEditor extends javax.swing.JDialog {
 						repaint();
 					}
 				}
+                @Override public void mouseDragged(java.awt.event.MouseEvent evt) {
+                     if(startPoint == null) return;
+                    var dx = evt.getX() - startPoint.x;
+                    var dy = evt.getY() - startPoint.y;
+                    startPoint = evt.getPoint();
+                    centralPointOffset.x += dx;
+                    centralPointOffset.y += dy;
+                }
+                @Override public void mousePressed(java.awt.event.MouseEvent evt) {
+                    startPoint = evt.getPoint();
+                }
+                @Override public void mouseReleased(java.awt.event.MouseEvent evt) {
+                    startPoint = null;
+                }
+                @Override public void mouseWheelMoved(MouseWheelEvent e) {
+                    scale *= (1.0 + e.getWheelRotation() * 0.1);
+                }
 			};
 			addMouseListener(mouseListener);
 			addMouseMotionListener(mouseListener);
@@ -359,6 +420,15 @@ public class CellEditor extends javax.swing.JDialog {
 		}
 		/**Отрисовывает ДНК клетки*/
 		public void paintComponent(Graphics2D g) {	
+            if(isTree.isSelected() || tree == null){
+                paintAsCycle(g);
+            } else {
+                paintAsTree(g);
+            }
+		}
+        
+		/**Отрисовывает ДНК клетки как круг*/
+		public void paintAsCycle(Graphics2D g) {
 			final var h = getHeight();
 			final var w = getWidth();
 			final var cx = w / 2;
@@ -404,7 +474,7 @@ public class CellEditor extends javax.swing.JDialog {
 					Utils.Utils.centeredText(g,(int) tx,(int) ty, 12, String.valueOf(num));
 				}
 			}
-		}
+        }
 		/** Рисует все прыжки внутри ДНК
 		 * @param g холст
 		 * @param cx центр холста
@@ -421,7 +491,7 @@ public class CellEditor extends javax.swing.JDialog {
 			final var center = new Point2D.Double(cx,cy);
 			final var os = g.getStroke();
 			
-			for (var i = 0; i < dna.size; ) {
+			for (var i = 0; i < dna.size;) {
 				final var cmd = dna.get(i);
 				var index = dna.normalization(PC + i);
 				if(index < PC) index += dna.size; //Проворачиваем на один круг
@@ -430,9 +500,7 @@ public class CellEditor extends javax.swing.JDialog {
 				if(index == 0){
 					g.setStroke(DASHED);
 				}
-				
-				
-				if(cmd.getClass().equals(MapObjects.dna.Jump.class)){
+				if(cmd instanceof MapObjects.dna.Jump){
 					var nPC = dna.normalization(PC + i + ((MapObjects.dna.Jump) cmd).JAMP); //Индекс того гена, куда мы прыгнем
 					if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
 					nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
@@ -442,7 +510,7 @@ public class CellEditor extends javax.swing.JDialog {
 					final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
 					final int ey = (int) (cy + rL * Math.sin(cmd_to));
 					bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
-				} else if(cmd.getClass().equals(MapObjects.dna.Loop.class)){
+				} else if(cmd instanceof MapObjects.dna.Loop){
 					var nPC = dna.normalization(PC + i - ((MapObjects.dna.Loop) cmd).LOOP); //Индекс того гена, куда мы прыгнем
 					if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
 					nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
@@ -926,8 +994,362 @@ public class CellEditor extends javax.swing.JDialog {
 			popup = PopupFactory.getSharedInstance().getPopup(this, DnaToolTip, ml.x, ml.y);
 			popup.show();
 		}
+        
+        ///Отрисовывает дерево переходов
+		public void paintAsTree(Graphics2D g) {
+            var cx = getWidth()/2 + (int)centralPointOffset.x;
+            var cy = getHeight()/2 + (int)centralPointOffset.y;
+            tree.gravitation(getWidth(), getHeight(), scale);
+            g.setColor(Color.black);
+            tree.main.forEach((k,v) ->{
+                for(var i : v.next){
+                    var next = tree.main.get(i);
+					var x = cx+(int)v.center.x;
+					var y = cy+(int)v.center.y;
+					var x2 = cx+(int)next.center.x;
+					var y2 = cy+(int)next.center.y;
+					// Calculate midpoint of line
+					int midX = (x + x2) / 2;
+					int midY = (y + y2) / 2;
+					
+					// Draw main line
+					g.drawLine(x, y, x2, y2);
+					
+					// Calculate arrow direction angle
+					double angle = Math.atan2(y2 - y, x2 - x);
+					
+					// Arrow properties
+					int arrowLength = 10;
+					double arrowAngle = Math.PI / 6; // 30 degrees
+					
+					// Calculate arrow points
+					int ax1 = (int)(midX - arrowLength * Math.cos(angle + arrowAngle));
+					int ay1 = (int)(midY - arrowLength * Math.sin(angle + arrowAngle));
+					int ax2 = (int)(midX - arrowLength * Math.cos(angle - arrowAngle)); 
+					int ay2 = (int)(midY - arrowLength * Math.sin(angle - arrowAngle));
+					
+					// Draw arrow head
+					g.drawLine(midX, midY, ax1, ay1);
+					g.drawLine(midX, midY, ax2, ay2);
+					//Utils.drawsUtil.arrow(g, x, y, nx, ny, derect.Up, 10, 0);
+                    //g.drawLine(cx+(int)v.center.x,cy+ (int)v.center.y, cx+(int)next.center.x, cy+(int)next.center.y);
+                }
+            });
+			tree.main.forEach((k,v) ->{
+				if(v.cmd instanceof CommandExplore ex)
+					paintExploerNode(g, v, object.getDna(), cx, cy);
+				else
+					paintDoNode(g, v, object.getDna(), cx, cy);
+			});
+            repaint();
+        }
+		/** Рисует узел команды исследования мира
+		 * @param g холст
+		 * @param node узел
+		 * @param dna ДНК
+		 * @param cx координата центра
+		 * @param cy координата центра
+		 */
+		private void paintExploerNode(Graphics2D g, DNA_node node, DNA dna, int cx, int cy){
+			var font = g.getFont();
+			var title =	String.format("[%0"+DNA_node.sizeDNA+"d]", node.index);
+			var text = node.cmd.toString();
+			var defHeight = Utils.drawsUtil.getTextHeight(font, text); 
+			var params = node.cmd.getCountParams();
+			var margin = 10;
+			var a2 = Utils.drawsUtil.getTextWidth(font, text)/2+defHeight/2+margin;
+			a2 = Math.max(a2, Utils.drawsUtil.getTextWidth(font, title)/2+defHeight * 3/2+margin);
+			if(params > 0){
+				var pc = dna.getPC();
+				dna.setPC(node.index);
+				for(var i = 0; i < params; ++i){
+					var param = node.cmd.getParam(object, i, dna);
+					var a = Utils.drawsUtil.getTextWidth(font, param) / 2 + (i + 1.5)*defHeight+margin;
+					if(a > a2) a2 = (int) a;
+				}
+				dna.setPC(pc);
+			}
+			// Draw red rhombus around the node
+			var x = cx + node.center.x;
+			var y = cy + node.center.y;
+			int[] xPoints = {
+				(int)(x), 
+				(int)(x + a2),
+				(int)(x),
+				(int)(x - a2)
+			};
+			int[] yPoints = {
+				(int)(y - a2),
+				(int)(y),
+				(int)(y + a2),
+				(int)(y)
+			};
+			g.setColor(AllColors.getColor(node.cmd));
+			g.fillPolygon(xPoints, yPoints, 4);
+			g.setColor(Color.BLACK);
+			Utils.drawsUtil.drawString(g, x, y-defHeight, title, alignmentX.center,alignmentY.center);
+			Utils.drawsUtil.drawString(g, x, y, text, alignmentX.center,alignmentY.center);
+			if(params > 0) {
+				g.setColor(AllColors.toDark(AllColors.DNA_PARAM, 255));
+				var pc = dna.getPC();
+				dna.setPC(node.index);
+				for(var i = 0; i < params; i++) {
+					var param = node.cmd.getParam(object, i, dna);
+					Utils.drawsUtil.drawString(g, x, y+(i+1)*defHeight, param, alignmentX.center,alignmentY.center);
+				}
+				dna.setPC(pc);
+			}
+		}
+		/** Рисует узел команды выполнения
+		 * @param g холст
+		 * @param node узел
+		 * @param dna ДНК
+		 * @param cx координата центра
+		 * @param cy координата центра
+		 */
+		private void paintDoNode(Graphics2D g, DNA_node node, DNA dna, int cx, int cy){
+			var font = g.getFont();
+			var title =	String.format("[%0"+DNA_node.sizeDNA+"d]", node.index);
+			var text = node.cmd.toString();
+			var defHeight = Utils.drawsUtil.getTextHeight(font, text); 
+			var params = node.cmd.getCountParams();
+			var margin = 10;
+			var width = Utils.drawsUtil.getTextWidth(font, text)+margin;
+			width = Math.max(width, Utils.drawsUtil.getTextWidth(font, title)+margin);
+			if(params > 0){
+				var pc = dna.getPC();
+				dna.setPC(node.index);
+				for(var i = 0; i < params; ++i){
+					var param = node.cmd.getParam(object, i, dna);
+					width = Math.max(width, (int) Utils.drawsUtil.getTextWidth(font, param)+margin);
+				}
+				dna.setPC(pc);
+			}
+			var height = defHeight * (2 + params)+margin;
+			var x = (int)(cx+node.center.x);
+			var y = (int)(cy+node.center.y - height/2);
+			g.setColor(AllColors.getColor(node.cmd));
+			g.fillRect(x- width/2, y, width, height);
+			g.setColor(Color.BLACK);
+			Utils.drawsUtil.drawString(g, x, y, title, alignmentX.center,alignmentY.bottom);
+			Utils.drawsUtil.drawString(g, x, y+defHeight, text, alignmentX.center,alignmentY.bottom);
+			if(params > 0) {
+				g.setColor(AllColors.toDark(AllColors.DNA_PARAM, 255));
+				var pc = dna.getPC();
+				dna.setPC(node.index);
+				for(var i = 0; i < params; i++) {
+					var param = node.cmd.getParam(object, i, dna);
+					Utils.drawsUtil.drawString(g, x, y+(i+2)*defHeight, param, alignmentX.center,alignmentY.bottom);
+				}
+				dna.setPC(pc);
+			}
+		}
+	
 	}
 	
+
+	/** Creates new form CellEditor */
+	public CellEditor(AliveCell edit) {
+		super();
+		CommandDNA.setFullMod(false);
+		initComponents();
+		setAlwaysOnTop(true);
+		centralPanel.add(new PaintJPanel(), java.awt.BorderLayout.CENTER);
+		
+		setButtonParam(decrement);
+		setButtonParam(increment);
+		setButtonParam(jampBack);
+        Configurations.setIcon(isTree, "cycleFilogen");
+		
+		setObject(edit);
+        isTree.setSelected(true);
+		
+        Utils.Utils.isAssert(() -> {isTree.setSelected(false);isTreeActionPerformed(null);});
+	}
+	/**Делает кнопочки покрасивее
+	 * @param button 
+	 */
+	private void setButtonParam(JButton button) {
+		button.setContentAreaFilled(false);
+		button.setFocusable(false);
+	}
+	/** @param o новый объет, который мы описываем*/
+	private void setObject(AliveCell o){
+		object = o.clone();
+		makeSettingsPanel();
+		makeInterraptPanel();
+		updateHeaderPanel();
+		
+		nextDNA(0);
+		while(!history.isEmpty())history.pop();
+        isTreeActionPerformed(null);
+	}
+	
+	/**Создаёт панель настроек*/
+	private void makeSettingsPanel() {
+		settingsPanel.removeAll();
+		final var ST = AliveCellProtorype.Specialization.TYPE.values;
+		
+		final var spec = new ArrayList<SettingsSlider>(ST.length);
+		for(final var s : ST){
+			final var slider = new SettingsSlider<>(CellEditor.class, "specialization."+s.name(),
+					0, 50, 100, 0, object.getSpecialization().get(s), 100, e->{
+						object.getSpecialization().set(s, e);
+						for (int i = 0; i < spec.size(); i++)
+							spec.get(i).setValue(object.getSpecialization().get(ST[i]));
+					});
+			spec.add(slider);
+			settingsPanel.add(slider);
+		}
+		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.HP",
+					0d, AliveCellProtorype.START_HP, AliveCellProtorype.MAX_HP, 0d, object.getHealth(), null, 
+				e->object.setHealth(e)));
+		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.MP",
+					0d, AliveCellProtorype.START_MP, AliveCellProtorype.MAX_MP, 0d, object.getMineral(), null, 
+				e->object.setMineral(e)));
+		final var PT = Poison.TYPE.vals;
+		final var poisonPower = new SettingsSlider<>(CellEditor.class, "settingsPanel.poisonPower",
+					0d, 0d, Poison.MAX_TOXIC, 0d, object.getPosionPower(), null, 
+				e->object.setPosionPower(e));
+		poisonPower.setVisible(object.getPosionType() != Poison.TYPE.UNEQUIPPED);
+		final var PoiosnTypeS = new SettingsSelect<>(CellEditor.class, "settingsPanel.poisonType", PT, Poison.TYPE.UNEQUIPPED, object.getPosionType(), e -> {
+			object.setPosionType(e);
+			poisonPower.setValue(object.getPosionPower());
+			poisonPower.setVisible(e != Poison.TYPE.UNEQUIPPED);
+		});
+		settingsPanel.add(PoiosnTypeS);
+		settingsPanel.add(poisonPower);
+		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.buoyancy",
+					-100, 0, 100, -100, object.getBuoyancy(), 100, 
+				e->object.setBuoyancy(e)));
+		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.hp_by_div",
+					0, (int)AliveCellProtorype.MAX_HP/10, (int)AliveCellProtorype.MAX_HP, 0, object.getHp_by_div(), null, 
+				e->object.setHp_by_div(e)));
+		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.tolerance",
+					0, 2, AliveCellProtorype.DEF_MINDE_SIZE, 0, object.getTolerance(), null, 
+				e->object.setTolerance(e)));
+		settingsPanel.add(javax.swing.Box.createVerticalGlue()); //Чтобы кнопки были внизу
+		
+		final var panelSL = new javax.swing.JPanel();
+		panelSL.setLayout(new javax.swing.BoxLayout(panelSL, javax.swing.BoxLayout.X_AXIS));
+		{
+			final var load = new javax.swing.JButton();
+			Configurations.setIcon(load,"loadCell");
+			load.addActionListener(e -> {
+				LoadSaveFactory.load("BioLife", "zbcell", filename -> {
+					var js = SaveAndLoad.load(filename);
+					try{
+						final var c = js.load((j, version)-> {
+							final var node = Configurations.tree.makeTree();
+							j.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
+							final var acell = new AliveCell(j, Configurations.tree, version);
+							node.remove();
+							return acell;
+						},"cell");
+						setObject(c);
+					} catch (Exception ex){
+						Logger.getLogger(CellEditor.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+						JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
+					}
+				});
+			});
+			load.setToolTipText(Configurations.getHProperty(CellEditor.class, "load"));
+			load.setFocusable(false);
+			panelSL.add(load);
+		}
+		{
+			final var save = new javax.swing.JButton();
+			Configurations.setIcon(save,"saveCell");
+			save.addActionListener(e -> {
+				final var cell = object;
+				LoadSaveFactory.save("BioLife", "zbcell", name -> {
+					var js = SaveAndLoad.save(name, Configurations.VERSION);
+					js.save(new SaveAndLoad.Serialization() {
+						@Override public String getName() { return "cell";}
+						@Override public JSON getJSON() {return cell.toJSON();}
+					});
+				}, false);
+			});
+			save.setToolTipText(Configurations.getHProperty(CellEditor.class, "save"));
+			save.setFocusable(false);
+			panelSL.add(save);
+		}
+		{
+			final var copy = new javax.swing.JButton();
+			Configurations.setIcon(copy,"clipboardCopy");
+			copy.addActionListener(e -> {
+				final var j = object.toJSON();
+				final var stringSelection = new java.awt.datatransfer.StringSelection(j.toJSONString());
+				final var clipboard = java.awt.Toolkit.getDefaultToolkit().getSystemClipboard();
+				clipboard.setContents(stringSelection, null);
+			});
+			copy.setToolTipText(Configurations.getHProperty(CellEditor.class, "copy"));
+			copy.setFocusable(false);
+			panelSL.add(copy);
+		}
+		{
+			final var close = new javax.swing.JButton();
+			Configurations.setIcon(close,"close");
+			close.addActionListener(e -> closeDialog(null));
+			close.setToolTipText(Configurations.getHProperty(CellEditor.class, "close"));
+			close.setFocusable(false);
+			panelSL.add(close);
+		}
+		panelSL.setBorder(javax.swing.BorderFactory.createLineBorder(Color.BLACK));
+		settingsPanel.add(panelSL);
+	}
+	/**Создаёт панель со всеми прерываниями*/
+	private void makeInterraptPanel(){
+		interaptPanel.removeAll();
+		final var dna = object.getDna();
+		final var interrupts = dna.interrupts;
+		final var objects = CellObject.OBJECT.values;
+		final var ints = IntStream.range(0, dna.size).boxed().toArray(Integer[]::new);
+		for (int i = 0; i < interrupts.length; i++) {
+			final var index = i;
+			final var aInt = interrupts[index];
+			final var o = objects[index];
+			interaptPanel.add(new SettingsSelect<>(CellEditor.class,"interraptPanel."+o.name(),ints,i % dna.size, aInt, e -> {
+				interrupts[index] = e;
+				centralPanel.repaint();
+			}));
+		}
+	}
+	/**Создаёт заголовок страницы*/
+	private void updateHeaderPanel(){
+		final var dna = object.getDna();
+		PClabel.setText("PC: " + dna.getPC());
+		jampBack.setEnabled(!history.isEmpty());
+		
+		nextCmdPanel.removeAll();
+		final var cmd = dna.get();
+		if(cmd.getCountBranch() > 0) {
+			for(var j = 0 ; j < cmd.getCountBranch() ; j++){
+				var nPC = dna.get(1 + cmd.getCountParams() + j, false); //Индекс того гена, куда мы прыгнем
+				final var color = Utils.Utils.getHSBColor(((double)j)/cmd.getCountBranch(), 1, 1, 0.5);
+				final var next = new JButton(Configurations.getProperty(CellEditor.class,"BRANCH.L", j,nPC)){
+					@Override public void paintComponent(Graphics g){
+						super.paintComponent(g);
+						g.setColor(color);
+						g.fillRect(0, 0, getWidth(), getHeight());
+					}
+				};
+				next.setToolTipText(Configurations.getHProperty(CellEditor.class,"BRANCH.T",j,cmd.getLongName(),cmd.getBranch(object, j, dna).replaceAll("<", "&#60;")));
+				setButtonParam(next);
+				next.addActionListener( e-> nextDNA(+nPC));
+				nextCmdPanel.add(next);
+			}
+		} else {
+			var pcJump = cmd.nextCMD();
+			if(pcJump != null){
+				final var next = new JButton(Configurations.getProperty(CellEditor.class,"NEXT.L", pcJump));
+				next.setToolTipText(Configurations.getProperty(CellEditor.class,"NEXT.T"));
+				setButtonParam(next);
+				next.addActionListener( e-> nextDNA(pcJump));
+				nextCmdPanel.add(next);
+			}
+		}
+	}
 	/** This method is called from within the constructor to
 	 * initialize the form.
 	 * WARNING: Do NOT modify this code. The content of this method is
@@ -944,13 +1366,13 @@ public class CellEditor extends javax.swing.JDialog {
         removeGen = new javax.swing.JMenuItem();
         add = new javax.swing.JMenuItem();
         copyGen = new javax.swing.JMenuItem();
-        jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         settingsPanel = new javax.swing.JPanel();
         botPanel = new javax.swing.JPanel();
         interaptPanel = new javax.swing.JPanel();
         centralPanel = new javax.swing.JPanel();
         PCpanel = new javax.swing.JPanel();
+        isTree = new javax.swing.JToggleButton();
         jampBack = new javax.swing.JButton();
         decrement = new javax.swing.JButton();
         PClabel = new javax.swing.JLabel();
@@ -1023,19 +1445,6 @@ public class CellEditor extends javax.swing.JDialog {
             }
         });
 
-        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
-        jPanel1.setLayout(jPanel1Layout);
-        jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 1068, Short.MAX_VALUE)
-        );
-        jPanel1Layout.setVerticalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
-        );
-
-        getContentPane().add(jPanel1, java.awt.BorderLayout.NORTH);
-
         settingsPanel.setLayout(new javax.swing.BoxLayout(settingsPanel, javax.swing.BoxLayout.Y_AXIS));
 
         interaptPanel.setLayout(new javax.swing.BoxLayout(interaptPanel, javax.swing.BoxLayout.Y_AXIS));
@@ -1043,6 +1452,14 @@ public class CellEditor extends javax.swing.JDialog {
         centralPanel.setLayout(new java.awt.BorderLayout());
 
         PCpanel.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+
+        isTree.setText("Дерево");
+        isTree.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                isTreeActionPerformed(evt);
+            }
+        });
+        PCpanel.add(isTree);
 
         jampBack.setText("--");
         jampBack.setToolTipText(Configurations.getProperty(CellEditor.class,"history"));
@@ -1089,7 +1506,7 @@ public class CellEditor extends javax.swing.JDialog {
             botPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, botPanelLayout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(centralPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 638, Short.MAX_VALUE)
+                .addComponent(centralPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(interaptPanel, javax.swing.GroupLayout.PREFERRED_SIZE, 132, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -1100,7 +1517,7 @@ public class CellEditor extends javax.swing.JDialog {
                 .addContainerGap()
                 .addGroup(botPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(interaptPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(centralPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 530, Short.MAX_VALUE))
+                    .addComponent(centralPanel, javax.swing.GroupLayout.DEFAULT_SIZE, 453, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -1195,6 +1612,16 @@ public class CellEditor extends javax.swing.JDialog {
     private void copyGenActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_copyGenActionPerformed
         set(POPUP_STATUS.COPY);
     }//GEN-LAST:event_copyGenActionPerformed
+
+    private void isTreeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_isTreeActionPerformed
+        if(!isTree.isSelected()){
+            tree = new DNA_Tree(object, centralPanel.getWidth(), centralPanel.getHeight());
+        }
+		increment.setVisible(isTree.isSelected());
+		decrement.setVisible(isTree.isSelected());
+        centralPanel.revalidate();
+        centralPanel.repaint();
+    }//GEN-LAST:event_isTreeActionPerformed
 	/**Поворачивает ДНК на выбранное число
 	 * @param val на сколько повернуть ДНК
 	 */
@@ -1205,6 +1632,9 @@ public class CellEditor extends javax.swing.JDialog {
 		updateHeaderPanel();
 		centralPanel.repaint();
 		set(POPUP_STATUS.UNDEF);
+		if(tree != null && !isTree.isSelected()){
+			tree.setPC(dna.getPC());
+		}
 	}
 	/**@param s текущий выбранный инструмент*/
 	private void set(POPUP_STATUS s){
@@ -1246,7 +1676,7 @@ public class CellEditor extends javax.swing.JDialog {
     private javax.swing.JButton increment;
     private javax.swing.JPopupMenu instruments;
     private javax.swing.JPanel interaptPanel;
-    private javax.swing.JPanel jPanel1;
+    private javax.swing.JToggleButton isTree;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JButton jampBack;
     private javax.swing.JPanel nextCmdPanel;
@@ -1261,5 +1691,6 @@ public class CellEditor extends javax.swing.JDialog {
 	private POPUP_STATUS pstatus = POPUP_STATUS.UNDEF;	
 	/**Нужна печать сообщение приветствия?*/
 	private static boolean isNeedHello = true;
-
+    ///Дерево, построенное из ДНК
+    private DNA_Tree tree;
 }

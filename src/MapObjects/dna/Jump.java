@@ -2,7 +2,6 @@ package MapObjects.dna;
 
 import Calculations.Configurations;
 import MapObjects.AliveCell;
-import Utils.MyMessageFormat;
 
 /**
  * Является безусловным переходом на следующую команду
@@ -19,6 +18,8 @@ public class Jump extends CommandDNA {
 	protected int perform(AliveCell cell) {
 		return JAMP;
 	}
+	@Override
+	public Integer nextCMD(){return JAMP;}
 	@Override
 	public boolean isDoing() {return false;};	
 	@Override

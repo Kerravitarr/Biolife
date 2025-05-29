@@ -1,8 +1,6 @@
 package MapObjects.dna;
 
 import MapObjects.AliveCell;
-import MapObjects.CellObject;
-import Calculations.Point;
 
 /**
  * Абстрактный класс для всех команд действий 
@@ -22,6 +20,8 @@ public abstract class CommandDo extends CommandDNA {
 		doing(cell);
 		return size();
 	}
+	@Override
+	public Integer nextCMD(){return size();}
 	/**
 	 * Непосредственно те действия, которые выполняет клетка
 	 * @param cell - клетка, которая очень уж хочет походить

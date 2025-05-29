@@ -48,7 +48,7 @@ public abstract class StreamAttenuation {
 			super(power,power);
 		}
 		@Override
-		public double transform(double dist) {return 0d;}
+		public double transform(double dist) {return 1d;}
 	}
 	/**Линейное затухание*/
 	public static class LinealStreamAttenuation extends StreamAttenuation {
@@ -258,8 +258,8 @@ public abstract class StreamAttenuation {
 	 */
 	public double frame(int frame, boolean isRevers, double dist){
 		assert 0 <= dist && dist <= 1 : "Проблемка - вышли за границу диапазона: " + dist;
-		final var F = Math.max(1, (int) ((100 - 10) * transform(dist)));
-		final double step = (isRevers ? (F - (frame % F)) : (frame % F));
+		var F = Math.max(2, (int) ((100 - 10) * transform(dist)));
+		double step = (isRevers ? (F - (frame % F)) : (frame % F));
 		return step / F;
 	}
 	/**Функция для ребёнка.

@@ -46,13 +46,6 @@ import java.util.HashMap;
 
 public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 	
-	private static final Color RED = new Color(255, 0, 0, 30);
-	private static final Color RED2 = new Color(255, 0, 0, 60);
-	private static final Color BLUE = new Color(0, 0, 255, 30);
-	public static final Color YELLOW = new Color(255, 255, 0, 30);
-	public static final Color ARG = new Color(100, 100, 100, 30);
-	public static final Color PAR = new Color(255, 255, 255, 30);
-	
 	private TextPair photos;
 	private TextPair state;
 	private TextPair hp;
@@ -119,11 +112,11 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 		
 		public JListRow(String text,TYPE type) {
 			switch (type) {
-				case CMD_I -> color = YELLOW;
-				case CMD_D -> color = RED;
-				case CMD -> color = BLUE;
-				case PARAM -> color = PAR;
-				case ARG-> color = ARG;
+				case CMD_I -> color = AllColors.DNA_COMAND_INTERRUPT;
+				case CMD_D -> color = AllColors.DNA_COMAND_DO;
+				case CMD -> color = AllColors.DNA_COMAND;
+				case PARAM -> color = AllColors.DNA_PARAM;
+				case ARG-> color = AllColors.DNA_ARG;
 				default -> color = null;
 			}
 			this.text=text;
@@ -623,7 +616,7 @@ public class BotInfo extends JPanel implements Configurations.EvrySecondTask{
 				}
 				list_inter.setModel(modelinterrapt);
 				list_inter.setSelectedIndex(0);
-				list_inter.setBackground(RED);
+				list_inter.setBackground(AllColors.DNA_COMAND_INTERRUPT);
 				interVal = dna.interrupts[inter];
 			}else {
 				list_inter.setSelectedIndex(inter);

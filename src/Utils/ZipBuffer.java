@@ -1,7 +1,6 @@
 package Utils;
 
 import java.util.ArrayDeque;
-import java.util.Iterator;
 
 /**
  *Буфер сжатия. Его основная фишка в работе, постараюсь объяснить:
@@ -11,6 +10,7 @@ import java.util.Iterator;
 Шаг 4: Пришла 4. 4 опять записывается в первую ячейку {4,3}→7 [7,3]. В буфере 2 пока меняется только первое число {7,3}→10 [10,0]
 Шаг 5: Пришла 5. Обновляем значения и записываем 5 в своё место {5,4}→9 [9,7]. В буфере 2 тоже сдвигаем данные  {9,7}→16 [16,10]
 * Таким образом, набирая эти буферы в цепочку, в последнем буффере всегда будут все значения, при этом каждый следующий буффер в масштабе меньше предыдущего
+* Однако есть и свой минус: Первый элемент массива у нас всегда "опережает" своё значение. Так что его лучше не использовать для всяких сложных оценок
  * @author Илья
  */
 public class ZipBuffer{
@@ -24,6 +24,10 @@ public class ZipBuffer{
     private final int zip;
     /**Следующий буфер в цепочке*/
     private final ZipBuffer next;
+    /**Бесконечный буфер?*/
+    private final boolean isInfinity;
+    /**Безразмерный подбуфер?*/
+    private final boolean isUnsize;
     
     /**Сколько элементов в малом кольце*/
     private long minRingSize = 0;
@@ -31,18 +35,21 @@ public class ZipBuffer{
     private long minRingSum = 0;
     
     /**Создаёт элемент буффера
-     * @param size количество элементов в этом буфере
+     * @param size количество элементов в этом буфере. Если 0, то буфер будет бесконечно расти,
+     *  если меньше нуля - буфер будет завершающим только с одним элементом
      * @param zip на сколько сжимать входящие значения
      * @param next следующий буфер
      */
     public ZipBuffer(int size, int zip, ZipBuffer next){
-        bigRing = new ArrayDeque<>(Math.max(1,size));
-        miniRing = new ArrayDeque<>(Math.max(0,zip));
-        for (int i = 0; i < size; i++) {bigRing.add(0l);}
-        for (int i = 0; i < zip; i++) {miniRing.add(0l);}
-        this.zip = zip;
-        this.size = size;
+        isUnsize = size < 0;
+        isInfinity = size < 1;
+        this.zip = size < 1 ? Math.max(2,zip) : Math.max(1,zip);
+        this.size = Math.max(1,size);
         this.next = next;
+        bigRing = new ArrayDeque<>(this.size);
+        miniRing = new ArrayDeque<>(this.zip);
+        for (int i = 0; i < this.size; i++) {bigRing.add(0l);}
+        for (int i = 0; i < this.zip; i++) {miniRing.add(0l);}
     }
     /**Создаёт элемент буффера
      * @param size количество элементов в этом буфере
@@ -54,36 +61,40 @@ public class ZipBuffer{
      */
     public ZipBuffer(int size){this(size,1);}
     /**Создаёт буфер суммы. В нём будет только один элемент, который хранит все возможные значения*/
-    public ZipBuffer(){this(-1);}
-    /**Добавляет элемент в буфер
-     * @param element 
+    public ZipBuffer(){this(0);}
+    /**Добавляет элемент в буфер. Добавлять следует только в последний буффер элементы, в остальные значения перейдут сами
+     * @param element последний элемент выборки
      */
     public void add(long element){
-        if(size < 1){
-            bigRing.removeFirst();
-            bigRing.addFirst(minRingSum+=element);
-        } else {
-            if(minRingSize++ % zip == 0){
+        if((!isInfinity || isUnsize) && minRingSize++ % zip == 0){
+            if(!isUnsize || minRingSize == 1)
                 bigRing.removeLast();
-                bigRing.addFirst(minRingSum);
-                if(next != null) next.add(minRingSum);
-            }
+            bigRing.addFirst(minRingSum);
+            if(next != null) next.add(minRingSum);
+        }
+        if(isInfinity && !isUnsize){
+            minRingSum += element;
+            miniRing.removeLast();
+            miniRing.removeLast();
+            miniRing.addFirst(minRingSum);
+            miniRing.addFirst(element);
+        } else {
             minRingSum += element - miniRing.removeLast();
             miniRing.addFirst(element);
-            bigRing.removeFirst();
-            bigRing.addFirst(minRingSum);
-            if(next != null) next.readd(minRingSum);
         }
+        bigRing.removeFirst();
+        bigRing.addFirst(minRingSum);
+        if(!isInfinity && next != null) next.readd(minRingSum);
     }
     /**Внутренний метод, нужен, чтобы изменить значение внутреннего буфера, пока остальные значения не изменились
      * @param element 
      */
     private void readd(long element){
-        minRingSum += element - miniRing.getFirst();
-        miniRing.removeFirst();
+        minRingSum += element - miniRing.removeFirst();
         miniRing.addFirst(element);
         bigRing.removeFirst();
         bigRing.addFirst(minRingSum);
+        if(!isInfinity && next != null) next.readd(minRingSum);
     }
 
     @Override
@@ -92,19 +103,19 @@ public class ZipBuffer{
         sb.append('[');
         sb.append('{');
         var isFirst = true;
-        for (Iterator iterator = miniRing.iterator(); iterator.hasNext();) {
+        for(var val : miniRing){
             if(isFirst) isFirst = false;
             else sb.append(',');
-            sb.append(iterator.next());
+            sb.append(val);
         }
         sb.append("}->");
         isFirst = true;
-        for (Iterator iterator = bigRing.iterator(); iterator.hasNext();) {
+        for(var val : bigRing){
             if(isFirst) isFirst = false;
             else sb.append(',');
-            sb.append(iterator.next());
+            sb.append(val);
         }
-        sb.append(']');
+        sb.append("] ");
         if(next != null)
             sb.append(next);
         return sb.toString();

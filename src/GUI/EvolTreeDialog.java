@@ -765,7 +765,7 @@ public class EvolTreeDialog extends javax.swing.JDialog implements Configuration
 	 * @return сколько на шаг даётся измерителя
 	 */
 	private double getStep(double maxWidth, List<EvolutionTree.Node> childs){
-		if(widthPropCells.isSelected()) return maxWidth / childs.stream().mapToDouble(c -> countPair(c).countChildCell).sum();
+        if(widthPropCells.isSelected()) return maxWidth / childs.stream().mapToDouble(c -> countPair(c).countChildCell).sum();
 		else return maxWidth / childs.size();
 	}
 	/**Возращает текущее значение для каждого шага

@@ -46,8 +46,8 @@ public class AliveCell extends AliveCellProtorype implements AliveCellProtorype.
     public AliveCell(JSON cell, EvolutionTree tree, long version) {
         super(cell);
         dna = new DNA(cell.getJ("DNA"));
-        health = cell.get("health");
-        mineral = cell.getL("mineral");
+        health = cell.get(double.class,"health");
+        mineral = cell.get(double.class,"mineral");
         buoyancy = cell.getI("buoyancy");
         direction = DIRECTION.toEnum(cell.getI("direction"));
         DNA_wall = cell.getI("DNA_wall");

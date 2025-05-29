@@ -2,7 +2,6 @@ package MapObjects.dna;
 
 import Calculations.Configurations;
 import MapObjects.AliveCell;
-import Utils.MyMessageFormat;
 
 /**
  * Сдвигает программный счётчик не вперёд, как обычно,
@@ -19,7 +18,8 @@ public class Loop extends CommandDNA {
 	protected int perform(AliveCell cell) {
 		return -LOOP;
 	}
-	
+	@Override
+	public Integer nextCMD(){return -LOOP;}
 	@Override
 	public boolean isDoing() {return false;};
 	

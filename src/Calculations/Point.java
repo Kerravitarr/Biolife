@@ -393,6 +393,13 @@ public final class Point{
 		public PointD add(PointD add){
 			return new PointD(x + add.x, y  + add.y);
 		}
+		/**Находит разницу между двумя точками
+		 * @param add дополнительный кусок
+		 * @return новая точка с изменённым значением
+		 */
+		public PointD sub(PointD add){
+			return new PointD(x - add.x, y  - add.y);
+		}
 		/**
 		 * Складывает две точки
 		 * @param add дополнительный кусок
@@ -402,7 +409,7 @@ public final class Point{
 			return new PointD(x + add.x, y  + add.y);
 		}
 		/**Возвращает гипотинузу вектора
-		 * @return агипотенуза вектора в клетках мира*/
+		 * @return гипотенуза вектора в клетках мира*/
 		public double getHypotenuse(){
 			return Math.hypot(x, y);
 		}
@@ -412,6 +419,13 @@ public final class Point{
 			if(h == 0) return new PointD(0, 0);
 			else return new PointD(x/h, y/h);
 		}
+        /**Находит вектор от точки this к точке b
+         * @param b куда
+         * @return вектор от this к b
+         */
+        public PointD distance(PointD b){
+            return distance(this,b);
+        }
 		@Override
 		public String toString() {
 			return "V⃗ (" + x + "; " + y + "). |V⃗|="+getHypotenuse();
@@ -425,6 +439,15 @@ public final class Point{
 			make.add("y", y);
 			return make;
 		}
+        
+        /**Находит вектор от точки а к точке b
+        * @param a откуда
+        * @param b куда
+        * @return вектор от а к b
+        */
+       public static PointD distance(PointD a, PointD b){
+           return new PointD(b.x - a.x, b.y - a.y);
+       }
 	}
 	/**Координата по Х*/
 	public final int x;

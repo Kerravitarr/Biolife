@@ -1,33 +1,31 @@
 package GUI;
 
-import java.awt.Dimension;
-import java.awt.event.ActionListener;
-
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JPanel;
-
+import Calculations.Configurations;
+import Calculations.GenerateClassException;
+import Calculations.Point;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.CellObjectRemoveException;
 import Utils.GifSequenceWriter;
-import java.awt.EventQueue;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.IOException;
-import java.util.List;
-import javax.swing.JMenuItem;
-import Calculations.Configurations;
-import Calculations.GenerateClassException;
-import Calculations.Point;
 import Utils.JSON;
 import Utils.SaveAndLoad;
 import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 
 public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	/**Какая из кнопок выбрана*/
@@ -84,7 +82,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 		private LOAD_T(){text = Configurations.getHProperty(Menu.class,"LOAD_T." + name());}
 	}
 	/**Перечисление режимов изменения*/
-	private enum EDIT_T{
+	public enum EDIT_T{
 		FROM_DISK,FROM_CLIPBOARD,FROM_FIELD;
 		public static final EDIT_T[] values = EDIT_T.values();
 		/**Описание пункта меню*/
@@ -180,6 +178,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			}
 			try {
 				final var vw = ((DefaultViewer) Configurations.getViewer()).getWorld();
+                //new java.awt.Robot().createScreenCapture(vw.getLocationOnScreen());
 				gifs.nextFrame(g -> vw.paintComponent(g, true));
 				gif_frame++;
 				if(0 <= gif_frame && gif_frame < 25 * 2){
@@ -447,7 +446,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 	/**Активирует режим редактирования клетки
 	 * @param mode сопосб сохранения
 	 */
-	private void editCell(EDIT_T mode){
+	public void editCell(EDIT_T mode){
 		Configurations.world.stop();
 		select = MENU_SELECT.EDIT;
 		select_mode = mode;
@@ -463,7 +462,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 					toDefault();
 					editCell(cell);
 				} catch (Exception ex){
-					Logger.getLogger(CellEditor.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+					Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 					JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
 				}
 			}
@@ -481,7 +480,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 						toDefault();
 						editCell(cell);
 					} catch (Exception ex){
-						Logger.getLogger(CellEditor.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+						Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 						JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
 					}
 				});
@@ -532,7 +531,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 									json.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
 									cell[0] = new AliveCell(json, Configurations.tree, Configurations.VERSION);
 								} catch (Exception ex){
-									Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+									Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 									JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
 									cell[0] = null;
 								}
@@ -547,7 +546,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 											return new AliveCell(j, Configurations.tree, version);
 										},"cell");
 									} catch (Exception ex){
-										Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
+										Logger.getLogger(Menu.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 										JOptionPane.showMessageDialog(null,	Configurations.getHProperty(Menu.class,"loadCell.error",ex.getMessage()), "BioLife", JOptionPane.ERROR_MESSAGE);
 										cell[0] = null;
 									}

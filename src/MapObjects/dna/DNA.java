@@ -1,13 +1,12 @@
 package MapObjects.dna;
 
-import java.util.List;
-
+import Calculations.Configurations;
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
 import Utils.JSON;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import Calculations.Configurations;
+import java.util.List;
 
 /**ДНК бота*/
 public class DNA {
@@ -119,6 +118,13 @@ public class DNA {
 	 */
 	public void next(int offset) {
         pc = getIndex(offset);
+	}
+	/**
+	 * Устанавливает PC на указанную инструкцию
+	 * @param PC - индекс инструкции
+	 */
+	public void setPC(int PC) {
+		pc = normalization(PC);
 	}
 	/**
 	 * Возвращает текущий индекс инструкции

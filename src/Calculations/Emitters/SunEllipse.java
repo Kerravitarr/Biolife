@@ -247,7 +247,7 @@ public class SunEllipse extends SunAbstract {
 			//Соотношение цветов
 			fractions = new float[] { 0.0f, sunP, 1.0f };
 			//Сами цвета
-			 colors = new Color[]{colorMaxLight, colorMaxLight, AllColors.SUN_DARK};
+			colors = new Color[]{colorMaxLight, colorMaxLight, AllColors.SUN_DARK};
 		}
 			
 		if(a2 == b2){

@@ -34,6 +34,13 @@ public class CommandList {
 		for(var i = 0 ; i < CommandList.list.length ; i++)
 			CommandList.list[i] = CommandList.get(i);
 	}
+    ///возвращает индекс команды
+    public static int index(CommandDNA cmd){
+		for(var i = 0 ; i < CommandList.list.length ; i++)
+			if(CommandList.list[i] == cmd)
+                return i;
+        return -1;
+    }
 	/**
 	 * Функция преобразует порядковый номер команды в объект.
 	 * Да, она обзательна. switch помогает отлавливать ситуацию, когда 

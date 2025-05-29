@@ -14,4 +14,6 @@ public class Destroy extends CommandDo {
 	protected void doing(AliveCell cell) {
 		cell.bot2Organic();
 	}
+	@Override
+	public Integer nextCMD(){return null;}
 }

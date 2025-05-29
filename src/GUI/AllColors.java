@@ -45,6 +45,19 @@ public class AllColors {
 	public static final Color TRAJECTORY_POINT =  new Color(225, 0, 0, 255);
 	/**Цвет линии траектории.*/
 	public static final Color TRAJECTORY_LINE =  new Color(0, 255, 0, 255);
+    
+    ///Цвета для отображения ДНК команды действия
+	public static final Color DNA_COMAND_DO = new Color(255, 0, 0, 30);
+	///Цвет для отображения ДНК обычной команды
+	public static final Color DNA_COMAND = new Color(0, 0, 255, 30);
+	///Цвет для отображения ДНК команды с прерыванием
+	public static final Color DNA_COMAND_INTERRUPT = new Color(255, 255, 0, 30);
+	///Цвет для отображения ДНК аргумента
+	public static final Color DNA_ARG = new Color(100, 100, 100, 30);
+	///Цвет для отображения ДНК параметра
+	public static final Color DNA_PARAM = new Color(255, 255, 255, 30);
+	
+
 	
 	/**Цвет ороговевшей стены*/
     public static final Color FOSSIL = Color.BLACK;
@@ -132,5 +145,14 @@ public class AllColors {
 
 		return new Color(r, g, b, a);
 	}
-	
+	/**
+	 * Возвращает цвет для отображения ДНК команды
+	 * @param cmd команда
+	 * @return цвет
+	 */
+	public static Color getColor(MapObjects.dna.CommandDNA cmd){
+		if(cmd.isInterrupt()) return DNA_COMAND_INTERRUPT;
+		else if(cmd.isDoing()) return DNA_COMAND_DO;
+		else return DNA_COMAND;
+	}
 }

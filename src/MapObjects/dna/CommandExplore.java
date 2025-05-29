@@ -41,6 +41,8 @@ public abstract class CommandExplore extends CommandDNA {
 		final var offset = cell.getDna().get(1 + getCountParams() + branch,false);
 		return offset;
 	}
+	@Override
+	public Integer nextCMD(){return null;}
 	/** Фукнция исследования, которую обязана реализовать каждая команда исследования
 	 * @param cell клетка, которая исследует
 	 * @return номер ветви, которая будет выполнена

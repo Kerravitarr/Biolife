@@ -60,7 +60,6 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	/**Как часто производить расчёты*/
 	private long timeout = 0;
 	
-	
 	/**Возвожное состояние мира*/
 	private enum STATUS {STOP,ACTIV_ALL,ERROR};
 	/**Один блок, состоящий из двух вертекалей, карты*/

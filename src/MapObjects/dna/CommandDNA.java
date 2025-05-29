@@ -1,9 +1,9 @@
 package MapObjects.dna;
 
-import MapObjects.AliveCell;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;
+import MapObjects.AliveCell;
 import MapObjects.CellObject;
 
 /**
@@ -109,6 +109,15 @@ public abstract class CommandDNA {
 	 * @return true, если команда может вызвать прерывание
 	 */
 	public boolean isInterrupt() {return isInterrupt;};	
+	/**Показывает на сколько сдвинется PC после выполнения команды
+	 * Для комманд исследования всегда возвращает null, так как эти команды имеют ветви
+	 * А значит, счётчик будет сдвинут по внутреннему состоянию
+	 * Ещё может вернуть null для команд, которые завершающий - то есть после них
+	 * Точно ни чего происходить не будет. Нужна эта команда чисто для визуального
+	 * посторения графика
+	 * @return 
+	 */
+	public abstract Integer nextCMD();
 	
 	
 	/** Возвращает параметр ДНК
