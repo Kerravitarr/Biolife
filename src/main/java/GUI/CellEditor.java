@@ -1650,7 +1650,7 @@ public class CellEditor extends javax.swing.JDialog {
 	}
 	/**Название картинки из ресурсов игры, которая будет загружена как курсор*/
 	private Cursor loadCursor(String name){
-		var name_const = MessageFormat.format("resources/{0}.png", name);
+		var name_const = MessageFormat.format("pictures/{0}.png", name);
 		var constResource = Configurations.class.getClassLoader().getResource(name_const);
 		if(constResource == null) {
 			System.err.println("Не смогли загрузить фотографию " + name_const);

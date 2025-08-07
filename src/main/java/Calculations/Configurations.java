@@ -771,13 +771,13 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 	 * @param name название кнопок
 	 */
 	public static void setIcon(AbstractButton button, String name) {
-		var name_const = MessageFormat.format("resources/{0}.png", name);
+		var name_const = MessageFormat.format("pictures/{0}.png", name);
 		var constResource = Configurations.class.getClassLoader().getResource(name_const);
 		if(constResource == null) {
 			System.err.println("Не смогли загрузить фотографию " + name_const);
 		}
 		var icon_const = constResource == null ? null : new ImageIcon(constResource);
-		var name_select = MessageFormat.format("resources/{0}_active.png", name);
+		var name_select = MessageFormat.format("pictures/{0}_active.png", name);
 		var selectResource = Configurations.class.getClassLoader().getResource(name_select);
 		if(selectResource == null) {
 			System.err.println("Не смогли загрузить фотографию " + name_select);

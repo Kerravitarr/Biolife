@@ -486,7 +486,7 @@ public class Settings extends javax.swing.JPanel {
 		final var panel = new javax.swing.JPanel();
 		panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.X_AXIS));
 		if(icon != null){
-			var name_const = "resources/"+icon+".png";
+			var name_const = "pictures/"+icon+".png";
 			var constResource = Configurations.class.getClassLoader().getResource(name_const);
 			if(constResource == null) {
 				System.err.println("Не смогли загрузить фотографию " + name_const);

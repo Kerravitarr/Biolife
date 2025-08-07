@@ -7,10 +7,10 @@ import Calculations.Configurations;
 import Calculations.GenerateClassException;
 import GUI.MainFrame;
 import GUI.WithoutGUI;
+import Utils.ZipBuffer;
 import java.io.File;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.ArrayDeque;
 
 public class BioLife{	
 	/**Точка входа в приложение
@@ -28,7 +28,8 @@ public class BioLife{
 			} catch (java.io.UnsupportedEncodingException e) {
 				System.out.println("App not support encoding UTF-8");
 			}
-		}		
+		}
+        
 		final var _opts = new Utils.CMDOptions(args);
 		_opts.add(new Utils.CMDOptions.Option('V',getProperty("V")));
 		_opts.add(new Utils.CMDOptions.Option('W',100,700,null,1d,getProperty("V")));
@@ -62,7 +63,7 @@ public class BioLife{
 		Utils.Reflector.getClassesByClasses(BioLife.class);
 		final var isGUI = !_opts.get('V').get(Boolean.class); //Наличие графического окна
 		var defType = Configurations.WORLD_TYPE.values[Utils.Utils.random(0, Configurations.WORLD_TYPE.length - 1)];
-		assert (defType = Configurations.WORLD_TYPE.FIELD_R) != null; //TODO На время отладки мне нужен конкретный мир
+		//assert (defType = Configurations.WORLD_TYPE.FIELD_R) != null; //TODO На время отладки мне нужен конкретный мир
 		var load = _opts.get('L').get(String.class);
 		if(load.isEmpty()){//Если не задано, то подгружаем последний сохранённый мир
 			var f = new File(System.getProperty("user.dir"));
@@ -73,7 +74,7 @@ public class BioLife{
 			}
 			if(old != null){
 				load = old.getAbsolutePath();
-				assert (load = "") != null; //TODO На время отладки не надо загружать миры
+				//assert (load = "") != null; //TODO На время отладки не надо загружать миры
 			}
 		}
 		if(!load.isEmpty()){
