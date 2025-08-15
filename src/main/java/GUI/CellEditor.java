@@ -4,6 +4,7 @@
  */
 package GUI;
 
+import kerlib.draw.settings.SelectPanel;
 import Calculations.Configurations;
 import Calculations.Point.PointD;
 import MapObjects.AliveCell;
@@ -597,7 +598,7 @@ public class CellEditor extends javax.swing.JDialog {
 				final int tx = (int) (cx + (r + 2*rD) * cos); //Координаты этой команды
 				final int ty = (int) (cy + (r + 2*rD) * sin);
 				
-				final var panel = (SettingsSelect<Integer>)interaptPanel.getComponent(i);
+				final var panel = (SelectPanel<Integer>)interaptPanel.getComponent(i);
 				var point = panel.getLocationOnScreen();
 				point.move(point.x - locationOnScreen.x, point.y - locationOnScreen.y + panel.getHeight() / 2);//Вернём положение относительно нас
 				final var fieldStart = 1 + 3 * point.y / h; //А это зона, из которой мы выходим
@@ -1212,7 +1213,7 @@ public class CellEditor extends javax.swing.JDialog {
 					0d, 0d, Poison.MAX_TOXIC, 0d, object.getPosionPower(), null, 
 				e->object.setPosionPower(e));
 		poisonPower.setVisible(object.getPosionType() != Poison.TYPE.UNEQUIPPED);
-		final var PoiosnTypeS = new SettingsSelect<>(CellEditor.class, "settingsPanel.poisonType", PT, Poison.TYPE.UNEQUIPPED, object.getPosionType(), e -> {
+		final var PoiosnTypeS = new SelectPanel<>(Settings.texter.apply(CellEditor.class, "settingsPanel.poisonType"),Settings.buttoner, PT, Poison.TYPE.UNEQUIPPED, object.getPosionType(), e -> {
 			object.setPosionType(e);
 			poisonPower.setValue(object.getPosionPower());
 			poisonPower.setVisible(e != Poison.TYPE.UNEQUIPPED);
@@ -1309,7 +1310,7 @@ public class CellEditor extends javax.swing.JDialog {
 			final var index = i;
 			final var aInt = interrupts[index];
 			final var o = objects[index];
-			interaptPanel.add(new SettingsSelect<>(CellEditor.class,"interraptPanel."+o.name(),ints,i % dna.size, aInt, e -> {
+			interaptPanel.add(new SelectPanel<>(Settings.texter.apply(CellEditor.class,"interraptPanel."+o.name()),Settings.buttoner,ints,i % dna.size, aInt, e -> {
 				interrupts[index] = e;
 				centralPanel.repaint();
 			}));

@@ -4,6 +4,8 @@
  */
 package GUI;
 
+import kerlib.draw.settings.StringPanel;
+import kerlib.draw.settings.BooleanPanel;
 import Calculations.Configurations;
 import Calculations.Point;
 import Utils.ClassBuilder;
@@ -246,9 +248,9 @@ public class SettingsMake extends java.awt.Dialog {
 		param.setValue(param.getDefault());
 		//Ну и понеслась создавать панели!
 		if(param instanceof Utils.ClassBuilder.BooleanConstructorParam<?> np){
-			return new SettingsBoolean(clr,parametrFullName, np.getDefault(), e -> {np.setValue(e);propertyChange();});
+			return new BooleanPanel(Settings.texter.apply(clr,parametrFullName), np.getDefault(), e -> {np.setValue(e);propertyChange();});
 		} else if(param instanceof Utils.ClassBuilder.StringConstructorParam<?> np){
-			return new SettingsString(clr,parametrFullName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);propertyChange();});
+			return new StringPanel(Settings.texter.apply(clr,parametrFullName),Settings.buttoner, np.getDefault(),np.getDefault(), e -> {np.setValue( e);propertyChange();});
 		} else if(param instanceof Utils.ClassBuilder.NumberConstructorParam<?,?> np_){
 			final var npn = (Utils.ClassBuilder.NumberConstructorParam<? extends Number,?>) np_;
 			final var def = npn.getDefault().getClass();

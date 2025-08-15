@@ -21,6 +21,11 @@
             <version>4.13</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.kerrovitarr</groupId>
+            <artifactId>Kerlib</artifactId>
+            <version>0.1</version>
+        </dependency>
     </dependencies>  
 
     

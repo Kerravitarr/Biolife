@@ -4,6 +4,9 @@
  */
 package GUI;
 
+import kerlib.draw.settings.SelectPanel;
+import kerlib.draw.settings.StringPanel;
+import kerlib.draw.settings.BooleanPanel;
 import Calculations.Configurations;
 import Calculations.Emitters.DefaultEmitter;
 import Calculations.Emitters.EmitterSet;
@@ -52,7 +55,7 @@ public class Settings extends javax.swing.JPanel {
 			final var make = openPanel(new SettingsMake(false, _constructorsList));
 			make.setBounds(Settings.this.getLocationOnScreen().x, Settings.this.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
 			make.addConstructorPropertyChangeListener(c -> {
-				blinks.forEach(b -> b.setValue(false));
+				blinks.forEach(b -> b.value(false));
 				final var build = c.build();
 				for(final var f : wv.getClass().getMethods()){
 					if(f.getName().equals("setSelect") && f.getParameterCount() == 1 && f.getParameterTypes()[0].isAssignableFrom(build.getClass())){
@@ -65,7 +68,7 @@ public class Settings extends javax.swing.JPanel {
 				@Override
 				public void windowClosed(java.awt.event.WindowEvent e){
 					//Если у нас нет выделения - то убираем выделение. Оно могло остаться от создаваемого объекта
-					if(blinks.stream().filter( b -> b.getValue()).findFirst().orElse(null) == null)
+					if(blinks.stream().filter( b -> b.value()).findFirst().orElse(null) == null)
 						wv.setSelect((Trajectory) null);
 					final var ret = make.get(Object.class);
 					if(ret != null)
@@ -183,7 +186,7 @@ public class Settings extends javax.swing.JPanel {
 			w.dispatchEvent(new ComponentEvent(w, ComponentEvent.COMPONENT_RESIZED));
 		});
 	
-		final var wt = new SettingsSelect<>(Settings.class,"configuations.WORLD_TYPE", Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.confoguration.world_type, e -> {
+		final var wt = new SelectPanel<>(texter.apply(null,"configuations.WORLD_TYPE"),buttoner, Configurations.WORLD_TYPE.values, Configurations.WORLD_TYPE.LINE_H, Configurations.confoguration.world_type, e -> {
 			Configurations.world.awaitStop();
 			Configurations.rebuildMap(new Configurations(Configurations.confoguration,e,Configurations.getWidth() , Configurations.getHeight()));
 			rebuildBuild();
@@ -239,7 +242,7 @@ public class Settings extends javax.swing.JPanel {
 			//Мощность гравитации
 			sliders[0] = new SettingsSlider<>(Settings.class,"gravitation." + status.name(), 0, defPower, 1000, 0, buildGrav.getValue(),null,e -> {
 				final var g = Configurations.gravitation[status.ordinal()];
-				final var direction = (SettingsSelect<Gravitation.Direction>)sliders[1];
+				final var direction = (SelectPanel<Gravitation.Direction>)sliders[1];
 				final var toPoint = (SettingsPoint)sliders[2];
 				if (e == 0){
 					Configurations.gravitation[status.ordinal()] = new Gravitation();
@@ -252,14 +255,14 @@ public class Settings extends javax.swing.JPanel {
 				} else {
 					Configurations.gravitation[status.ordinal()] = new Gravitation(e,defDir);
 					direction.setVisible(true);
-					((SettingsSelect<Gravitation.Direction>)direction).setValue(defDir);
+					((SelectPanel<Gravitation.Direction>)direction).value(defDir);
 				}
 			});
 			//Направление гравитации
-			sliders[1] = new SettingsSelect<>(Settings.class,"gravitation.dir", Gravitation.Direction.values, defDir, buildGrav.getDirection(),e -> {
+			sliders[1] = new SelectPanel<>(texter.apply(null,"gravitation.dir"),buttoner, Gravitation.Direction.values, defDir, buildGrav.getDirection(),e -> {
 				final var g = Configurations.gravitation[status.ordinal()];
 				final var power = (SettingsSlider) sliders[0];
-				final var direction = (SettingsSelect<Gravitation.Direction>) sliders[1];
+				final var direction = (SelectPanel<Gravitation.Direction>) sliders[1];
 				final var toPoint = (SettingsPoint)sliders[2];
 				switch (e) {
 					case NONE -> {
@@ -307,7 +310,7 @@ public class Settings extends javax.swing.JPanel {
 			suns.add(new SettingsSlider<>(Settings.class,"sun.power", 1, 30, 200, 1,(int)sun.getPower(),  null, e -> {
 				sun.setPower(e);
 			}));
-			suns.add(new SettingsBoolean(Settings.class,"emitter.isLine", !sun.getIsLine(), e -> {
+			suns.add(new BooleanPanel(texter.apply(null,"emitter.isLine"), !sun.getIsLine(), e -> {
 				sun.setIsLine(!e);
 			}));
 			for(final var p : sun.getParams())
@@ -334,7 +337,7 @@ public class Settings extends javax.swing.JPanel {
 			final var trajectory = sun.getTrajectory();
 			if(i > 0)
 				suns2.add(new JPopupMenu.Separator());
-			suns2.add(new SettingsString(Settings.class,"object.editname", "Звезда", sun.toString(), e -> sun.setName(e)));
+			suns2.add(new StringPanel(texter.apply(null,"object.editname"),buttoner, "Звезда", sun.toString(), e -> sun.setName(e)));
 			
 			suns2.add(addBlinkTrajectory(sun == wv.getSelect(), e->wv.setSelect(e ? trajectory : null)));
 			for(final var p : trajectory.getParams())
@@ -373,7 +376,7 @@ public class Settings extends javax.swing.JPanel {
 			minerals.add(new SettingsSlider<>(Settings.class,"minerals.attenuation",
 				0, (int)(dc.DIRTY_WATER * 100), 1000,
 				0, (int)(mineral.getAttenuation() * 100), null, e -> mineral.setAttenuation(e / 100d)));
-			minerals.add(new SettingsBoolean(Settings.class,"emitter.isLine", !mineral.getIsLine(), e -> {
+			minerals.add(new BooleanPanel(texter.apply(null,"emitter.isLine"), !mineral.getIsLine(), e -> {
 				mineral.setIsLine(!e);
 			}));
 			for(final var p : mineral.getParams())
@@ -400,7 +403,7 @@ public class Settings extends javax.swing.JPanel {
 			final var trajectory = mineral.getTrajectory();
 			if(i > 0)
 				minerals2.add(new JPopupMenu.Separator());
-			minerals2.add(new SettingsString(Settings.class,"object.editname", "Залеж", mineral.toString(), e -> mineral.setName(e)));
+			minerals2.add(new StringPanel(texter.apply(null,"object.editname"),buttoner, "Залеж", mineral.toString(), e -> mineral.setName(e)));
 			
 			minerals2.add(addBlinkTrajectory(mineral == wv.getSelect(), e->wv.setSelect(e ? trajectory : null)));
 			for(final var p : trajectory.getParams())
@@ -456,7 +459,7 @@ public class Settings extends javax.swing.JPanel {
 			final var trajectory = stream.getTrajectory();
 			if(i > 0)
 				streams2.add(new JPopupMenu.Separator());
-			streams2.add(new SettingsString(Settings.class,"object.editname", "Залеж", stream.toString(), e -> stream.setName(e)));
+			streams2.add(new StringPanel(texter.apply(null,"object.editname"),buttoner, "Залеж", stream.toString(), e -> stream.setName(e)));
 			
 			streams2.add(addBlinkTrajectory(stream == wv.getSelect(), e->wv.setSelect(e ? stream.getTrajectory() : null)));
 			for(final var p : trajectory.getParams())
@@ -583,14 +586,14 @@ public class Settings extends javax.swing.JPanel {
 			final var make = openPanel(new SettingsMake(false, constructorList));
 			make.setBounds(newT.getLocationOnScreen().x, newT.getLocationOnScreen().y, Settings.this.getWidth(), Settings.this.getHeight());
 			make.addConstructorPropertyChangeListener(c -> {
-				blinks.forEach(b -> b.setValue(false));
+				blinks.forEach(b -> b.value(false));
 				l.propertyChange(c);
 			});
 			make.addWindowListener(new java.awt.event.WindowAdapter() {
 				@Override
 				public void windowClosed(java.awt.event.WindowEvent e){
 					//Если у нас нет выделения - то убираем выделение. Оно могло остаться от создаваемого объекта
-					if(blinks.stream().filter( b -> b.getValue()).findFirst().orElse(null) == null)
+					if(blinks.stream().filter( b -> b.value()).findFirst().orElse(null) == null)
 						wv.setSelect((Trajectory) null);
 					final var ret = make.get(Object.class);
 					if(ret != null)
@@ -617,17 +620,17 @@ public class Settings extends javax.swing.JPanel {
 	 * @param doing что нужно сделать при включении (выключении) мигания?
 	 * @return панель с кнопкой мигания
 	 */
-	private javax.swing.JPanel addBlink(boolean nowValue, SettingsBoolean.AdjustmentListener doing){
-		final var panels = new SettingsBoolean[1];
-		panels[0] = new SettingsBoolean(Settings.class,"object.blink", nowValue, e -> {
+	private javax.swing.JPanel addBlink(boolean nowValue, java.util.function.Consumer<Boolean> doing){
+		final var panels = new BooleanPanel[1];
+		panels[0] = new BooleanPanel(texter.apply(null,"object.blink"), nowValue, e -> {
 			if(e == true){
 				for(final var i : blinks){
 					if(panels[0] != i)
-						i.setValue(false);
+						i.value(false);
 				}
 			}
-			panels[0].setValue(e);
-			doing.adjustmentValueChanged(e);
+			panels[0].value(e);
+			doing.accept(e);
 		});
 		blinks.add(panels[0]);
 		return panels[0];
@@ -637,17 +640,17 @@ public class Settings extends javax.swing.JPanel {
 	 * @param doing что нужно сделать при включении (выключении) мигания?
 	 * @return панель с кнопкой мигания
 	 */
-	private javax.swing.JPanel addBlinkTrajectory(boolean nowValue, SettingsBoolean.AdjustmentListener doing){
-		final var panels = new SettingsBoolean[1];
-		panels[0] = new SettingsBoolean(Settings.class,"object.blinkTrajectory", nowValue, e -> {
+	private javax.swing.JPanel addBlinkTrajectory(boolean nowValue,  java.util.function.Consumer<Boolean> doing){
+		final var panels = new BooleanPanel[1];
+		panels[0] = new BooleanPanel(texter.apply(null,"object.blinkTrajectory"), nowValue, e -> {
 			if(e == true){
 				for(final var i : blinks){
 					if(panels[0] != i)
-						i.setValue(false);
+						i.value(false);
 				}
 			}
-			panels[0].setValue(e);
-			doing.adjustmentValueChanged(e);
+			panels[0].value(e);
+			doing.accept(e);
 		});
 		blinks.add(panels[0]);
 		return panels[0];
@@ -691,7 +694,7 @@ public class Settings extends javax.swing.JPanel {
 		
 		if(param instanceof Utils.ClassBuilder.BooleanParam<?> np_){
 			final var np = (Utils.ClassBuilder.BooleanParam<T>) np_;
-			return new SettingsBoolean(clr,parametrName, np.get(object), e -> {np.setValue(object, e);c.change();});
+			return new BooleanPanel(texter.apply(clr,parametrName), np.get(object), e -> {np.setValue(object, e);c.change();});
 		} else if(param instanceof Utils.ClassBuilder.BooleanVectorParam<?> np_){
 			final var np = (Utils.ClassBuilder.BooleanVectorParam<T>) np_;
 			final var nowVals = np.get(object);
@@ -699,7 +702,7 @@ public class Settings extends javax.swing.JPanel {
 			panel.setLayout(new javax.swing.BoxLayout(panel, javax.swing.BoxLayout.Y_AXIS));
 			for (int i = 0; i < nowVals.length; i++) {
 				final var index = i;
-				panel.add(new SettingsBoolean(clr, parametrName, nowVals[index], e -> {
+				panel.add(new BooleanPanel(texter.apply(clr, parametrName), nowVals[index], e -> {
 					nowVals[index] = e;
 					np.setValue(object, nowVals);
 				}));
@@ -708,7 +711,7 @@ public class Settings extends javax.swing.JPanel {
 			//return panel; Я просто не уверен, что сделал всё верно :)
 		} else if(param instanceof Utils.ClassBuilder.StringParam<?> np_){
 			final var np = (Utils.ClassBuilder.StringParam<T>) np_;
-			return new SettingsString(clr,parametrName, np.getDefault(),np.get(object), e -> {np.setValue(object, e);c.change();});
+			return new StringPanel(texter.apply(clr,parametrName),buttoner, np.getDefault(),np.get(object), e -> {np.setValue(object, e);c.change();});
 		} else if(param instanceof Utils.ClassBuilder.StringVectorParam<?> np_){
 			throw new AssertionError(String.valueOf(param));
 		} else if(param instanceof Utils.ClassBuilder.NumberParam<? extends Number,?> np_){
@@ -1055,7 +1058,7 @@ public class Settings extends javax.swing.JPanel {
 		} else {
 			//Сбрасываем выделение
 			for(final var i : blinks){
-				i.setValue(false);
+				i.value(false);
 			}
 		}
 		rebuild();
@@ -1112,10 +1115,10 @@ public class Settings extends javax.swing.JPanel {
 					if (panel == gravitations) { //Сравниваем именно указатели!
 						boolean isVisiblePoint = false;
 						for (final var c : panel.getComponents()) {
-							if (c instanceof SettingsSelect<?>) {
-								final var settingsSelect = (SettingsSelect<Gravitation.Direction>) c;
-								c.setVisible(settingsSelect.getValue() != Gravitation.Direction.NONE);
-								isVisiblePoint = settingsSelect.getValue() == Gravitation.Direction.TO_POINT;
+							if (c instanceof SelectPanel<?>) {
+								final var settingsSelect = (SelectPanel<Gravitation.Direction>) c;
+								c.setVisible(settingsSelect.value() != Gravitation.Direction.NONE);
+								isVisiblePoint = settingsSelect.value() == Gravitation.Direction.TO_POINT;
 							} else if (c instanceof SettingsPoint sp) {
 								sp.setVisible(isVisiblePoint);
 							} else {
@@ -1158,7 +1161,24 @@ public class Settings extends javax.swing.JPanel {
 	/**Нужна печать предупреждения при редактировании карты?*/
 	private boolean isNeedWarning = true;
 	/**Список всех подсвеченных объектов. Нужен для того, чтобы подсвечивался только один объект*/
-	private final ArrayList<SettingsBoolean> blinks = new ArrayList<>();
+	private final ArrayList<BooleanPanel> blinks = new ArrayList<>();
 	/**Текущее окно для создания объектов*/
 	private SettingsMake makeWindow = null;
+    ///Создаёт интерфейс, который уже даёт подписи для всех настроек
+    public static final java.util.function.BiFunction<Class,String,kerlib.draw.settings.TextInterface> texter = (clazz,nameS) -> {
+        var cls = clazz == null ? Settings.class : clazz;
+        return (k) -> {
+            return switch(k){
+                case LABEL -> Configurations.getHProperty(cls, nameS + ".L");
+                case TOOLTIPTEXT -> Configurations.getHProperty(cls, nameS + ".L");
+                case RESET_B_TOOLTIPTEXT -> Configurations.getHProperty(cls, nameS + ".resetSlider");
+            };
+        };
+    };
+    ///Создаёт интерфейс, который задаёт для кнопки иконку
+    public static final kerlib.draw.settings.ButtonInterface buttoner = (k,b) -> {
+        switch(k){
+            case RESET -> Configurations.setIcon(b, "reset");
+        }
+    };
 }
