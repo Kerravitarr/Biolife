@@ -4,6 +4,7 @@
  */
 package GUI;
 
+import kerlib.draw.settings.NumberPanel;
 import kerlib.draw.settings.SelectPanel;
 import Calculations.Configurations;
 import Calculations.Point.PointD;
@@ -1191,42 +1192,42 @@ public class CellEditor extends javax.swing.JDialog {
 		settingsPanel.removeAll();
 		final var ST = AliveCellProtorype.Specialization.TYPE.values;
 		
-		final var spec = new ArrayList<SettingsSlider>(ST.length);
+		final var spec = new ArrayList<NumberPanel>(ST.length);
 		for(final var s : ST){
-			final var slider = new SettingsSlider<>(CellEditor.class, "specialization."+s.name(),
+			final var slider = new NumberPanel<>(CellEditor.class, "specialization."+s.name(),
 					0, 50, 100, 0, object.getSpecialization().get(s), 100, e->{
 						object.getSpecialization().set(s, e);
 						for (int i = 0; i < spec.size(); i++)
-							spec.get(i).setValue(object.getSpecialization().get(ST[i]));
+							spec.get(i).value(object.getSpecialization().get(ST[i]));
 					});
 			spec.add(slider);
 			settingsPanel.add(slider);
 		}
-		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.HP",
+		settingsPanel.add(new NumberPanel<>(CellEditor.class, "settingsPanel.HP",
 					0d, AliveCellProtorype.START_HP, AliveCellProtorype.MAX_HP, 0d, object.getHealth(), null, 
 				e->object.setHealth(e)));
-		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.MP",
+		settingsPanel.add(new NumberPanel<>(CellEditor.class, "settingsPanel.MP",
 					0d, AliveCellProtorype.START_MP, AliveCellProtorype.MAX_MP, 0d, object.getMineral(), null, 
 				e->object.setMineral(e)));
 		final var PT = Poison.TYPE.vals;
-		final var poisonPower = new SettingsSlider<>(CellEditor.class, "settingsPanel.poisonPower",
+		final var poisonPower = new NumberPanel<>(CellEditor.class, "settingsPanel.poisonPower",
 					0d, 0d, Poison.MAX_TOXIC, 0d, object.getPosionPower(), null, 
 				e->object.setPosionPower(e));
 		poisonPower.setVisible(object.getPosionType() != Poison.TYPE.UNEQUIPPED);
 		final var PoiosnTypeS = new SelectPanel<>(Settings.texter.apply(CellEditor.class, "settingsPanel.poisonType"),Settings.buttoner, PT, Poison.TYPE.UNEQUIPPED, object.getPosionType(), e -> {
 			object.setPosionType(e);
-			poisonPower.setValue(object.getPosionPower());
+			poisonPower.value(object.getPosionPower());
 			poisonPower.setVisible(e != Poison.TYPE.UNEQUIPPED);
 		});
 		settingsPanel.add(PoiosnTypeS);
 		settingsPanel.add(poisonPower);
-		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.buoyancy",
+		settingsPanel.add(new NumberPanel<>(CellEditor.class, "settingsPanel.buoyancy",
 					-100, 0, 100, -100, object.getBuoyancy(), 100, 
 				e->object.setBuoyancy(e)));
-		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.hp_by_div",
+		settingsPanel.add(new NumberPanel<>(CellEditor.class, "settingsPanel.hp_by_div",
 					0, (int)AliveCellProtorype.MAX_HP/10, (int)AliveCellProtorype.MAX_HP, 0, object.getHp_by_div(), null, 
 				e->object.setHp_by_div(e)));
-		settingsPanel.add(new SettingsSlider<>(CellEditor.class, "settingsPanel.tolerance",
+		settingsPanel.add(new NumberPanel<>(CellEditor.class, "settingsPanel.tolerance",
 					0, 2, AliveCellProtorype.DEF_MINDE_SIZE, 0, object.getTolerance(), null, 
 				e->object.setTolerance(e)));
 		settingsPanel.add(javax.swing.Box.createVerticalGlue()); //Чтобы кнопки были внизу

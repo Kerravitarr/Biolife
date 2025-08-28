@@ -4,6 +4,7 @@
  */
 package GUI;
 
+import kerlib.draw.settings.NumberPanel;
 import kerlib.draw.settings.SelectPanel;
 import kerlib.draw.settings.StringPanel;
 import kerlib.draw.settings.BooleanPanel;
@@ -154,16 +155,16 @@ public class Settings extends javax.swing.JPanel {
 		
 		configuationsNorm.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "worldSize",Configurations.getWidth(),Configurations.getHeight())));
 		configuationsNorm.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "worldType",Configurations.confoguration.world_type)));
-		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.speed", 0l, 0l, 1000l, 0l,Configurations.world.getSpeed(),null, e -> Configurations.world.setSpeed(e)));
+		configuationsNorm.add(new NumberPanel<>(Settings.class,"configuations.speed", 0l, 0l, 1000l, 0l,Configurations.world.getSpeed(),null, e -> Configurations.world.setSpeed(e)));
 		configuationsNorm.add(new JPopupMenu.Separator());
-		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.savePeriod", 1_000, (int)dc.SAVE_PERIOD, 10_000_000,1_000, (int)Configurations.confoguration.SAVE_PERIOD,null, e -> Configurations.confoguration.SAVE_PERIOD = e));
-		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.countSave", 1, dc.COUNT_SAVE, 10,1, Configurations.confoguration.COUNT_SAVE,null, e -> Configurations.confoguration.COUNT_SAVE = e));
+		configuationsNorm.add(new NumberPanel<>(Settings.class,"configuations.savePeriod", 1_000, (int)dc.SAVE_PERIOD, 10_000_000,1_000, (int)Configurations.confoguration.SAVE_PERIOD,null, e -> Configurations.confoguration.SAVE_PERIOD = e));
+		configuationsNorm.add(new NumberPanel<>(Settings.class,"configuations.countSave", 1, dc.COUNT_SAVE, 10,1, Configurations.confoguration.COUNT_SAVE,null, e -> Configurations.confoguration.COUNT_SAVE = e));
 		configuationsNorm.add(new JPopupMenu.Separator());
-		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.mutagenicity",
+		configuationsNorm.add(new NumberPanel<>(Settings.class,"configuations.mutagenicity",
 				0d, dc.AGGRESSIVE_ENVIRONMENT, 100d,
 				0d, Configurations.confoguration.AGGRESSIVE_ENVIRONMENT, 100d, e -> Configurations.confoguration.AGGRESSIVE_ENVIRONMENT = e));
-		configuationsNorm.add( new SettingsSlider<>(Settings.class,"configuations.timeLifeOrg", 0d, dc.TIK_TO_EXIT, 1000d, 0d, Configurations.confoguration.TIK_TO_EXIT,1000d, e -> Configurations.confoguration.TIK_TO_EXIT = e / 1000d));
-		configuationsNorm.add(new SettingsSlider<>(Settings.class,"configuations.dirtiness",
+		configuationsNorm.add(new NumberPanel<>(Settings.class,"configuations.timeLifeOrg", 0d, dc.TIK_TO_EXIT, 1000d, 0d, Configurations.confoguration.TIK_TO_EXIT,1000d, e -> Configurations.confoguration.TIK_TO_EXIT = e / 1000d));
+		configuationsNorm.add(new NumberPanel<>(Settings.class,"configuations.dirtiness",
 				0, (int)(dc.DIRTY_WATER * 100), 1000,
 				0, (int)(Configurations.confoguration.DIRTY_WATER * 100), null, e -> {Configurations.confoguration.DIRTY_WATER = e / 100d; Configurations.suns.updateMatrix();}));
 		
@@ -240,7 +241,7 @@ public class Settings extends javax.swing.JPanel {
 			//Ну значит будет у нас... Вот такая вот шляпа :)
 			final var sliders = new javax.swing.JPanel[3];
 			//Мощность гравитации
-			sliders[0] = new SettingsSlider<>(Settings.class,"gravitation." + status.name(), 0, defPower, 1000, 0, buildGrav.getValue(),null,e -> {
+			sliders[0] = new NumberPanel<>(Settings.class,"gravitation." + status.name(), 0, defPower, 1000, 0, buildGrav.getValue(),null,e -> {
 				final var g = Configurations.gravitation[status.ordinal()];
 				final var direction = (SelectPanel<Gravitation.Direction>)sliders[1];
 				final var toPoint = (SettingsPoint)sliders[2];
@@ -261,7 +262,7 @@ public class Settings extends javax.swing.JPanel {
 			//Направление гравитации
 			sliders[1] = new SelectPanel<>(texter.apply(null,"gravitation.dir"),buttoner, Gravitation.Direction.values, defDir, buildGrav.getDirection(),e -> {
 				final var g = Configurations.gravitation[status.ordinal()];
-				final var power = (SettingsSlider) sliders[0];
+				final var power = (NumberPanel) sliders[0];
 				final var direction = (SelectPanel<Gravitation.Direction>) sliders[1];
 				final var toPoint = (SettingsPoint)sliders[2];
 				switch (e) {
@@ -274,13 +275,13 @@ public class Settings extends javax.swing.JPanel {
 						toPoint.setVisible(true);
 						final var p = g.getDirection() != Gravitation.Direction.NONE ? g.getValue() : defPower;
 						Configurations.gravitation[status.ordinal()] = new Gravitation(p, Point.create(toPoint.getValue().x,toPoint.getValue().y));
-						power.setValue(p);
+						power.value(p);
 					}
 					default -> {
 						toPoint.setVisible(false);
 						final var p = g.getDirection() != Gravitation.Direction.NONE ? g.getValue() : defPower;
 						Configurations.gravitation[status.ordinal()] = new Gravitation(p, e);
-						power.setValue(p);
+						power.value(p);
 					}
 				}
 			});
@@ -307,7 +308,7 @@ public class Settings extends javax.swing.JPanel {
 			
 			final var sun = Configurations.suns.get(i);
 			suns.add(new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",sun.toString())));
-			suns.add(new SettingsSlider<>(Settings.class,"sun.power", 1, 30, 200, 1,(int)sun.getPower(),  null, e -> {
+			suns.add(new NumberPanel<>(Settings.class,"sun.power", 1, 30, 200, 1,(int)sun.getPower(),  null, e -> {
 				sun.setPower(e);
 			}));
 			suns.add(new BooleanPanel(texter.apply(null,"emitter.isLine"), !sun.getIsLine(), e -> {
@@ -318,7 +319,7 @@ public class Settings extends javax.swing.JPanel {
 			
 			final var tr = sun.getTrajectory();
 			if(!tr.getClass().equals(Trajectory.class)){
-				suns.add(new SettingsSlider<>(Settings.class,"trajectory.speed", 0,(int)tr.getSpeed(),1000,0,(int)tr.getSpeed(),null, e -> {
+				suns.add(new NumberPanel<>(Settings.class,"trajectory.speed", 0,(int)tr.getSpeed(),1000,0,(int)tr.getSpeed(),null, e -> {
 					tr.setSpeed(e);
 				}));
 			}
@@ -370,10 +371,10 @@ public class Settings extends javax.swing.JPanel {
 			final var l = new javax.swing.JLabel(Configurations.getProperty(Settings.class, "object.name",mineral.toString()));
 			l.setAlignmentX(CENTER_ALIGNMENT);
 			minerals.add(l);
-			minerals.add(new SettingsSlider<>(Settings.class,"minerals.power", 1, 20, 200, 1,(int)mineral.getPower(),  null, e -> {
+			minerals.add(new NumberPanel<>(Settings.class,"minerals.power", 1, 20, 200, 1,(int)mineral.getPower(),  null, e -> {
 				mineral.setPower(e);
 			}));
-			minerals.add(new SettingsSlider<>(Settings.class,"minerals.attenuation",
+			minerals.add(new NumberPanel<>(Settings.class,"minerals.attenuation",
 				0, (int)(dc.DIRTY_WATER * 100), 1000,
 				0, (int)(mineral.getAttenuation() * 100), null, e -> mineral.setAttenuation(e / 100d)));
 			minerals.add(new BooleanPanel(texter.apply(null,"emitter.isLine"), !mineral.getIsLine(), e -> {
@@ -384,7 +385,7 @@ public class Settings extends javax.swing.JPanel {
 			
 			final var tr = mineral.getTrajectory();
 			if(!tr.getClass().equals(Trajectory.class)){
-				minerals.add(new SettingsSlider<>(Settings.class,"trajectory.speed", 0l,tr.getSpeed(),1000l,0l,tr.getSpeed(),null, e -> {
+				minerals.add(new NumberPanel<>(Settings.class,"trajectory.speed", 0l,tr.getSpeed(),1000l,0l,tr.getSpeed(),null, e -> {
 					tr.setSpeed(e);
 				}));
 			}
@@ -439,7 +440,7 @@ public class Settings extends javax.swing.JPanel {
 			
 			final var tr = stream.getTrajectory();
 			if(!tr.getClass().equals(Trajectory.class)){
-				streams.add(new SettingsSlider<>(Settings.class,"trajectory.speed", 0l,tr.getSpeed(),1000l,0l,tr.getSpeed(),null, e -> {
+				streams.add(new NumberPanel<>(Settings.class,"trajectory.speed", 0l,tr.getSpeed(),1000l,0l,tr.getSpeed(),null, e -> {
 					tr.setSpeed(e);
 					stream.updateMatrix();
 				}));
@@ -719,17 +720,17 @@ public class Settings extends javax.swing.JPanel {
 			final var def = npn.getDefault().getClass();
 			if(def.equals(Integer.class)){
 				final var np = (Utils.ClassBuilder.NumberParam<Integer,T>) npn;
-				return new SettingsSlider<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
+				return new NumberPanel<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
 					np.setValue(object, e);c.change();
 				});
 			} else if(def.equals(Long.class)){
 				final var np = (Utils.ClassBuilder.NumberParam<Long,T>) npn;
-				return new SettingsSlider<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
+				return new NumberPanel<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
 					np.setValue(object, e);c.change();
 				});
 			} else if(def.equals(Double.class)){
 				final var np = (Utils.ClassBuilder.NumberParam<Double,T>) npn;
-				return new SettingsSlider<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
+				return new NumberPanel<>(clr,parametrName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.get(object),np.getRealMaximum(), e -> {
 					np.setValue(object, e);c.change();
 				});
 			} else {

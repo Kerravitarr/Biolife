@@ -4,6 +4,7 @@
  */
 package GUI;
 
+import kerlib.draw.settings.NumberPanel;
 import kerlib.draw.settings.StringPanel;
 import kerlib.draw.settings.BooleanPanel;
 import Calculations.Configurations;
@@ -256,19 +257,19 @@ public class SettingsMake extends java.awt.Dialog {
 			final var def = npn.getDefault().getClass();
 			if(def.equals(Integer.class)){
 				final var np = (Utils.ClassBuilder.NumberConstructorParam<Integer,?>) npn;
-				return new SettingsSlider<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
+				return new NumberPanel<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
 					np.setValue( e);
 					propertyChange();
 				});
 			} else if(def.equals(Long.class)){
 				final var np = (Utils.ClassBuilder.NumberConstructorParam<Long,?>) npn;
-				return new SettingsSlider<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
+				return new NumberPanel<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
 					np.setValue( e);
 					propertyChange();
 				});
 			} else if(def.equals(Double.class)){
 				final var np = (Utils.ClassBuilder.NumberConstructorParam<Double,?>) npn;
-				return new SettingsSlider<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
+				return new NumberPanel<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
 					np.setValue( e);
 					propertyChange();
 				});
