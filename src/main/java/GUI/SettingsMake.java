@@ -4,6 +4,7 @@
  */
 package GUI;
 
+import kerlib.draw.settings.PointPanel;
 import kerlib.draw.settings.NumberPanel;
 import kerlib.draw.settings.StringPanel;
 import kerlib.draw.settings.BooleanPanel;
@@ -249,33 +250,33 @@ public class SettingsMake extends java.awt.Dialog {
 		param.setValue(param.getDefault());
 		//Ну и понеслась создавать панели!
 		if(param instanceof Utils.ClassBuilder.BooleanConstructorParam<?> np){
-			return new BooleanPanel(Settings.texter.apply(clr,parametrFullName), np.getDefault(), e -> {np.setValue(e);propertyChange();});
+			return new BooleanPanel(Settings.TEXTER.apply(clr,parametrFullName), np.getDefault(), e -> {np.setValue(e);propertyChange();});
 		} else if(param instanceof Utils.ClassBuilder.StringConstructorParam<?> np){
-			return new StringPanel(Settings.texter.apply(clr,parametrFullName),Settings.buttoner, np.getDefault(),np.getDefault(), e -> {np.setValue( e);propertyChange();});
+			return new StringPanel(Settings.TEXTER.apply(clr,parametrFullName),Settings.BUTTONER, np.getDefault(),np.getDefault(), e -> {np.setValue( e);propertyChange();});
 		} else if(param instanceof Utils.ClassBuilder.NumberConstructorParam<?,?> np_){
 			final var npn = (Utils.ClassBuilder.NumberConstructorParam<? extends Number,?>) np_;
 			final var def = npn.getDefault().getClass();
 			if(def.equals(Integer.class)){
 				final var np = (Utils.ClassBuilder.NumberConstructorParam<Integer,?>) npn;
-				return new NumberPanel<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
+				return new NumberPanel<>(Settings.TEXTER.apply(clr,parametrFullName),Settings.BUTTONER, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
 					np.setValue( e);
 					propertyChange();
 				});
 			} else if(def.equals(Long.class)){
 				final var np = (Utils.ClassBuilder.NumberConstructorParam<Long,?>) npn;
-				return new NumberPanel<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
+				return new NumberPanel<>(Settings.TEXTER.apply(clr,parametrFullName),Settings.BUTTONER, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
 					np.setValue( e);
 					propertyChange();
 				});
 			} else if(def.equals(Double.class)){
 				final var np = (Utils.ClassBuilder.NumberConstructorParam<Double,?>) npn;
-				return new NumberPanel<>(clr,parametrFullName, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
+				return new NumberPanel<>(Settings.TEXTER.apply(clr,parametrFullName),Settings.BUTTONER, np.getSliderMinimum(),np.getDefault(),np.getSliderMaximum(),np.getRealMinimum(),np.getDefault(),np.getRealMaximum(), e -> {
 					np.setValue( e);
 					propertyChange();
 				});
 			} 
 		} else if(param instanceof Utils.ClassBuilder.MapPointConstructorParam<?> np){
-			return new SettingsPoint(clr,parametrFullName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);propertyChange();});
+			return new Settings.PPForPoint(clr,parametrFullName, np.getDefault(),np.getDefault(), e -> {np.setValue( e);propertyChange();});
 		} else if(param instanceof Utils.ClassBuilder.MapPointVectorConstructorParam<?> np){
 			final var panel = new javax.swing.JPanel();
 			final var def = np.getDefault()[0];
@@ -288,7 +289,7 @@ public class SettingsMake extends java.awt.Dialog {
 			build(clr, parametrFullName,panel,np,points,selectPoint);
 			return panel;
 		} else if(param instanceof Utils.ClassBuilder.Abstract2ConstructorParam<?> np){
-			return new SettingsPoint(clr,parametrFullName, 
+			return new Settings.PPForPoint(clr,parametrFullName, 
 					np.get1Minimum(), np.get1Default(), np.get1Maximum(),np.get1Default(),
 					np.get2Minimum(), np.get2Default(), np.get2Maximum(),np.get2Default(),  e -> {
 				np.setValue( e);
@@ -316,7 +317,7 @@ public class SettingsMake extends java.awt.Dialog {
 			final var panelPoint = new javax.swing.JPanel();
 			panelPoint.setLayout(new javax.swing.BoxLayout(panelPoint, javax.swing.BoxLayout.X_AXIS));
 			if(i == selectPoint[0]){
-				final var settings = new SettingsPoint(clr,parametrName, def,get, e -> {
+				final var settings = new Settings.PPForPoint(clr,parametrName, def,get, e -> {
 					points.set(nowIndex, e);
 					build(clr, parametrName,panel,np,points,selectPoint);
 					propertyChange();

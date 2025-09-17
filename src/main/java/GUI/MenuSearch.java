@@ -4,6 +4,7 @@
  */
 package GUI;
 
+import kerlib.draw.settings.PointPanel;
 import kerlib.draw.settings.SelectPanel;
 import Calculations.Configurations;
 import Calculations.Point;
@@ -128,9 +129,10 @@ public class MenuSearch extends java.awt.Dialog {
 			}
 
 			def = nowP = Point.Vector.create(defMin, defMax); //Больше просто не влазит в ползунок и получается не красиво :(
-			param = new SettingsPoint(MenuSearch.class,name,MenuSearch.class,"vectorParam", min, defMin, max, nowP.x, min, defMax, max, nowP.y, e -> {
+			param = new Settings.PPForPoint(MenuSearch.class,name,min, defMin, max, nowP.x, min, defMax, max, nowP.y, e -> {
 				nowP = e;
 			});
+            
 		}
 		public SeatchParam(String name,int min,int max, CellObjectParam tst){
 			this(name, min, max, (co, val) -> (val.x <= tst.test(co) && tst.test(co) <= val.y), null);
@@ -158,7 +160,7 @@ public class MenuSearch extends java.awt.Dialog {
 				nowP = Point.Vector.create(init.ordinal(), init.ordinal());
 			def = init;
 			final var collWidthNull = Utils.Utils.addNull(values);
-			param = new SelectPanel(Settings.texter.apply(MenuSearch.class,name),Settings.buttoner, collWidthNull, init, collWidthNull[nowP.x], (e)->{
+			param = new SelectPanel(Settings.TEXTER.apply(MenuSearch.class,name),Settings.BUTTONER, collWidthNull, init, collWidthNull[nowP.x], (e)->{
 				nowP = Point.Vector.create(((T) e).ordinal(), 0);
 			});
 		}
@@ -186,7 +188,7 @@ public class MenuSearch extends java.awt.Dialog {
 			nowP = Point.Vector.create(values.length, 0);
 			def = null;
 			final var collWidthNull = Utils.Utils.addNull(values);
-			param = new SelectPanel(Settings.texter.apply(MenuSearch.class,name),Settings.buttoner, collWidthNull, null, collWidthNull[nowP.x], (e)->{
+			param = new SelectPanel(Settings.TEXTER.apply(MenuSearch.class,name),Settings.BUTTONER, collWidthNull, null, collWidthNull[nowP.x], (e)->{
 				final var o = java.util.Arrays.asList(values).indexOf(e);
 				nowP = Point.Vector.create( o,  o);
 			});
@@ -200,7 +202,7 @@ public class MenuSearch extends java.awt.Dialog {
 			this((co, val) -> (val.x == 2 || val.x == tst.test((AliveCell)co)), CellObject.LV_STATUS.LV_ALIVE);
 			def = nowP = Point.Vector.create(2, 0);
 			final String[] values = {Configurations.getProperty(MenuSearch.class,"param.boolean.no"),Configurations.getProperty(MenuSearch.class,"param.boolean.yes"),Configurations.getProperty(MenuSearch.class,"param.boolean.any")};
-			param = new SelectPanel(Settings.texter.apply(MenuSearch.class,name),Settings.buttoner, values, values[nowP.x], values[nowP.x], (e)->{
+			param = new SelectPanel(Settings.TEXTER.apply(MenuSearch.class,name),Settings.BUTTONER, values, values[nowP.x], values[nowP.x], (e)->{
 				final var o = java.util.Arrays.asList(values).indexOf(e);
 				nowP = Point.Vector.create( o,  o);
 			});
@@ -215,7 +217,7 @@ public class MenuSearch extends java.awt.Dialog {
 		}
 		/** Сбрасывает значение параметра по умолчанию */
 		public void reset(){
-			if(param instanceof SettingsPoint p) p.setValue((Point.Vector)def);
+			if(param instanceof PointPanel p) p.value(new kerlib.draw.settings.PPPoint<>(((Point.Vector)def).x,((Point.Vector)def).y));
 			else if(param instanceof SelectPanel p) p.value(def);
 			else throw new UnsupportedOperationException("Не знаем что за слайдер такой, " + param.getClass());
 		}
@@ -326,8 +328,8 @@ public class MenuSearch extends java.awt.Dialog {
         final var type = (CellObject.LV_STATUS)selectType.getSelectedItem();
 		paramPanel.removeAll();
 		
-		paramPanel.add(new SettingsPoint(MenuSearch.class,"posLU", Point.create(0, 0),LU, e -> LU = e));
-		paramPanel.add(new SettingsPoint(MenuSearch.class,"WH", 
+		paramPanel.add(new Settings.PPForPoint(MenuSearch.class,"posLU", Point.create(0, 0),LU, e -> LU = e));
+		paramPanel.add(new Settings.PPForPoint(MenuSearch.class,"WH", 
 				1, Configurations.getWidth(), Configurations.getWidth(),WH.x,
 				1, Configurations.getHeight(), Configurations.getHeight(),WH.y,  e -> WH = e
 		));
