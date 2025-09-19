@@ -46,6 +46,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JToolTip;
 import javax.swing.Popup;
 import javax.swing.PopupFactory;
+import kerlib.draw.tools;
 
 /**
  * Редактор клеток
@@ -55,6 +56,186 @@ public class CellEditor extends javax.swing.JDialog {
 	private enum POPUP_STATUS {
 		UNDEF, INC, DEC, REM, REM_GEN,ADD,COPY
 	}
+    ///Класс, рисователь узла дерева
+    private static abstract class DNA_node_printer {
+        ///Узел
+        protected final DNA_node node;
+
+        public DNA_node_printer(DNA_node node) {
+            this.node = node;
+        }
+        /** Рисует узел команды
+		 * @param g холст
+		 * @param object живая клетка, которую надо нарисовать
+		 * @param cx координата центра
+		 * @param cy координата центра
+		 */
+        public abstract void paint(Graphics2D g, AliveCell object, int cx, int cy);
+        
+        public abstract double offset(double angleRad);
+    }
+    private static class PrinterExploerNode extends DNA_node_printer{
+        ///Большая полуось ромба
+        private int a2 = 0;
+        public PrinterExploerNode(DNA_node node) {
+            super(node);
+        }
+        @Override
+		public void paint(Graphics2D g, AliveCell object, int cx, int cy){
+            var dna = object.getDna();
+			var font = g.getFont();
+			var title =	String.format("[%0"+DNA_node.sizeDNA+"d]", node.index);
+			var text = node.cmd.toString();
+			var defHeight = Utils.drawsUtil.getTextHeight(font, text); 
+			var params = node.cmd.getCountParams();
+			var margin = 10;
+			a2 = Utils.drawsUtil.getTextWidth(font, text)/2+defHeight/2+margin;
+			a2 = Math.max(a2, Utils.drawsUtil.getTextWidth(font, title)/2+defHeight * 3/2+margin);
+			if(params > 0){
+				var pc = dna.getPC();
+				dna.setPC(node.index);
+				for(var i = 0; i < params; ++i){
+					var param = node.cmd.getParam(object, i, dna);
+					var a = Utils.drawsUtil.getTextWidth(font, param) / 2 + (i + 1.5)*defHeight+margin;
+					if(a > a2) a2 = (int) a;
+				}
+				dna.setPC(pc);
+			}
+			// Draw red rhombus around the node
+			var x = cx + node.center.x;
+			var y = cy + node.center.y;
+			int[] xPoints = {
+				(int)(x), 
+				(int)(x + a2),
+				(int)(x),
+				(int)(x - a2)
+			};
+			int[] yPoints = {
+				(int)(y - a2),
+				(int)(y),
+				(int)(y + a2),
+				(int)(y)
+			};
+			g.setColor(AllColors.getColor(node.cmd));
+			g.fillPolygon(xPoints, yPoints, 4);
+			g.setColor(Color.BLACK);
+			Utils.drawsUtil.drawString(g, x, y-defHeight, title, alignmentX.center,alignmentY.center);
+			Utils.drawsUtil.drawString(g, x, y, text, alignmentX.center,alignmentY.center);
+			if(params > 0) {
+				g.setColor(AllColors.toDark(AllColors.DNA_PARAM, 255));
+				var pc = dna.getPC();
+				dna.setPC(node.index);
+				for(var i = 0; i < params; i++) {
+					var param = node.cmd.getParam(object, i, dna);
+					Utils.drawsUtil.drawString(g, x, y+(i+1)*defHeight, param, alignmentX.center,alignmentY.center);
+				}
+				dna.setPC(pc);
+			}
+		}
+		@Override public double offset(double angleRad){
+            if(a2 == 0) return 0;
+            var cosAngle = Math.cos(angleRad);
+            var sinAngle = Math.sin(angleRad);
+            // Если угол лежит точно на оси X (sinAngle = 0), то r = a2.
+            // Если угол лежит точно на оси Y (cosAngle = 0), то r = b.
+            // Это может вызвать деление на ноль, если sinAngle или cosAngle очень близки к нулю.
+            // Поэтому лучше использовать формулу, учитывающую эти случаи.
+
+            double cosSq = cosAngle * cosAngle;
+            double sinSq = sinAngle * sinAngle;
+
+            double term1 = cosSq / (a2 * a2);
+            double term2 = sinSq / (a2 * a2);
+
+            if (term1 + term2 < 1e-6) { // Если точка очень близка к центру (не должно произойти для углов)
+                return 0;
+            }
+
+            return 1.0 / Math.sqrt(term1 + term2);
+        }
+    }
+    ///Стандартный узел, прямоугольник
+    private static class PrinterDoNode extends DNA_node_printer{
+        ///Высота прямоугольника, которым мы являемся
+        private int height = 0;
+        ///Ширина прямоугольника, которым мы являемся
+        private int width = 0;
+
+        public PrinterDoNode(DNA_node node) {
+            super(node);
+        }
+        @Override
+		public void paint(Graphics2D g, AliveCell object, int cx, int cy){
+            var dna = object.getDna();
+			var font = g.getFont();
+			var title =	String.format("[%0"+DNA_node.sizeDNA+"d]", node.index);
+			var text = node.cmd.toString();
+			var defHeight = Utils.drawsUtil.getTextHeight(font, text); 
+			var params = node.cmd.getCountParams();
+			var margin = 10;
+            width = Utils.drawsUtil.getTextWidth(font, text)+margin;
+			width = Math.max(width, Utils.drawsUtil.getTextWidth(font, title)+margin);
+			if(params > 0){
+				var pc = dna.getPC();
+				dna.setPC(node.index);
+				for(var i = 0; i < params; ++i){
+					var param = node.cmd.getParam(object, i, dna);
+					width = Math.max(width, (int) Utils.drawsUtil.getTextWidth(font, param)+margin);
+				}
+				dna.setPC(pc);
+			}
+			height = defHeight * (2 + params)+margin;
+			var x = (int)(cx+node.center.x);
+			var y = (int)(cy+node.center.y - height/2);
+			g.setColor(AllColors.getColor(node.cmd));
+			g.fillRect(x- width/2, y, width, height);
+			g.setColor(Color.BLACK);
+			Utils.drawsUtil.drawString(g, x, y, title, alignmentX.center,alignmentY.bottom);
+			Utils.drawsUtil.drawString(g, x, y+defHeight, text, alignmentX.center,alignmentY.bottom);
+			if(params > 0) {
+				g.setColor(AllColors.toDark(AllColors.DNA_PARAM, 255));
+				var pc = dna.getPC();
+				dna.setPC(node.index);
+				for(var i = 0; i < params; i++) {
+					var param = node.cmd.getParam(object, i, dna);
+					Utils.drawsUtil.drawString(g, x, y+(i+2)*defHeight, param, alignmentX.center,alignmentY.bottom);
+				}
+				dna.setPC(pc);
+			}
+		}
+        @Override public double offset(double angleRad){
+            var cosAngle = Math.cos(angleRad);
+            var sinAngle = Math.sin(angleRad);
+            double halfWidth = width / 2.0;
+            double halfHeight = height / 2.0;
+
+            // Угол должен быть в диапазоне [-PI, PI]. Math.atan2 это обеспечивает.
+            // Если угол лежит на оси X (cosAngle = 0), то расстояние равно halfHeight.
+            // Если угол лежит на оси Y (sinAngle = 0), то расстояние равно halfWidth.
+            // В общем случае, находим минимальное расстояние до боковых сторон.
+
+            // Расстояние до вертикальных сторон:
+            // Если cosAngle > 0 (вправо), то X = halfWidth. Расстояние = halfWidth / cosAngle.
+            // Если cosAngle < 0 (влево), то X = -halfWidth. Расстояние = -halfWidth / cosAngle.
+            // Это можно объединить: halfWidth / Math.abs(cosAngle)
+            double distToVertical;
+            if (Math.abs(cosAngle) > 1e-6) // Избегаем деления на ноль
+                distToVertical = halfWidth / Math.abs(cosAngle);
+            else 
+                distToVertical = Double.POSITIVE_INFINITY;
+
+            // Расстояние до горизонтальных сторон:
+            // Аналогично: halfHeight / Math.abs(sinAngle)
+            double distToHorizontal;
+            if (Math.abs(sinAngle) > 1e-6)  // Избегаем деления на ноль
+                distToHorizontal = halfHeight / Math.abs(sinAngle);
+            else 
+                distToHorizontal = Double.POSITIVE_INFINITY;
+            // Минимальное из этих двух расстояний - это расстояние до границы
+            // по заданному углу.
+            return Math.min(distToVertical, distToHorizontal);
+        }
+    }
     ///Узел ДНК на графе
     private static class DNA_node{
         private final static int sizeCMDS = (int)(Math.log10(MapObjects.dna.CommandList.list.length)+1);
@@ -73,6 +254,8 @@ public class CellEditor extends javax.swing.JDialog {
         public final List<Integer> next = new ArrayList<>();
         ///Все связи этой команды - объединение векторов предыдущих и следующих
         private List<Integer> _connection;
+        ///Тот, кто будет отрисовывать узел
+        private final DNA_node_printer printer;
         
         ///Местоположение узла
         public PointD center = new PointD(Math.random()*2 - 1, Math.random()*2 - 1);
@@ -87,6 +270,7 @@ public class CellEditor extends javax.swing.JDialog {
             this.index = index;
             this.cmd = cmd;
             this.prefure = prefure;
+            printer = cmd instanceof CommandExplore ? new PrinterExploerNode(this) : new PrinterDoNode(this);
         }
         ///Заверешно построение дерева, надо зафиксировать результаты
         public void end(){
@@ -402,7 +586,7 @@ public class CellEditor extends javax.swing.JDialog {
                     startPoint = null;
                 }
                 @Override public void mouseWheelMoved(MouseWheelEvent e) {
-                    scale *= (1.0 + e.getWheelRotation() * 0.1);
+                    scale *= (1.0 - e.getWheelRotation() * 0.1);
                 }
 			};
 			addMouseListener(mouseListener);
@@ -952,7 +1136,7 @@ public class CellEditor extends javax.swing.JDialog {
 			} else {
 				a -= from;
 				to -= from; //Сдвигаем всех в начало координат
-				if(a > PI2) a -= PI2; //И, если провернулся a, то возвращаем его обратно
+				if(a > PI2) a -= PI2; //И, если провернулся a2, то возвращаем его обратно
 				return 0 <= a && a <= to;
 			}
 		}
@@ -998,155 +1182,66 @@ public class CellEditor extends javax.swing.JDialog {
 		}
         
         ///Отрисовывает дерево переходов
-		public void paintAsTree(Graphics2D g) {
+		public void paintAsTree(Graphics2D g2d) {
             var cx = getWidth()/2 + (int)centralPointOffset.x;
             var cy = getHeight()/2 + (int)centralPointOffset.y;
             tree.gravitation(getWidth(), getHeight(), scale);
-            g.setColor(Color.black);
+            g2d.setColor(Color.black);
+            g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            var os = g2d.getStroke();
+            var rootNode = object.getDna().getPC();
             tree.main.forEach((k,v) ->{
-                for(var i : v.next){
+                var isRoot = v.index == rootNode;
+                if(isRoot)
+                    g2d.setStroke(DASHED);
+                else
+                    g2d.setStroke(os);
+                for (int index = 0; index < v.next.size(); index++) {
+                    var i = v.next.get(index);
                     var next = tree.main.get(i);
 					var x = cx+(int)v.center.x;
 					var y = cy+(int)v.center.y;
 					var x2 = cx+(int)next.center.x;
 					var y2 = cy+(int)next.center.y;
-					// Calculate midpoint of line
-					int midX = (x + x2) / 2;
-					int midY = (y + y2) / 2;
-					
-					// Draw main line
-					g.drawLine(x, y, x2, y2);
-					
-					// Calculate arrow direction angle
-					double angle = Math.atan2(y2 - y, x2 - x);
-					
-					// Arrow properties
-					int arrowLength = 10;
-					double arrowAngle = Math.PI / 6; // 30 degrees
-					
-					// Calculate arrow points
-					int ax1 = (int)(midX - arrowLength * Math.cos(angle + arrowAngle));
-					int ay1 = (int)(midY - arrowLength * Math.sin(angle + arrowAngle));
-					int ax2 = (int)(midX - arrowLength * Math.cos(angle - arrowAngle)); 
-					int ay2 = (int)(midY - arrowLength * Math.sin(angle - arrowAngle));
-					
-					// Draw arrow head
-					g.drawLine(midX, midY, ax1, ay1);
-					g.drawLine(midX, midY, ax2, ay2);
-					//Utils.drawsUtil.arrow(g, x, y, nx, ny, derect.Up, 10, 0);
-                    //g.drawLine(cx+(int)v.center.x,cy+ (int)v.center.y, cx+(int)next.center.x, cy+(int)next.center.y);
+                    var angle = Math.atan2(y - y2, x - x2);
+                    var p1 = new PointD(x2 - x,y2 - y).normalize().multiply(v.printer.offset(angle));
+                    var p2 = new PointD(x - x2,y - y2).normalize().multiply(next.printer.offset(angle));
+                    x += p1.x;
+                    y += p1.y;
+                    x2 += p2.x;
+                    y2 += p2.y;
+                    if(v.branchs.size() > index && isRoot)
+						g2d.setColor(Utils.Utils.getHSBColor(((double)index)/v.branchs.size(), 1, 1, 0.5));
+                    if(v.next.size() <= 1){
+                        g2d.drawLine(x, y, x2, y2);
+                        kerlib.draw.tools.arrow(g2d, x2, y2, angle, 10, Math.PI / 6);
+                    } else {
+                        //Рисуем их как кривые безъе
+                        
+                        g2d.drawLine(x, y, x2, y2);
+                        kerlib.draw.tools.arrow(g2d, x2, y2, angle, 10, Math.PI / 6);
+                    }
+                    if(v.branchs.size() > index && isRoot)
+                        g2d.setColor(Color.black);
+                    if(v.branchs.size() > index){
+                        var originalTransform = g2d.getTransform();
+                        if(!(-Math.PI/2 < angle && angle <= Math.PI/2)){
+                            angle += Math.PI;
+                            g2d.rotate(angle, x2, y2);
+                            kerlib.draw.tools.drawString(g2d, x2, y2, v.branchs.get(index), tools.alignmentX.right, tools.alignmentY.top);
+                        } else {
+                            g2d.rotate(angle, x2, y2);
+                            kerlib.draw.tools.drawString(g2d, x2, y2, v.branchs.get(index), tools.alignmentX.left, tools.alignmentY.top);
+                        }
+                        g2d.setTransform(originalTransform);
+                    }
                 }
             });
-			tree.main.forEach((k,v) ->{
-				if(v.cmd instanceof CommandExplore ex)
-					paintExploerNode(g, v, object.getDna(), cx, cy);
-				else
-					paintDoNode(g, v, object.getDna(), cx, cy);
-			});
+            g2d.setStroke(os);
+			tree.main.forEach((k,v) ->v.printer.paint(g2d, object, cx, cy));
             repaint();
         }
-		/** Рисует узел команды исследования мира
-		 * @param g холст
-		 * @param node узел
-		 * @param dna ДНК
-		 * @param cx координата центра
-		 * @param cy координата центра
-		 */
-		private void paintExploerNode(Graphics2D g, DNA_node node, DNA dna, int cx, int cy){
-			var font = g.getFont();
-			var title =	String.format("[%0"+DNA_node.sizeDNA+"d]", node.index);
-			var text = node.cmd.toString();
-			var defHeight = Utils.drawsUtil.getTextHeight(font, text); 
-			var params = node.cmd.getCountParams();
-			var margin = 10;
-			var a2 = Utils.drawsUtil.getTextWidth(font, text)/2+defHeight/2+margin;
-			a2 = Math.max(a2, Utils.drawsUtil.getTextWidth(font, title)/2+defHeight * 3/2+margin);
-			if(params > 0){
-				var pc = dna.getPC();
-				dna.setPC(node.index);
-				for(var i = 0; i < params; ++i){
-					var param = node.cmd.getParam(object, i, dna);
-					var a = Utils.drawsUtil.getTextWidth(font, param) / 2 + (i + 1.5)*defHeight+margin;
-					if(a > a2) a2 = (int) a;
-				}
-				dna.setPC(pc);
-			}
-			// Draw red rhombus around the node
-			var x = cx + node.center.x;
-			var y = cy + node.center.y;
-			int[] xPoints = {
-				(int)(x), 
-				(int)(x + a2),
-				(int)(x),
-				(int)(x - a2)
-			};
-			int[] yPoints = {
-				(int)(y - a2),
-				(int)(y),
-				(int)(y + a2),
-				(int)(y)
-			};
-			g.setColor(AllColors.getColor(node.cmd));
-			g.fillPolygon(xPoints, yPoints, 4);
-			g.setColor(Color.BLACK);
-			Utils.drawsUtil.drawString(g, x, y-defHeight, title, alignmentX.center,alignmentY.center);
-			Utils.drawsUtil.drawString(g, x, y, text, alignmentX.center,alignmentY.center);
-			if(params > 0) {
-				g.setColor(AllColors.toDark(AllColors.DNA_PARAM, 255));
-				var pc = dna.getPC();
-				dna.setPC(node.index);
-				for(var i = 0; i < params; i++) {
-					var param = node.cmd.getParam(object, i, dna);
-					Utils.drawsUtil.drawString(g, x, y+(i+1)*defHeight, param, alignmentX.center,alignmentY.center);
-				}
-				dna.setPC(pc);
-			}
-		}
-		/** Рисует узел команды выполнения
-		 * @param g холст
-		 * @param node узел
-		 * @param dna ДНК
-		 * @param cx координата центра
-		 * @param cy координата центра
-		 */
-		private void paintDoNode(Graphics2D g, DNA_node node, DNA dna, int cx, int cy){
-			var font = g.getFont();
-			var title =	String.format("[%0"+DNA_node.sizeDNA+"d]", node.index);
-			var text = node.cmd.toString();
-			var defHeight = Utils.drawsUtil.getTextHeight(font, text); 
-			var params = node.cmd.getCountParams();
-			var margin = 10;
-			var width = Utils.drawsUtil.getTextWidth(font, text)+margin;
-			width = Math.max(width, Utils.drawsUtil.getTextWidth(font, title)+margin);
-			if(params > 0){
-				var pc = dna.getPC();
-				dna.setPC(node.index);
-				for(var i = 0; i < params; ++i){
-					var param = node.cmd.getParam(object, i, dna);
-					width = Math.max(width, (int) Utils.drawsUtil.getTextWidth(font, param)+margin);
-				}
-				dna.setPC(pc);
-			}
-			var height = defHeight * (2 + params)+margin;
-			var x = (int)(cx+node.center.x);
-			var y = (int)(cy+node.center.y - height/2);
-			g.setColor(AllColors.getColor(node.cmd));
-			g.fillRect(x- width/2, y, width, height);
-			g.setColor(Color.BLACK);
-			Utils.drawsUtil.drawString(g, x, y, title, alignmentX.center,alignmentY.bottom);
-			Utils.drawsUtil.drawString(g, x, y+defHeight, text, alignmentX.center,alignmentY.bottom);
-			if(params > 0) {
-				g.setColor(AllColors.toDark(AllColors.DNA_PARAM, 255));
-				var pc = dna.getPC();
-				dna.setPC(node.index);
-				for(var i = 0; i < params; i++) {
-					var param = node.cmd.getParam(object, i, dna);
-					Utils.drawsUtil.drawString(g, x, y+(i+2)*defHeight, param, alignmentX.center,alignmentY.bottom);
-				}
-				dna.setPC(pc);
-			}
-		}
-	
 	}
 	
 
@@ -1166,7 +1261,7 @@ public class CellEditor extends javax.swing.JDialog {
 		setObject(edit);
         isTree.setSelected(true);
 		
-        Utils.Utils.isAssert(() -> {isTree.setSelected(false);isTreeActionPerformed(null);});
+        kerlib.tools.isAssert(() -> {isTree.setSelected(false);isTreeActionPerformed(null);});
 	}
 	/**Делает кнопочки покрасивее
 	 * @param button 
@@ -1572,7 +1667,7 @@ public class CellEditor extends javax.swing.JDialog {
     }//GEN-LAST:event_jampBackActionPerformed
 
     private void formWindowOpened(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowOpened
-        assert (isNeedHello = false) == false : "Специально скрываем эту плашку, когда происходит отладка. В выпуске она появится потому что там асертов нет!";
+        isNeedHello = kerlib.tools.isAssert(isNeedHello, false); //Специально скрываем эту плашку, когда происходит отладка. В выпуске она появится потому что там асертов нет!;
 		
 		final var ss = java.awt.Toolkit.getDefaultToolkit().getScreenSize();
 		ss.height *= 0.9;

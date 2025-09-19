@@ -18,7 +18,6 @@ import static MapObjects.CellObject.LV_STATUS.LV_ALIVE;
 import static MapObjects.CellObject.LV_STATUS.LV_ORGANIC;
 import static MapObjects.CellObject.LV_STATUS.LV_POISON;
 import static MapObjects.CellObject.LV_STATUS.LV_WALL;
-import MapObjects.CellObject.OBJECT;
 import MapObjects.ConnectiveTissue;
 import MapObjects.Fossil;
 import MapObjects.Organic;
@@ -247,14 +246,14 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		//Можно весь мир разбить не на столбы, а на блоки... Но исследований нет - поэтому пока это лишь теория
 		//И, естественно, этапы должны идти в случайном порядке. Главное, чтобы они были независимы
 	
-		final var columnPerPc = 4;					//Колонок в одном потоке
-		final var columnPerPc2 = columnPerPc * 2;	//Колонок в двух соседних потоках
+		var columnPerPc = 4;					//Колонок в одном потоке
+		var columnPerPc2 = columnPerPc * 2;	//Колонок в двух соседних потоках
 		//Сколько нужно дать каждой клетке, чтобы сойтись по итогу. Если ширина не делится нацело на число линий в одном потоке
-		final double insert = (vaxX - (vaxX/columnPerPc2)*columnPerPc2) / ((double)vaxX);
+		double insert = (vaxX - (vaxX/columnPerPc2)*columnPerPc2) / ((double)vaxX);
 		cellsTask = new ArrayList<>(vaxX / columnPerPc2 + columnPerPc);
 		//Собственно сами точки для текущего потока
-		final var firstList = new ArrayList<>();
-		final var secondList = new ArrayList<>();
+		var firstList = new ArrayList<Point>();
+		var secondList = new ArrayList<Point>();
 		for (int x = 0; x < vaxX; x++) {
 			var column = Math.round(x  - insert*x) % columnPerPc2; //Номер колонки для текущей пары столбцов
 			if(x != 0 && (column == 0 && !secondList.isEmpty())) {
@@ -459,7 +458,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 */
 	@SuppressWarnings("unused")
 	private boolean loadOneCell(JSON cell, int x, int y) {
-		Point pos = Point.create(cell.getJ("pos"));
+		var pos = Point.create(cell.getJ("pos"));
 		return pos.getX() == x && pos.getY() == y;
 	}
 	/**
@@ -470,7 +469,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 */
 	@SuppressWarnings("unused")
 	private boolean loadColumn(JSON cell, int x) {
-		Point pos = Point.create(cell.getJ("pos"));
+		var pos = Point.create(cell.getJ("pos"));
 		return pos.getX() == x;
 	}
 	/**
@@ -483,8 +482,8 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 */
 	@SuppressWarnings("unused")
 	private boolean loadR(JSON cell,  int x, int y, int r) {
-		Point pos = Point.create(cell.getJ("pos"));
-		final var tarPos = Point.create(x, y);
+		var pos = Point.create(cell.getJ("pos"));
+		var tarPos = Point.create(x, y);
 		return pos.distance(tarPos).getHypotenuse() <= r;
 	}
 
@@ -507,7 +506,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 
 	@Override
 	public JSON getJSON() {
-		JSON make = new JSON();
+		var make = new JSON();
 		var cells = new ArrayList<CellObject>();
 		for (CellObject[] cell : _WORLD_MAP) {
 			for (CellObject cell2 : cell) {
@@ -515,12 +514,11 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 					cells.add(cell2);
 			}
 		}
-		JSON[] nodes = new JSON[cells.size()];
+		var nodes = new JSON[cells.size()];
 		for (int i = 0; i < nodes.length; i++) {
 			nodes[i] = cells.get(i).toJSON();
 		}
-		make.add("step", step);
-		make.add("Cells", nodes);
-		return make;
+		return make.add("step", step)
+                .add("Cells", nodes);
 	}
 }

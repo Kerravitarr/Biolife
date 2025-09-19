@@ -127,12 +127,13 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		Configurations.addTask(this);
         
         
-        Utils.Utils.isAssert(() -> {
+        kerlib.tools.isAssert(() -> {
             Configurations.world.stop();
             var f = Utils.Utils.random(0, Configurations.world.getCount(CellObject.LV_STATUS.LV_ALIVE));
             for(var x = 0; x < Configurations.getWidth(); x++){
                 for(var y = 0; y < Configurations.getHeight(); y++){
-                    if(Configurations.world.get(Calculations.Point.create(x, y)) instanceof MapObjects.AliveCell ac){
+                    var point = Calculations.Point.create(x, y);
+                    if(point.valid() && Configurations.world.get(point) instanceof MapObjects.AliveCell ac){
                         if(--f > 0) continue;
                         Configurations.getViewer().get(BotInfo.class).setVisible(true);
                         Configurations.getViewer().get(BotInfo.class).setCell(ac);

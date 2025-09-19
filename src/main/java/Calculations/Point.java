@@ -6,7 +6,6 @@ import static Calculations.Configurations.WORLD_TYPE.LINE_H;
 import static Calculations.Configurations.WORLD_TYPE.LINE_V;
 import static Calculations.Configurations.WORLD_TYPE.RECTANGLE;
 import Utils.JSON;
-import java.util.Objects;
 
 /**
 Точка на карте мира.

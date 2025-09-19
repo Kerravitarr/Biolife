@@ -497,18 +497,4 @@ public class Utils {
 			return ex.toString();
 		}
 	}
-    
-    
-    @FunctionalInterface public interface Worker {void work();}
-    /** @param doing будет выполнена, только если включены assert (запуск с флагом -enableassertions)*/
-    public static void isAssert(Worker doing){
-        assert(((java.util.function.Supplier)() -> {doing.work(); return null;}).get() == null);
-        noAssert(() -> Logger.getLogger(Utils.class.getName()).log(Level.SEVERE, "Остался отладочный код!!!"));
-    }
-    /** @param doing будет выполнена, только если НЕ включены assert (запуск без флага -enableassertions)*/
-    public static void noAssert(Worker doing){
-        var isA = false;
-        assert(isA = true);
-        if(!isA) doing.work();
-    }
 }
