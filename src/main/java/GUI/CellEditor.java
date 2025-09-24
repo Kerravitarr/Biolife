@@ -240,18 +240,34 @@ public class CellEditor extends javax.swing.JDialog {
     private static class DNA_node{
         private final static int sizeCMDS = (int)(Math.log10(MapObjects.dna.CommandList.list.length)+1);
         private final static int sizeDNA = (int)(Math.log10(MapObjects.AliveCellProtorype.MAX_MINDE_SIZE)+1);
+        
+        ///Один переход, одна ветвь
+        private class Branchc {
+            ///id этого перехода
+            private final int num;
+            ///Описание ветвей. Тут может быть несколько подписей, если их много
+            public final List<String> branchs = new ArrayList<>();
+
+            public Branchc(int num) {
+                this.num = num;
+            }
+            public Branchc(int num,String text) {
+                this(num);
+                branchs.add(text);
+            }
+            public String label(){return String.join(";", branchs);}
+        }
+        
         ///Адрес команды в ДНК
         public final int index;
         ///Сама команда
         public final CommandDNA cmd;
         ///Описание параметров, если они, конечно, есть
         public final List<String> params = new ArrayList<>();
-        ///Описание ветвей, если они есть
-        public final List<String> branchs = new ArrayList<>();
         ///Все предыдущие команды
-        public final List<Integer> prefure;
+        public final List<Integer> previus;
         ///Все следующие команды
-        public final List<Integer> next = new ArrayList<>();
+        public final List<Branchc> next = new ArrayList<>();
         ///Все связи этой команды - объединение векторов предыдущих и следующих
         private List<Integer> _connection;
         ///Тот, кто будет отрисовывать узел
@@ -269,12 +285,12 @@ public class CellEditor extends javax.swing.JDialog {
         public DNA_node(int index,CommandDNA cmd,List<Integer> prefure){
             this.index = index;
             this.cmd = cmd;
-            this.prefure = prefure;
+            this.previus = prefure;
             printer = cmd instanceof CommandExplore ? new PrinterExploerNode(this) : new PrinterDoNode(this);
         }
         ///Заверешно построение дерева, надо зафиксировать результаты
         public void end(){
-            _connection = java.util.stream.Stream.concat(prefure.stream(), next.stream()).distinct().toList();
+            _connection = java.util.stream.Stream.concat(previus.stream(), next.stream().map(b -> b.num)).distinct().toList();
         }
         ///@return список всех узлов, с которыми мы связаны
         public List<Integer> getConnection(){return _connection;}
@@ -282,15 +298,33 @@ public class CellEditor extends javax.swing.JDialog {
         * @param cx центр экрана по x
         * @param cy центр экрана по y
         */
-       public void updateCenter(double cx, double cy){
+        public void updateCenter(double cx, double cy){
            if(isRoot) speed = new PointD(0,0);
            if(!isRoot)
                center = center.add(speed);
        }
+        ///Сохранить следующую команду
+        ///@param nPC индекс команды
+        ///@param text подпись этой команды
+        private void next(int nPC, String text) {
+            var found = next.stream().filter(b -> b.num == nPC).findFirst();
+            if(found.isPresent())
+                found.get().branchs.add(text);
+            else
+               next.add(new Branchc(nPC,text));
+        }
+        ///Сохранить следующую команду
+        ///@param nPC индекс команды
+        ///@param text подпись этой команды
+        private void next(int nPC) {
+            var found = next.stream().filter(b -> b.num == nPC).findFirst();
+            if(found.isEmpty())
+               next.add(new Branchc(nPC));
+        }
         @Override
         public String toString() {
             /*return String.format("%0"+sizeDNA+"d: %s F: [%s] T: [%s]", index,cmd.toString(),
-                    String.join(",", prefure.stream().map(v -> String.format("%0"+sizeCMDS+"d", v)).toArray(String[]::new)),
+                    String.join(",", previus.stream().map(v -> String.format("%0"+sizeCMDS+"d", v)).toArray(String[]::new)),
                     String.join(",", next.stream().map(v -> String.format("%0"+sizeCMDS+"d", v)).toArray(String[]::new))
                 );*/
             if(cmd.getCountParams() == 0){
@@ -326,6 +360,8 @@ public class CellEditor extends javax.swing.JDialog {
         private DNA_node root;
         ///Какое дерево мы рассматриваем
         private Map<Integer, DNA_node> selectTree;
+        ///Температура, параметр нестабильности
+        private double tmp = 0;
         
         public DNA_Tree(AliveCell cell, int width, int height){
             var dna = cell.getDna();
@@ -346,12 +382,13 @@ public class CellEditor extends javax.swing.JDialog {
                 .sorted((n1,n2) -> n1.index - n2.index)
                 .forEach(node -> {
                     for(var i = 0; i < node.next.size() ; i++){
+                        var br = node.next.get(i);
                         var sb = new StringBuffer();
                         sb.append("\t\"").append(node.toString()).append("\" -> ");
-                        var next = main.get(node.next.get(i));
+                        var next = main.get(br.num);
                         sb.append("\"").append(next.toString()).append("\"");
-                        if(!node.branchs.isEmpty()){
-                            sb.append("[label=\"").append(node.branchs.get(i)).append("\"]");
+                        if(!br.branchs.isEmpty()){
+                            sb.append("[label=\"").append(br.label()).append("\"]");
                         }
                         sb.append(";");
                         System.out.println(sb);
@@ -385,26 +422,23 @@ public class CellEditor extends javax.swing.JDialog {
             final var cmd = dna.get();
             if(graph.containsKey(PC)){
                 var node = graph.get(PC);
-                //if(!node.prefure.contains(prefure))
-                    node.prefure.add(prefure);
+                //if(!node.previus.contains(previus))
+                    node.previus.add(prefure);
             } else {
                 var node = new DNA_node(PC, cmd, new ArrayList<>(){{ if(prefure != -1) add(prefure);}});
                 graph.put(PC, node);
                 if(isInterapt && cmd.isDoing()) return; //Прерывания заканчиваются на активной команде
-                if(cmd.getCountBranch() > 0){
-                    for(var j = 0 ; j < cmd.getCountBranch() ; j++){
-                        node.branchs.add(cmd.getBranch(cell, j, dna));
-                    }
-                }
                 if(cmd.getCountParams()> 0){
                     for(var j = 0 ; j < cmd.getCountParams() ; j++){
                         node.params.add(cmd.getParam(cell, j, dna));
                     }
                 }
                 if(cmd.getCountBranch() > 0) {
+                    var texts = java.util.stream.IntStream.range(0, cmd.getCountBranch()).boxed().map(j -> cmd.getBranch(cell, j, dna)).toList();
                     for(var j = 0 ; j < cmd.getCountBranch() ; j++){
+                        var text = texts.get(j);
                         var nPC = dna.normalization(PC + dna.get(dna.getPC() + 1 + cmd.getCountParams() + j, true)); //Индекс того гена, куда мы прыгнем
-                        node.next.add(nPC);
+                        node.next(nPC,text);
                         makeGraph(graph,cell,dna,nPC,PC,isInterapt);
                         dna.next(PC - dna.getPC());
                     }
@@ -412,7 +446,7 @@ public class CellEditor extends javax.swing.JDialog {
 					var jamp = cmd.nextCMD();
 					if(jamp != null){
 						var nPC = dna.normalization(PC + jamp);
-						node.next.add(nPC);
+						node.next(nPC);
 						makeGraph(graph,cell,dna,nPC,PC,isInterapt);
 					}
                 }
@@ -444,28 +478,27 @@ public class CellEditor extends javax.swing.JDialog {
                     first.forse = first.forse.add(dist.normalize().multiply(fr(dist.getHypotenuse(), k)));
                 }
             }
-			for (int i = 0; i < nodes.length; i++) {
-				final var first = nodes[i];
-				for(var j : first.next){
-                    final var second = selectTree.get(j);
+            for (var first : nodes) {
+                for(var j : first.next){
+                    final var second = selectTree.get(j.num);
                     var dist = first.center.sub(second.center);
                     if(dist.getHypotenuse() == 0) continue;
-                    first.forse = first.forse.sub(dist.normalize().multiply(fa(dist.getHypotenuse(), k)));
-                    second.forse = second.forse.add(dist.normalize().multiply(fa(dist.getHypotenuse(), k)));
+                    var f = dist.getHypotenuse() / Math.max(1, j.branchs.size());
+                    first.forse = first.forse.sub(dist.normalize().multiply(fa(f, k)));
+                    second.forse = second.forse.add(dist.normalize().multiply(fa(f, k)));
                 }
             }
-            var tmp = Math.random() * 5;
+            tmp = kerlib.tools.betwin(0, tmp + (Math.random() - 0.5) / 2, 5);
 			var maxHypotenuse = 0.0;
-			for (int i = 0; i < nodes.length; i++) {
-				final var first = nodes[i];
+            for (var first : nodes) {
                 if(first.forse.getHypotenuse() == 0) continue;
                 if(first == root){
                     if(first.center.getHypotenuse() != 0)
                         first.center = new PointD(0, 0);
                 } else {
-					var hypotenuse = first.forse.getHypotenuse();
-					if(Math.abs(hypotenuse) < 5) continue;
-					maxHypotenuse = Math.max(maxHypotenuse, hypotenuse);
+                    var hypotenuse = first.forse.getHypotenuse();
+                    if(Math.abs(hypotenuse) < 5) continue;
+                    maxHypotenuse = Math.max(maxHypotenuse, hypotenuse);
                     first.center = first.center.add(first.forse.normalize().multiply(Math.min(hypotenuse, tmp)));
                 }
             }
@@ -1191,6 +1224,7 @@ public class CellEditor extends javax.swing.JDialog {
             g2d.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             var os = g2d.getStroke();
             var rootNode = object.getDna().getPC();
+            var fontHeight = kerlib.draw.tools.getTextHeight(g2d, "I");
             tree.main.forEach((k,v) ->{
                 var isRoot = v.index == rootNode;
                 if(isRoot)
@@ -1198,41 +1232,37 @@ public class CellEditor extends javax.swing.JDialog {
                 else
                     g2d.setStroke(os);
                 for (int index = 0; index < v.next.size(); index++) {
-                    var i = v.next.get(index);
-                    var next = tree.main.get(i);
+                    var br = v.next.get(index);
+                    var next = tree.main.get(br.num);
 					var x = cx+(int)v.center.x;
 					var y = cy+(int)v.center.y;
 					var x2 = cx+(int)next.center.x;
 					var y2 = cy+(int)next.center.y;
                     var angle = Math.atan2(y - y2, x - x2);
-                    var p1 = new PointD(x2 - x,y2 - y).normalize().multiply(v.printer.offset(angle));
-                    var p2 = new PointD(x - x2,y - y2).normalize().multiply(next.printer.offset(angle));
+                    var vec = new PointD(x2 - x,y2 - y);
+                    var norm = vec.normalize();
+                    var p1 = norm.multiply(v.printer.offset(angle));
+                    var p2 = norm.multiply(-next.printer.offset(angle));
                     x += p1.x;
                     y += p1.y;
                     x2 += p2.x;
                     y2 += p2.y;
-                    if(v.branchs.size() > index && isRoot)
-						g2d.setColor(Utils.Utils.getHSBColor(((double)index)/v.branchs.size(), 1, 1, 0.5));
-                    if(v.next.size() <= 1){
-                        g2d.drawLine(x, y, x2, y2);
-                        kerlib.draw.tools.arrow(g2d, x2, y2, angle, 10, Math.PI / 6);
-                    } else {
-                        //Рисуем их как кривые безъе
-                        
-                        g2d.drawLine(x, y, x2, y2);
-                        kerlib.draw.tools.arrow(g2d, x2, y2, angle, 10, Math.PI / 6);
-                    }
-                    if(v.branchs.size() > index && isRoot)
+                    var isColorist = isRoot && v.next.size() > 1;
+                    if(isColorist)
+						g2d.setColor(Utils.Utils.getHSBColor(((double)index)/v.next.size(), 1, 1, 0.5));
+                    g2d.drawLine(x, y, x2, y2);
+                    kerlib.draw.tools.arrow(g2d, x2, y2, angle, 10, Math.PI / 6);
+                    if(isColorist)
                         g2d.setColor(Color.black);
-                    if(v.branchs.size() > index){
+                    if(v.next.size() > index){
                         var originalTransform = g2d.getTransform();
                         if(!(-Math.PI/2 < angle && angle <= Math.PI/2)){
                             angle += Math.PI;
                             g2d.rotate(angle, x2, y2);
-                            kerlib.draw.tools.drawString(g2d, x2, y2, v.branchs.get(index), tools.alignmentX.right, tools.alignmentY.top);
+                            kerlib.draw.tools.drawString(g2d, x2, y2, v.next.get(index).label(), tools.alignmentX.right, tools.alignmentY.top);
                         } else {
                             g2d.rotate(angle, x2, y2);
-                            kerlib.draw.tools.drawString(g2d, x2, y2, v.branchs.get(index), tools.alignmentX.left, tools.alignmentY.top);
+                            kerlib.draw.tools.drawString(g2d, x2, y2, v.next.get(index).label(), tools.alignmentX.left, tools.alignmentY.top);
                         }
                         g2d.setTransform(originalTransform);
                     }

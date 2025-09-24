@@ -418,6 +418,10 @@ public final class Point{
 			if(h == 0) return new PointD(0, 0);
 			else return new PointD(x/h, y/h);
 		}
+		/**@return перпендекулярный вектор к текущему*/
+        public PointD perpendicular(){
+            return new PointD(-y, x);
+        }
         /**Находит вектор от точки this к точке b
          * @param b куда
          * @return вектор от this к b
