@@ -67,10 +67,8 @@ public class CellEditor extends javax.swing.JDialog {
         /** Рисует узел команды
 		 * @param g холст
 		 * @param object живая клетка, которую надо нарисовать
-		 * @param cx координата центра
-		 * @param cy координата центра
 		 */
-        public abstract void paint(Graphics2D g, AliveCell object, int cx, int cy);
+        public abstract void paint(Graphics2D g, AliveCell object);
         
         public abstract double offset(double angleRad);
     }
@@ -81,7 +79,7 @@ public class CellEditor extends javax.swing.JDialog {
             super(node);
         }
         @Override
-		public void paint(Graphics2D g, AliveCell object, int cx, int cy){
+		public void paint(Graphics2D g, AliveCell object){
             var dna = object.getDna();
 			var font = g.getFont();
 			var title =	String.format("[%0"+DNA_node.sizeDNA+"d]", node.index);
@@ -102,8 +100,8 @@ public class CellEditor extends javax.swing.JDialog {
 				dna.setPC(pc);
 			}
 			// Draw red rhombus around the node
-			var x = cx + node.center.x;
-			var y = cy + node.center.y;
+			var x = node.getX();
+			var y = node.getY();
 			int[] xPoints = {
 				(int)(x), 
 				(int)(x + a2),
@@ -165,7 +163,7 @@ public class CellEditor extends javax.swing.JDialog {
             super(node);
         }
         @Override
-		public void paint(Graphics2D g, AliveCell object, int cx, int cy){
+		public void paint(Graphics2D g, AliveCell object){
             var dna = object.getDna();
 			var font = g.getFont();
 			var title =	String.format("[%0"+DNA_node.sizeDNA+"d]", node.index);
@@ -185,8 +183,8 @@ public class CellEditor extends javax.swing.JDialog {
 				dna.setPC(pc);
 			}
 			height = defHeight * (2 + params)+margin;
-			var x = (int)(cx+node.center.x);
-			var y = (int)(cy+node.center.y - height/2);
+			var x = (int)node.getX();
+			var y = (int)(node.getY() - height/2);
 			g.setColor(AllColors.getColor(node.cmd));
 			g.fillRect(x- width/2, y, width, height);
 			g.setColor(Color.BLACK);
@@ -237,7 +235,7 @@ public class CellEditor extends javax.swing.JDialog {
         }
     }
     ///Узел ДНК на графе
-    private static class DNA_node{
+    private static class DNA_node extends kerlib.draw.Gravitation.Planet{
         private final static int sizeCMDS = (int)(Math.log10(MapObjects.dna.CommandList.list.length)+1);
         private final static int sizeDNA = (int)(Math.log10(MapObjects.AliveCellProtorype.MAX_MINDE_SIZE)+1);
         
@@ -273,12 +271,6 @@ public class CellEditor extends javax.swing.JDialog {
         ///Тот, кто будет отрисовывать узел
         private final DNA_node_printer printer;
         
-        ///Местоположение узла
-        public PointD center = new PointD(Math.random()*2 - 1, Math.random()*2 - 1);
-        /**Скорость*/
-        public PointD speed = new PointD(0, 0);
-        /**Сила, действующая на него*/
-        public PointD forse = new PointD(0, 0);
         ///Указатель, что узел является корнем
         public boolean isRoot = false;
         
@@ -294,14 +286,10 @@ public class CellEditor extends javax.swing.JDialog {
         }
         ///@return список всех узлов, с которыми мы связаны
         public List<Integer> getConnection(){return _connection;}
-        /**Обновляте значение центральной точки в зависимости от скорости
-        * @param cx центр экрана по x
-        * @param cy центр экрана по y
-        */
-        public void updateCenter(double cx, double cy){
-           if(isRoot) speed = new PointD(0,0);
-           if(!isRoot)
-               center = center.add(speed);
+        @Override
+        public void move(double cx, double cy){
+           if(isRoot) super.move(-getCX(), -getCY());
+           else super.move(cx, cy);
        }
         ///Сохранить следующую команду
         ///@param nPC индекс команды
@@ -321,6 +309,8 @@ public class CellEditor extends javax.swing.JDialog {
             if(found.isEmpty())
                next.add(new Branchc(nPC));
         }
+        ///@return true для тех узлов, у которых есть ветви
+        public boolean hasBranch(){return (cmd.getCountBranch() > 0);}
         @Override
         public String toString() {
             /*return String.format("%0"+sizeDNA+"d: %s F: [%s] T: [%s]", index,cmd.toString(),
@@ -340,18 +330,7 @@ public class CellEditor extends javax.swing.JDialog {
         }
     }
     ///Графф, построенный на основе ДНК
-    private static class DNA_Tree{
-		/**Гравитация*/
-		private static final double G = 1;
-		/**Сила пружинки, на которую навешена связь*/
-		private static final double K = 1e-3;
-		/**Сопротивление движению*/
-		private static final double FRICTION = 0.3;
-		/**Сопротивление движению для связей*/
-		private static final double FRICTION_CON = FRICTION;
-		/**Масса панелек*/
-		private static final double MASS = 10;
-        
+    private static class DNA_Tree extends kerlib.draw.Gravitation<DNA_node>{        
         ///Основное дерево
         public Map<Integer, DNA_node> main = new HashMap<>();
         ///Деревья прерываний
@@ -359,11 +338,10 @@ public class CellEditor extends javax.swing.JDialog {
         ///Корень, куда у нас указывает PC
         private DNA_node root;
         ///Какое дерево мы рассматриваем
-        private Map<Integer, DNA_node> selectTree;
-        ///Температура, параметр нестабильности
-        private double tmp = 0;
+        private static Map<Integer, DNA_node> selectTree;
         
         public DNA_Tree(AliveCell cell, int width, int height){
+            super(n -> n.getConnection().stream().map(i -> selectTree.get(i)).toList());
             var dna = cell.getDna();
 			final var PC = dna.getPC();
             ///Граф, построенный на основе ДНК
@@ -395,18 +373,8 @@ public class CellEditor extends javax.swing.JDialog {
                     }
                     System.out.println();
                 });
-			//Ждём, пока гравитация не стабилизируется
-			var ehyp = 0d;
-			while(true){
-				var h = gravitation(width, height, 1);
-				if(ehyp == 0) ehyp = h;
-				else {
-					ehyp = ehyp *(1 - 0.01) + h * 0.01;
-					if(h == 0 || ehyp <= h) {
-						break;
-					}
-				}
-			}
+            set(width,height);
+            init(selectTree.values());
         }
         ///Создать графф на оснве ДНК и текущей команды
         ///@param graph граф, в который будут набиваться команды и их связи
@@ -417,7 +385,7 @@ public class CellEditor extends javax.swing.JDialog {
         private static void makeGraph(Map<Integer, DNA_node> graph,AliveCell cell, DNA dna, int index, int prefure, boolean isInterapt){
             //Тут приходится не реально крутиться, так как параметры команды вычитываются относительно PC!
             //Поэтому каждый раз приходится докручивать ДНК до нужного нам значения РС
-            dna.next(index - dna.getPC());
+            dna.setPC(index);
             var PC = dna.getPC();
             final var cmd = dna.get();
             if(graph.containsKey(PC)){
@@ -453,66 +421,23 @@ public class CellEditor extends javax.swing.JDialog {
             }
         }
 		/**Установить команду для центрального узла*/
-        private void setPC(int pc) {
-            setRoot(root = main.get(pc));
-        }
+        private void setPC(int pc) {setRoot(main.get(pc));}
         public void setRoot(DNA_node root){
             this.root.isRoot = false;
             root.isRoot = true;
             this.root = root;
         }
-        
+        ///Проверяет, что такая команда есть в дереве
+        public boolean has(int pc){return main.containsKey(pc);}
+        public DNA_node get(int pc){return main.get(pc);}
         ///Обработать воздействие графитации
-        private double gravitation(int width, int height, double scale){
-            var area = scale * width * height / 4; //На 4, чтобы график укладывался в половину этого размера
-            var k = Math.sqrt(area / selectTree.size());
-            final var nodes = selectTree.values().toArray(DNA_node[]::new);
-			for (int i = 0; i < nodes.length; i++) {
-				final var first = nodes[i];
-                first.forse = new PointD(0,0);
-				for (int j = 0 ; j < nodes.length; j++) {
-                    if(i == j) continue;
-                    final var second = nodes[j];
-                    var dist = first.center.sub(second.center);
-                    if(dist.getHypotenuse() == 0) continue;
-                    first.forse = first.forse.add(dist.normalize().multiply(fr(dist.getHypotenuse(), k)));
-                }
-            }
-            for (var first : nodes) {
-                for(var j : first.next){
-                    final var second = selectTree.get(j.num);
-                    var dist = first.center.sub(second.center);
-                    if(dist.getHypotenuse() == 0) continue;
-                    var f = dist.getHypotenuse() / Math.max(1, j.branchs.size());
-                    first.forse = first.forse.sub(dist.normalize().multiply(fa(f, k)));
-                    second.forse = second.forse.add(dist.normalize().multiply(fa(f, k)));
-                }
-            }
-            tmp = kerlib.tools.betwin(0, tmp + (Math.random() - 0.5) / 2, 5);
-			var maxHypotenuse = 0.0;
-            for (var first : nodes) {
-                if(first.forse.getHypotenuse() == 0) continue;
-                if(first == root){
-                    if(first.center.getHypotenuse() != 0)
-                        first.center = new PointD(0, 0);
-                } else {
-                    var hypotenuse = first.forse.getHypotenuse();
-                    if(Math.abs(hypotenuse) < 5) continue;
-                    maxHypotenuse = Math.max(maxHypotenuse, hypotenuse);
-                    first.center = first.center.add(first.forse.normalize().multiply(Math.min(hypotenuse, tmp)));
-                }
-            }
-			return maxHypotenuse;
+        private double gravitation(int width, int height, double scale, PointD centralPointOffset){
+            set(width,height);
+            var cx = width/2 + (int)centralPointOffset.x;
+            var cy = height/2 + (int)centralPointOffset.y;
+            set(v -> cx + v * scale,v -> cy + v * scale);
+            return gravitation();
 		}
-        ///Вычисляет силу отталкивания между двумя узлами
-        private static double fr(double dist, double k) {
-            return Math.pow(k, 2) / dist;
-        }
-        ///Вычисляет силу притягивания между двумя узлами
-        private static double fa(double dist, double k) {
-            return Math.pow(dist, 2) / k;
-        }
-
     }
     ///Основная панель, где происходит рисование
     private class PaintJPanel extends javax.swing.JPanel{
@@ -541,7 +466,7 @@ public class CellEditor extends javax.swing.JDialog {
         //Смещение центральной точки	
         private PointD centralPointOffset = new PointD(0,0);
         ///Масштаб отображения графика
-        private double scale = 1;
+        private double scale = 0;
 		
 		PaintJPanel(){
 			I_COLOR = new Color[CellObject.OBJECT.lenght];
@@ -645,7 +570,6 @@ public class CellEditor extends javax.swing.JDialog {
                 paintAsTree(g);
             }
 		}
-        
 		/**Отрисовывает ДНК клетки как круг*/
 		public void paintAsCycle(Graphics2D g) {
 			final var h = getHeight();
@@ -713,51 +637,39 @@ public class CellEditor extends javax.swing.JDialog {
 			for (var i = 0; i < dna.size;) {
 				final var cmd = dna.get(i);
 				var index = dna.normalization(PC + i);
+                if(!tree.has(index)){
+                    i++;
+                    continue;
+                }
+                var cmd_o = tree.get(index);
+                var isLoop = (cmd instanceof MapObjects.dna.Loop) || (cmd instanceof MapObjects.dna.Jump);
+                if(cmd_o.next.size() == 1 && !isLoop){
+                    i++;
+                    continue;
+                }
 				if(index < PC) index += dna.size; //Проворачиваем на один круг
 				index -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
 				final var cmd_a = index * dr2 - Math.PI / 2; //Угол, на котором находится команда
-				if(index == 0){
+				if(cmd_o.isRoot){
 					g.setStroke(DASHED);
 				}
-				if(cmd instanceof MapObjects.dna.Jump){
-					var nPC = dna.normalization(PC + i + ((MapObjects.dna.Jump) cmd).JAMP); //Индекс того гена, куда мы прыгнем
-					if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
-					nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
-					final var cmd_to = nPC * dr2 - Math.PI / 2;
-					final int sx = (int) (cx + rL * Math.cos(cmd_a)); //Координаты старта
-					final int sy = (int) (cy + rL * Math.sin(cmd_a));
-					final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
-					final int ey = (int) (cy + rL * Math.sin(cmd_to));
-					bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
-				} else if(cmd instanceof MapObjects.dna.Loop){
-					var nPC = dna.normalization(PC + i - ((MapObjects.dna.Loop) cmd).LOOP); //Индекс того гена, куда мы прыгнем
-					if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
-					nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
-					final var cmd_to = nPC * dr2 - Math.PI / 2;
-					final int sx = (int) (cx + rL * Math.cos(cmd_a)); //Координаты старта
-					final int sy = (int) (cy + rL * Math.sin(cmd_a));
-					final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
-					final int ey = (int) (cy + rL * Math.sin(cmd_to));
-					bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
-				} else if(cmd.getCountBranch() > 0) {
-					var anglS = cmd_a + dr2 * (1 + cmd.getCountParams());
-					for(var j = 0 ; j < cmd.getCountBranch() ; j++, anglS += (dr2)){
-						var nPC = dna.normalization((PC + i) + dna.get(PC + i + 1 + cmd.getCountParams() + j, true)); //Индекс того гена, куда мы прыгнем
-						if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
-						nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
-						final var cmd_to = nPC * dr2 - Math.PI / 2;
-						final int sx = (int) (cx + rL * Math.cos(anglS)); //Координаты старта
-						final int sy = (int) (cy + rL * Math.sin(anglS));			
-						final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
-						final int ey = (int) (cy + rL * Math.sin(cmd_to));
-						if(index == 0)
-							g.setColor(Utils.Utils.getHSBColor(((double)j)/cmd.getCountBranch(), 1, 1, 0.5));
-						bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
-					}
-					if(index == 0)
-						g.setColor(Color.BLACK);
-				}
-				if(index == 0){
+                for(var j = 0 ; j < cmd_o.next.size() ; j++){
+                    var o = cmd_o.next.get(j);
+                    var anglS = cmd_a + dr2 * ((isLoop ? 0 : 1) + cmd.getCountParams() + j);
+                    var nPC = o.num; //Индекс того гена, куда мы прыгнем
+                    if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
+                    nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
+                    final var cmd_to = nPC * dr2 - Math.PI / 2;
+                    final int sx = (int) (cx + rL * Math.cos(anglS)); //Координаты старта
+                    final int sy = (int) (cy + rL * Math.sin(anglS));			
+                    final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
+                    final int ey = (int) (cy + rL * Math.sin(cmd_to));
+                    if(cmd_o.isRoot && cmd_o.hasBranch())
+                        g.setColor(Utils.Utils.getHSBColor(((double)j)/cmd.getCountBranch(), 1, 1, 0.5));
+                    bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
+                }
+				if(cmd_o.isRoot){
+                    g.setColor(Color.BLACK);
 					g.setStroke(os);
 				}
 				i += cmd.size();
@@ -977,64 +889,94 @@ public class CellEditor extends javax.swing.JDialog {
 				var a = i * dr2 - Math.PI / 2;
 				var af = a - dr;
 				final var index = dna.normalization(PC + (i++));
-				//Тут приходится не реально крутиться, так как параметры команды вычитываются относительно PC!
-				//Поэтому каждый раз приходится докручивать ДНК до нужного нам значения РС
-				dna.next(index - dna.getPC()); 
-				final var cmd = dna.get();
-				final var ae = a + dr + dr2 * (cmd.size() - 1); 
-				final var isSelect = selectAngle != null && isOneAngle(af, selectAngle, ae);
-				
-				if(isSelect){
-					g.setStroke(DASHED);
-					generateToolTip(dna);
-				}
-				//Рисуем начало команды
-				{
-					g.setColor(Color.BLUE);
-					final var cos = Math.cos(a);
-					final var sin = Math.sin(a);
-					var tx = cx + (r - 2*rD) * cos;
-					var ty = cy + (r - 2*rD) * sin;
-					print(g,tx,ty,af,String.valueOf(index));
+                if(tree.has(index)){
+                    //Тут приходится не реально крутиться, так как параметры команды вычитываются относительно PC!
+                    //Поэтому каждый раз приходится докручивать ДНК до нужного нам значения РС
+                    dna.setPC(index); 
+                    final var cmd = dna.get();
+                    final var ae = a + dr + dr2 * (cmd.size() - 1); 
+                    final var isSelect = selectAngle != null && isOneAngle(af, selectAngle, ae);
 
-					drawStartEnd(g,cx,cy,r,rD,af, true,dr, size);
-					tx = cx + (r + 2*rD) * cos;
-					ty = cy + (r + 2*rD) * sin;
-					print(g,tx,ty,a,cmd.getShotName());
-				}
-				//Её параметры
-				{
-					g.setColor(new Color(255, 70, 70, 150));
-					for (int j = 0; j < cmd.getCountParams(); j++, i++) {
-						final var ap = i * dr2 - Math.PI / 2;
-						af = ap - dr * 2;
-						drawCentral(g,cx,cy,r,rD, af, dr);
-						final var tx = cx + (r + 3*rD) * Math.cos(ap);
-						final var ty = cy + (r + 3*rD) * Math.sin(ap);
-						print(g,tx,ty,ap,cmd.getParam(object, j, dna));
-					}
-				}
-				{//Её ветви
-					g.setColor(new Color(100, 100, 100, 150));
-					for (int j = 0; j < cmd.getCountBranch(); j++, i++) {
-						final var ap = i * dr2 - Math.PI / 2;
-						af = ap - dr2;
-						drawCentral(g,cx,cy,r,rD, af, dr);
-						final var tx = cx + (r + 4*rD) * Math.cos(ap);
-						final var ty = cy + (r + 4*rD) * Math.sin(ap);
-						print(g,tx,ty,ap,cmd.getBranch(object, j, dna));
-					}
-				}
-				//А теперь рисуем завершение ветви
-				g.setColor(Color.BLUE);
-				af = (i * dr2 - Math.PI / 2) - dr2;
-				drawStartEnd(g,cx,cy,r,rD,af, false,dr, size);
-				
-				if(isSelect){
-					g.setStroke(os);
-				}
+                    if(isSelect){
+                        g.setStroke(DASHED);
+                        generateToolTip(dna);
+                    }
+                    //Рисуем начало команды
+                    {
+                        g.setColor(Color.BLUE);
+                        final var cos = Math.cos(a);
+                        final var sin = Math.sin(a);
+                        var tx = cx + (r - 2*rD) * cos;
+                        var ty = cy + (r - 2*rD) * sin;
+                        print(g,tx,ty,af,String.valueOf(index));
+
+                        drawStartEnd(g,cx,cy,r,rD,af, true,dr, size);
+                        tx = cx + (r + 2*rD) * cos;
+                        ty = cy + (r + 2*rD) * sin;
+                        print(g,tx,ty,a,cmd.getShotName());
+                    }
+                    //Её параметры
+                    {
+                        g.setColor(new Color(255, 70, 70, 150));
+                        for (int j = 0; j < cmd.getCountParams(); j++, i++) {
+                            final var ap = i * dr2 - Math.PI / 2;
+                            af = ap - dr * 2;
+                            drawCentral(g,cx,cy,r,rD, af, dr);
+                            final var tx = cx + (r + 3*rD) * Math.cos(ap);
+                            final var ty = cy + (r + 3*rD) * Math.sin(ap);
+                            print(g,tx,ty,ap,cmd.getParam(object, j, dna));
+                        }
+                    }
+                    {//Её ветви
+                        g.setColor(new Color(100, 100, 100, 150));
+                        for (int j = 0; j < cmd.getCountBranch(); j++, i++) {
+                            final var ap = i * dr2 - Math.PI / 2;
+                            af = ap - dr2;
+                            drawCentral(g,cx,cy,r,rD, af, dr);
+                            final var tx = cx + (r + 4*rD) * Math.cos(ap);
+                            final var ty = cy + (r + 4*rD) * Math.sin(ap);
+                            print(g,tx,ty,ap,cmd.getBranch(object, j, dna));
+                        }
+                    }
+                    //А теперь рисуем завершение ветви
+                    g.setColor(Color.BLUE);
+                    af = (i * dr2 - Math.PI / 2) - dr2;
+                    drawStartEnd(g,cx,cy,r,rD,af, false,dr, size);
+
+                    if(isSelect){
+                        g.setStroke(os);
+                    }
+                } else {
+                    ///Эта команда не является частью выполняемой части ДНК. Это просто данные
+                    //Рисуем начало памяти
+                    {
+                        g.setColor(Color.BLUE);
+                        final var cos = Math.cos(a);
+                        final var sin = Math.sin(a);
+                        var tx = cx + (r - 2*rD) * cos;
+                        var ty = cy + (r - 2*rD) * sin;
+                        print(g,tx,ty,af,String.valueOf(index));
+
+                        drawStartEnd(g,cx,cy,r,rD,af, true,dr, size);
+                        tx = cx + (r + 2*rD) * cos;
+                        ty = cy + (r + 2*rD) * sin;
+                        print(g,tx,ty,a,"MeM");
+                    }
+                    //Теперь её тело
+                    {
+                        while(!tree.has(dna.normalization(PC + (i++)))) {
+                            final var ap = (i-1) * dr2 - Math.PI / 2;
+                            af = ap - dr * 2;
+                            drawCentral(g,cx,cy,r,rD, af, dr);
+                        }
+                        i--;
+                    }
+                    //А теперь рисуем завершение
+                    af = (i * dr2 - Math.PI / 2) - dr2;
+                    drawStartEnd(g,cx,cy,r,rD,af, false,dr, size);
+                }
 			}
-			dna.next(PC - dna.getPC());
+			dna.setPC(PC);
 		}
 		/** Рисует стартовую или финальную часть спирали
 		 * @param g холст
@@ -1213,18 +1155,16 @@ public class CellEditor extends javax.swing.JDialog {
 			popup = PopupFactory.getSharedInstance().getPopup(this, DnaToolTip, ml.x, ml.y);
 			popup.show();
 		}
-        
         ///Отрисовывает дерево переходов
 		public void paintAsTree(Graphics2D g2d) {
-            var cx = getWidth()/2 + (int)centralPointOffset.x;
-            var cy = getHeight()/2 + (int)centralPointOffset.y;
-            tree.gravitation(getWidth(), getHeight(), scale);
+            if(scale == 0)
+                scale = Math.min(getWidth(),getHeight());
+            tree.gravitation(getWidth(), getHeight(), scale, centralPointOffset);
             g2d.setColor(Color.black);
             g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
             g2d.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             var os = g2d.getStroke();
             var rootNode = object.getDna().getPC();
-            var fontHeight = kerlib.draw.tools.getTextHeight(g2d, "I");
             tree.main.forEach((k,v) ->{
                 var isRoot = v.index == rootNode;
                 if(isRoot)
@@ -1234,10 +1174,10 @@ public class CellEditor extends javax.swing.JDialog {
                 for (int index = 0; index < v.next.size(); index++) {
                     var br = v.next.get(index);
                     var next = tree.main.get(br.num);
-					var x = cx+(int)v.center.x;
-					var y = cy+(int)v.center.y;
-					var x2 = cx+(int)next.center.x;
-					var y2 = cy+(int)next.center.y;
+					var x = v.getX();
+					var y = v.getY();
+					var x2 = next.getX();
+					var y2 = next.getY();
                     var angle = Math.atan2(y - y2, x - x2);
                     var vec = new PointD(x2 - x,y2 - y);
                     var norm = vec.normalize();
@@ -1247,7 +1187,7 @@ public class CellEditor extends javax.swing.JDialog {
                     y += p1.y;
                     x2 += p2.x;
                     y2 += p2.y;
-                    var isColorist = isRoot && v.next.size() > 1;
+                    var isColorist = isRoot && v.hasBranch();
                     if(isColorist)
 						g2d.setColor(Utils.Utils.getHSBColor(((double)index)/v.next.size(), 1, 1, 0.5));
                     g2d.drawLine(x, y, x2, y2);
@@ -1269,7 +1209,7 @@ public class CellEditor extends javax.swing.JDialog {
                 }
             });
             g2d.setStroke(os);
-			tree.main.forEach((k,v) ->v.printer.paint(g2d, object, cx, cy));
+			tree.main.forEach((k,v) ->v.printer.paint(g2d, object));
             repaint();
         }
 	}
@@ -1291,7 +1231,8 @@ public class CellEditor extends javax.swing.JDialog {
 		setObject(edit);
         isTree.setSelected(true);
 		
-        kerlib.tools.isAssert(() -> {isTree.setSelected(false);isTreeActionPerformed(null);});
+        //kerlib.tools.isAssert(() -> {isTree.setSelected(false);});
+        isTreeActionPerformed(null);
 	}
 	/**Делает кнопочки покрасивее
 	 * @param button 
@@ -1303,6 +1244,7 @@ public class CellEditor extends javax.swing.JDialog {
 	/** @param o новый объет, который мы описываем*/
 	private void setObject(AliveCell o){
 		object = o.clone();
+        tree = new DNA_Tree(object, centralPanel.getWidth(), centralPanel.getHeight());
 		makeSettingsPanel();
 		makeInterraptPanel();
 		updateHeaderPanel();
@@ -1449,19 +1391,21 @@ public class CellEditor extends javax.swing.JDialog {
 		jampBack.setEnabled(!history.isEmpty());
 		
 		nextCmdPanel.removeAll();
-		final var cmd = dna.get();
+		var cmd = dna.get();
 		if(cmd.getCountBranch() > 0) {
-			for(var j = 0 ; j < cmd.getCountBranch() ; j++){
-				var nPC = dna.get(1 + cmd.getCountParams() + j, false); //Индекс того гена, куда мы прыгнем
-				final var color = Utils.Utils.getHSBColor(((double)j)/cmd.getCountBranch(), 1, 1, 0.5);
-				final var next = new JButton(Configurations.getProperty(CellEditor.class,"BRANCH.L", j,nPC)){
+            var tcmd = tree.root;
+			for(var j = 0 ; j < tcmd.next.size() ; j++){
+                var o = tcmd.next.get(j);
+				var nPC = o.num - dna.getPC(); //Индекс того гена, куда мы прыгнем
+				final var color = Utils.Utils.getHSBColor(((double)j)/tcmd.next.size(), 1, 1, 0.5);
+				final var next = new JButton(Configurations.getProperty(CellEditor.class,"BRANCH.L", j)){
 					@Override public void paintComponent(Graphics g){
 						super.paintComponent(g);
 						g.setColor(color);
 						g.fillRect(0, 0, getWidth(), getHeight());
 					}
 				};
-				next.setToolTipText(Configurations.getHProperty(CellEditor.class,"BRANCH.T",j,cmd.getLongName(),cmd.getBranch(object, j, dna).replaceAll("<", "&#60;")));
+				next.setToolTipText(Configurations.getHProperty(CellEditor.class,"BRANCH.T",j,cmd.getLongName(),kerlib.tools.escape(o.label())));
 				setButtonParam(next);
 				next.addActionListener( e-> nextDNA(+nPC));
 				nextCmdPanel.add(next);
@@ -1706,8 +1650,9 @@ public class CellEditor extends javax.swing.JDialog {
 		
 		if(isNeedHello){
 			String message = Configurations.getHProperty(CellEditor.class, "helloText");
+			String header = Configurations.getHProperty(start.BioLife.class, "name");
 			Object[] params = {message};
-			JOptionPane.showConfirmDialog(this, params, "BioLife", JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showConfirmDialog(this, params, header, JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE);
 			isNeedHello = false;
 		}
     }//GEN-LAST:event_formWindowOpened
@@ -1741,9 +1686,6 @@ public class CellEditor extends javax.swing.JDialog {
     }//GEN-LAST:event_copyGenActionPerformed
 
     private void isTreeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_isTreeActionPerformed
-        if(!isTree.isSelected()){
-            tree = new DNA_Tree(object, centralPanel.getWidth(), centralPanel.getHeight());
-        }
 		increment.setVisible(isTree.isSelected());
 		decrement.setVisible(isTree.isSelected());
         centralPanel.revalidate();
@@ -1756,12 +1698,14 @@ public class CellEditor extends javax.swing.JDialog {
 		final var dna = object.getDna();
 		history.push(dna.getPC());
 		dna.next(val);
+        try {
+            tree.setPC(dna.getPC());
+        } catch(Exception _){
+            tree = new DNA_Tree(object, centralPanel.getWidth(), centralPanel.getHeight());
+        }
 		updateHeaderPanel();
 		centralPanel.repaint();
 		set(POPUP_STATUS.UNDEF);
-		if(tree != null && !isTree.isSelected()){
-			tree.setPC(dna.getPC());
-		}
 	}
 	/**@param s текущий выбранный инструмент*/
 	private void set(POPUP_STATUS s){
