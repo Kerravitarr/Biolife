@@ -240,16 +240,19 @@ public class CellEditor extends javax.swing.JDialog {
         private final static int sizeDNA = (int)(Math.log10(MapObjects.AliveCellProtorype.MAX_MINDE_SIZE)+1);
         
         ///Один переход, одна ветвь
-        private class Branchc {
-            ///id этого перехода
+        private class Branch {
+            ///PC этого перехода, куда он ведёт
             private final int num;
             ///Описание ветвей. Тут может быть несколько подписей, если их много
             public final List<String> branchs = new ArrayList<>();
+            ///Цвет этого перехода
+            private Color color = Color.BLACK;
+            public Color color(){return color;}
 
-            public Branchc(int num) {
+            public Branch(int num) {
                 this.num = num;
             }
-            public Branchc(int num,String text) {
+            public Branch(int num,String text) {
                 this(num);
                 branchs.add(text);
             }
@@ -265,14 +268,21 @@ public class CellEditor extends javax.swing.JDialog {
         ///Все предыдущие команды
         public final List<Integer> previus;
         ///Все следующие команды
-        public final List<Branchc> next = new ArrayList<>();
+        public final List<Branch> next = new ArrayList<>();
+        ///Указатель, что узел является корнем
+        public boolean isRoot = false;
+        
+        ///@return true если нужно отрисовать разноцветные переходы
+        public boolean isColoristicJumps(){return isRoot && cmd.getCountBranch() > 0;}
+        ///@return true если на круговой диаграмме надо нарисовать переход от этого узла к другому
+        public boolean printJumps(){return printJumps;}
+        
         ///Все связи этой команды - объединение векторов предыдущих и следующих
         private List<Integer> _connection;
         ///Тот, кто будет отрисовывать узел
         private final DNA_node_printer printer;
-        
-        ///Указатель, что узел является корнем
-        public boolean isRoot = false;
+        ///Нам нужно рисовать переходы от этого узла к другому на круговой диаграмме?
+        private boolean printJumps = false;
         
         public DNA_node(int index,CommandDNA cmd,List<Integer> prefure){
             this.index = index;
@@ -290,27 +300,42 @@ public class CellEditor extends javax.swing.JDialog {
         public void move(double cx, double cy){
            if(isRoot) super.move(-getCX(), -getCY());
            else super.move(cx, cy);
-       }
+        }
+        
+        ///@return Ветка, которая идёт отсюда до указанного места
+        public Branch branch(int index){return this.next.stream().filter(b -> b.num == index).findAny().get();}
         ///Сохранить следующую команду
         ///@param nPC индекс команды
         ///@param text подпись этой команды
         private void next(int nPC, String text) {
+            printJumps = true;
             var found = next.stream().filter(b -> b.num == nPC).findFirst();
             if(found.isPresent())
                 found.get().branchs.add(text);
             else
-               next.add(new Branchc(nPC,text));
+               next.add(new Branch(nPC,text));
+            if(next.size() > 1){
+                for (int i = 0; i < next.size(); i++) {
+                    next.get(i).color = Utils.Utils.getHSBColor(((double)i)/next.size(), 1, 1, 0.5);
+                }
+            } else {
+                next.getFirst().color = Utils.Utils.getHSBColor(0, 1, 1, 0.5);
+            }
         }
         ///Сохранить следующую команду
         ///@param nPC индекс команды
         ///@param text подпись этой команды
-        private void next(int nPC) {
+        private void next(int nPC, int dnaSize) {
+            printJumps |= (index + cmd.size()) % dnaSize != nPC;
             var found = next.stream().filter(b -> b.num == nPC).findFirst();
             if(found.isEmpty())
-               next.add(new Branchc(nPC));
+               next.add(new Branch(nPC));
+            if(next.size() > 1){
+                for (int i = 0; i < next.size(); i++) {
+                    next.get(i).color = Utils.Utils.getHSBColor(((double)i)/next.size(), 1, 1, 0.5);
+                }
+            }
         }
-        ///@return true для тех узлов, у которых есть ветви
-        public boolean hasBranch(){return (cmd.getCountBranch() > 0);}
         @Override
         public String toString() {
             /*return String.format("%0"+sizeDNA+"d: %s F: [%s] T: [%s]", index,cmd.toString(),
@@ -414,7 +439,7 @@ public class CellEditor extends javax.swing.JDialog {
 					var jamp = cmd.nextCMD();
 					if(jamp != null){
 						var nPC = dna.normalization(PC + jamp);
-						node.next(nPC);
+						node.next(nPC,dna.size);
 						makeGraph(graph,cell,dna,nPC,PC,isInterapt);
 					}
                 }
@@ -578,9 +603,13 @@ public class CellEditor extends javax.swing.JDialog {
 			final var cy = h / 2;
 			final var min = Math.min(h, w);
 			final var dna_o = object.getDna();
-			int size;
+			int size = 0;
 			for (size = 0; size < dna_o.size; ) {
-				size += dna_o.get(size).size();
+                var i = dna_o.normalization(dna_o.getPC() + size);
+                if(tree.has(i))
+                    size += dna_o.get(size).size();
+                else
+                    size++;
 			}
 			final var BETWIN_LINE = 4; //Интервал между линиями связывающими прерывания и гены
 			Wdna = min / 80d; //"ширина" спирали ДНК
@@ -642,8 +671,7 @@ public class CellEditor extends javax.swing.JDialog {
                     continue;
                 }
                 var cmd_o = tree.get(index);
-                var isLoop = (cmd instanceof MapObjects.dna.Loop) || (cmd instanceof MapObjects.dna.Jump);
-                if(cmd_o.next.size() == 1 && !isLoop){
+                if(!cmd_o.printJumps()){
                     i++;
                     continue;
                 }
@@ -653,20 +681,38 @@ public class CellEditor extends javax.swing.JDialog {
 				if(cmd_o.isRoot){
 					g.setStroke(DASHED);
 				}
-                for(var j = 0 ; j < cmd_o.next.size() ; j++){
-                    var o = cmd_o.next.get(j);
-                    var anglS = cmd_a + dr2 * ((isLoop ? 0 : 1) + cmd.getCountParams() + j);
-                    var nPC = o.num; //Индекс того гена, куда мы прыгнем
-                    if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
-                    nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
-                    final var cmd_to = nPC * dr2 - Math.PI / 2;
-                    final int sx = (int) (cx + rL * Math.cos(anglS)); //Координаты старта
-                    final int sy = (int) (cy + rL * Math.sin(anglS));			
-                    final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
-                    final int ey = (int) (cy + rL * Math.sin(cmd_to));
-                    if(cmd_o.isRoot && cmd_o.hasBranch())
-                        g.setColor(Utils.Utils.getHSBColor(((double)j)/cmd.getCountBranch(), 1, 1, 0.5));
-                    bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
+                if(cmd.getCountBranch() > 0){
+                    for(var j = 0 ; j < cmd.getCountBranch() ; j++){
+                        var anglS = cmd_a + dr2 * (1 + cmd.getCountParams() + j);
+                        var nPC = dna.normalization((PC + i) + dna.get(PC + i + 1 + cmd.getCountParams() + j, true)); //Индекс того гена, куда мы прыгнем
+                        var tar = cmd_o.branch(nPC);
+                        if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
+                        nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
+                        final var cmd_to = nPC * dr2 - Math.PI / 2;
+                        final int sx = (int) (cx + rL * Math.cos(anglS)); //Координаты старта
+                        final int sy = (int) (cy + rL * Math.sin(anglS));			
+                        final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
+                        final int ey = (int) (cy + rL * Math.sin(cmd_to));
+                        if(cmd_o.isColoristicJumps())
+                            g.setColor(tar.color);
+                        bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
+                    }
+                } else {
+                    for(var j = 0 ; j < cmd_o.next.size() ; j++){
+                        var o = cmd_o.next.get(j);
+                        var anglS = cmd_a + dr2 * (cmd.getCountParams() + j);
+                        var nPC = o.num; //Индекс того гена, куда мы прыгнем
+                        if(nPC < PC) nPC += dna.size; //Проворачиваем на один круг
+                        nPC -= PC; //А теперь переводим индекс в нулевую позицию и получаем где на круге этот индекс находится
+                        final var cmd_to = nPC * dr2 - Math.PI / 2;
+                        final int sx = (int) (cx + rL * Math.cos(anglS)); //Координаты старта
+                        final int sy = (int) (cy + rL * Math.sin(anglS));			
+                        final int ex = (int) (cx + rL * Math.cos(cmd_to)); //Координаты конца
+                        final int ey = (int) (cy + rL * Math.sin(cmd_to));
+                        if(cmd_o.isColoristicJumps())
+                            g.setColor(o.color());
+                        bezie(g, new Point2D.Double(sx,sy),center,new Point2D.Double(ex,ey));
+                    }
                 }
 				if(cmd_o.isRoot){
                     g.setColor(Color.BLACK);
@@ -960,7 +1006,7 @@ public class CellEditor extends javax.swing.JDialog {
                         drawStartEnd(g,cx,cy,r,rD,af, true,dr, size);
                         tx = cx + (r + 2*rD) * cos;
                         ty = cy + (r + 2*rD) * sin;
-                        print(g,tx,ty,a,"MeM");
+                        print(g,tx,ty,a,MEM_NAME);
                     }
                     //Теперь её тело
                     {
@@ -1079,16 +1125,16 @@ public class CellEditor extends javax.swing.JDialog {
 			var start = from;
 			var isPrint = true;
 			for(var i = 0 ; i < lenght; i+=2){
-				final var t = i/lenght;
-				final var ut = 1 - t;
-				final var l_stroke = 1 + ut * 10;
-				final var B0 = (F2 / (F0 * F2)) * Math.pow(t, 0) * Math.pow(ut, 2);
-				final var B1 = (F2 / (F1 * F1)) * Math.pow(t, 1) * Math.pow(ut, 1);
-				final var B2 = (F2 / (F2 * F0)) * Math.pow(t, 2) * Math.pow(ut, 0);
-				final var x = B0 * from.x + B1 * intermediate.x + B2 * to.x;
-				final var y = B0 * from.y + B1 * intermediate.y + B2 * to.y;
-				final var point = new java.awt.Point.Double(x,y);
-				final var delta = start.distance(point);
+				var t = i/lenght;
+				var ut = 1 - t;
+				var l_stroke = 1 + ut * 30;
+				var B0 = (F2 / (F0 * F2)) * Math.pow(t, 0) * Math.pow(ut, 2);
+				var B1 = (F2 / (F1 * F1)) * Math.pow(t, 1) * Math.pow(ut, 1);
+				var B2 = (F2 / (F2 * F0)) * Math.pow(t, 2) * Math.pow(ut, 0);
+				var x = B0 * from.x + B1 * intermediate.x + B2 * to.x;
+				var y = B0 * from.y + B1 * intermediate.y + B2 * to.y;
+				var point = new java.awt.Point.Double(x,y);
+				var delta = start.distance(point);
 				if(delta > l_stroke){
 					start = point;
 					isPrint = !isPrint;
@@ -1164,10 +1210,8 @@ public class CellEditor extends javax.swing.JDialog {
             g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
             g2d.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
             var os = g2d.getStroke();
-            var rootNode = object.getDna().getPC();
             tree.main.forEach((k,v) ->{
-                var isRoot = v.index == rootNode;
-                if(isRoot)
+                if(v.isRoot)
                     g2d.setStroke(DASHED);
                 else
                     g2d.setStroke(os);
@@ -1187,9 +1231,9 @@ public class CellEditor extends javax.swing.JDialog {
                     y += p1.y;
                     x2 += p2.x;
                     y2 += p2.y;
-                    var isColorist = isRoot && v.hasBranch();
+                    var isColorist = v.isColoristicJumps();
                     if(isColorist)
-						g2d.setColor(Utils.Utils.getHSBColor(((double)index)/v.next.size(), 1, 1, 0.5));
+						g2d.setColor(br.color);
                     g2d.drawLine(x, y, x2, y2);
                     kerlib.draw.tools.arrow(g2d, x2, y2, angle, 10, Math.PI / 6);
                     if(isColorist)
@@ -1231,7 +1275,7 @@ public class CellEditor extends javax.swing.JDialog {
 		setObject(edit);
         isTree.setSelected(true);
 		
-        //kerlib.tools.isAssert(() -> {isTree.setSelected(false);});
+        kerlib.tools.isAssert(() -> {isTree.setSelected(false);});
         isTreeActionPerformed(null);
 	}
 	/**Делает кнопочки покрасивее
@@ -1397,11 +1441,10 @@ public class CellEditor extends javax.swing.JDialog {
 			for(var j = 0 ; j < tcmd.next.size() ; j++){
                 var o = tcmd.next.get(j);
 				var nPC = o.num - dna.getPC(); //Индекс того гена, куда мы прыгнем
-				final var color = Utils.Utils.getHSBColor(((double)j)/tcmd.next.size(), 1, 1, 0.5);
 				final var next = new JButton(Configurations.getProperty(CellEditor.class,"BRANCH.L", j)){
 					@Override public void paintComponent(Graphics g){
 						super.paintComponent(g);
-						g.setColor(color);
+						g.setColor(o.color);
 						g.fillRect(0, 0, getWidth(), getHeight());
 					}
 				};
@@ -1764,4 +1807,6 @@ public class CellEditor extends javax.swing.JDialog {
 	private static boolean isNeedHello = true;
     ///Дерево, построенное из ДНК
     private DNA_Tree tree;
+    ///Подпись для ячеек памяти
+    private final String MEM_NAME = Configurations.getProperty(CellEditor.class,"memory");
 }
