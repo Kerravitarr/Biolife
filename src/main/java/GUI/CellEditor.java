@@ -15,8 +15,8 @@ import MapObjects.Poison;
 import MapObjects.dna.CommandDNA;
 import MapObjects.dna.CommandExplore;
 import MapObjects.dna.DNA;
-import Utils.JSON;
-import Utils.RingBuffer;
+import kerlib.json.JSON;
+import kerlib.RingBuffer;
 import Utils.SaveAndLoad;
 import Utils.drawsUtil.alignmentX;
 import Utils.drawsUtil.alignmentY;
@@ -69,6 +69,16 @@ public class CellEditor extends javax.swing.JDialog {
 		 * @param object живая клетка, которую надо нарисовать
 		 */
         public abstract void paint(Graphics2D g, AliveCell object);
+        public void paintt(Graphics2D g, AliveCell object){
+            var ug = new kerlib.draw.UsableGraphics(g);
+            var f = node.forse;
+            var SIZE = 20;
+            var cx = node.getX() + f.x*SIZE;
+            var cy = node.getY() + f.y*SIZE;
+            ug.drawOvalByCenter(node.getX(), node.getY(), SIZE/2)
+               .drawLine(node.getX(), node.getY(), cx, cy)
+               .arrow(cx, cy, Math.atan2(f.y, f.x), SIZE, 10);
+        }
         
         public abstract double offset(double angleRad);
     }
@@ -549,6 +559,7 @@ public class CellEditor extends javax.swing.JDialog {
 							default -> {return;}
 						}
 						object.setDna(dna);
+                        tree = new DNA_Tree(object, getWidth(), getHeight());
 						mouseMoved(e); //Мы ещё и пришли в эту точку, а точка теперь по факту в другом месте!
 						updateHeaderPanel();
 						repaint();
@@ -1020,6 +1031,9 @@ public class CellEditor extends javax.swing.JDialog {
                     //А теперь рисуем завершение
                     af = (i * dr2 - Math.PI / 2) - dr2;
                     drawStartEnd(g,cx,cy,r,rD,af, false,dr, size);
+                    final var isSelect = selectAngle != null && isOneAngle(a-dr, selectAngle, af + dr);
+                    if(isSelect)
+                        showToolTip(MEM_TT);
                 }
 			}
 			dna.setPC(PC);
@@ -1127,7 +1141,7 @@ public class CellEditor extends javax.swing.JDialog {
 			for(var i = 0 ; i < lenght; i+=2){
 				var t = i/lenght;
 				var ut = 1 - t;
-				var l_stroke = 1 + ut * 30;
+				var l_stroke = 1 + ut * 20;
 				var B0 = (F2 / (F0 * F2)) * Math.pow(t, 0) * Math.pow(ut, 2);
 				var B1 = (F2 / (F1 * F1)) * Math.pow(t, 1) * Math.pow(ut, 1);
 				var B2 = (F2 / (F2 * F0)) * Math.pow(t, 2) * Math.pow(ut, 0);
@@ -1136,11 +1150,15 @@ public class CellEditor extends javax.swing.JDialog {
 				var point = new java.awt.Point.Double(x,y);
 				var delta = start.distance(point);
 				if(delta > l_stroke){
+                    if(!(isPrint = !isPrint)){
+                        var angl = Math.atan2(start.y-point.y, start.x-point.x);
+                        kerlib.draw.tools.fillarrow(g, point.x, point.y, angl, delta, Math.PI * 10 / 180);
+                    }
 					start = point;
-					isPrint = !isPrint;
 				}
-				if(isPrint)
-					g.draw(new Line2D.Double(pref, point));
+				if(isPrint){
+					//g.draw(new Line2D.Double(pref, point));
+                }
 				pref = point;
 			}
 		}
@@ -1198,13 +1216,13 @@ public class CellEditor extends javax.swing.JDialog {
 			DnaToolTip.setTipText(text);
 			if(popup != null) popup.hide();
 			if(pstatus != POPUP_STATUS.UNDEF) return; //Не показываем подсказку
-			popup = PopupFactory.getSharedInstance().getPopup(this, DnaToolTip, ml.x, ml.y);
+			popup = PopupFactory.getSharedInstance().getPopup(this, DnaToolTip, ml.x+10, ml.y);
 			popup.show();
 		}
         ///Отрисовывает дерево переходов
 		public void paintAsTree(Graphics2D g2d) {
-            if(scale == 0)
-                scale = Math.min(getWidth(),getHeight());
+            if(scale == 0)//Масштаб изначальный специально в 4 раза меньше необходимого. чтобы весь геном влез в экран
+                scale = Math.max(getWidth(),getHeight())*0.9/2; 
             tree.gravitation(getWidth(), getHeight(), scale, centralPointOffset);
             g2d.setColor(Color.black);
             g2d.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
@@ -1275,7 +1293,7 @@ public class CellEditor extends javax.swing.JDialog {
 		setObject(edit);
         isTree.setSelected(true);
 		
-        kerlib.tools.isAssert(() -> {isTree.setSelected(false);});
+        //kerlib.tools.isAssert(() -> {isTree.setSelected(false);});
         isTreeActionPerformed(null);
 	}
 	/**Делает кнопочки покрасивее
@@ -1733,6 +1751,7 @@ public class CellEditor extends javax.swing.JDialog {
 		decrement.setVisible(isTree.isSelected());
         centralPanel.revalidate();
         centralPanel.repaint();
+        tree.init();
     }//GEN-LAST:event_isTreeActionPerformed
 	/**Поворачивает ДНК на выбранное число
 	 * @param val на сколько повернуть ДНК
@@ -1809,4 +1828,6 @@ public class CellEditor extends javax.swing.JDialog {
     private DNA_Tree tree;
     ///Подпись для ячеек памяти
     private final String MEM_NAME = Configurations.getProperty(CellEditor.class,"memory");
+    ///Подпись для ячеек памяти
+    private final String MEM_TT= Configurations.getProperty(CellEditor.class,"memory.T");
 }

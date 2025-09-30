@@ -127,7 +127,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		Configurations.addTask(this);
         
         
-        kerlib.tools.isAssert(() -> {
+        /*kerlib.tools.isAssert(() -> {
             Configurations.world.stop();
             var f = Utils.Utils.random(0, Configurations.world.getCount(CellObject.LV_STATUS.LV_ALIVE));
             for(var x = 0; x < Configurations.getWidth(); x++){
@@ -142,7 +142,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
                     }
                 }
             }
-        });
+        });*/
 	}
 
 	/** This method is called from within the constructor to
