@@ -7,8 +7,9 @@ package Utils;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
-/**
- *
+/**Это класс, в который можно сначала напихать разных событий
+ * А потом просто подтвержать, что началось следующее событие.
+ * Вычисляет прогресс, пишет время выполнения
  * @author Kerravitarr
  */
 public class StreamProgressBar {

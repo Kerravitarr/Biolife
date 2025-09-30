@@ -2,7 +2,7 @@ package MapObjects;
 
 import java.awt.Color;
 
-import Utils.JSON;
+import kerlib.json.JSON;
 import Utils.Utils;
 import Calculations.Configurations;
 import Calculations.Point;

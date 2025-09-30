@@ -9,7 +9,7 @@ import Calculations.Point;
 import GUI.AllColors;
 import GUI.Legend;
 import MapObjects.AliveCellProtorype.ACTION;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics;

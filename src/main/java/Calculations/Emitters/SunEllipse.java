@@ -10,7 +10,7 @@ import Calculations.Trajectories.Trajectory;
 import GUI.AllColors;
 import GUI.WorldView.Transforms;
 import Utils.ClassBuilder;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.MultipleGradientPaint;

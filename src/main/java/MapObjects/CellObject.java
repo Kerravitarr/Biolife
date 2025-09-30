@@ -3,7 +3,7 @@ package MapObjects;
 import java.awt.Graphics;
 
 import MapObjects.Poison.TYPE;
-import Utils.JSON;
+import kerlib.json.JSON;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Point.DIRECTION;

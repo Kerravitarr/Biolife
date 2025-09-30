@@ -32,7 +32,7 @@ import java.util.concurrent.ThreadFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 
-import Utils.JSON;
+import kerlib.json.JSON;
 import Utils.SaveAndLoad;
 import java.util.HashSet;
 import java.util.Set;

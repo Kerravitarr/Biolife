@@ -11,7 +11,7 @@ import Calculations.Point.DIRECTION;
 import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ClassBuilder;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 

@@ -7,7 +7,7 @@ import Calculations.Configurations;
 import Calculations.GenerateClassException;
 import GUI.MainFrame;
 import GUI.WithoutGUI;
-import Utils.ZipBuffer;
+import kerlib.ZipBuffer;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -30,13 +30,13 @@ public class BioLife{
 			}
 		}
         
-		final var _opts = new Utils.CMDOptions(args);
-		_opts.add(new Utils.CMDOptions.Option('V',getProperty("V")));
-		_opts.add(new Utils.CMDOptions.Option('W',100,700,null,1d,getProperty("V")));
-		_opts.add(new Utils.CMDOptions.Option('H',100,700,null,1d,getProperty("H")));
-		_opts.add(new Utils.CMDOptions.Option('h',getProperty("h")));
-		_opts.add(new Utils.CMDOptions.Option('L',"",getProperty("L")));
-		_opts.add(new Utils.CMDOptions.Option('p',1,8080,65535,1d,getProperty("p")));
+		final var _opts = new kerlib.cmd.CMDOptions(args);
+		_opts.add(new kerlib.cmd.Option('V',getProperty("V")));
+		_opts.add(new kerlib.cmd.Option('W',100,700,null,1d,getProperty("V")));
+		_opts.add(new kerlib.cmd.Option('H',100,700,null,1d,getProperty("H")));
+		_opts.add(new kerlib.cmd.Option('h',getProperty("h")));
+		_opts.add(new kerlib.cmd.Option('L',"",getProperty("L")));
+		_opts.add(new kerlib.cmd.Option('p',1,8080,65535,1d,getProperty("p")));
 		//Обработка опций
 		var print_help = _opts.get('h').get(Boolean.class) ? (false ? 1 : 2) : 0;
 		boolean isNeedHelp = print_help != 0;
@@ -47,8 +47,8 @@ public class BioLife{
 				System.out.println(getProperty("cmd.params.def"));
 			String opts_str = "";
 			for (var it = _opts.iterator(); it.hasNext();) {
-				Utils.CMDOptions.Option i = it.next();
-				if(i.get(Utils.CMDOptions.Option.state.class) != Utils.CMDOptions.Option.state.remove)
+				kerlib.cmd.Option i = it.next();
+				if(i.get(kerlib.cmd.state.class) != kerlib.cmd.state.remove)
 					opts_str += "\n" + i.print(75,!(print_help == 1));
 			}
 			System.out.println(opts_str);
@@ -63,24 +63,21 @@ public class BioLife{
 		Utils.Reflector.getClassesByClasses(BioLife.class);
 		final var isGUI = !_opts.get('V').get(Boolean.class); //Наличие графического окна
 		var defType = Configurations.WORLD_TYPE.values[Utils.Utils.random(0, Configurations.WORLD_TYPE.length - 1)];
-		//assert (defType = Configurations.WORLD_TYPE.FIELD_R) != null; //TODO На время отладки мне нужен конкретный мир
+        defType = kerlib.tools.isAssert(defType, Configurations.WORLD_TYPE.CIRCLE); //TODO На время отладки мне нужен конкретный мир
 		var load = _opts.get('L').get(String.class);
 		if(load.isEmpty()){//Если не задано, то подгружаем последний сохранённый мир
 			var f = new File(System.getProperty("user.dir"));
-			File old = null;
-			for(var file : f.listFiles()){
-				if(file.getName().endsWith(".zbmap") && (old == null || old.lastModified() <= file.lastModified()) )
-					old = file;
-			}
+			var old = kerlib.tools.findOldest(f, file -> file.getName().endsWith(".zbmap"));
 			if(old != null){
 				load = old.getAbsolutePath();
-				//assert (load = "") != null; //TODO На время отладки не надо загружать миры
+                load = kerlib.tools.isAssert(load, "");//TODO На время отладки не надо загружать миры
 			}
 		}
 		if(!load.isEmpty()){
 			Configurations.load(load);
 		} else if(isGUI){//Создаём случайный мир
-			final var  sSize = Configurations.getDefaultConfiguration(defType);
+			var sSize = Configurations.getDefaultConfiguration(defType);
+            sSize.MAP_CELLS.width = kerlib.tools.isAssert(sSize.MAP_CELLS.width, sSize.MAP_CELLS.width*2); 
 			Configurations.makeDefaultWord(defType,sSize.MAP_CELLS.width, sSize.MAP_CELLS.height);
 		} else {//Создаём случайный мир
 			Configurations.makeDefaultWord(defType,_opts.get('W').get(Integer.class), _opts.get('H').get(Integer.class));

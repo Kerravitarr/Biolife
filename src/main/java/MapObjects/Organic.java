@@ -3,7 +3,7 @@ package MapObjects;
 import java.awt.Color;
 
 import MapObjects.Poison.TYPE;
-import Utils.JSON;
+import kerlib.json.JSON;
 import Utils.Utils;
 import java.awt.BasicStroke;
 import java.awt.Graphics2D;

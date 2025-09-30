@@ -4,7 +4,7 @@ import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Trajectories.Trajectory;
 import Utils.ClassBuilder;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.util.List;
 
 /**

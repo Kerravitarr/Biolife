@@ -7,7 +7,7 @@ package GUI;
 import Calculations.Configurations;
 import static Calculations.Configurations.world;
 import MapObjects.CellObject;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -181,7 +181,7 @@ public class WithoutGUI {
 							final var json = new JSON(datas.toString());
 							if(in(json)) sendResponse(socket,HTTP_C.OK);
 							else sendResponse(socket,HTTP_C.NI);
-						}catch(JSON.ParseException | IllegalArgumentException | ClassCastException e){
+						}catch(kerlib.json.ParseException | IllegalArgumentException | ClassCastException e){
 							sendResponse(socket,HTTP_C.BR);
 						}
 					} else if(headers.containsKey("method") && headers.get("method").getFirst().equals("GET")){

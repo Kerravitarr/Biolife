@@ -3,7 +3,7 @@ package MapObjects.dna;
 import Calculations.Configurations;
 import MapObjects.AliveCell;
 import MapObjects.CellObject.OBJECT;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.List;

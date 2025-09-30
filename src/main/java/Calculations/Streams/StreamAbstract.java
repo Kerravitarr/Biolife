@@ -11,7 +11,7 @@ import static Calculations.Configurations.WORLD_TYPE.RECTANGLE;
 import GUI.WorldView;
 import MapObjects.CellObject;
 import Utils.ClassBuilder;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.awt.Graphics2D;
 import java.util.List;
 

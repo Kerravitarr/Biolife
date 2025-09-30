@@ -3,7 +3,7 @@ package MapObjects;
 import java.awt.Color;
 import java.awt.Graphics;
 
-import Utils.JSON;
+import kerlib.json.JSON;
 import Calculations.Point.DIRECTION;
 import GUI.AllColors;
 import GUI.Legend;

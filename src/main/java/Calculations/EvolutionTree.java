@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
-import Utils.JSON;
+import kerlib.json.JSON;
 import Utils.SaveAndLoad;
 import java.util.Arrays;
 

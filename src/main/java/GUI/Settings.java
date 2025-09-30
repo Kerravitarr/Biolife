@@ -108,11 +108,11 @@ public class Settings extends javax.swing.JPanel {
 		};
 	private interface CopyListener  {
 		/**Должне преобразовать объек в JSON*/
-		public Utils.JSON transform();
+		public kerlib.json.JSON transform();
 	}
 	private interface InsertListener  {
 		/**Получит JSON когда пользоватль захочет вставить объект из буфера обмена*/
-		public void transform(Utils.JSON data);
+		public void transform(kerlib.json.JSON data);
 	}
 	/**Интерфейс для отрабатывания события измения свойств*/
 	private interface ChangeListener {
@@ -552,7 +552,7 @@ public class Settings extends javax.swing.JPanel {
 			insert.addActionListener(e->{
 				try{
 					final var  data = (String) java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
-					final var json = new Utils.JSON(data);
+					final var json = new kerlib.json.JSON(data);
 					insertListener.transform(json);
 				} catch (Exception ex){
 					Logger.getLogger(Settings.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);

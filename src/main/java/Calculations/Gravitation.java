@@ -4,7 +4,7 @@
  */
 package Calculations;
 
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.awt.Dimension;
 /**
  * Гравитация, действующая на любой объект с карты

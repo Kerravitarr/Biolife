@@ -3,7 +3,7 @@ package Calculations.Emitters;
 import Calculations.Configurations;
 import Calculations.Point;
 import Calculations.Trajectories.Trajectory;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.util.Arrays;
 
 /**

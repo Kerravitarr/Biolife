@@ -9,7 +9,7 @@ import MapObjects.dna.CreatePoison;
 import MapObjects.dna.DNA;
 import MapObjects.dna.TankFood;
 import MapObjects.dna.TankMineral;
-import Utils.JSON;
+import kerlib.json.JSON;
 import Utils.Utils;
 import java.text.MessageFormat;
 import Calculations.Configurations;

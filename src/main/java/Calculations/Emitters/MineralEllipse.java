@@ -9,7 +9,7 @@ import Calculations.Point;
 import Calculations.Trajectories.Trajectory;
 import GUI.AllColors;
 import Utils.ClassBuilder;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.awt.Color;
 import java.awt.MultipleGradientPaint;
 import java.awt.MultipleGradientPaint.CycleMethod;

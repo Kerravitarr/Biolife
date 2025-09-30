@@ -6,7 +6,7 @@ import java.util.List;
 
 import MapObjects.AliveCellProtorype.Specialization;
 import MapObjects.dna.DNA;
-import Utils.JSON;
+import kerlib.json.JSON;
 import Utils.Utils;
 import Calculations.Configurations;
 import Calculations.EvolutionTree.Node;

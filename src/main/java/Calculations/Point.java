@@ -5,7 +5,7 @@ import static Calculations.Configurations.WORLD_TYPE.FIELD_R;
 import static Calculations.Configurations.WORLD_TYPE.LINE_H;
 import static Calculations.Configurations.WORLD_TYPE.LINE_V;
 import static Calculations.Configurations.WORLD_TYPE.RECTANGLE;
-import Utils.JSON;
+import kerlib.json.JSON;
 
 /**
 Точка на карте мира.

@@ -9,7 +9,7 @@ import Calculations.Point;
 import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ClassBuilder;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.awt.Graphics2D;
 import java.util.ArrayList;
 import java.util.Arrays;

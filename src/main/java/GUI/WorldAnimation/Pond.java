@@ -8,7 +8,7 @@ import Calculations.Configurations;
 import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ColorRec;
-import Utils.RingBuffer;
+import kerlib.RingBuffer;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;

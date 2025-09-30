@@ -6,7 +6,7 @@ package Calculations.Emitters;
 
 import Calculations.Configurations;
 import Calculations.Point;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

@@ -6,8 +6,8 @@ import Calculations.Point;
 import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.CellObjectRemoveException;
-import Utils.GifSequenceWriter;
-import Utils.JSON;
+import kerlib.GifSequenceWriter;
+import kerlib.json.JSON;
 import Utils.SaveAndLoad;
 import java.awt.Cursor;
 import java.awt.Dimension;
@@ -454,7 +454,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 			case FROM_CLIPBOARD -> {
 				try{
 					final var  data = (String) java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
-					final var json = new Utils.JSON(data);
+					final var json = new kerlib.json.JSON(data);
 					final var node = Configurations.tree.makeTree();
 					json.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
 					final var cell = new AliveCell(json, Configurations.tree, Configurations.VERSION);
@@ -526,7 +526,7 @@ public class Menu extends JPanel implements Configurations.EvrySecondTask{
 							case FROM_CLIPBOARD -> {
 								try{
 									final var  data = (String) java.awt.Toolkit.getDefaultToolkit().getSystemClipboard().getData(java.awt.datatransfer.DataFlavor.stringFlavor);
-									final var json = new Utils.JSON(data);
+									final var json = new kerlib.json.JSON(data);
 									final var node = Configurations.tree.makeTree();
 									json.add("GenerationTree", node.getBranch()); //Так ну совсем совсем нельзя делать... А я делаю :(
 									cell[0] = new AliveCell(json, Configurations.tree, Configurations.VERSION);

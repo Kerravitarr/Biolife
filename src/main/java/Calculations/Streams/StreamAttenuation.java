@@ -6,7 +6,7 @@ package Calculations.Streams;
 
 import Calculations.Configurations;
 import Utils.ClassBuilder;
-import Utils.JSON;
+import kerlib.json.JSON;
 import java.lang.reflect.InvocationTargetException;
 
 /**
