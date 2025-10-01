@@ -9,14 +9,20 @@ import Calculations.Point;
 import GUI.AllColors;
 import GUI.WorldView;
 import Utils.ColorRec;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.Rectangle;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Area;
+import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import kerlib.StableValue;
 
@@ -27,23 +33,87 @@ import kerlib.StableValue;
  * @author Kerravitarr
  */
 public class Microscope extends DefaultAnimation{
+    private static abstract class Printer {
+        ///Собственно мы, инструмент, который мы отрисовываем
+        protected final Instrument our;
+
+        public Printer(Instrument our) {
+            this.our = our;
+        }
+        
+        public void paint(Graphics2D g, Rectangle visible, java.awt.geom.Area field){
+            var ot = g.getTransform();
+            var transform = new AffineTransform();
+            transform.translate(our.not_rotation.getCenterX(), our.not_rotation.getCenterY());
+            transform.rotate(our.angle);
+            transform.translate(-our.not_rotation.width/2, -our.not_rotation.height/2);
+            g.setTransform(transform);
+            
+            //g.setColor(Color.WHITE);
+            //g.fillRect(0, 0, (int)our.not_rotation.width, (int)our.not_rotation.height);
+            g.setStroke(new BasicStroke(3f));
+            g.setColor(Color.WHITE);
+            paint(g, visible, field, our.not_rotation.width, our.not_rotation.height);
+            g.setColor(Color.BLACK);
+            g.setStroke(new BasicStroke(1f));
+            paint(g, visible, field, our.not_rotation.width, our.not_rotation.height);
+            
+            g.setTransform(ot);
+        }
+        protected abstract void paint(Graphics2D g, Rectangle visible, Area field, double width, double height);
+
+    }
+    private static class Tweezers extends Printer {
+        private Tweezers(Instrument i) {super(i);}
+        @Override public void paint(Graphics2D g, Rectangle visible, Area field,double width, double height) {
+            
+            //А теперь будем рисовать пинцет.
+            //Пускай это будет самый простой вариант. Шарнир и две дуги для губ
+            var pivotRadius = Math.max(width,height) * 0.08; // Радиус шарнира
+            double x0 = width/2, y0 = pivotRadius/2;
+            // Рисуем шарнир (кружок)
+            kerlib.draw.tools.fillCircle(g,x0, y0, pivotRadius);
+            ///А теперь рисуем две губы
+            var tweezersPath = new Path2D.Double();
+            tweezersPath.moveTo(x0, y0);
+            tweezersPath.quadTo(width, height/2, width*2/3, height);
+            tweezersPath.moveTo(x0, y0);
+            tweezersPath.quadTo(0, height/2, width*1/3, height);
+
+            // Рисуем сам пинцет
+            g.draw(tweezersPath);
+        }
+    }
+    private static class ReverseTweezers extends Printer {
+        private ReverseTweezers(Instrument i) {super(i);}
+        @Override public void paint(Graphics2D g2d, Rectangle visible, Area field,double width, double height) {
+            g2d.setColor(Color.BLACK);
+            
+        }
+    }
     ///Инструмент, который реально лежит на столе
-    private class Instrument {
+    private static class Instrument {
         ///Тип инструмента
         enum Type {
-            TWEEZERS(20,30),
-            FLASK(10,10),
-            TEST_TUBE(10,40),
-            REFRIGERATOR(20,40);
+            ///Пинцет
+            TWEEZERS(10,30, i -> new Tweezers(i)),
+            ///Обратный пинцет
+            //REVERSE_TWEEZERS(20,30, i -> new ReverseTweezers(i)),
+            ;
             //Ширина объкта в клетках поля
             final int width;
             ///Высота объекта в клетках поля
             final int height;
+            ///Генератор рисовалки этого инструмента
+            final java.util.function.Function<Instrument,Printer> generator;
 
-            private Type(int width, int height) {
-                this.width = width;
-                this.height = height;
-            }            
+            private Type(int width, int height, Function<Instrument, Printer> generator) {
+                this.width = width*2;
+                this.height = height*2;
+                this.generator = generator;
+            }
+
+                 
         }
         ///Проекция прямоугольника на ось. Эта сама проекция, поэтому только две точки
         private record Projection(double min,double max){
@@ -53,22 +123,23 @@ public class Microscope extends DefaultAnimation{
         }
 
         public Instrument(double cx, double cy, Type type,double size, double rotation) {
+            this.type = type;
+            this.printer = StableValue.supplier(() -> type.generator.apply(this));
             var transform = new AffineTransform();
-            transform.rotate(rotation, cx, cy);
+            transform.rotate(angle = rotation, cx, cy);
             var w = type.width * size;
             var h = type.height * size;
-            {
-                Point2D[] initialCorners = {
-                        new Point2D.Double(cx - w / 2, cy - h / 2), // Top-left
-                        new Point2D.Double(cx + w / 2, cy - h / 2), // Top-right
-                        new Point2D.Double(cx + w / 2, cy + h / 2), // Bottom-right
-                        new Point2D.Double(cx - w / 2, cy + h / 2)  // Bottom-left
-                };
-                for (var corner : initialCorners) {
-                    var transformed = new Point2D.Double();
-                    transform.transform(corner, transformed);
-                    corners.add(transformed);
-                }
+            not_rotation = new Rectangle.Double(cx - w / 2, cy - h / 2,w,h);
+            Point2D[] initialCorners = {
+                    new Point2D.Double(cx - w / 2, cy - h / 2), // Top-left
+                    new Point2D.Double(cx + w / 2, cy - h / 2), // Top-right
+                    new Point2D.Double(cx + w / 2, cy + h / 2), // Bottom-right
+                    new Point2D.Double(cx - w / 2, cy + h / 2)  // Bottom-left
+            };
+            for (var corner : initialCorners) {
+                var transformed = new Point2D.Double();
+                transform.transform(corner, transformed);
+                corners.add(transformed);
             }
         }
         ///Првоеряет, что два инструменты не пересекаются
@@ -78,12 +149,13 @@ public class Microscope extends DefaultAnimation{
         ///     Оси, перпендикулярные сторонам первого прямоугольника.
         ///     Оси, перпендикулярные сторонам второго прямоугольника.
         public boolean intersects(Instrument other) {
-            return Stream.concat(this.axes.get().stream(), other.axes.get().stream())
-                .allMatch(axis -> {
-                    var p1 = project(this, axis);
-                    var p2 = project(other, axis);
-                    return p1.overlaps(p2); // Найдена ось разделения, прямоугольники не пересекаются
-                });
+            return bounds.get().intersects(other.bounds.get()) 
+                    && Stream.concat(this.axes.get().stream(), other.axes.get().stream())
+                    .allMatch(axis -> {
+                        var p1 = project(this, axis);
+                        var p2 = project(other, axis);
+                        return p1.overlaps(p2); // Найдена ось разделения, прямоугольники не пересекаются
+                    });
         }
         // Проецировать прямоугольник на заданную ось
         private static Projection project(Instrument rect, Point2D axis) {
@@ -106,10 +178,16 @@ public class Microscope extends DefaultAnimation{
             return new Projection(min, max);
         }
         
+        ///Тип
+        private final Type type;
+        ///Прямоугольник, который мы и который при этом не повёрнут ни на какой угол
+        public final Rectangle.Double not_rotation;
+        ///Угол вращения, радианы
+        public final double angle;
         ///Вершины этого объекта
         private final List<Point2D> corners = new ArrayList<>(4);
         ///Собственно мы
-        private final StableValue<Polygon> poligion = StableValue.supplier(() -> {
+        private final Supplier<Polygon> poligion = StableValue.supplier(() -> {
             int[] xPoints = new int[corners.size()];
             int[] yPoints = new int[corners.size()];
             for (int i = 0; i < corners.size(); i++) {
@@ -119,7 +197,7 @@ public class Microscope extends DefaultAnimation{
             return new Polygon(xPoints, yPoints, corners.size());
         });
         ///Оси для SAT
-        private final StableValue<List<Point2D>> axes = StableValue.supplier(() -> {
+        private final Supplier<List<Point2D>> axes = StableValue.supplier(() -> {
             var ret = new ArrayList<Point2D>(corners.size());
             for (int i = 0; i < corners.size(); i++) {
                  var p1 = corners.get(i);
@@ -133,14 +211,115 @@ public class Microscope extends DefaultAnimation{
              } 
             return ret;
         });
+        ///Очень грубый, ограничивающий прямоугольник
+        private final Supplier<Rectangle> bounds = StableValue.supplier(() -> poligion.get().getBounds() );
+        ///Рисователь этого объекта
+        private final Supplier<Printer> printer;
     }
     ///Основной набор статических переменных, для работы после обновления экрана
     private static class Static {
+        ///Вероятность появления на столе того или иного инструмента
+        private static class Probability{
+            int count = 0;
+            double prob = 0;
+
+            private void reset() {
+                count = 0;
+                prob = 1;
+            }
+        }
+        ///Размеры игрового поля, в штуках
+        private final java.awt.Point size = new java.awt.Point();
+        ///Игровое поле, это прямоугольник вокруг эллипса игрового поля
+        private java.awt.geom.Rectangle2D gameField;
+        ///Эксцентриситет игрового поля.
+        private double aspectRatio = 1;
         ///Инструменты, которые лежат на столе
-        List<Instrument> set = new ArrayList();
+        private final List<Instrument> set = new ArrayList();
+        ///Сколько уже инструментов добавлено каждого типа. Нужно чтобы количество разных инструментов было примерно одинаковым
+        private final EnumMap<Instrument.Type,Probability> instruments = new EnumMap<>(Instrument.Type.class){{for(var t : Instrument.Type.values()) put(t,new Probability());}}; 
+        ///Инициализция поля
+        public void init(double cx, double cy, double A, double B){
+            if(size.x != Configurations.getWidth() || size.y != Configurations.getHeight()){
+                size.x = Configurations.getWidth();
+                size.y = Configurations.getHeight();
+            }
+            set.clear();
+            for(var t : instruments.entrySet())
+                t.getValue().reset();
+            gameField = new java.awt.Rectangle.Double(cx-A,cy-B,A*2,B*2);
+            aspectRatio = A / B;
+        }
         
-        
-        List<java.util.function.Consumer<Graphics2D>> tmp = new ArrayList();
+        ///Добавить инструмент на стол. Если, конечно, можно
+        public void add(Instrument next){
+            if(next.bounds.get().intersects(gameField)){
+                //Нужна точная проверка на перекрытие с игровым полем
+                //Так как все эллипсы лежат за пределами эллипса, то просто проверим, что ни одна из сторон прямоугольника
+                //Не пересекает эллипс.
+                //А сделать это не сложно - решить систему  из уравнения прямой и уравнения эллипса. Если есть решение - есть пересечение.
+                var points = next.corners;
+                for (int i = 0; i < points.size(); i++) {
+                    var p1 = points.get(i);
+                    var p2 = points.get(i == 0 ? (points.size()-1) : i - 1);
+                    double x1 = p1.getX(), y1 = p1.getY();
+                    double x2 = p2.getX(), y2 = p2.getY();
+                    double cx = gameField.getCenterX(), cy = gameField.getCenterY();
+                    double a = gameField.getWidth()/2, b = gameField.getHeight()/2;
+                    // Сдвигаем начало координат в центр эллипса
+                    x1 -= cx; y1 -= cy;
+                    x2 -= cx; y2 -= cy;
+                    
+                    // Коэффициенты для квадратного уравнения At^2 + Bt + C = 0
+                    // Из уравнения эллипса: ( (x1 + t*(x2-x1)) / a )^2 + ( (y1 + t*(y2-y1)) / b )^2 = 1
+                    // Раскрываем скобки и собираем коэффициенты для t^2, t, и константы.
+                    var dx = x2 - x1;
+                    var dy = y2 - y1;
+                    // Коэффициенты A, B, C
+                    // A = (dx/a)^2 + (dy/b)^2
+                    // B = 2 * ( (x1*dx)/a^2 + (y1*dy)/b^2 )
+                    // C = (x1/a)^2 + (y1/b)^2 - 1
+                    var A = (dx * dx) / (a * a) + (dy * dy) / (b * b);
+                    var B = 2 * ((x1 * dx) / (a * a) + (y1 * dy) / (b * b));
+                    var C = (x1 * x1) / (a * a) + (y1 * y1) / (b * b) - 1;
+                    // Решаем квадратное уравнение At^2 + Bt + C = 0
+                    var discriminant = B * B - 4 * A * C;
+                    if (discriminant < 0) 
+                        return; //Нет корней - нет решения. А мнимые числа нас не интересуют
+                    var t1 = (-B + Math.sqrt(discriminant)) / (2 * A);
+                    var t2 = (-B - Math.sqrt(discriminant)) / (2 * A);
+                    // Проверяем, попадает ли хотя бы один корень в диапазон [0, 1].
+                    // Это означает, что точка пересечения лежит на отрезке.
+                    if (0 <= t1 && t1 <= 1 || 0 <= t2 && t2 <= 1)
+                       return;
+                    // Важно: если A очень близко к нулю (отрезок почти параллелен оси эллипса),
+                    // это может вызвать проблемы с делением на ноль.
+                    // Если A ~ 0, это линейное уравнение Bt + C = 0.
+                    if (Math.abs(A) < 1e-9) { // Используем небольшую погрешность
+                        if (Math.abs(B) > 1e-9) { // Линейное уравнение
+                            var t = -C / B;
+                            if (t >= 0 && t <= 1)
+                                return;
+                        } else { // Уравнение C = 0 (случай, когда отрезок лежит на касательной или совпадает с частью эллипса)
+                            if (Math.abs(C) < 1e-9) { // Если C = 0, значит, точки отрезка лежат на эллипсе
+                                //Может тут всё прохоит по касательной. Но даже так - одна точка больше 0!
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+            //С полем не пересеклись. А с каким либо из размещённых объектов?
+            if(set.stream().allMatch(p -> !p.intersects(next))){                    
+                set.add(next);
+                var avr = ((double)set.size()) / instruments.size();
+                var max = avr * 1.1;
+                var width = avr * 0.1;
+                instruments.get(next.type).count++;
+            for(var t : instruments.entrySet())
+                t.getValue().prob = (max - t.getValue().count) / width;
+            }
+        }
     }
     
 	/**стол сверху*/
@@ -250,10 +429,8 @@ public class Microscope extends DefaultAnimation{
         var B = cellSize * b;
         var cx = w/2;
         var cy = h/2;
-        state.tmp.clear();
-        state.set.clear();
+        state.init(cx,cy,A,B);
         var startHash = a2*b2;
-        var rec = new java.awt.Rectangle.Double(cx-A,cy-B,A*2,B*2);
         for (double i = Math.max(transform.toScrinX(0), transform.toScrinY(0)); i < maxSize; i+=cellSize) {
             //А теперь начинаем гулять по всем возможным точкам
             //Длина эллипса в этом месте
@@ -265,13 +442,13 @@ public class Microscope extends DefaultAnimation{
                 var x = cx + A * Math.cos(angl);
                 var y = cy + B * Math.sin(angl);
                 var rot = gen.nextDouble(Math.PI*2);
-                var type = gen.next(Instrument.Type.class);
-                var next = new Instrument(x, y, type,cellSize, rot);
-                if(state.set.stream().allMatch(p -> !p.intersects(next))){                    
-                    state.set.add(next);
-                    state.tmp.add(g -> {
-                        g.drawPolygon(next.poligion.get());
-                    });
+                var type = gen.nextDouble();
+                for(var t : state.instruments.entrySet()){
+                    if((type -= t.getValue().prob) <= 0){
+                        var next = new Instrument(x, y, t.getKey(),cellSize, rot);
+                        state.add(next);
+                        break;
+                    }
                 }
             }
             A += transform.getDZScrin();
@@ -292,7 +469,7 @@ public class Microscope extends DefaultAnimation{
 		table0.paint(g);
 		table1.paint(g);
         g.setColor(Color.RED);
-        state.tmp.forEach(t -> t.accept(g));
+        state.set.forEach(t -> t.printer.get().paint(g,visible,field));
 	}
 	
 	///Текущее состояние стола

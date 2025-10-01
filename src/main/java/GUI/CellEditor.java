@@ -389,6 +389,7 @@ public class CellEditor extends javax.swing.JDialog {
                 interrupts[i].forEach((k,v) -> v.end());
             }
 			dna.next(PC - dna.getPC()); //Возращаем всё взад
+            /*///Красивая распечатка мозга. Чисто для отладки - вставить куданить, поглазеть на граф от истиных профессионалов!
             System.out.println("Мозг бота");
             main.values()
                 .stream()
@@ -407,7 +408,7 @@ public class CellEditor extends javax.swing.JDialog {
                         System.out.println(sb);
                     }
                     System.out.println();
-                });
+                });*/
             set(width,height);
             init(selectTree.values());
         }
@@ -1293,7 +1294,7 @@ public class CellEditor extends javax.swing.JDialog {
 		setObject(edit);
         isTree.setSelected(true);
 		
-        //kerlib.tools.isAssert(() -> {isTree.setSelected(false);});
+        //kerlib.tools.isAssert(() -> java.awt.EventQueue.invokeLater(() -> isTree.setSelected(false)));
         isTreeActionPerformed(null);
 	}
 	/**Делает кнопочки покрасивее

@@ -531,6 +531,8 @@ public class WorldView extends javax.swing.JPanel {
 		/*												g.translate(getWidth() / 2, getHeight() / 2);
 														g.scale(0.5, 0.5);/***/
 		
+        g.setRenderingHint(java.awt.RenderingHints.KEY_ANTIALIASING, java.awt.RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 		paintField(g);
 		if(isAll){
 			paintCells(g, 0, Configurations.getWidth(), 0, Configurations.getHeight());
