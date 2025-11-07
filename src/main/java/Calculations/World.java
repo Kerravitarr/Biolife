@@ -15,9 +15,6 @@ import MapObjects.AliveCell;
 import MapObjects.CellObject;
 import MapObjects.CellObject.LV_STATUS;
 import static MapObjects.CellObject.LV_STATUS.LV_ALIVE;
-import static MapObjects.CellObject.LV_STATUS.LV_ORGANIC;
-import static MapObjects.CellObject.LV_STATUS.LV_POISON;
-import static MapObjects.CellObject.LV_STATUS.LV_WALL;
 import MapObjects.ConnectiveTissue;
 import MapObjects.Fossil;
 import MapObjects.Organic;
@@ -52,8 +49,8 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	public final UPScounter pps = new UPScounter();
 	/**Это мы, наш поток, в нём мы и считаем всё, что должны*/
 	private final Thread worldThread;
-	/**Сумма всех живых объектов на начало текущего шага*/
-	private int[] _all_live_cell = new int[CellObject.LV_STATUS.length];
+	///Информация по игровому миру
+	private final WorldInfo worldInfo = new WorldInfo(true);
 	/**Указывает, что программа находится в цикле шага*/
 	private boolean isStepCucle = false;
 	/**Как часто производить расчёты*/
@@ -62,30 +59,33 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	/**Возвожное состояние мира*/
 	private enum STATUS {STOP,ACTIV_ALL,ERROR};
 	/**Один блок, состоящий из двух вертекалей, карты*/
-	class WorldTask implements Callable<int[]>{
+	class WorldTask implements Callable<WorldInfo>{
 		/**Один вертикальный столбик карты, который обсчитвыает этот поток*/
 		/**Первая вертикаль блока*/
 		private final Point [] first;
 		/**Вторая вертикаль блока*/
 		private final Point [] second;
+		///Информация по этому куску игрового мира
+		private final WorldInfo info = new WorldInfo();
+
 		WorldTask(Point [] cellsFirst, Point[] cellsSecond){first = cellsFirst;second = cellsSecond;}
 		@Override
-		public int[] call(){
-			final var points = (isFirst ? first : second);
-			final var count_step = new int[CellObject.LV_STATUS.length];
+		public WorldInfo call(){
+			var points = (isFirst ? first : second);
+			info.reset();
 			for (int i = points.length - 1; i >= 0 && _status != STATUS.ERROR; i--) {
 				final var t = points[i];
 				if(!t.valid() || get(t) == null) continue; //Чего мы будем пустые клетки мешать?
-				final var j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
+				var j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
 				//Меняем местами клетки, чтобы каждый раз вызывать их в разной последовательности
-				final var p = points[i] = points[j];
+				var p = points[i] = points[j];
 				points[j] = t;
 				final var cell = get(p);
 				if(cell == null) continue; //Аай, и тут пусто. Ну и ладно
 				action(cell,p);
-				count_step[cell.getAlive().ordinal()]++;
+				info.add(cell);
 			}
-			return count_step;
+			return info;
 		}
 		/** Выполняет обработку шага клетки
 		 * @param cell объект, который делает шаг
@@ -119,7 +119,8 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 				return worker;
 			}
 		};
-		maxExecutor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors()*2), factory, null, true); // Один поток нужен системе для отрисовки
+        //Почему то именно при двойном числе получается максимальная производительность...
+		maxExecutor = new ForkJoinPool(Math.max(1, Runtime.getRuntime().availableProcessors()*2), factory, null, true);
 		worldGenerate();
 		worldThread = new Thread(this);
 		worldThread.start();
@@ -133,24 +134,27 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		this(MAP_CELLS);
 		step = json.getL("step");
 		List<JSON> cells = json.getAJ("Cells");
-		for (JSON cell : cells) {
+		for (JSON jcell : cells) {
 			try {
-				final var t = version < 8 ? LV_STATUS.values[cell.getI("alive")] : LV_STATUS.valueOf(cell.get("alive"));
+				var t = version < 8 ? LV_STATUS.values[jcell.getI("alive")] : LV_STATUS.valueOf(jcell.get("alive"));
+				CellObject ocell = null;
 				switch (t) {
 					case LV_ALIVE -> {
 						//if(loadOneCell(cell,31,31))
-							add(new AliveCell(cell, Configurations.tree, version));
+							ocell = new AliveCell(jcell, Configurations.tree, version);
 					}
-					case LV_ORGANIC -> add(new Organic(cell, version));
-					case LV_POISON -> add(new Poison(cell, version));
-					case LV_WALL -> add(new Fossil(cell, version));
-					case LV_CONNECTIVE_TISSUE -> add(new ConnectiveTissue(cell, version));
-					default -> System.err.println("Ошибка загрузки строки: \n" + cell);
+					case LV_ORGANIC -> ocell = new Organic(jcell, version);
+					case LV_POISON -> ocell = new Poison(jcell, version);
+					case LV_WALL -> ocell = new Fossil(jcell, version);
+					case LV_CONNECTIVE_TISSUE -> ocell = new ConnectiveTissue(jcell, version);
+					default -> System.err.println("Ошибка загрузки строки: \n" + jcell);
 				}
-				_all_live_cell[t.ordinal()]++;
+				if(ocell == null) continue;
+				add(ocell);
+				worldInfo.add(ocell);
 			} catch (java.lang.RuntimeException e1) {
 				Logger.getLogger(World.class.getName()).log(Level.WARNING, e1.getLocalizedMessage(), e1);
-				JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage() + "<br>Для объекта<br>" + cell.toJSONString(), "BioLife", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage() + "<br>Для объекта<br>" + jcell.toJSONString(), "BioLife", JOptionPane.ERROR_MESSAGE);
 				throw e1;
 			}
 		}
@@ -212,7 +216,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 			default -> throw new AssertionError();
 		}
 		add(adam);
-		_all_live_cell[LV_ALIVE.ordinal()] += 1;
+		worldInfo.add(adam);
 	}
 	/**Генерирует карту - добавляет солнце, гейзеры, обновляет константы мира, разбивает мир на потоки процессора */
 	private void worldGenerate() {
@@ -291,24 +295,26 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		else			isStepCucle = true;
 		preStep();
 		try {
-			var f = new int[CellObject.LV_STATUS.length];
-			for (int st = 0; st < 2; st++) {
+			var vi = new WorldInfo();
+			for (var st = 0; st < 2; st++) {
 				if(timeout == 0){
-					f = maxExecutor.invokeAll(cellsTask)
-							.stream()
-							.map(a -> {try{return a.get();}catch(InterruptedException | ExecutionException e){ return new int[CellObject.LV_STATUS.length];}})
-							.reduce(f, (a,b) -> {for (int i = 0; i < b.length; i++) {a[i] += b[i];}return a;});
+                    for(var a : maxExecutor.invokeAll(cellsTask)){
+                        try{
+                            vi.add(a.get());
+                        }catch(InterruptedException | ExecutionException e){
+                            throw new RuntimeException(e);
+                        }
+                    }
 				} else {
 					for (var t : cellsTask) {
-						final var b = t.call();
-						for (int i = 0; i < b.length; i++) {f[i] += b[i];}
+						vi.add(t.call());
 					}
 					if(timeout > 1)
 						Utils.pause_ms(timeout);
 				}
 				isFirst = !isFirst;
 			}
-			_all_live_cell = f;
+            worldInfo.copy(vi);
 		} catch (InterruptedException e) {
 			Logger.getLogger(World.class.getName()).log(Level.WARNING, e.getLocalizedMessage(), e);
 		}
@@ -446,7 +452,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	 * @return количество объектов такого типа
 	 */
 	public int getCount(CellObject.LV_STATUS type){
-		return _all_live_cell[type.ordinal()];
+		return worldInfo.get(type);
 	}
 	
 	/**

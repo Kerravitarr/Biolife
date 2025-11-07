@@ -98,7 +98,7 @@ public class Microscope extends DefaultAnimation{
             ///Пинцет
             TWEEZERS(10,30, i -> new Tweezers(i)),
             ///Обратный пинцет
-            //REVERSE_TWEEZERS(20,30, i -> new ReverseTweezers(i)),
+            REVERSE_TWEEZERS(20,30, i -> new ReverseTweezers(i)),
             ;
             //Ширина объкта в клетках поля
             final int width;
@@ -225,7 +225,7 @@ public class Microscope extends DefaultAnimation{
 
             private void reset() {
                 count = 0;
-                prob = 1;
+                prob = 1d / Instrument.Type.values().length;
             }
         }
         ///Размеры игрового поля, в штуках
@@ -316,8 +316,8 @@ public class Microscope extends DefaultAnimation{
                 var max = avr * 1.1;
                 var width = avr * 0.1;
                 instruments.get(next.type).count++;
-            for(var t : instruments.entrySet())
-                t.getValue().prob = (max - t.getValue().count) / width;
+                for(var t : instruments.entrySet())
+                    t.getValue().prob = ((max - t.getValue().count) / width) / instruments.size();
             }
         }
     }
