@@ -12,6 +12,8 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.geom.Area;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -69,6 +71,9 @@ public class Aquarium extends DefaultAnimation{
 		private static final double SIN_LATITUDE = Math.sin(LATITUDE);
 		/**Синус угла наклона планеты*/
 		private static final double SIN_EARTH_AXIS = Math.sin(Math.toRadians(23+26/60d));
+        ///Окно, за которым и будет целый мир
+        private static final java.awt.image.BufferedImage WINDOW;
+        
 		/**Возвращате угол наклона солнца над горизонтом
 		 * @return угол наклона солнца, градусы
 		 */
@@ -94,6 +99,22 @@ public class Aquarium extends DefaultAnimation{
 		private double cosDF;
 		/**Угол солнца над горизонтом*/
 		private double elevation;
+        
+        static {
+            var resourse = Static.class.getResource("/worlds/Aquarium_window.png");
+            if(resourse == null){
+                System.err.println("Не найдено изображение!");
+                WINDOW = null;
+            } else {
+                java.awt.image.BufferedImage bufferedImage = null;
+                try {
+                    bufferedImage = javax.imageio.ImageIO.read(resourse);
+                } catch (IOException ex) {
+                    System.getLogger(Aquarium.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+                }
+                WINDOW = bufferedImage;
+            }
+        }
 	}
 	private static double fourier(double val, int mount){
 		var angle = 360 * val;
@@ -354,6 +375,39 @@ public class Aquarium extends DefaultAnimation{
 			figures.add(new DynamicColor((alf) -> new ColorRec(new int[]{lampx2, lampx1, x1,xf0,xf0,cx},new int[]{lampy2,lampy2,yf0,yf0,y1,y1},colorLamp.apply(alf))));
 		}/**/
 		this.staticColor = figures.toArray(ColorRec[]::new);
+        
+        
+        //Рама
+        //Место, куда надо поставить аквариум. Нижний правый угол - 500х480, ширина/высота - 240
+        var artWinSize = Math.max(fieldH, fieldW) / 240d;
+        window = new BufferedImage(w,h, BufferedImage.TYPE_INT_ARGB);
+        if(Configurations.getWidth() > Configurations.getHeight()){
+            var wx = (int) Math.round(x1-500*artWinSize);
+            var ww = (int) Math.round(artWinSize * Static.WINDOW.getWidth(null));
+            //artWinSize = artWinSize * Configurations.getWidth() / Configurations.getHeight();
+            var wy = (int) Math.round(y1-480*artWinSize);
+            var wh = (int) Math.round(artWinSize * Static.WINDOW.getHeight(null));  
+            
+            var g = window.getGraphics();
+            g.drawImage(Static.WINDOW,wx,wy,ww,wh, null);
+            g.dispose();
+        } else {
+            var wy = (int) Math.round(y1-480*artWinSize);
+            var wh = (int) Math.round(artWinSize * Static.WINDOW.getHeight(null));  
+            //artWinSize = artWinSize * Configurations.getHeight() / Configurations.getWidth();
+            var wx = (int) Math.round(x1-500*artWinSize);
+            var ww = (int) Math.round(artWinSize * Static.WINDOW.getWidth(null)); 
+            
+            var g = window.getGraphics();
+            g.drawImage(Static.WINDOW,wx,wy,ww,wh, null);
+            g.dispose();
+        }
+        ///А теперь вырезаем игровое поле
+        for (int x = xf0; x <= x1; ++x) {
+            for (int y = yf0; y <= y1; ++y) {
+                window.setRGB(x, y, 0x00);
+            }
+        }
 	}
 	@Override
 	protected void nextFrame(){
@@ -387,6 +441,7 @@ public class Aquarium extends DefaultAnimation{
 	public void world(Graphics2D g, Rectangle visible, java.awt.geom.Area field) {
 		for(var c : staticColor)
 			c.paint(g,field);
+        g.drawImage(window,0,0,null);
 	}
 	
 	/***/
@@ -395,4 +450,6 @@ public class Aquarium extends DefaultAnimation{
 	private ColorRec water;
 	/**Раскраска под статик*/
 	private ColorRec[] staticColor = new ColorRec[0];
+    ///Окно, которое надо отрисовать
+    private final java.awt.image.BufferedImage window;
 }

@@ -22,6 +22,8 @@ import java.awt.EventQueue;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Rectangle;
+import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -680,15 +682,21 @@ public class WorldView extends javax.swing.JPanel {
 		var oActiv = Configurations.world.isActiv();
 		Configurations.world.awaitStop();
 		transforms.recalculate();
-		
-		animation = switch (Configurations.confoguration.world_type) {
-			case LINE_H -> new GUI.WorldAnimation.Pond(transforms, getWidth(), getHeight());
-			case LINE_V -> new GUI.WorldAnimation.River(transforms, getWidth(), getHeight());
-			case RECTANGLE -> new GUI.WorldAnimation.Aquarium(transforms, getWidth(), getHeight());
-			case FIELD_R -> new GUI.WorldAnimation.Ocean(transforms, getWidth(), getHeight());
-			case CIRCLE -> new GUI.WorldAnimation.Microscope(transforms, getWidth(), getHeight());
-			default -> throw new AssertionError("Не реализовано для " + Configurations.confoguration.world_type);
-		};
+        if(getWidth() != 0 && getHeight() != 0){
+            animation = switch (Configurations.confoguration.world_type) {
+                case LINE_H -> new GUI.WorldAnimation.Pond(transforms, getWidth(), getHeight());
+                case LINE_V -> new GUI.WorldAnimation.River(transforms, getWidth(), getHeight());
+                case RECTANGLE -> new GUI.WorldAnimation.Aquarium(transforms, getWidth(), getHeight());
+                case FIELD_R -> new GUI.WorldAnimation.Ocean(transforms, getWidth(), getHeight());
+                case CIRCLE -> new GUI.WorldAnimation.Microscope(transforms, getWidth(), getHeight());
+                default -> throw new AssertionError("Не реализовано для " + Configurations.confoguration.world_type);
+            };
+        } else {
+            animation = new GUI.WorldAnimation.DefaultAnimation(transforms) {
+                @Override protected void water(Graphics2D g) {}
+                @Override protected void world(Graphics2D g, Rectangle visible, Area field) {}
+            };
+        }
 		for(var b : buffers) b.recalculate();
 		
 		if(oActiv)
