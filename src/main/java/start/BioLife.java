@@ -67,7 +67,7 @@ public class BioLife{
 		var load = _opts.get('L').get(String.class);
 		if(load.isEmpty()){//Если не задано, то подгружаем последний сохранённый мир
 			var f = new File(System.getProperty("user.dir"));
-			var old = kerlib.tools.findOldest(f, file -> file.getName().endsWith(".zbmap"));
+			var old = kerlib.tools.findYoungest(f, file -> file.getName().endsWith(".zbmap"));
 			if(old != null){
 				load = old.getAbsolutePath();
                 load = kerlib.tools.isAssert(load, "");//TODO На время отладки не надо загружать миры
