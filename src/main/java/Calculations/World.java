@@ -74,13 +74,14 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 			var points = (isFirst ? first : second);
 			info.reset();
 			for (int i = points.length - 1; i >= 0 && _status != STATUS.ERROR; i--) {
-				final var t = points[i];
+				var t = points[i];
 				if(!t.valid() || get(t) == null) continue; //Чего мы будем пустые клетки мешать?
 				var j = Configurations.rnd.nextInt(i+1); // случайный индекс от 0 до i
 				//Меняем местами клетки, чтобы каждый раз вызывать их в разной последовательности
 				var p = points[i] = points[j];
 				points[j] = t;
-				final var cell = get(p);
+                if(!p.valid()) continue;
+				var cell = get(p);
 				if(cell == null) continue; //Аай, и тут пусто. Ну и ладно
 				action(cell,p);
 				info.add(cell);
