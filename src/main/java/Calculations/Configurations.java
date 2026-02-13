@@ -244,7 +244,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 			minerals.add(new MineralRectangle(CONCENTRATION_MINERAL,CONCENTRATION_MINERAL / ((1d-LEVEL_MINERAL)* MAP_CELLS.height), new Trajectory(Point.create(MAP_CELLS.width/2, MAP_CELLS.height-1)),MAP_CELLS.width, 1, false,"Постоянная"));
 			//А теперь два потока воды - вверх и вниз
 			streams.add(new StreamVertical(new Trajectory(Point.create(width*9/40, height/2)), width/5, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый"));
-			streams.add(new StreamVertical(new Trajectory(Point.create(width*3/4, height/2)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(2,4),"Прваый"));
+			streams.add(new StreamVertical(new Trajectory(Point.create(width*3/4, height/2)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(2,4),"Правый"));
 			//А теперь ещё 4 шапочки, чтобы в верхней и нжней части сдвутать клетки
 			streams.add(new StreamHorizontal(new Trajectory(Point.create(width*7/40, 0)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(100,200),"Левый, верхний левый"));
 			streams.add(new StreamHorizontal(new Trajectory(Point.create(width*11/40, 0)), width/10, height, new StreamAttenuation.LinealStreamAttenuation(-100,-200),"Левый, верхний правый"));

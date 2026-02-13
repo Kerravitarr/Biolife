@@ -125,11 +125,11 @@ public class LoadSaveFactory {
 	 * @param isPrintSaveError печатать сообщение, что всё пошло по звезде?
 	 */
 	public static void load(String title, String extension, LoadFunction load, FunctionCatch error, boolean isPrintSaveError){
-		final var vw = Configurations.getViewer().get(WorldView.class);
+		var vw = Configurations.getViewer().get(WorldView.class);
 		
-		JFileChooser fileopen = new JFileChooser(currentDirectoryPath);
+		var fileopen = new JFileChooser(currentDirectoryPath);
 		fileopen.setFileFilter(new FileNameExtensionFilter(extension, extension));
-		int ret = fileopen.showDialog(vw, Configurations.getProperty(LoadSaveFactory.class,"load.selectTitle"));
+		var ret = fileopen.showDialog(vw, Configurations.getProperty(LoadSaveFactory.class,"load.selectTitle"));
 		if (ret == JFileChooser.APPROVE_OPTION) {
 			currentDirectoryPath = fileopen.getSelectedFile().getParent();
 			try {
