@@ -501,6 +501,7 @@ public class River extends DefaultAnimation{
 			}
 		}
 		public Rectangle getBounds(){return poligon.getBounds();}
+        
 		public void draw(Graphics2D g, java.awt.geom.Area field) {
 			final var tmpC = g.getColor();
 			g.setColor(color);
