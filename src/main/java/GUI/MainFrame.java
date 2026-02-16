@@ -14,6 +14,7 @@ import java.awt.EventQueue;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.awt.TrayIcon;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyEvent;
@@ -103,9 +104,9 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 	/** Creates new form MainFrame */
 	public MainFrame() {
 		initComponents();
-        kerlib.draw.tools.makeTray(this, "pictures/icon.png", Configurations.getProperty(start.BioLife.class,"name"));
+        trayIcon = kerlib.draw.tools.makeTray(this, "pictures/icon.png", Configurations.getProperty(start.BioLife.class,"name"));
         
-		Dimension sSize = Toolkit.getDefaultToolkit().getScreenSize();
+		var sSize = Toolkit.getDefaultToolkit().getScreenSize();
 		//8 - это потому что 5/8 это примерно 60% экрана. 
 		//А 4.5 - потому что именно при соотношении в 5 раз начинается детальная отрисовка клеток
 		//а это нехило так роняет ФПС
@@ -257,14 +258,14 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 	
 	@Override
 	public void taskStep() {
-		final var world = Configurations.world;
-		final var v = Configurations.getViewer();
+		var world = Configurations.world;
+		var v = Configurations.getViewer();
 		if(!(v instanceof DefaultViewer)) return;
-		final var wv = v.get(WorldView.class);
-		final var settings = v.get(Settings.class);
-		final var legend = v.get(Legend.class);
-		final var menu = v.get(Menu.class);
-		final var bi = v.get(BotInfo.class);
+		var wv = v.get(WorldView.class);
+		var settings = v.get(Settings.class);
+		var legend = v.get(Legend.class);
+		var menu = v.get(Menu.class);
+		var bi = v.get(BotInfo.class);
 		
 		String title = MessageFormat.format(Configurations.getProperty(MainFrame.class,"title"), wv.fps(), world.step,
 				world.pps.dUPS(), world.getCount(CellObject.LV_STATUS.LV_ALIVE), world.getCount(CellObject.LV_STATUS.LV_ORGANIC),
@@ -274,11 +275,11 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 		//Действия, только при моделировании
 		if(world.isActiv()){
 			//Вывод сообщения, если мир опустеет
-			final var status = WORLD_STATUS.getStatus();
+			var status = WORLD_STATUS.getStatus();
 			if(nowStatus.ordinal() < status.ordinal()){
 				java.awt.Toolkit.getDefaultToolkit().beep();
 				Configurations.world.awaitStop();
-				final var ret = JOptionPane.showConfirmDialog(null, Configurations.getProperty(MainFrame.class,status.name()), "BioLife", JOptionPane.OK_CANCEL_OPTION,JOptionPane.WARNING_MESSAGE);
+				var ret = JOptionPane.showConfirmDialog(null, Configurations.getProperty(MainFrame.class,status.name()), Configurations.getProperty(start.BioLife.class,"name"), JOptionPane.OK_CANCEL_OPTION,JOptionPane.WARNING_MESSAGE);
 				if(ret == JOptionPane.OK_OPTION){
 					final var  dc = Configurations.getDefaultConfiguration(Configurations.confoguration.world_type);
 					Configurations.makeDefaultWord(dc.world_type, dc.MAP_CELLS.width, dc.MAP_CELLS.height);
@@ -292,11 +293,16 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 			//Автосохранение
 			if(nowStatus == WORLD_STATUS.HAS_LIFE && Math.abs(world.step - Configurations.confoguration.lastSaveCount) > Configurations.confoguration.SAVE_PERIOD){
 				//Если мир пассивный - то с чего мы вдруг решили его начать сохранять? Может он только загружен?
-				final var loc = scrollPane.getLocationOnScreen();
-				if(popup != null)
-					popup.hide();
-				popup = popupFactory.getPopup(wv, t,loc.x + scrollPane.getWidth() / 2, loc.y + scrollPane.getHeight() / 2);
-				popup.show();
+				try {
+                    var loc = scrollPane.getLocationOnScreen();
+                    if(popup != null)
+                        popup.hide();
+                    popup = popupFactory.getPopup(wv, t,loc.x + scrollPane.getWidth() / 2, loc.y + scrollPane.getHeight() / 2);
+                    popup.show();
+                }catch(Exception ex){
+                    //Мы в трее - у нас нет локации на экране (не отображемся)
+                    trayIcon.displayMessage(Configurations.getProperty(start.BioLife.class,"name"), t.getTipText(), TrayIcon.MessageType.INFO);
+                }
 
 				var list = new File[Configurations.confoguration.COUNT_SAVE];
 				for(var i = 0 ; i < Configurations.confoguration.COUNT_SAVE ; i++){
@@ -311,7 +317,7 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 					Configurations.save(save.getName());
 				} catch (IOException ex) {
 					Logger.getLogger(this.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-					JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + ex.getMessage(), "BioLife", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null,	"Ошибка сохранения!\n" + ex.getMessage(), Configurations.getProperty(start.BioLife.class,"name"), JOptionPane.ERROR_MESSAGE);
 				}
 				if(popup != null){
 					popup.hide();
@@ -484,4 +490,5 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JPanel contentPane;
     // End of variables declaration//GEN-END:variables
+    private final java.awt.TrayIcon trayIcon;
 }
