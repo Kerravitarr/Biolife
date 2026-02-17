@@ -134,8 +134,8 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	public World(JSON json, long version, Dimension MAP_CELLS) {
 		this(MAP_CELLS);
 		step = json.getL("step");
-		List<JSON> cells = json.getAJ("Cells");
-		for (JSON jcell : cells) {
+		var cells = json.getAJ("Cells");
+		for (var jcell : cells) {
 			try {
 				var t = version < 8 ? LV_STATUS.values[jcell.getI("alive")] : LV_STATUS.valueOf(jcell.get("alive"));
 				CellObject ocell = null;
@@ -197,6 +197,11 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 		awaitStop();
 		maxExecutor.shutdown();
 		_status = STATUS.ERROR;
+        try {
+            worldThread.join();
+        } catch (InterruptedException ex) {
+            System.getLogger(World.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
+        }
 	}
 	/**Создаёт стартовую клетку на поле*/
 	public void makeAdam(){
@@ -505,11 +510,9 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 	private boolean loadNineCell(JSON cell, int x, int y) {
 		return loadR(cell,x,y,1);
 	}
-	
 	@Override
-	public String getName() {
-		return "WORLD";
-	}
+	public String getName() {return statGetName();}
+	public static String statGetName(){return "WORLD";}
 
 	@Override
 	public JSON getJSON() {

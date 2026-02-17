@@ -354,12 +354,13 @@ public class WorldView extends javax.swing.JPanel {
 			if(buffers.isEmpty() || buffers.get(0).to.getX() != Configurations.getWidth()-1 ||  buffers.get(0).to.getY() != Configurations.getHeight()-1){
 				buffers.clear();
 				buffers.add(new PrintTask(null, new java.awt.Point(Configurations.getWidth()-1, Configurations.getHeight()-1)));
-				var step = 10; //Сколько рядов клеток у нас будет в одном буффере
+				/*var step = 100; //Сколько рядов клеток у нас будет в одном буффере
 				for(var x = 0 ; x < Configurations.getWidth()-1 + step; x += step){
 					for(var y = 0 ; y < Configurations.getHeight()-1 + step; y += step){
 						buffers.add(new PrintTask(new java.awt.Point(x-1,y-1), new java.awt.Point(x+step+2, y + step+2)));
 					}
-				}
+				}*/
+                buffers.add(new PrintTask(new java.awt.Point(-1,-1), new java.awt.Point(Configurations.getWidth()+2, Configurations.getHeight()+2)));
 			}
 			for (var b : buffers) {
 				b.call();
@@ -494,6 +495,7 @@ public class WorldView extends javax.swing.JPanel {
 	private void rebuildField(){
 		if(isVisible() && Configurations.getViewer() instanceof DefaultViewer){
 			painter.nextFrameStep();
+            repaint();
 		}
 		Configurations.addOnceTask(this::rebuildField, painter.fps_buffer.UPS() > 25 ? 100 : 0);
 	}
@@ -501,7 +503,7 @@ public class WorldView extends javax.swing.JPanel {
 	@Override
 	public void paintComponent(Graphics g) {
 		super.paintComponent(g);
-		final var cms = System.currentTimeMillis();
+		var cms = System.currentTimeMillis();
 		var del = cms - lastUpdate;
 		if(del > 0){
 			lastUpdate = cms + 1000/25; //25 кадров в секунду
@@ -518,7 +520,6 @@ public class WorldView extends javax.swing.JPanel {
 		} catch(Exception ex){ //Вообще не ожидаются такие события... Но кто мы такие, чтобы спорить с фактами?
 			Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 		}
-		repaint(fps_repaint.UPS() > 25 ? 100 : 0);
 		/*/
 		
 		final var cms = System.currentTimeMillis();
@@ -535,10 +536,10 @@ public class WorldView extends javax.swing.JPanel {
 		} catch(Exception ex){ //Вообще не ожидаются такие события... Но кто мы такие, чтобы спорить с фактами?
 			Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 		}
-        fps_buffer.interapt();
+        painter.fps_buffer.interapt();
 		fps_repaint.interapt();
 
-		repaint();/**/
+		//repaint();/**/
 	}
 	/**Отрисовывает мир на холст
 	 * @param g куда рисовать

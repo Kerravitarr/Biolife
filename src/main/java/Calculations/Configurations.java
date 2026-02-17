@@ -662,7 +662,7 @@ public class Configurations extends SaveAndLoad.JSONSerialization<Configurations
 		confoguration = js.load(confoguration);
 		tree = js.load(tree);
 		if(world != null) world.destroy();
-		world = js.load((j,v) -> new World(j, v, confoguration.MAP_CELLS), new World(new Dimension(1,1)).getName());	
+		world = js.load((j,v) -> new World(j, v, confoguration.MAP_CELLS), World.statGetName());	
 		confoguration.lastSaveCount = world.step;	
 		
 		if (oldStateWorld)
