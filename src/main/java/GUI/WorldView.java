@@ -237,6 +237,8 @@ public class WorldView extends javax.swing.JPanel {
                 private final java.util.function.Supplier<Integer> width;
                 /**Функция получения ширины буфера в пикселях*/
                 private final java.util.function.Supplier<Integer> height;
+                /**Функция проверки - а надо ли рисовать этот буфер?*/
+                private final java.util.function.Supplier<Boolean> isPrint;
                 /**Функция рисования*/
                 private final java.util.function.Consumer<Graphics2D> print;
                 /**Флаг отследживания - требуется пререисовывать эту часть каждый шаг или нет?*/
@@ -250,13 +252,16 @@ public class WorldView extends javax.swing.JPanel {
                 /**Фон каждого листа, прозрачный*/
                 private static final Color ALF_COLOR = new Color(255, 255, 255, 0);
 
-                public Buffer(boolean isStep, Supplier<Integer> width, Supplier<Integer> height, Consumer<Graphics2D> print) {
+                public Buffer(boolean isStep, Supplier<Boolean> isPrint,Supplier<Integer> width, Supplier<Integer> height, Consumer<Graphics2D> print) {
                     this.isStep = isStep;
                     this.width = width;
+                    this.isPrint = isPrint;
                     this.height = height;
                     this.print = print;
                 }			
                 public void paint(){
+                    if(!isPrint.get()) return;
+                    
                     var w = width.get();
                     var h = height.get();
                     if(w == 0 || h == 0) return;				
@@ -268,15 +273,14 @@ public class WorldView extends javax.swing.JPanel {
                     if(!isStep || step[bi] != Configurations.world.step || !Configurations.world.isActiv()){
                         //Если мы неотмеряем шаги или у нас изменился шаг, то перерисовываем
                         step[bi] = Configurations.world.step;
+                        var g = (Graphics2D)buffer[bi].createGraphics();
+                        g.setBackground(ALF_COLOR);
                         try{
-                            var g = (Graphics2D)buffer[bi].createGraphics();
-                            g.setBackground(ALF_COLOR);
                             print.accept(g);
                             g.dispose();
-                        } catch(Exception ex){ //Вообще не ожидаются такие события... Но кто мы такие, чтобы спорить с фактами?
-                            Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
-                        } finally {
-                            //g.dispose();
+                        } catch(Exception ex){ //Что-то пошло ни так при отрисовке. Нормальная ситуация
+                            g.dispose();
+                            return; //Мы не обновяем индекс буффера! Потому что ну у нас, вообще-то, буфер не обновился...
                         }
                     }
                     buffer_index = bi;
@@ -307,22 +311,27 @@ public class WorldView extends javax.swing.JPanel {
             public PrintTask(java.awt.Point f, java.awt.Point t){
                 from = f; to=t;
                 if(from == null){
-                    buffer = new Buffer(false,() -> getWidth(), ()-> getHeight(), g -> paintField(g));
+                    buffer = new Buffer(false,() -> true, () -> getWidth(), ()-> getHeight(), g -> paintField(g));
                 } else {
-                    buffer = new Buffer(true,() -> transforms.toScrin(to.getX() - from.getX()),
+                    buffer = new Buffer(true,
+                            () -> {
+                                var x0 = Math.max((int)from.getX(), visible[0].getX());
+                                var x1 = Math.min((int)to.getX(), visible[1].getX()+1);
+                                var y0 = Math.max((int)from.getY(), visible[0].getY());
+                                var y1 = Math.min((int)to.getY(), visible[1].getY()+1);
+                                return !(x0 > x1 || y0 > y1); // || Configurations.world.isActiv()
+                            },
+                            () -> transforms.toScrin(to.getX() - from.getX()),
                             ()-> transforms.toScrin(to.getY() - from.getY()),
                             g -> {
                                 var x0 = (int)from.getX();
                                 var x1 = (int)to.getX();
                                 var y0 = (int)from.getY();
                                 var y1 = (int)to.getY();
-                                //if(Configurations.world.isActiv()){
-                                    x0 = Math.max(x0, visible[0].getX());
-                                    x1 = Math.min(x1, visible[1].getX()+1);
-                                    y0 = Math.max(y0, visible[0].getY());
-                                    y1 = Math.min(y1, visible[1].getY()+1);
-                                    if(x0 > x1 || y0 > y1) return;
-                                //}
+                                x0 = Math.max(x0, visible[0].getX());
+                                x1 = Math.min(x1, visible[1].getX()+1);
+                                y0 = Math.max(y0, visible[0].getY());
+                                y1 = Math.min(y1, visible[1].getY()+1);
                                 var sw = transforms.toScrin(x1 - x0);
                                 var sh = transforms.toScrin(y1 - y0);
                                 g.translate(-transforms.toDScrinX(from.getX()-0.5), -transforms.toDScrinY(from.getY()-0.5));
@@ -337,6 +346,7 @@ public class WorldView extends javax.swing.JPanel {
                 return null;
             }
             public void drow(Graphics2D g){
+                if(!buffer.isPrint.get()) return;
                 if(from != null)
                     buffer.drow(g, transforms.toScrinX(from.getX() - 0.5), transforms.toScrinY(from.getY() - 0.5));
                 else
@@ -353,19 +363,30 @@ public class WorldView extends javax.swing.JPanel {
         public void nextFrameStep(){
 			if(buffers.isEmpty() || buffers.get(0).to.getX() != Configurations.getWidth()-1 ||  buffers.get(0).to.getY() != Configurations.getHeight()-1){
 				buffers.clear();
-				buffers.add(new PrintTask(null, new java.awt.Point(Configurations.getWidth()-1, Configurations.getHeight()-1)));
-				/*var step = 100; //Сколько рядов клеток у нас будет в одном буффере
-				for(var x = 0 ; x < Configurations.getWidth()-1 + step; x += step){
-					for(var y = 0 ; y < Configurations.getHeight()-1 + step; y += step){
-						buffers.add(new PrintTask(new java.awt.Point(x-1,y-1), new java.awt.Point(x+step+2, y + step+2)));
+				var stepCreate = 100; //Какой размер кубика будет, в котором рисуются клетки. Нужен для частичной отрисовки
+				for(var x = 0 ; x < Configurations.getWidth()-1 + stepCreate; x += stepCreate){
+					for(var y = 0 ; y < Configurations.getHeight()-1 + stepCreate; y += stepCreate){
+						buffers.add(new PrintTask(new java.awt.Point(x-1,y-1), new java.awt.Point(x+stepCreate+2, y + stepCreate+2)));
 					}
-				}*/
-                buffers.add(new PrintTask(new java.awt.Point(-1,-1), new java.awt.Point(Configurations.getWidth()+2, Configurations.getHeight()+2)));
+				}
+                //buffers.add(new PrintTask(new java.awt.Point(-1,-1), new java.awt.Point(Configurations.getWidth()+2, Configurations.getHeight()+2)));
+                //Это надо, чтобы избавиться от эффекта "бегущей волны", когда скорость перерисовки оказывается выше, чем скорость подготовки кадров
+                java.util.Collections.shuffle(buffers); 
+                buffers.addFirst(new PrintTask(null, new java.awt.Point(Configurations.getWidth()-1, Configurations.getHeight()-1)));
+                index = 0;
+                step = buffers.size();
 			}
-			for (var b : buffers) {
-				b.call();
-			}
+            for(var i = 0; i < step; ++i, ++index){
+                var b = buffers.get(index % buffers.size());
+                b.call();
+            }
+            if(index > buffers.size())
+                index = 0;
 			fps_buffer.interapt();
+            if(fps_buffer.UPS() < 60 && step > 2)
+                --step;
+            else if(step < buffers.size())
+                ++step;
         }
         public void paint(Graphics2D g){
 			for(var b : buffers)
@@ -376,6 +397,10 @@ public class WorldView extends javax.swing.JPanel {
         private final List<PrintTask> buffers = new ArrayList<>();
         /**Счётчик шагов. Какая скорость работы отрисовщика полюшка*/
         private final UPScounter fps_buffer = new UPScounter();
+        /**Текущий индекс рисуемого буффера*/
+        private int index = 0;
+        /**Текущий шаг рисования, сколько буферов за рас рисуем*/
+        private int step = 1;
     }
 
 	/** Creates new form WorldView */
@@ -482,7 +507,7 @@ public class WorldView extends javax.swing.JPanel {
         if (Configurations.getViewer() instanceof DefaultViewer df) {
 			final var info = df.getBotInfo();
 			if(info.isVisible()) {
-				Point point = transforms.toWorldPoint(evt);
+				var point = transforms.toWorldPoint(evt);
 				if(point != null && point.valid())
 					info.setCell(Configurations.world.get(point));
 			}
@@ -521,7 +546,6 @@ public class WorldView extends javax.swing.JPanel {
 			Logger.getLogger(WorldView.class.getName()).log(Level.SEVERE, ex.getLocalizedMessage(), ex);
 		}
 		/*/
-		
 		final var cms = System.currentTimeMillis();
 		if(cms > lastUpdate){
 			lastUpdate = cms + 1000/25; //25 кадров в секунду максимум
@@ -566,17 +590,17 @@ public class WorldView extends javax.swing.JPanel {
 	 * @param g полотно, которое красим
 	 */
 	private void paintField(Graphics2D g) {
-		final var visibleRec = getVisibleRect();
+		var visibleRec = getVisibleRect();
 		//Рисуем игровое поле
 		animation.water(g, frame);
 		//И рисуем бордюр когда он должен быть под объектами
 		{ //Теперь рисуем звёзды, минералы и прочее
-			final var oldC = g.getComposite();
+			var oldC = g.getComposite();
 			g.setComposite(AlphaComposite.getInstance( AlphaComposite.SRC_OVER, 0.6f ));
 
-			final var mineralSelect = (select.isNull() || !isSelected || !select.isContains(MineralAbstract.class)) ? null : select.get(MineralAbstract.class);
-			final var sunSelect = (select.isNull() || !isSelected || !select.isContains(SunAbstract.class)) ? null : select.get(SunAbstract.class);
-			final var streamSelect = (select.isNull() || !isSelected || !select.isContains(StreamAbstract.class)) ? null : select.get(StreamAbstract.class);
+			var mineralSelect = (select.isNull() || !isSelected || !select.isContains(MineralAbstract.class)) ? null : select.get(MineralAbstract.class);
+			var sunSelect = (select.isNull() || !isSelected || !select.isContains(SunAbstract.class)) ? null : select.get(SunAbstract.class);
+			var streamSelect = (select.isNull() || !isSelected || !select.isContains(StreamAbstract.class)) ? null : select.get(StreamAbstract.class);
 			//А теперь, поверх воды, рисуем минеральки
 			Configurations.minerals.paint(g,getTransform(), mineralSelect);
 			//И сонышки
@@ -585,8 +609,8 @@ public class WorldView extends javax.swing.JPanel {
 			if(streamSelect == null){
 				Configurations.streams.forEach(s -> s.paint(g, getTransform(), frame));
 			} else {
-				boolean isPrint = false;
-				for(final var s : Configurations.streams){
+				var isPrint = false;
+				for(var s : Configurations.streams){
 					if(s != streamSelect) s.paint(g, getTransform(), frame);
 					else isPrint = true;
 				}
@@ -623,9 +647,9 @@ public class WorldView extends javax.swing.JPanel {
 				//Если у нас радиус больше 2пк, то тут можно рисовать что угодно - от кругов до детальной проработки
 				for (int x = x0; x <= x1; x++) {
 					for (int y = y0; y <= y1; y++) {
-						final var pos = Point.create(x, y);
+						var pos = Point.create(x, y);
 						if(!pos.valid()) continue;					
-						final var cell = Configurations.world.get(pos);
+						var cell = Configurations.world.get(pos);
 						if(cell != null && menu.isVisibleCell(cell)){
 							int cx = transforms.toScrinX(cell.getPos());
 							int cy = transforms.toScrinY(cell.getPos());
@@ -639,11 +663,11 @@ public class WorldView extends javax.swing.JPanel {
 				}
 			} else {
 				//А если меньше, то рисовать мы будем самыми общими чертами
-				final var dr = transforms.toDScrin(1);
+				var dr = transforms.toDScrin(1);
 				if (dr <= 0) return;
-				final var step = (int)Math.ceil(4d/dr); //4 - потому что рисуем квадратиками 2х2 пк
-				final var nr = transforms.toScrin(step);
-				final var ritangleColor = new Color[step * step];
+				var step = (int)Math.ceil(4d/dr); //4 - потому что рисуем квадратиками 2х2 пк
+				var nr = transforms.toScrin(step);
+				var ritangleColor = new Color[step * step];
 				for (int x = x0; x <= x1; x+=step) {
 					for (int y = y0; y <= y1; y+=step) {
 						var lendhtC = 0;

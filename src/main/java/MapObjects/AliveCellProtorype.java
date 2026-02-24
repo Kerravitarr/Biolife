@@ -150,7 +150,8 @@ public abstract class AliveCellProtorype extends CellObject {
 		
 		static{
 			for (int i = 0; i <= MAX_SPECIALIZATION; i++) {
-				SPECIALIZATION_k[i] = 0.25+Math.pow(((double)i)/MAX_SPECIALIZATION, 2)*0.75; // Специализация развиватется по закону степени. Так низкие специализации почти ни чего не дают, а высокие дают очень много
+                //Тут было 25 на 75! Я специально уменьшил специализации, иначе боты выбирали тупо укус на 100%!
+				SPECIALIZATION_k[i] = 0.10+Math.pow(((double)i)/MAX_SPECIALIZATION, 2)*0.9; // Специализация развиватется по закону степени. Так низкие специализации почти ни чего не дают, а высокие дают очень много
 			}
 		}
 		

@@ -100,7 +100,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 					_status = STATUS.ERROR;
 					final var errMsg = Configurations.getHProperty(World.class,"error.exception", cell, point, e.getMessage());
 					Logger.getLogger(World.class.getName()).log(Level.WARNING, errMsg, e);
-					JOptionPane.showMessageDialog(null,	errMsg,	"BioLife", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(null,	errMsg,	Configurations.getProperty(start.BioLife.class,"name"), JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		}
@@ -155,7 +155,7 @@ public class World implements Runnable,SaveAndLoad.Serialization{
 				worldInfo.add(ocell);
 			} catch (java.lang.RuntimeException e1) {
 				Logger.getLogger(World.class.getName()).log(Level.WARNING, e1.getLocalizedMessage(), e1);
-				JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage() + "<br>Для объекта<br>" + jcell.toJSONString(), "BioLife", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(null, "<html>Ошибка загрузки!<br>" + e1.getMessage() + "<br>Для объекта<br>" + jcell.toJSONString(), Configurations.getProperty(start.BioLife.class,"name"), JOptionPane.ERROR_MESSAGE);
 				throw e1;
 			}
 		}

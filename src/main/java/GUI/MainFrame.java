@@ -105,7 +105,9 @@ public class MainFrame extends javax.swing.JFrame implements Configurations.Evry
 	public MainFrame() {
 		initComponents();
         trayIcon = kerlib.draw.tools.makeTray(this, "pictures/icon.png", Configurations.getProperty(start.BioLife.class,"name"));
-        
+        trayIcon.setPopupMenu(new kerlib.draw.IPopupMenu()
+            .addItem(Configurations.getProperty(MainFrame.class,"MENU_START_STOP"), _ -> {if (Configurations.world.isActiv())Configurations.world.stop();else Configurations.world.start();})
+            .toOld());
 		var sSize = Toolkit.getDefaultToolkit().getScreenSize();
 		//8 - это потому что 5/8 это примерно 60% экрана. 
 		//А 4.5 - потому что именно при соотношении в 5 раз начинается детальная отрисовка клеток
