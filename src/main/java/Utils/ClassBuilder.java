@@ -597,8 +597,10 @@ public abstract class ClassBuilder <T>{
 		 * @throws IllegalArgumentException, если файл JSON будет повреждён
 		 */
 		public CT generation(JSON json, long version){
-			if((String)json.get("_serializerName") == null) throw new IllegalArgumentException("Не нашли ключ _serializerName в " + json);
-			return OBJECTS_BY_NAME.get((String)json.get("_serializerName")).generation(json, version);
+			if(!json.containsKey("_serializerName")) throw new IllegalArgumentException("Не нашли ключ _serializerName в " + json);
+            var o = OBJECTS_BY_NAME.get(json.get(String.class, "_serializerName"));
+            if(o == null) throw new IllegalArgumentException("Объект " + json.get(String.class, "_serializerName") + " не зарегистрирован!");
+			else return o.generation(json, version);
 		}
 		/**Укладывает текущий объект в объект сереализации для дальнейшего сохранения
 		 * @param <T> тип объекта, который надо упаковать. Может быть любым наследником текущего класса,

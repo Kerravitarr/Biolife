@@ -75,6 +75,43 @@ public class Reflector {
         return ret;
     }
 	public static <T> List<Class<? extends T>> getClassesByClasses(final Class<T> who){
+        try {
+            // Получаем путь к месту, где лежит этот класс
+            var codeSourceUrl = who.getProtectionDomain().getCodeSource().getLocation();
+            var codeSourceFile = new File(codeSourceUrl.toURI());
+
+            if (codeSourceFile.isDirectory()) {
+                // Режим IDE: это папка с классами (target/classes)
+                return getClassesByClasses(who,"",Thread.currentThread().getContextClassLoader());
+            } else if (codeSourceFile.isFile() && codeSourceFile.getName().endsWith(".jar")) {
+                // Режим ПРОД: это реальный JAR-файл
+                var ret = new ArrayList<Class<? extends T>>();
+                try (var jar = new java.util.jar.JarFile(codeSourceFile)) {
+                    var entries = jar.entries();
+                    while (entries.hasMoreElements()) {
+                        var entry = entries.nextElement();
+                        var name = entry.getName();
+                        // Ищем все файлы .class с самого корня архива
+                        if (name.endsWith(".class") && !entry.isDirectory()) {
+                            // Превращаем "com/example/MyClass.class" в "com.example.MyClass"
+                            var classFile = name.substring(0, name.length() - 6).replace('/', '.');
+                            try {
+                                // Загружаем класс, вызывая его статический блок
+                                ret.add((Class) Class.forName(classFile));
+                            } catch (java.lang.ExceptionInInitializerError | NoClassDefFoundError e) {
+                                System.err.println( "Не смогли загрзуть класс [" + classFile + "], хотя нашли его, что очень странно. Официальная причина: " + e.getLocalizedMessage());
+                            } catch (ClassNotFoundException e) {
+                                System.err.println( "Не смогли найти класс [" + classFile + "], что очень странно");
+                            }
+                        }
+                    }
+                }
+                return ret;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new ArrayList<>();
+        }
 		return getClassesByClasses(who,"",Thread.currentThread().getContextClassLoader());
 	}
 }
